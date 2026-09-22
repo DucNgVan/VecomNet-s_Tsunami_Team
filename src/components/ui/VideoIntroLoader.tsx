@@ -53,7 +53,6 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
   const { setIsIntroPlaying } = useIntro();
   // Always auto-show fullscreen video on every link access or page reload
   const [isVisible, setIsVisible] = useState<boolean>(true);
-  const [isShrinking, setIsShrinking] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [activeChapterIndex, setActiveChapterIndex] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -62,7 +61,6 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
 
   useEffect(() => {
     setIsVisible(true);
-    setIsShrinking(false);
     setIsIntroPlaying(true);
     hasTriggeredShrink.current = false;
     setProgress(0);
@@ -117,7 +115,6 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
   const triggerShrinkAndOpen = () => {
     if (hasTriggeredShrink.current) return;
     hasTriggeredShrink.current = true;
-    setIsShrinking(true);
     setIsIntroPlaying(false);
 
     const currentTime = videoRef.current ? videoRef.current.currentTime : 0;
@@ -125,12 +122,10 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
       onShrinkStart(currentTime);
     }
 
-    // 1.15s duration matches the cubic-bezier shrink animation curve
-    setTimeout(() => {
-      setIsVisible(false);
-      if (onClose) onClose();
-      if (onComplete) onComplete();
-    }, 1150);
+    // Smoothly dissolve out directly into the page with zero border shrinkage
+    setIsVisible(false);
+    if (onClose) onClose();
+    if (onComplete) onComplete();
   };
 
   const toggleSound = (e: React.MouseEvent) => {
@@ -148,55 +143,13 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
           key="video-intro-overlay"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          animate={{
-            backgroundColor: isShrinking
-              ? "rgba(248, 250, 252, 0)"
-              : "rgba(6, 16, 32, 1)",
-            backdropFilter: isShrinking ? "blur(0px)" : "blur(12px)",
-          }}
-          className="fixed inset-0 z-[9999] pointer-events-auto flex items-start justify-center overflow-hidden select-none"
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="fixed inset-0 z-[9999] w-screen h-[100dvh] bg-black pointer-events-auto flex items-center justify-center overflow-hidden select-none cursor-pointer"
           onClick={triggerShrinkAndOpen}
         >
-          {/* Main Video Frame: Smoothly morphs from 100vw/100vh down to the exact Hero section card */}
-          <motion.div
-            initial={{
-              marginTop: "0px",
-              width: "100vw",
-              height: "100vh",
-              borderRadius: "0px",
-              boxShadow: "none",
-              border: "1px solid rgba(226, 232, 240, 0)",
-              opacity: 1,
-            }}
-            animate={
-              isShrinking
-                ? {
-                    marginTop: "96px",
-                    width: "min(calc(100vw - 32px), 1280px)",
-                    height: "82vh",
-                    borderRadius: "24px",
-                    boxShadow: "0 20px 50px rgba(11, 30, 59, 0.12)",
-                    border: "1px solid rgba(226, 232, 240, 0.9)",
-                    opacity: [1, 1, 0.85, 0], // stays clear and dissolves seamlessly into the hero card beneath
-                  }
-                : {
-                    marginTop: "0px",
-                    width: "100vw",
-                    height: "100vh",
-                    borderRadius: "0px",
-                    boxShadow: "none",
-                    border: "1px solid rgba(226, 232, 240, 0)",
-                    opacity: 1,
-                  }
-            }
-            transition={{
-              duration: 1.15,
-              ease: [0.16, 1, 0.3, 1], // Luxury cubic-bezier deceleration
-            }}
-            className="relative overflow-hidden bg-[#061020] flex items-center justify-center cursor-pointer will-change-transform"
-          >
-            {/* Pure Video Element - Scaled up so NO gaps/letterboxes are exposed */}
+          {/* Main Fullscreen Video Frame: 100% Tràn Màn Hình, ZERO Borders, ZERO Margins */}
+          <div className="absolute inset-0 w-full h-full bg-black overflow-hidden flex items-center justify-center">
+            {/* Pure Video Element - Scaled up so NO gaps, borders, or empty spaces can ever appear */}
             <video
               ref={videoRef}
               src="/assets/hero-ocean.mp4"
@@ -204,16 +157,14 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
               muted={isMuted}
               playsInline
               preload="auto"
-              className="w-full h-full min-w-full min-h-full object-cover scale-[1.08] sm:scale-[1.06] origin-center filter brightness-[1.02] contrast-[1.03] transform-gpu"
+              className="absolute inset-0 w-full h-full min-w-full min-h-full object-cover scale-[1.08] sm:scale-[1.06] origin-center filter brightness-[1.02] contrast-[1.03] transform-gpu"
             />
 
             {/* Subtle Vignette for cinema aesthetic */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/30 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
 
             {/* Top Right Sound Toggle only (Discreet, zero text clutter) */}
-            <motion.div
-              animate={{ opacity: isShrinking ? 0 : 1 }}
-              transition={{ duration: 0.2 }}
+            <div
               className="absolute top-6 right-6 z-20"
               onClick={(e) => e.stopPropagation()}
             >
@@ -224,15 +175,10 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
               >
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-sky-400" />}
               </button>
-            </motion.div>
+            </div>
 
             {/* Cinematic Storytelling Subtitles & Chapter Dots */}
-            <motion.div
-              animate={{
-                opacity: isShrinking ? 0 : 1,
-                y: isShrinking ? 16 : 0,
-              }}
-              transition={{ duration: 0.3 }}
+            <div
               className="absolute bottom-8 sm:bottom-12 inset-x-0 z-20 flex flex-col items-center justify-center pointer-events-none px-6"
             >
               <AnimatePresence mode="wait">
@@ -273,12 +219,10 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
 
             {/* Bottom 1.5px Hairline Video Progress Bar */}
-            <motion.div
-              animate={{ opacity: isShrinking ? 0 : 1 }}
-              transition={{ duration: 0.2 }}
+            <div
               className="absolute bottom-0 inset-x-0 h-1.5 bg-white/15 overflow-hidden pointer-events-none"
             >
               <motion.div
@@ -286,8 +230,8 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
                 style={{ width: `${progress}%` }}
                 transition={{ ease: "linear" }}
               />
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

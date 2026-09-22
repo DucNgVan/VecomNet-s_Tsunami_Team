@@ -103,8 +103,8 @@ export const FeaturedCollection: React.FC = () => {
                   isInteractive={true}
                 />
 
-                {/* Charms pill display */}
-                <div className="absolute bottom-2 inset-x-4 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/90 shadow-sm text-sm pointer-events-none">
+                {/* Charms pill display (Hidden) */}
+                {/* <div className="absolute bottom-2 inset-x-4 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/90 shadow-sm text-sm pointer-events-none">
                   {combo.includedCharms.map((c) => (
                     <span
                       key={c.id}
@@ -117,7 +117,7 @@ export const FeaturedCollection: React.FC = () => {
                   <span className="text-[11px] text-slate-600 font-mono font-bold pl-1">
                     +{combo.includedCharms.length} Charm
                   </span>
-                </div>
+                </div> */}
               </div>
 
               {/* Title & Tagline */}

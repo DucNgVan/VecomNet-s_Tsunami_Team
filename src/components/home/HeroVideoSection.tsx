@@ -63,8 +63,8 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
         <div className="absolute inset-0 bg-black/20 pointer-events-none" />
       </div>
 
-      {/* Replay Intro Film Button in Corner */}
-      {onReplayIntro && (
+      {/* Replay Intro Film Button in Corner (Hidden) */}
+      {/* {onReplayIntro && (
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -74,7 +74,7 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
           <Play className="w-3 h-3 fill-white text-white" />
           <span>Xem Lại Phim Mở Màn</span>
         </motion.button>
-      )}
+      )} */}
 
       {/* Editorial Content: Centered over edge-to-edge video */}
       <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-8 pt-20">

@@ -212,8 +212,8 @@ export const ScrollVideoBackground: React.FC<ScrollVideoBackgroundProps> = ({
         }}
       />
 
-      {/* 5. Minimalist Floating Scroll Video HUD (Interactive Mode Toggle & Time Tracker) */}
-      <AnimatePresence>
+      {/* 5. Minimalist Floating Scroll Video HUD (Hidden) */}
+      {/* <AnimatePresence>
         {!isIntroPlaying && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85, y: 20 }}
@@ -236,14 +236,12 @@ export const ScrollVideoBackground: React.FC<ScrollVideoBackgroundProps> = ({
 
               <div className="h-3 w-[1px] bg-slate-200" />
 
-              {/* Timestamp & Progress */}
               <span className="font-mono text-[11px] font-bold text-sky-800">
                 {formattedTime} <span className="text-slate-400 font-normal">/ {formatTime(durationRef.current)}</span>
               </span>
 
               <div className="h-3 w-[1px] bg-slate-200" />
 
-              {/* Toggle Button */}
               <button
                 onClick={toggleAutoplay}
                 className="p-1 rounded-full hover:bg-slate-100 text-slate-700 hover:text-sky-700 transition-colors cursor-pointer"
@@ -254,7 +252,7 @@ export const ScrollVideoBackground: React.FC<ScrollVideoBackgroundProps> = ({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </div>
   );
 };

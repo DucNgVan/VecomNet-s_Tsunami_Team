@@ -272,8 +272,8 @@ function CustomizerContent() {
         <div className="lg:col-span-5 space-y-6">
           {/* Step 1: Choose Bag Silhouette */}
           <div className="space-y-2.5">
-            <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 font-mono">
-              <span className="w-5 h-5 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center font-mono text-[11px] font-bold">
+            <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center text-[11px] font-bold">
                 1
               </span>
               <span>Chọn Phôi Túi Lưới (Bag Base)</span>
@@ -283,8 +283,8 @@ function CustomizerContent() {
 
           {/* Step 2: Choose Recycled Net Color */}
           <div className="space-y-2.5 pt-3 border-t border-slate-200">
-            <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 font-mono">
-              <span className="w-5 h-5 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center font-mono text-[11px] font-bold">
+            <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center text-[11px] font-bold">
                 2
               </span>
               <span>Chọn Sắc Màu Lưới Biển</span>
@@ -297,14 +297,14 @@ function CustomizerContent() {
 
           {/* Step 3: Choose & Attach Charms */}
           <div className="space-y-2.5 pt-3 border-t border-slate-200">
-            <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between font-mono">
+            <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center font-mono text-[11px] font-bold">
+                <span className="w-5 h-5 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center text-[11px] font-bold">
                   3
                 </span>
                 <span>Khay Phụ Kiện Charm Thủy Tinh</span>
               </div>
-              <span className="text-xs font-mono font-bold text-sky-800">
+              <span className="text-xs font-bold text-sky-800">
                 Đã gắn {placedCharms.length}/{selectedBag.maxCharms}
               </span>
             </div>
@@ -347,7 +347,7 @@ export default function CustomizerPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center text-sky-400 font-mono text-sm">
+        <div className="min-h-screen flex items-center justify-center text-sky-400 text-sm">
           Đang khởi tạo Nét Lab 3D Studio...
         </div>
       }

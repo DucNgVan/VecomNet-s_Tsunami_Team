@@ -18,9 +18,7 @@ import {
   Waves,
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
-import { OceanEcoWaterTank } from "@/components/ocean/OceanEcoWaterTank";
 
 export default function B2BPage() {
   const [giftCount, setGiftCount] = useState<number>(150);
@@ -57,7 +55,7 @@ export default function B2BPage() {
           className="text-center max-w-3xl mx-auto space-y-4"
         >
           <GlassBadge variant="emerald">GIẢI PHÁP DOANH NGHIỆP & ESG PARTNERSHIP</GlassBadge>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] font-serif tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight leading-tight">
             Nâng Tầm Thương Hiệu Bền Vững <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-700 via-teal-700 to-emerald-700">
               Qua Quà Tặng Tái Sinh Đại Dương
@@ -68,9 +66,6 @@ export default function B2BPage() {
             môi trường ESG được kiểm định, khắc laser logo doanh nghiệp độc quyền trên từng chiếc túi độc bản.
           </p>
         </motion.div>
-
-        {/* Ocean Wave Ribbon */}
-        <OceanWaveDivider height={36} colorVariant="teal" className="opacity-75" />
 
         {/* Interactive ESG Impact Calculator for Corporates */}
         <GlassCard className="p-8 sm:p-10 max-w-4xl mx-auto shadow-[0_12px_40px_rgba(11,30,59,0.06)] border border-slate-200/90 bg-white/95 backdrop-blur-md">
@@ -85,10 +80,10 @@ export default function B2BPage() {
           </div>
 
           {/* Slider */}
-          <div className="space-y-4 max-w-xl mx-auto mb-6">
+          <div className="space-y-4 max-w-xl mx-auto mb-8">
             <div className="flex justify-between items-baseline">
               <span className="text-xs text-slate-600 font-medium">Số lượng quà tặng dự kiến:</span>
-              <span className="text-2xl font-black font-mono text-[#0b1e3b]">{giftCount} bộ</span>
+              <span className="text-2xl font-black text-[#0b1e3b]">{giftCount} bộ</span>
             </div>
             <input
               type="range"
@@ -99,7 +94,7 @@ export default function B2BPage() {
               onChange={(e) => setGiftCount(Number(e.target.value))}
               className="w-full accent-[#0b1e3b] cursor-pointer h-2.5 bg-slate-100 rounded-lg border border-slate-200"
             />
-            <div className="flex justify-between text-[11px] text-slate-400 font-mono">
+            <div className="flex justify-between text-[11px] text-slate-400">
               <span>50 bộ (Tối thiểu)</span>
               <span>500 bộ</span>
               <span>1,000 bộ</span>
@@ -107,32 +102,24 @@ export default function B2BPage() {
             </div>
           </div>
 
-          {/* Interactive Dynamic Water Tank with Rising Waves */}
-          <OceanEcoWaterTank
-            fillPercent={(giftCount / 2000) * 100}
-            plasticKg={plasticSavedKg}
-            marineSaved={Math.round(giftCount * 3.2)}
-            className="mb-8"
-          />
-
           {/* Live Environmental KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 text-center">
-              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-800">
+              <div className="text-2xl sm:text-3xl font-black text-emerald-800">
                 {formatKg(plasticSavedKg)}
               </div>
               <div className="text-xs text-emerald-700 font-medium mt-1">Rác Nhựa Lưới Biển Thu Hồi</div>
             </div>
 
             <div className="p-5 rounded-2xl bg-sky-50/70 border border-sky-200/70 text-center">
-              <div className="text-2xl sm:text-3xl font-black font-mono text-sky-800">
+              <div className="text-2xl sm:text-3xl font-black text-sky-800">
                 {formatKg(co2ReducedKg)}
               </div>
               <div className="text-xs text-sky-700 font-medium mt-1">Lượng CO2 Cắt Giảm</div>
             </div>
 
             <div className="p-5 rounded-2xl bg-teal-50/70 border border-teal-200/70 text-center">
-              <div className="text-2xl sm:text-3xl font-black font-mono text-teal-800">
+              <div className="text-2xl sm:text-3xl font-black text-teal-800">
                 {netsLengthKm.toFixed(2)} km
               </div>
               <div className="text-xs text-teal-700 font-medium mt-1">Lưới Ma Được Giải Phóng</div>

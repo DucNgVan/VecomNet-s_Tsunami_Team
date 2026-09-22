@@ -14,7 +14,6 @@ import { BagBase, Charm, ProductCombo } from "@/types";
 import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
 import { BagCard3D } from "@/components/3d/BagCard3D";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 
 export default function ShopPage() {
@@ -105,7 +104,7 @@ export default function ShopPage() {
           className="text-center max-w-2xl mx-auto space-y-3"
         >
           <GlassBadge variant="ocean">CỬA HÀNG BỀN VỮNG NÉT</GlassBadge>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] font-serif tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight">
             Bộ Sưu Tập Túi Lưới & Charm Biển Sâu
           </h1>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
@@ -136,9 +135,6 @@ export default function ShopPage() {
           })}
         </div>
 
-        {/* Ocean Wave Ribbon Divider */}
-        <OceanWaveDivider height={36} colorVariant="ocean" className="opacity-75" />
-
         {/* Section 1: Combos (if 'all' or 'combos') */}
         {(filterCategory === "all" || filterCategory === "combos") && (
           <motion.div
@@ -148,9 +144,9 @@ export default function ShopPage() {
             className="space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2 font-serif">
+              <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2">
                 <span>Bộ Sưu Tập Phối Sẵn (Combos)</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono font-bold">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
                   {COMBOS.length} mẫu
                 </span>
               </h2>
@@ -177,7 +173,7 @@ export default function ShopPage() {
                         {combo.badge}
                       </span>
                     )}
-                    <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                       -{formatKg(combo.plasticOffsetKg)} rác biển
                     </span>
                   </div>
@@ -190,7 +186,7 @@ export default function ShopPage() {
                       isInteractive={true}
                     />
                     <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/90 shadow-sm text-xs pointer-events-none">
-                      <span className="text-[10px] font-mono text-slate-500 font-bold uppercase mr-1">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase mr-1">
                         Kèm {combo.includedCharms.length} charm:
                       </span>
                       {combo.includedCharms.map((c) => (
@@ -209,10 +205,10 @@ export default function ShopPage() {
 
                 <div className="mt-6 pt-4 border-t border-slate-100">
                   <div className="flex items-baseline justify-between mb-3">
-                    <span className="text-lg font-bold font-mono text-[#0b1e3b]">
+                    <span className="text-lg font-bold text-[#0b1e3b]">
                       {formatVND(combo.price)}
                     </span>
-                    <span className="text-xs text-slate-400 line-through font-mono">
+                    <span className="text-xs text-slate-400 line-through">
                       {formatVND(combo.originalPrice)}
                     </span>
                   </div>
@@ -258,9 +254,9 @@ export default function ShopPage() {
           className="space-y-4 pt-6"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2 font-serif">
+            <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2">
               <span>Phôi Túi Lưới (Bag Bases)</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono font-bold">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
                 {BAG_BASES.length} mẫu dáng
               </span>
             </h2>
@@ -282,10 +278,10 @@ export default function ShopPage() {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-slate-500">
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         {bag.modelType.toUpperCase()}
                       </span>
-                      <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         -{formatKg(bag.plasticOffsetKg)}
                       </span>
                     </div>
@@ -298,10 +294,10 @@ export default function ShopPage() {
                         isInteractive={true}
                       />
                       <div className="absolute bottom-2 inset-x-3 flex items-center justify-between bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200/80 shadow-xs pointer-events-none">
-                        <span className="text-[10px] text-slate-600 font-mono font-bold">
+                        <span className="text-[10px] text-slate-600 font-bold">
                           {bag.dimensions}
                         </span>
-                        <span className="text-[10px] text-sky-700 font-mono font-bold">
+                        <span className="text-[10px] text-sky-700 font-bold">
                           {bag.capacity}
                         </span>
                       </div>
@@ -315,7 +311,7 @@ export default function ShopPage() {
 
                   <div className="mt-4 pt-3 border-t border-slate-100">
                     <div className="flex items-baseline justify-between mb-3">
-                      <span className="text-base font-bold font-mono text-[#0b1e3b]">
+                      <span className="text-base font-bold text-[#0b1e3b]">
                         {formatVND(bag.basePrice)}
                       </span>
                       <span className="text-[11px] text-slate-500 font-medium">{bag.maxCharms} mắt neo</span>
@@ -359,9 +355,9 @@ export default function ShopPage() {
           className="space-y-4 pt-6"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2 font-serif">
+            <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2">
               <span>Charm Đơn Biển Sâu (Charms)</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono font-bold">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
                 {CHARMS.length} phụ kiện
               </span>
             </h2>
@@ -390,7 +386,7 @@ export default function ShopPage() {
                         isInteractive={true}
                       />
                       <div className="absolute top-2 left-2 pointer-events-none">
-                        <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-[9px] font-mono font-bold text-sky-800 shadow-xs flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
                           <Sparkles className="w-2.5 h-2.5 text-sky-600" />
                           <span>3D Cầu Rồng</span>
                         </span>
@@ -406,7 +402,7 @@ export default function ShopPage() {
                   </div>
 
                   <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs sm:text-sm font-bold font-mono text-[#0b1e3b]">
+                    <span className="text-xs sm:text-sm font-bold text-[#0b1e3b]">
                       {formatVND(charm.price)}
                     </span>
                     <motion.button

@@ -159,11 +159,11 @@ export const NetGridCanvas: React.FC<NetGridCanvasProps> = ({
           >
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white/90">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">
                 NÉT TOTE • BIO-LEATHER
               </span>
             </div>
-            <span className="text-[9px] font-mono text-sky-200 font-bold uppercase">
+            <span className="text-[9px] text-sky-200 font-bold uppercase">
               {selectedColor.name}
             </span>
           </div>
@@ -176,10 +176,10 @@ export const NetGridCanvas: React.FC<NetGridCanvasProps> = ({
               borderColor: "rgba(255, 255, 255, 0.2)",
             }}
           >
-            <span className="text-[9px] font-mono text-white/70 tracking-wider">
+            <span className="text-[9px] text-white/70 tracking-wider">
               GIA CỐ ĐÁY CHỐNG TRẦY
             </span>
-            <span className="text-[9px] font-mono text-emerald-300 font-semibold flex items-center gap-1">
+            <span className="text-[9px] text-emerald-300 font-semibold flex items-center gap-1">
               <Sparkles className="w-2.5 h-2.5" />
               100% Lưới Ma Biển Sâu
             </span>
@@ -282,7 +282,7 @@ export const NetGridCanvas: React.FC<NetGridCanvasProps> = ({
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
           <span>Mắt Lưới 2D: Chạm để gắn & xoay charm</span>
         </span>
-        <span className="text-slate-700 font-mono font-bold bg-white/90 px-2 py-0.5 rounded-md border border-slate-200">
+        <span className="text-slate-700 font-bold bg-white/90 px-2 py-0.5 rounded-md border border-slate-200">
           Đã gắn: {placedCharms.length}/{bagBase.maxCharms} charm
         </span>
       </div>

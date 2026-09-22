@@ -18,7 +18,6 @@ import {
   Waves,
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 
 function OrderSuccessContent() {
@@ -69,16 +68,13 @@ function OrderSuccessContent() {
           </h1>
           <p className="text-sm sm:text-base text-slate-600 max-w-lg mx-auto">
             Mã đơn hàng{" "}
-            <strong className="text-slate-900 font-mono font-bold">
+            <strong className="text-slate-900 font-bold">
               {order ? order.orderCode : "NET-PENDING"}
             </strong>{" "}
             đã được chuyển tới xưởng đan NÉT. Các nghệ nhân đang chuẩn bị nguyên liệu sợi lưới tái sinh
             và charm để hoàn thiện sản phẩm cho bạn.
           </p>
         </motion.div>
-
-        {/* Ocean Wave Ribbon */}
-        <OceanWaveDivider height={36} colorVariant="teal" className="opacity-75" />
 
       {order && (
         <OceanFloatingCard duration={6.5} distance={5}>
@@ -87,14 +83,14 @@ function OrderSuccessContent() {
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
               <div>
                 <div className="text-xs text-slate-500 font-medium">Mã Đơn Hàng:</div>
-                <div className="text-xl font-bold font-mono text-[#0b1e3b]">{order.orderCode}</div>
+                <div className="text-xl font-bold text-[#0b1e3b]">{order.orderCode}</div>
               </div>
 
               <div>
                 <div className="text-xs text-slate-500 font-medium">Mã Lô Trục Vớt Gán Cho Bạn:</div>
                 <Link
                   href={`/traceability?batch=${order.assignedBatchId}`}
-                  className="text-sm font-bold font-mono text-sky-700 hover:underline flex items-center gap-1"
+                  className="text-sm font-bold text-sky-700 hover:underline flex items-center gap-1"
                 >
                   <span>{order.assignedBatchId}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -103,7 +99,7 @@ function OrderSuccessContent() {
 
               <div>
                 <div className="text-xs text-slate-500 font-medium">Tác Động Sinh Thái:</div>
-                <div className="text-sm font-bold font-mono text-emerald-700">
+                <div className="text-sm font-bold text-emerald-700">
                   Thu hồi {formatKg(order.totalPlasticOffsetKg)} rác lưới
                 </div>
               </div>
@@ -111,7 +107,7 @@ function OrderSuccessContent() {
 
             {/* Fulfillment Status Timeline */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Tiến Độ Gia Công Tại Xưởng NÉT:
               </h3>
 
@@ -144,7 +140,7 @@ function OrderSuccessContent() {
 
             {/* Items Summary */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Chi Tiết Sản Phẩm Đã Đặt:
               </h3>
 
@@ -174,7 +170,7 @@ function OrderSuccessContent() {
                           </div>
                         )}
                         {item.details?.charmsCount !== undefined && (
-                          <div className="text-xs text-sky-800 font-mono font-bold">
+                          <div className="text-xs text-sky-800 font-bold">
                             {item.details.charmsCount} Charm ({item.details.charmsList?.join(", ")})
                           </div>
                         )}
@@ -182,7 +178,7 @@ function OrderSuccessContent() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-sm font-bold font-mono text-slate-900">
+                      <div className="text-sm font-bold text-slate-900">
                         {formatVND(item.price * item.quantity)}
                       </div>
                       <div className="text-[11px] text-slate-500 font-medium">Số lượng: {item.quantity}</div>
@@ -195,7 +191,7 @@ function OrderSuccessContent() {
             {/* QR Code & Impact Certificate Box */}
             <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6">
               <div className="space-y-2 text-center sm:text-left">
-                <div className="text-xs font-mono text-emerald-800 font-bold uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
+                <div className="text-xs text-emerald-800 font-bold uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
                   <Sparkles className="w-4 h-4 text-emerald-600" />
                   <span>CHỨNG CHỈ TÁC ĐỘNG SỐ GẮN LIỀN VỚI ĐƠN HÀNG</span>
                 </div>
@@ -247,7 +243,7 @@ export default function OrderSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center text-slate-600 font-mono text-sm">
+        <div className="min-h-screen flex items-center justify-center text-slate-600 text-sm">
           Đang chuẩn bị xác nhận đơn hàng...
         </div>
       }

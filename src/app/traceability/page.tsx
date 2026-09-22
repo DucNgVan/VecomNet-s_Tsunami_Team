@@ -19,9 +19,7 @@ import {
   Waves,
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
-import { OceanSonarRadar } from "@/components/ocean/OceanSonarRadar";
 
 function TraceabilityContent() {
   const searchParams = useSearchParams();
@@ -67,9 +65,6 @@ function TraceabilityContent() {
           </p>
         </motion.div>
 
-        {/* Ocean Wave Ribbon */}
-        <OceanWaveDivider height={36} colorVariant="ocean" className="opacity-75" />
-
       {/* Batch Search Bar */}
       <div className="max-w-xl mx-auto">
         <form
@@ -84,7 +79,7 @@ function TraceabilityContent() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Nhập mã Batch ID (vd: NET-VN-DN-2024-082)..."
-            className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-mono"
+            className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
           />
           <GlassButton variant="primary" size="md" type="submit">
             Tra Cứu
@@ -101,7 +96,7 @@ function TraceabilityContent() {
                 setSelectedBatch(b);
                 setSearchQuery(b.batchId);
               }}
-              className={`font-mono text-[11px] px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
+              className={` text-[11px] px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
                 selectedBatch.batchId === b.batchId
                   ? "bg-[#0b1e3b] text-white border-[#0b1e3b] font-bold shadow-sm"
                   : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
@@ -136,11 +131,6 @@ function TraceabilityContent() {
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent pointer-events-none"
               />
 
-              {/* Active Sonar Radar Overlay */}
-              <div className="absolute right-4 bottom-4 pointer-events-none hidden sm:block opacity-60">
-                <OceanSonarRadar size={130} label="SONAR SCANNING" />
-              </div>
-
               {/* Vietnam Coastline Markers */}
               <div className="absolute inset-0 flex items-center justify-around p-8 z-10">
                 {TRACE_BATCHES.map((b) => {
@@ -169,7 +159,7 @@ function TraceabilityContent() {
                         )}
                         <MapPin className="w-5 h-5 relative z-10" />
                       </div>
-                      <span className="text-[11px] font-bold text-slate-900 mt-1.5 whitespace-nowrap bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded border border-slate-200 shadow-sm font-mono">
+                      <span className="text-[11px] font-bold text-slate-900 mt-1.5 whitespace-nowrap bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded border border-slate-200 shadow-sm">
                         {b.seaRegion.split(",")[0]}
                       </span>
                     </button>
@@ -177,7 +167,7 @@ function TraceabilityContent() {
                 })}
               </div>
 
-              <div className="absolute top-3 left-4 text-[10px] font-mono font-bold text-sky-300 flex items-center gap-1.5 z-10">
+              <div className="absolute top-3 left-4 text-[10px] font-bold text-sky-300 flex items-center gap-1.5 z-10">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>GPS MARINE SATELLITE RADAR • EAST VIETNAM SEA</span>
               </div>
@@ -187,7 +177,7 @@ function TraceabilityContent() {
             <div className="space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <div className="text-xs font-mono text-sky-700 font-bold uppercase tracking-wider">
+                  <div className="text-xs text-sky-700 font-bold uppercase tracking-wider">
                     MÃ LÔ TRỤC VỚT CHÍNH THỨC
                   </div>
                   <h2 className="text-2xl font-black text-[#0b1e3b]">{selectedBatch.batchId}</h2>
@@ -210,28 +200,28 @@ function TraceabilityContent() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                   <div className="text-[11px] text-slate-500 font-medium">Khối lượng thu gom</div>
-                  <div className="text-lg font-black font-mono text-emerald-700 mt-1">
+                  <div className="text-lg font-black text-emerald-700 mt-1">
                     {formatKg(selectedBatch.plasticRecoveredKg)}
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                   <div className="text-[11px] text-slate-500 font-medium">Sinh vật cứu hộ</div>
-                  <div className="text-lg font-black font-mono text-sky-800 mt-1">
+                  <div className="text-lg font-black text-sky-800 mt-1">
                     {selectedBatch.marineAnimalsSavedCount} cá thể
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                   <div className="text-[11px] text-slate-500 font-medium">Độ sâu đáy biển</div>
-                  <div className="text-lg font-black font-mono text-teal-800 mt-1">
+                  <div className="text-lg font-black text-teal-800 mt-1">
                     {selectedBatch.depthMeters} mét
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                   <div className="text-[11px] text-slate-500 font-medium">Ngày hoàn tất</div>
-                  <div className="text-lg font-black font-mono text-amber-700 mt-1">
+                  <div className="text-lg font-black text-amber-700 mt-1">
                     {selectedBatch.recoveryDate}
                   </div>
                 </div>
@@ -245,11 +235,11 @@ function TraceabilityContent() {
                 </div>
                 <div className="flex justify-between text-slate-700">
                   <span className="text-slate-500 font-medium">Tọa độ hải đồ:</span>
-                  <span className="font-mono font-bold text-sky-800">{selectedBatch.locationDetails}</span>
+                  <span className=" font-bold text-sky-800">{selectedBatch.locationDetails}</span>
                 </div>
                 <div className="flex justify-between text-slate-700">
                   <span className="text-slate-500 font-medium">Mã băm lưu trữ (Hash):</span>
-                  <span className="font-mono text-[11px] text-slate-500 truncate max-w-[240px]">
+                  <span className=" text-[11px] text-slate-500 truncate max-w-[240px]">
                     {selectedBatch.verificationHash}
                   </span>
                 </div>
@@ -264,7 +254,7 @@ function TraceabilityContent() {
             <div className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_45px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 text-center space-y-6">
               <div className="flex items-center justify-center gap-2 text-sky-800">
                 <QrCode className="w-5 h-5" />
-                <span className="text-xs font-bold uppercase tracking-wider font-mono">
+                <span className="text-xs font-bold uppercase tracking-wider">
                   Chứng Chỉ Số Hóa
                 </span>
               </div>
@@ -280,7 +270,7 @@ function TraceabilityContent() {
 
               <div className="space-y-1">
                 <div className="text-xs text-slate-500 font-medium">Mã Quét Trực Tiếp:</div>
-                <div className="text-sm font-black text-[#0b1e3b] font-mono">{selectedBatch.batchId}</div>
+                <div className="text-sm font-black text-[#0b1e3b]">{selectedBatch.batchId}</div>
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -312,7 +302,7 @@ export default function TraceabilityPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center text-slate-600 font-mono text-sm">
+        <div className="min-h-screen flex items-center justify-center text-slate-600 text-sm">
           Đang tải bản đồ hải trình cứu hộ...
         </div>
       }

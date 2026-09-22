@@ -65,7 +65,7 @@ export const CharmTray: React.FC<CharmTrayProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-mono font-bold text-sky-700 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">
                 ĐÃ CHỌN CHARM ĐỘC BẢN
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -93,7 +93,7 @@ export const CharmTray: React.FC<CharmTrayProps> = ({
               Chọn một charm bên dưới rồi bấm vào khuyên tròn trên túi để gắn
             </span>
           </span>
-          <span className="font-bold font-mono text-sky-900 flex-shrink-0">
+          <span className="font-bold text-sky-900 flex-shrink-0">
             Còn {remainingSlots} chỗ
           </span>
         </div>
@@ -122,7 +122,7 @@ export const CharmTray: React.FC<CharmTrayProps> = ({
                 }}
               >
                 <span>{charm.symbol}</span>
-                <span className="absolute bottom-1 right-1 text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-black/50 text-white backdrop-blur-xs">
+                <span className="absolute bottom-1 right-1 text-[8px] font-bold px-1.5 py-0.2 rounded bg-black/50 text-white backdrop-blur-xs">
                   3D
                 </span>
               </div>
@@ -131,7 +131,7 @@ export const CharmTray: React.FC<CharmTrayProps> = ({
               <div className="text-xs font-bold text-slate-900 line-clamp-1">
                 {charm.vietnameseName}
               </div>
-              <div className="text-xs text-sky-800 font-mono font-bold mt-0.5">
+              <div className="text-xs text-sky-800 font-bold mt-0.5">
                 {formatVND(charm.price)}
               </div>
 

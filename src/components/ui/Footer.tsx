@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
         {/* Top Ticker: Live Ecological Impact */}
         <div className="rounded-3xl bg-white/5 border border-white/10 p-6 sm:p-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-sky-400">
+            <div className="text-2xl sm:text-3xl font-black text-sky-400">
               {formatKg(TOTAL_IMPACT_STATS.totalPlasticDivertedKg)}
             </div>
             <div className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-wider">
@@ -21,7 +21,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-teal-400">
+            <div className="text-2xl sm:text-3xl font-black text-teal-400">
               {TOTAL_IMPACT_STATS.ghostNetsRecoveredKm} km
             </div>
             <div className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-wider">
@@ -29,7 +29,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-400">
               {TOTAL_IMPACT_STATS.marineCreaturesSaved}+
             </div>
             <div className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-wider">
@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-amber-400">
+            <div className="text-2xl sm:text-3xl font-black text-amber-400">
               {TOTAL_IMPACT_STATS.artisanHoursInvested} h
             </div>
             <div className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-wider">

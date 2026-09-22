@@ -265,7 +265,7 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
 
       {/* Discreet 3D Indicator */}
       {isInteractive && !isLoading && (
-        <div className="absolute bottom-2 right-2 pointer-events-none px-2 py-0.5 rounded-full bg-slate-900/60 backdrop-blur-md text-[10px] font-mono text-white/90 flex items-center gap-1">
+        <div className="absolute bottom-2 right-2 pointer-events-none px-2 py-0.5 rounded-full bg-slate-900/60 backdrop-blur-md text-[10px] text-white/90 flex items-center gap-1">
           <RotateCw className="w-2.5 h-2.5 text-sky-400" />
           <span>3D 360°</span>
         </div>

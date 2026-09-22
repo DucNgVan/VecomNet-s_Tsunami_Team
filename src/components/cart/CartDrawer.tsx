@@ -111,7 +111,7 @@ export const CartDrawer: React.FC = () => {
                           </div>
                         )}
                         {item.details?.charmsCount !== undefined && (
-                          <div className="text-xs text-sky-800 font-mono font-bold mt-0.5">
+                          <div className="text-xs text-sky-800 font-bold mt-0.5">
                             Gắn {item.details.charmsCount} charm độc bản
                           </div>
                         )}
@@ -136,7 +136,7 @@ export const CartDrawer: React.FC = () => {
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="font-mono px-2 text-slate-900 font-bold">
+                      <span className=" px-2 text-slate-900 font-bold">
                         {item.quantity}
                       </span>
                       <button
@@ -147,7 +147,7 @@ export const CartDrawer: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="font-mono text-sm font-black text-[#0b1e3b]">
+                    <div className=" text-sm font-black text-[#0b1e3b]">
                       {formatVND(item.price * item.quantity)}
                     </div>
                   </div>
@@ -164,7 +164,7 @@ export const CartDrawer: React.FC = () => {
                 <span className="flex items-center gap-1.5 text-emerald-800 font-bold">
                   <Sparkles className="w-4 h-4 text-emerald-600" /> Thu hồi rác đại dương:
                 </span>
-                <span className="font-mono font-black text-emerald-900">
+                <span className=" font-black text-emerald-900">
                   {formatKg(totalPlasticOffsetKg)}
                 </span>
               </div>
@@ -172,7 +172,7 @@ export const CartDrawer: React.FC = () => {
               {/* Subtotal */}
               <div className="flex items-baseline justify-between">
                 <span className="text-sm text-slate-600 font-medium">Tổng tạm tính:</span>
-                <span className="text-2xl font-black font-mono text-[#0b1e3b]">
+                <span className="text-2xl font-black text-[#0b1e3b]">
                   {formatVND(subtotal)}
                 </span>
               </div>

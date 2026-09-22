@@ -112,11 +112,11 @@ export const StoryProgressRail: React.FC = () => {
             className="mb-3 p-4 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_20px_50px_rgba(11,30,59,0.18)] min-w-[260px] space-y-2 select-none"
           >
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#0b1e3b] uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#0b1e3b] uppercase tracking-wider">
                 <BookOpen className="w-3.5 h-3.5 text-sky-600" />
                 <span>Mục Lục Câu Chuyện</span>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 font-bold">
+              <span className="text-[10px] text-slate-500 font-bold">
                 {Math.round(scrollProgress)}%
               </span>
             </div>
@@ -136,7 +136,7 @@ export const StoryProgressRail: React.FC = () => {
                   >
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-[10px] font-mono uppercase ${
+                        className={`text-[10px] uppercase ${
                           isActive ? "text-sky-300 font-bold" : "text-slate-500"
                         }`}
                       >
@@ -167,7 +167,7 @@ export const StoryProgressRail: React.FC = () => {
           <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-600" />
         </span>
 
-        <span className="font-mono text-[10px] uppercase font-bold text-sky-700 tracking-wider">
+        <span className=" text-[10px] uppercase font-bold text-sky-700 tracking-wider">
           {currentAct.actNumber}:
         </span>
 

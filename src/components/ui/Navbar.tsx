@@ -79,15 +79,15 @@ export const Navbar: React.FC = () => {
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 rounded-xl bg-[#0b1e3b] text-white flex items-center justify-center font-black text-lg tracking-tight shadow-sm font-serif"
+            className="w-10 h-10 rounded-xl bg-[#0b1e3b] text-white flex items-center justify-center font-black text-lg tracking-tight shadow-sm"
           >
             N
           </motion.div>
           <div className="flex flex-col">
-            <span className="text-lg font-black tracking-widest text-[#0b1e3b] group-hover:text-sky-600 transition-colors font-serif">
+            <span className="text-lg font-black tracking-widest text-[#0b1e3b] group-hover:text-sky-600 transition-colors">
               NÉT
             </span>
-            <span className="text-[10px] uppercase tracking-wider text-slate-500 -mt-1 font-mono font-medium">
+            <span className="text-[10px] uppercase tracking-wider text-slate-500 -mt-1 font-medium">
               Eco Net Craft
             </span>
           </div>
@@ -178,7 +178,7 @@ export const Navbar: React.FC = () => {
                 initial={{ scale: 0.5, rotate: -20 }}
                 animate={{ scale: [1, 1.35, 1], rotate: 0 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-[#0b1e3b] text-white font-bold text-[10px] flex items-center justify-center shadow-md font-mono"
+                className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-[#0b1e3b] text-white font-bold text-[10px] flex items-center justify-center shadow-md"
               >
                 {totalCount}
               </motion.span>

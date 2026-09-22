@@ -320,10 +320,10 @@ function LoginContent() {
               <GlassBadge variant="ocean" className="mb-1.5">
                 TÀI KHOẢN THÀNH VIÊN NÉT
               </GlassBadge>
-              <h2 className="text-2xl font-black text-[#0b1e3b] font-serif">
+              <h2 className="text-2xl font-black text-[#0b1e3b]">
                 {userProfile?.displayName || user.displayName || "Thành viên Nét"}
               </h2>
-              <p className="text-xs text-slate-500 font-mono">{user.email}</p>
+              <p className="text-xs text-slate-500">{user.email}</p>
             </div>
           </div>
 
@@ -419,7 +419,7 @@ function LoginContent() {
                         value={enteredOtp}
                         onChange={(e) => setEnteredOtp(e.target.value)}
                         placeholder="Nhập mã OTP 6 số"
-                        className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono font-bold tracking-widest outline-none text-center"
+                        className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold tracking-widest outline-none text-center"
                       />
                       <button
                         type="button"
@@ -457,7 +457,7 @@ function LoginContent() {
             <div className="space-y-3">
               <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200/80 flex items-center justify-between text-left">
                 <div>
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
+                  <div className="text-[11px] uppercase tracking-wider text-emerald-800 font-bold">
                     Hồ Sơ Mua Hàng
                   </div>
                   <div className="text-xs text-slate-600 mt-0.5">
@@ -468,7 +468,7 @@ function LoginContent() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs font-bold text-emerald-700 font-mono">
+                  <div className="text-xs font-bold text-emerald-700">
                     {userProfile?.ecoImpactKg || 0} kg
                   </div>
                   <div className="text-[10px] text-slate-400">Rác biển thu gom</div>
@@ -526,11 +526,11 @@ function LoginContent() {
         {/* Brand Header */}
         <div className="text-center space-y-2 mb-6">
           <Link href="/" className="inline-flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-[#0b1e3b] text-white flex items-center justify-center font-black text-lg tracking-tight font-serif shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-[#0b1e3b] text-white flex items-center justify-center font-black text-lg tracking-tight shadow-sm">
               N
             </div>
           </Link>
-          <h1 className="text-2xl font-black text-[#0b1e3b] font-serif tracking-tight">
+          <h1 className="text-2xl font-black text-[#0b1e3b] tracking-tight">
             {mode === "login" ? "Chào Mừng Đến NÉT" : "Đăng Ký Thành Viên Mua Hàng"}
           </h1>
           <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
@@ -572,7 +572,7 @@ function LoginContent() {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-slate-200" />
           </div>
-          <span className="relative bg-white px-3 text-[11px] font-mono text-slate-400 uppercase">
+          <span className="relative bg-white px-3 text-[11px] text-slate-400 uppercase">
             hoặc email
           </span>
         </div>
@@ -691,7 +691,7 @@ function LoginContent() {
                       value={enteredOtp}
                       onChange={(e) => setEnteredOtp(e.target.value)}
                       placeholder="Nhập 6 số OTP"
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-mono font-bold tracking-widest outline-none text-center"
+                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold tracking-widest outline-none text-center"
                     />
                     <button
                       type="button"
@@ -743,7 +743,7 @@ function LoginContent() {
                       value={postcode}
                       onChange={(e) => setPostcode(e.target.value)}
                       placeholder="700000"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500 font-mono"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500"
                     />
                   </div>
                 </div>
@@ -861,7 +861,7 @@ function LoginContent() {
               </div>
 
               <div className="text-center space-y-1">
-                <h3 className="text-lg font-bold text-slate-900 font-serif">Quên Mật Khẩu?</h3>
+                <h3 className="text-lg font-bold text-slate-900">Quên Mật Khẩu?</h3>
                 <p className="text-xs text-slate-500">
                   Nhập email đăng ký của bạn để nhận liên kết đặt lại mật khẩu.
                 </p>

@@ -27,7 +27,6 @@ import {
   Waves
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 
 export default function CheckoutPage() {
@@ -224,9 +223,6 @@ export default function CheckoutPage() {
           </p>
         </div>
 
-        {/* Ocean Wave Ribbon */}
-        <OceanWaveDivider height={36} colorVariant="ocean" className="opacity-75" />
-
         <form onSubmit={handleSubmitOrder}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Shipping & Payment Options */}
@@ -262,7 +258,7 @@ export default function CheckoutPage() {
             {/* Step 1: Customer Info */}
             <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3.5">
-                <span className="w-6 h-6 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center font-mono text-xs font-bold">
+                <span className="w-6 h-6 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center text-xs font-bold">
                   1
                 </span>
                 <h3 className="text-base font-bold text-slate-900">Địa Chỉ Nhận Hàng</h3>
@@ -330,7 +326,7 @@ export default function CheckoutPage() {
                       Địa chỉ chi tiết (Số nhà, đường, phường/xã) *
                     </label>
                     {userProfile?.postcode && (
-                      <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                      <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
                         Postcode: {userProfile.postcode}
                       </span>
                     )}
@@ -381,7 +377,7 @@ export default function CheckoutPage() {
             {/* Step 2: Payment Method */}
             <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3.5">
-                <span className="w-6 h-6 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center font-mono text-xs font-bold">
+                <span className="w-6 h-6 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center text-xs font-bold">
                   2
                 </span>
                 <h3 className="text-base font-bold text-slate-900">Phương Thức Thanh Toán</h3>
@@ -477,7 +473,7 @@ export default function CheckoutPage() {
               <div className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.06)] hover:shadow-[0_16px_36px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <h3 className="text-base font-bold text-slate-900">Tóm Tắt Đơn Hàng</h3>
-                  <span className="text-xs font-mono font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                  <span className="text-xs font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
                     {items.length} món
                   </span>
                 </div>
@@ -512,7 +508,7 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
-                      <div className="font-mono font-bold text-slate-900">
+                      <div className=" font-bold text-slate-900">
                         {formatVND(item.price * item.quantity)}
                       </div>
                     </div>
@@ -536,17 +532,17 @@ export default function CheckoutPage() {
                 <div className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
                   <div className="flex justify-between">
                     <span>Tạm tính:</span>
-                    <span className="font-mono font-semibold text-slate-900">{formatVND(subtotal)}</span>
+                    <span className=" font-semibold text-slate-900">{formatVND(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Phí vận chuyển bảo hiểm:</span>
-                    <span className="font-mono font-semibold text-slate-900">
+                    <span className=" font-semibold text-slate-900">
                       {shippingFee === 0 ? "Miễn phí" : formatVND(shippingFee)}
                     </span>
                   </div>
                   <div className="flex justify-between items-baseline pt-2 border-t border-slate-100">
                     <span className="text-sm font-bold text-slate-900">Tổng thanh toán:</span>
-                    <span className="text-2xl font-black font-mono text-[#0b1e3b]">
+                    <span className="text-2xl font-black text-[#0b1e3b]">
                       {formatVND(grandTotal)}
                     </span>
                   </div>

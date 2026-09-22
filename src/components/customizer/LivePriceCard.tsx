@@ -38,7 +38,7 @@ export const LivePriceCard: React.FC<LivePriceCardProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
         <div>
-          <span className="text-[11px] font-mono uppercase tracking-wider text-sky-700 font-bold">
+          <span className="text-[11px] uppercase tracking-wider text-sky-700 font-bold">
             Cấu hình độc bản của bạn
           </span>
           <h3 className="text-base font-bold text-slate-900">{bagBase.name}</h3>
@@ -59,7 +59,7 @@ export const LivePriceCard: React.FC<LivePriceCardProps> = ({
           <span>
             {bagBase.name} ({selectedColor.name})
           </span>
-          <span className="font-mono font-semibold text-slate-900">
+          <span className=" font-semibold text-slate-900">
             {formatVND(bagBase.basePrice)}
           </span>
         </div>
@@ -67,7 +67,7 @@ export const LivePriceCard: React.FC<LivePriceCardProps> = ({
         {placedCharms.length > 0 && (
           <div className="flex justify-between text-slate-600">
             <span>Phụ kiện Charm ({placedCharms.length} món):</span>
-            <span className="font-mono font-semibold text-sky-800">
+            <span className=" font-semibold text-sky-800">
               +{formatVND(charmsTotal)}
             </span>
           </div>
@@ -75,7 +75,7 @@ export const LivePriceCard: React.FC<LivePriceCardProps> = ({
 
         <div className="pt-2.5 border-t border-slate-100 flex justify-between items-baseline">
           <span className="text-sm font-bold text-slate-900">Tổng Giá Trị:</span>
-          <span className="text-2xl font-black font-mono text-[#0b1e3b]">
+          <span className="text-2xl font-black text-[#0b1e3b]">
             {formatVND(totalPrice)}
           </span>
         </div>

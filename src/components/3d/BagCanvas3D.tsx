@@ -387,7 +387,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         {isLoadingModel && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm pointer-events-none transition-opacity duration-300">
             <Loader2 className="w-7 h-7 text-sky-600 animate-spin mb-2" />
-            <span className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
               Đang Tải Túi Mẫu 3D...
             </span>
           </div>
@@ -398,7 +398,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           <div className="absolute bottom-3 inset-x-0 flex items-center justify-center pointer-events-none px-4">
             <div className="px-4 py-1.5 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 text-white text-xs flex items-center gap-2 shadow-lg">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="font-mono text-[11px]">
+              <span className=" text-[11px]">
                 {isGlbActive ? "Túi Mẫu 3D Tiêu Chuẩn" : "Túi 3D Mẫu"} • Xoay 360°
               </span>
             </div>

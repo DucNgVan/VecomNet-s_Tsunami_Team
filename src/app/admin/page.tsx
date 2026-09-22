@@ -22,7 +22,6 @@ import {
   Filter,
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
 
 export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -144,9 +143,9 @@ export default function AdminDashboardPage() {
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <GlassBadge variant="emerald">CỔNG VẬN HÀNH & GIA CÔNG THỦ CÔNG</GlassBadge>
-            <span className="text-xs text-slate-500 font-mono tracking-wider">XƯỞNG CHẾ TÁC NÉT ATELIER</span>
+            <span className="text-xs text-slate-500 tracking-wider">XƯỞNG CHẾ TÁC NÉT ATELIER</span>
           </div>
-          <h1 className="text-3xl font-black text-[#0b1e3b] font-serif tracking-tight">
+          <h1 className="text-3xl font-black text-[#0b1e3b] tracking-tight">
             Quản Lý Đơn Hàng & Bản Vẽ Gia Công
           </h1>
         </div>
@@ -155,11 +154,11 @@ export default function AdminDashboardPage() {
         <div className="flex items-center gap-4">
           <div className="bg-white border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] px-5 py-2.5 rounded-2xl text-center">
             <div className="text-xs text-slate-500">Tổng Đơn Hàng</div>
-            <div className="text-lg font-bold font-mono text-[#0b1e3b]">{orders.length}</div>
+            <div className="text-lg font-bold text-[#0b1e3b]">{orders.length}</div>
           </div>
           <div className="bg-white border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] px-5 py-2.5 rounded-2xl text-center">
             <div className="text-xs text-slate-500">Rác Nhựa Đã Cứu</div>
-            <div className="text-lg font-bold font-mono text-emerald-700">
+            <div className="text-lg font-bold text-emerald-700">
               {formatKg(totalPlasticDiverted)}
             </div>
           </div>
@@ -214,7 +213,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold font-mono text-[#0b1e3b]">
+                        <span className="text-sm font-bold text-[#0b1e3b]">
                           {order.orderCode}
                         </span>
                         <span className="text-xs text-slate-700 font-medium">
@@ -227,10 +226,10 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-sm font-bold font-mono text-[#0b1e3b]">
+                      <div className="text-sm font-bold text-[#0b1e3b]">
                         {formatVND(order.total)}
                       </div>
-                      <div className="text-[11px] text-emerald-700 font-mono font-medium">
+                      <div className="text-[11px] text-emerald-700 font-medium">
                         -{formatKg(order.totalPlasticOffsetKg)} rác biển
                       </div>
                     </div>
@@ -238,7 +237,7 @@ export default function AdminDashboardPage() {
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 text-slate-700 border border-slate-200">
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 border border-slate-200">
                         Lô: {order.assignedBatchId}
                       </span>
                       <span className="text-[11px] text-slate-500">
@@ -271,10 +270,10 @@ export default function AdminDashboardPage() {
             <GlassCard className="p-6 space-y-6 border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)]">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
-                  <div className="text-xs text-slate-500 font-mono uppercase tracking-wider">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">
                     Bản Vẽ Kỹ Thuật Độc Bản:
                   </div>
-                  <h3 className="text-lg font-bold text-[#0b1e3b] font-mono">
+                  <h3 className="text-lg font-bold text-[#0b1e3b]">
                     {selectedOrder.orderCode}
                   </h3>
                 </div>
@@ -344,7 +343,7 @@ export default function AdminDashboardPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-[#0b1e3b] text-xs">{item.title}</span>
-                      <span className="text-[11px] font-mono font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                      <span className="text-[11px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
                         SL: {item.quantity}
                       </span>
                     </div>
@@ -358,14 +357,14 @@ export default function AdminDashboardPage() {
                     {/* Charm Anchor Points Spec Sheet for Artisan */}
                     {item.details?.configuration?.placedCharms && (
                       <div className="space-y-2 pt-2 border-t border-slate-200">
-                        <div className="text-[11px] text-slate-500 uppercase font-mono tracking-wider">
+                        <div className="text-[11px] text-slate-500 uppercase tracking-wider">
                           Vị Trí Mắt Lưới & Góc Xoay Đính Charm:
                         </div>
                         <div className="space-y-1.5">
                           {item.details.configuration.placedCharms.map((p) => (
                             <div
                               key={p.instanceId}
-                              className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-slate-200 font-mono shadow-sm"
+                              className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-slate-200 shadow-sm"
                             >
                               <span className="text-[#0b1e3b] font-medium">
                                 {p.charm.symbol} {p.charm.vietnameseName}

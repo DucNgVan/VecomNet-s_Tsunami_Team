@@ -89,20 +89,20 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
               <div className="text-4xl mb-2">👜</div>
               <div className="text-sm font-bold text-slate-900">{bagBase.name}</div>
               <div className="text-xs text-slate-600 mt-1">Sắc màu: {selectedColor.name}</div>
-              <div className="text-xs text-emerald-700 font-mono font-bold mt-2 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              <div className="text-xs text-emerald-700 font-bold mt-2 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 Bảo vệ {formatKg(totalOffset)} rác lưới ma
               </div>
             </div>
           )}
 
-          <div className="absolute bottom-3 left-4 text-[10px] font-mono font-bold text-slate-500">
+          <div className="absolute bottom-3 left-4 text-[10px] font-bold text-slate-500">
             NÉT OCEAN CRAFTSMAN SPECIFICATION • VERIFIED
           </div>
         </div>
 
         {/* Charm Anchor Coordinates Table */}
         <div className="space-y-2">
-          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
             Tọa Độ Mắt Lưới & Phụ Kiện Đính Kèm ({placedCharms.length} vị trí):
           </h4>
 
@@ -118,13 +118,13 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
                   className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center font-mono text-[10px] text-slate-700 font-bold">
+                    <span className="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center text-[10px] text-slate-700 font-bold">
                       {idx + 1}
                     </span>
                     <span className="text-base">{p.charm.symbol}</span>
                     <span className="text-slate-900 font-semibold">{p.charm.vietnameseName}</span>
                   </div>
-                  <div className="text-right font-mono text-[11px] text-sky-800 font-bold">
+                  <div className="text-right text-[11px] text-sky-800 font-bold">
                     Mắt #{p.anchorId.toUpperCase()} ({p.rotation}°)
                   </div>
                 </div>
@@ -137,7 +137,7 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
           <div className="text-left w-full sm:w-auto">
             <div className="text-xs text-slate-500">Tổng giá trị đơn hàng:</div>
-            <div className="text-xl font-black font-mono text-[#0b1e3b]">
+            <div className="text-xl font-black text-[#0b1e3b]">
               {formatVND(totalPrice)}
             </div>
           </div>

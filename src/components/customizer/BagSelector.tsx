@@ -34,10 +34,10 @@ export const BagSelector: React.FC<BagSelectorProps> = ({ selectedBag, onSelectB
             </div>
 
             <div className="mt-2.5 flex items-center justify-between">
-              <span className="text-xs font-mono font-bold text-sky-800">
+              <span className="text-xs font-bold text-sky-800">
                 {formatVND(bag.basePrice)}
               </span>
-              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                 {bag.plasticOffsetKg}kg
               </span>
             </div>

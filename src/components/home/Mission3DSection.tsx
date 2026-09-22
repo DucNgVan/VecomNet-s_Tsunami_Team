@@ -34,7 +34,7 @@ export const Mission3DSection: React.FC = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span className="text-[10px] sm:text-xs font-mono text-slate-700 font-bold tracking-wide">
+                <span className="text-[10px] sm:text-xs text-slate-700 font-bold tracking-wide">
                   MÔ HÌNH 3D (.GLB)
                 </span>
               </div>
@@ -77,7 +77,7 @@ export const Mission3DSection: React.FC = () => {
                 <span>Màu: <strong className="text-sky-700 font-bold">{selectedColor.name}</strong></span>
               </div>
 
-              <div className="flex items-center gap-1.5 text-emerald-700 font-mono font-bold">
+              <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Thu hồi {formatKg(featuredBag.plasticOffsetKg + 0.63)} rác biển</span>
               </div>
@@ -98,7 +98,7 @@ export const Mission3DSection: React.FC = () => {
             <span>HỒI III • KHÔNG GIAN ĐỒNG SÁNG TẠO • NÉT LAB 3D</span>
           </GlassBadge>
 
-          <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] leading-tight font-serif tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] leading-tight tracking-tight">
             Mỗi Mắt Lưới Là Một Vị Trí Kể Câu Chuyện Biển
           </h2>
 

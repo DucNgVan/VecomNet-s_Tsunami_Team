@@ -34,7 +34,7 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
         >
           {/* Top Story Chapter Label */}
           <div>
-            <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-white/90 text-[#0b1e3b] text-[10px] sm:text-xs font-mono font-bold tracking-wider shadow-sm border border-slate-200/90 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-white/90 text-[#0b1e3b] text-[10px] sm:text-xs font-bold tracking-wider shadow-sm border border-slate-200/90 backdrop-blur-md">
               <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sky-600 animate-spin" />
               <span>HỒI I • KHỞI NGUỒN TỪ BIỂN SÂU • NÉT SIGNATURE</span>
             </span>
@@ -42,9 +42,9 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
 
           {/* Main Headline */}
           <div className="space-y-2 sm:space-y-4">
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight text-[#0b1e3b] leading-[1.15] sm:leading-[1.08] font-serif">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight text-[#0b1e3b] leading-[1.15] sm:leading-[1.08]">
               TỪ LƯỚI ĐÁNH CÁ <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-700 via-teal-600 to-emerald-700 italic font-serif">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-700 via-teal-600 to-emerald-700 italic">
                 ĐẾN TUYỆT TÁC THỜI TRANG
               </span>
             </h1>
@@ -124,7 +124,7 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
                 className="p-4 rounded-2xl bg-white/80 border border-slate-200/90 backdrop-blur-md text-center flex flex-col items-center transition-all hover:bg-white shadow-sm hover:shadow-md"
               >
-                <div className={`text-2xl font-black font-mono ${item.color}`}>{item.val}</div>
+                <div className={`text-2xl font-black ${item.color}`}>{item.val}</div>
                 <div className="text-xs font-bold text-[#0b1e3b] mt-0.5">{item.title}</div>
                 <div className="text-[11px] text-slate-500 mt-1">{item.desc}</div>
               </motion.div>
@@ -134,15 +134,15 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
           {/* Mobile: Ultra-sleek single-row 3-stat glass banner */}
           <div className="grid md:hidden grid-cols-3 gap-1 p-2 rounded-2xl bg-white/85 border border-slate-200/90 backdrop-blur-md text-center shadow-sm">
             <div className="flex flex-col items-center justify-center py-1">
-              <div className="text-sm font-black font-mono text-sky-700">100%</div>
+              <div className="text-sm font-black text-sky-700">100%</div>
               <div className="text-[9px] font-bold text-[#0b1e3b] leading-tight mt-0.5">Sợi Tái Sinh</div>
             </div>
             <div className="flex flex-col items-center justify-center py-1 border-x border-slate-200">
-              <div className="text-sm font-black font-mono text-teal-700">3D Snap</div>
+              <div className="text-sm font-black text-teal-700">3D Snap</div>
               <div className="text-[9px] font-bold text-[#0b1e3b] leading-tight mt-0.5">Mắt Lưới</div>
             </div>
             <div className="flex flex-col items-center justify-center py-1">
-              <div className="text-sm font-black font-mono text-emerald-700">GPS & QR</div>
+              <div className="text-sm font-black text-emerald-700">GPS & QR</div>
               <div className="text-[9px] font-bold text-[#0b1e3b] leading-tight mt-0.5">Minh Bạch</div>
             </div>
           </div>

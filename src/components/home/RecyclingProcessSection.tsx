@@ -29,7 +29,7 @@ export const RecyclingProcessSection: React.FC = () => {
         className="text-center max-w-3xl mx-auto mb-12 space-y-3"
       >
         <GlassBadge variant="emerald">HỒI II • HÀNH TRÌNH TÁI SINH TUẦN HOÀN</GlassBadge>
-        <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] font-serif tracking-tight">
+        <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] tracking-tight">
           Từ Mảnh Rác Đáy Vực Đến Tác Phẩm Nghệ Thuật
         </h2>
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
@@ -61,7 +61,7 @@ export const RecyclingProcessSection: React.FC = () => {
             </div>
             <div>
               <div
-                className={`text-[10px] sm:text-xs font-mono font-bold uppercase ${
+                className={`text-[10px] sm:text-xs font-bold uppercase ${
                   activeStep === idx ? "text-sky-300" : "text-sky-700"
                 }`}
               >
@@ -92,14 +92,14 @@ export const RecyclingProcessSection: React.FC = () => {
           >
             <div className="md:col-span-8 space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-3xl sm:text-4xl font-black font-mono text-sky-600">
+                <span className="text-3xl sm:text-4xl font-black text-sky-600">
                   {RECYCLING_JOURNEY[activeStep].stepNumber}
                 </span>
                 <div>
-                  <span className="text-xs uppercase font-mono tracking-wider text-slate-500 font-semibold">
+                  <span className="text-xs uppercase tracking-wider text-slate-500 font-semibold">
                     {RECYCLING_JOURNEY[activeStep].subtitle}
                   </span>
-                  <h3 className="text-2xl font-black text-[#0b1e3b] font-serif">
+                  <h3 className="text-2xl font-black text-[#0b1e3b]">
                     {RECYCLING_JOURNEY[activeStep].title}
                   </h3>
                 </div>
@@ -127,7 +127,7 @@ export const RecyclingProcessSection: React.FC = () => {
               >
                 {stepIcons[activeStep]}
               </motion.div>
-              <div className="text-xs text-slate-500 uppercase tracking-widest font-mono font-bold">
+              <div className="text-xs text-slate-500 uppercase tracking-widest font-bold">
                 Quy Chuẩn Sản Xuất
               </div>
               <div className="text-sm font-bold text-slate-900 mt-1">

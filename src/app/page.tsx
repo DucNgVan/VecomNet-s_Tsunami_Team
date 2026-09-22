@@ -120,7 +120,7 @@ export default function HomePage() {
                 <span>HỒI V • MINH BẠCH NGUỒN GỐC SỐ (TRACEABILITY)</span>
               </GlassBadge>
 
-              <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] leading-tight font-serif tracking-tight">
+              <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] leading-tight tracking-tight">
                 Quét Mã QR • Thấy Tận Cùng Đáy Vực Nơi Chiếc Túi Ra Đời
               </h2>
 
@@ -136,14 +136,14 @@ export default function HomePage() {
                 whileHover={{ x: 3 }}
                 className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2"
               >
-                <div className="flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-500 font-medium">Lô trục vớt tiêu biểu:</span>
                   <span className="text-[#0b1e3b] font-bold">{featuredBatch.batchId}</span>
                 </div>
                 <div className="text-sm font-bold text-slate-900">{featuredBatch.seaRegion}</div>
                 <div className="text-xs text-slate-600 flex items-center gap-4 pt-1">
                   <span>Tọa độ: {featuredBatch.locationDetails}</span>
-                  <span className="text-emerald-700 font-mono font-bold">
+                  <span className="text-emerald-700 font-bold">
                     +{formatKg(featuredBatch.plasticRecoveredKg)} rác thu gom
                   </span>
                 </div>
@@ -179,7 +179,7 @@ export default function HomePage() {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <div className="text-xs font-mono text-slate-700 uppercase tracking-wider font-bold">
+              <div className="text-xs text-slate-700 uppercase tracking-wider font-bold">
                 Mã QR Chứng Chỉ Tác Động Số
               </div>
               <div className="text-xs text-slate-500 mt-1 max-w-xs">
@@ -214,7 +214,7 @@ export default function HomePage() {
               <span>HỒI VI • LAN TỎA GIÁ TRỊ BỀN VỮNG • ĐỒNG HÀNH ESG</span>
             </GlassBadge>
 
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0b1e3b] font-serif">
+            <h2 className="text-2xl sm:text-3xl font-black text-[#0b1e3b]">
               Đồng Hành Cùng Doanh Nghiệp Trong Báo Cáo Bền Vững (ESG)
             </h2>
 

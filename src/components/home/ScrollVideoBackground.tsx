@@ -229,14 +229,14 @@ export const ScrollVideoBackground: React.FC<ScrollVideoBackgroundProps> = ({
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
 
-                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                <span className=" text-[10px] font-bold uppercase tracking-wider text-slate-700">
                   {isAutoplay ? "Video Chạy Tự Động" : "Video Cuộn Theo Màn"}
                 </span>
               </div>
 
               <div className="h-3 w-[1px] bg-slate-200" />
 
-              <span className="font-mono text-[11px] font-bold text-sky-800">
+              <span className=" text-[11px] font-bold text-sky-800">
                 {formattedTime} <span className="text-slate-400 font-normal">/ {formatTime(durationRef.current)}</span>
               </span>
 

@@ -190,11 +190,11 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   className="text-center max-w-2xl mx-auto space-y-2.5"
                 >
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-[10px] sm:text-xs font-mono tracking-[0.25em] text-sky-300 uppercase shadow-md font-semibold">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-[10px] sm:text-xs tracking-[0.25em] text-sky-300 uppercase shadow-md font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
                     <span>{STORY_CHAPTERS[activeChapterIndex]?.act}</span>
                   </div>
-                  <p className="text-base sm:text-xl md:text-2xl font-serif text-white/95 leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] font-light italic px-4">
+                  <p className="text-base sm:text-xl md:text-2xl text-white/95 leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] font-light italic px-4">
                     "{STORY_CHAPTERS[activeChapterIndex]?.subtitle}"
                   </p>
                 </motion.div>

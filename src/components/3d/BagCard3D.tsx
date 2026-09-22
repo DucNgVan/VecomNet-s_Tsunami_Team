@@ -256,7 +256,7 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       {/* Interactive 3D Badge */}
       {isInteractive && !isLoading && (
         <div className="absolute top-2 left-2 pointer-events-none z-10">
-          <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-[9px] font-mono font-bold text-sky-800 shadow-xs flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
             <RotateCw className="w-2.5 h-2.5 text-sky-600 animate-spin" style={{ animationDuration: "6s" }} />
             <span>3D Xoay 360°</span>
           </span>

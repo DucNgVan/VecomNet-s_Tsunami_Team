@@ -44,7 +44,7 @@ export const StoryBridge: React.FC<StoryBridgeProps> = ({
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
         onClick={handleClick}
-        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-sky-100 shadow-[0_4px_16px_rgba(11,30,59,0.06)] hover:shadow-md transition-all text-sky-800 text-[11px] font-mono tracking-widest uppercase font-semibold cursor-pointer"
+        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-sky-100 shadow-[0_4px_16px_rgba(11,30,59,0.06)] hover:shadow-md transition-all text-sky-800 text-[11px] tracking-widest uppercase font-semibold cursor-pointer"
       >
         <Sparkles className="w-3 h-3 text-sky-500" />
         <span>{actLabel}</span>
@@ -53,7 +53,7 @@ export const StoryBridge: React.FC<StoryBridgeProps> = ({
 
       {/* Story Narrative */}
       <div className="mt-3 space-y-1 max-w-xl">
-        <h4 className="text-base sm:text-lg font-serif italic text-[#0b1e3b] font-medium">
+        <h4 className="text-base sm:text-lg italic text-[#0b1e3b] font-medium">
           "{leadText}"
         </h4>
         <p className="text-xs text-slate-500 font-normal">

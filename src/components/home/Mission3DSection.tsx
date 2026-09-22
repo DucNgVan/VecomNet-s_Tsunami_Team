@@ -142,7 +142,7 @@ export const Mission3DSection: React.FC = () => {
           </div>
 
           <div className="pt-2">
-            <Link href="/customizer">
+            <Link href="/shop">
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <GlassButton
                   variant="primary"
@@ -150,7 +150,7 @@ export const Mission3DSection: React.FC = () => {
                   className="w-full sm:w-auto shadow-md cursor-pointer"
                   icon={<ArrowRight className="w-4 h-4" />}
                 >
-                  Mở Trình Thiết Kế Nét Lab
+                  Mua Ngay • Buy Now
                 </GlassButton>
               </motion.div>
             </Link>

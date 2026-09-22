@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { Sparkles, ArrowRight, Box, Play } from "lucide-react";
+import { Sparkles, ArrowRight, Box, Play, ShoppingBag } from "lucide-react";
 
 interface HeroVideoSectionProps {
   onReplayIntro?: () => void;
@@ -113,15 +113,15 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 justify-center max-w-md mx-auto">
-            <Link href="/customizer" className="w-full sm:w-auto">
+            <Link href="/shop" className="w-full sm:w-auto">
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                 <GlassButton
                   variant="primary"
                   size="lg"
                   className="w-full sm:w-auto min-w-[210px] bg-white text-[#0b1e3b] hover:bg-slate-100 border-white shadow-xl font-bold cursor-pointer"
-                  icon={<Box className="w-5 h-5 text-sky-600" />}
+                  icon={<ShoppingBag className="w-5 h-5 text-sky-600" />}
                 >
-                  Thiết Kế Tại Nét Lab 3D
+                  Mua Ngay • Buy Now
                 </GlassButton>
               </motion.div>
             </Link>

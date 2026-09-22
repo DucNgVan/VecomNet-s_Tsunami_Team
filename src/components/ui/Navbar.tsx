@@ -36,11 +36,12 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { href: "/", label: "Trang Chủ" },
     { href: "/shop", label: "Bộ Sưu Tập" },
-    {
-      href: "/customizer",
-      label: "Nét Lab 3D",
-      badge: "Studio 3D",
-    },
+    // Tạm thời ẩn Nét Lab 3D để phát triển sau:
+    // {
+    //   href: "/customizer",
+    //   label: "Nét Lab 3D",
+    //   badge: "Studio 3D",
+    // },
     { href: "/story", label: "Hành Trình Tái Sinh" },
     { href: "/traceability", label: "Truy Xuất Nguồn Gốc" },
     { href: "/b2b", label: "Quà Tặng B2B" },

@@ -60,7 +60,7 @@ export const Navbar: React.FC = () => {
         delay: isIntroPlaying ? 0 : 0.15,
         ease: [0.16, 1, 0.3, 1],
       }}
-      className="fixed top-0 inset-x-0 z-40 px-4 sm:px-8 py-3.5"
+      className="fixed top-0 inset-x-0 z-40 px-3 sm:px-8 py-2.5 sm:py-3.5"
     >
       <motion.div
         animate={{
@@ -69,7 +69,7 @@ export const Navbar: React.FC = () => {
             ? "0 10px 30px -5px rgba(11, 30, 59, 0.08), 0 4px 12px rgba(11, 30, 59, 0.04)"
             : "0 4px 20px rgba(11, 30, 59, 0.04)",
         }}
-        className="max-w-7xl mx-auto rounded-2xl backdrop-blur-md border border-slate-200/90 px-4 sm:px-6 py-2.5 flex items-center justify-between transition-all"
+        className="max-w-7xl mx-auto rounded-2xl backdrop-blur-md border border-slate-200/90 px-3.5 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between transition-all"
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">

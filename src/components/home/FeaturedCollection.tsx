@@ -78,7 +78,7 @@ export const FeaturedCollection: React.FC = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: idx * 0.15 }}
             whileHover={{ y: -8, transition: { duration: 0.25, ease: "easeOut" } }}
-            className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-[0_4px_20px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_45px_rgba(11,30,59,0.09)] transition-shadow duration-300 flex flex-col justify-between group"
+            className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-[0_4px_20px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_45px_rgba(11,30,59,0.09)] transition-shadow duration-300 flex flex-col justify-between group"
           >
             <div>
               {/* Badge & Impact Header */}

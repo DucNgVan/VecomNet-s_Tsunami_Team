@@ -34,20 +34,20 @@ export const Mission3DSection: React.FC = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span className="text-xs font-mono text-slate-700 font-bold tracking-wide">
-                  MÔ HÌNH THẬT (.GLB) • NÉT 3D STUDIO
+                <span className="text-[10px] sm:text-xs font-mono text-slate-700 font-bold tracking-wide">
+                  MÔ HÌNH 3D (.GLB)
                 </span>
               </div>
 
               {/* Color switcher with smooth spring animations */}
-              <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-full border border-slate-200">
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100 p-1 rounded-full border border-slate-200">
                 {BAG_COLORS.map((c) => (
                   <motion.button
                     key={c.id}
                     whileHover={{ scale: 1.15 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setSelectedColor(c)}
-                    className={`w-6 h-6 rounded-full transition-all cursor-pointer ${
+                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full transition-all cursor-pointer ${
                       selectedColor.id === c.id
                         ? "scale-110 ring-2 ring-[#0b1e3b] shadow-sm"
                         : "opacity-75 hover:opacity-100"
@@ -60,7 +60,7 @@ export const Mission3DSection: React.FC = () => {
             </div>
 
             {/* 3D WebGL Canvas */}
-            <div className="relative w-full h-[420px] sm:h-[480px] bg-gradient-to-b from-slate-50 to-slate-100/60 rounded-2xl overflow-hidden">
+            <div className="relative w-full h-[320px] sm:h-[480px] bg-gradient-to-b from-slate-50 to-slate-100/60 rounded-2xl overflow-hidden">
               <BagCanvas3D
                 bagBase={featuredBag}
                 selectedColor={selectedColor}

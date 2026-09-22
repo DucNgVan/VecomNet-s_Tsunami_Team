@@ -46,14 +46,14 @@ export const RecyclingProcessSection: React.FC = () => {
             whileHover={{ y: -3 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setActiveStep(idx)}
-            className={`p-4 rounded-2xl border text-left transition-all duration-200 flex items-start gap-3 cursor-pointer ${
-              activeStep === idx
-                ? "bg-[#0b1e3b] text-white border-[#0b1e3b] shadow-md ring-2 ring-[#0b1e3b]/20"
-                : "bg-white hover:bg-slate-50 border-slate-200/90 text-slate-700 shadow-sm"
-            }`}
+            className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 flex items-start gap-2.5 sm:gap-3 cursor-pointer ${
+                activeStep === idx
+                  ? "bg-[#0b1e3b] text-white border-[#0b1e3b] shadow-md ring-2 ring-[#0b1e3b]/20"
+                  : "bg-white hover:bg-slate-50 border-slate-200/90 text-slate-700 shadow-sm"
+              }`}
           >
             <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                 activeStep === idx ? "bg-white/15" : "bg-slate-100"
               }`}
             >
@@ -61,7 +61,7 @@ export const RecyclingProcessSection: React.FC = () => {
             </div>
             <div>
               <div
-                className={`text-xs font-mono font-bold uppercase ${
+                className={`text-[10px] sm:text-xs font-mono font-bold uppercase ${
                   activeStep === idx ? "text-sky-300" : "text-sky-700"
                 }`}
               >
@@ -80,7 +80,7 @@ export const RecyclingProcessSection: React.FC = () => {
       </div>
 
       {/* Active Step Detailed Card with AnimatePresence */}
-      <div className="p-8 sm:p-10 rounded-3xl bg-white/90 backdrop-blur-xl border border-slate-200/90 shadow-[0_16px_40px_rgba(11,30,59,0.06)] relative overflow-hidden min-h-[300px]">
+      <div className="p-5 sm:p-10 rounded-2xl sm:rounded-3xl bg-white/90 backdrop-blur-xl border border-slate-200/90 shadow-[0_16px_40px_rgba(11,30,59,0.06)] relative overflow-hidden min-h-[260px] sm:min-h-[300px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeStep}

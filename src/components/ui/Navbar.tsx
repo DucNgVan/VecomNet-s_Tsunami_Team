@@ -36,7 +36,7 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navLinks = [
+  const navLinks: { href: string; label: string; badge?: string }[] = [
     { href: "/", label: "Trang Chủ" },
     { href: "/shop", label: "Bộ Sưu Tập" },
     // Tạm thời ẩn Nét Lab 3D để phát triển sau:

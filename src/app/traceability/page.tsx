@@ -2,6 +2,7 @@
 
 import React, { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { TRACE_BATCHES } from "@/data/traceability";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
@@ -13,7 +14,14 @@ import {
   ShieldCheck,
   QrCode,
   Download,
+  Radio,
+  Compass,
+  Waves,
 } from "lucide-react";
+import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
+import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
+import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
+import { OceanSonarRadar } from "@/components/ocean/OceanSonarRadar";
 
 function TraceabilityContent() {
   const searchParams = useSearchParams();
@@ -37,18 +45,30 @@ function TraceabilityContent() {
   };
 
   return (
-    <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-12">
-      {/* Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-3">
-        <GlassBadge variant="ocean">HỆ THỐNG TRUY XUẤT MINH BẠCH (TRACEABILITY)</GlassBadge>
-        <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b]">
-          Bản Đồ Cứu Hộ Lưới Biển Việt Nam
-        </h1>
-        <p className="text-sm sm:text-base text-slate-600">
-          Nhập mã Batch ID in trên mác thẻ của túi để định vị chính xác tọa độ GPS dưới đáy biển,
-          ngày trục vớt và khối lượng lưới ma đã được giải phóng khỏi rạn san hô.
-        </p>
-      </div>
+    <div className="relative min-h-screen">
+      {/* Living Ocean Backdrop */}
+      <OceanBackdrop bubbleCount={24} causticsOpacity={0.35} />
+
+      <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-12 relative z-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="text-center max-w-3xl mx-auto space-y-3"
+        >
+          <GlassBadge variant="ocean">HỆ THỐNG TRUY XUẤT MINH BẠCH (TRACEABILITY)</GlassBadge>
+          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b]">
+            Bản Đồ Cứu Hộ Lưới Biển Việt Nam
+          </h1>
+          <p className="text-sm sm:text-base text-slate-600">
+            Nhập mã Batch ID in trên mác thẻ của túi để định vị chính xác tọa độ GPS dưới đáy biển,
+            ngày trục vớt và khối lượng lưới ma đã được giải phóng khỏi rạn san hô.
+          </p>
+        </motion.div>
+
+        {/* Ocean Wave Ribbon */}
+        <OceanWaveDivider height={36} colorVariant="ocean" className="opacity-75" />
 
       {/* Batch Search Bar */}
       <div className="max-w-xl mx-auto">
@@ -99,7 +119,7 @@ function TraceabilityContent() {
         <div className="lg:col-span-8 space-y-6">
           <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] relative overflow-hidden">
             {/* Marine Map Canvas Graphic */}
-            <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-slate-200 bg-[#081b36] flex items-center justify-center mb-6">
+            <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-slate-200 bg-[#081b36] flex items-center justify-center mb-6 shadow-inner">
               {/* Bathymetry Grid */}
               <div
                 className="absolute inset-0 opacity-20 pointer-events-none"
@@ -109,8 +129,20 @@ function TraceabilityContent() {
                 }}
               />
 
+              {/* Water Current Drift Wave */}
+              <motion.div
+                animate={{ x: ["-10%", "10%", "-10%"], opacity: [0.15, 0.3, 0.15] }}
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent pointer-events-none"
+              />
+
+              {/* Active Sonar Radar Overlay */}
+              <div className="absolute right-4 bottom-4 pointer-events-none hidden sm:block opacity-60">
+                <OceanSonarRadar size={130} label="SONAR SCANNING" />
+              </div>
+
               {/* Vietnam Coastline Markers */}
-              <div className="absolute inset-0 flex items-center justify-around p-8">
+              <div className="absolute inset-0 flex items-center justify-around p-8 z-10">
                 {TRACE_BATCHES.map((b) => {
                   const isCurrent = b.batchId === selectedBatch.batchId;
                   return (
@@ -120,20 +152,24 @@ function TraceabilityContent() {
                         setSelectedBatch(b);
                         setSearchQuery(b.batchId);
                       }}
-                      className={`relative flex flex-col items-center transition-transform cursor-pointer ${
-                        isCurrent ? "scale-125 z-20" : "opacity-75 hover:opacity-100 scale-100"
+                      className={`relative flex flex-col items-center transition-all duration-300 cursor-pointer ${
+                        isCurrent ? "scale-125 z-20" : "opacity-75 hover:opacity-100 scale-100 hover:scale-110"
                       }`}
                     >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg relative ${
                           isCurrent
-                            ? "bg-sky-400 text-slate-950 ring-4 ring-sky-400/40 animate-bounce"
+                            ? "bg-sky-400 text-slate-950 ring-4 ring-sky-400/40"
                             : "bg-white text-sky-700 border border-slate-200"
                         }`}
                       >
-                        <MapPin className="w-5 h-5" />
+                        {/* Ping pulse on active GPS coordinate */}
+                        {isCurrent && (
+                          <span className="absolute -inset-2 rounded-full border-2 border-cyan-400 animate-ping opacity-75" />
+                        )}
+                        <MapPin className="w-5 h-5 relative z-10" />
                       </div>
-                      <span className="text-[11px] font-bold text-slate-900 mt-1.5 whitespace-nowrap bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">
+                      <span className="text-[11px] font-bold text-slate-900 mt-1.5 whitespace-nowrap bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded border border-slate-200 shadow-sm font-mono">
                         {b.seaRegion.split(",")[0]}
                       </span>
                     </button>
@@ -141,8 +177,9 @@ function TraceabilityContent() {
                 })}
               </div>
 
-              <div className="absolute top-3 left-4 text-[10px] font-mono font-bold text-sky-300">
-                GPS MARINE SATELLITE RADAR • EAST VIETNAM SEA
+              <div className="absolute top-3 left-4 text-[10px] font-mono font-bold text-sky-300 flex items-center gap-1.5 z-10">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>GPS MARINE SATELLITE RADAR • EAST VIETNAM SEA</span>
               </div>
             </div>
 
@@ -223,46 +260,49 @@ function TraceabilityContent() {
 
         {/* Right Column: Digital Certificate Card & QR */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] text-center space-y-6">
-            <div className="flex items-center justify-center gap-2 text-sky-800">
-              <QrCode className="w-5 h-5" />
-              <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                Chứng Chỉ Số Hóa
-              </span>
-            </div>
+          <OceanFloatingCard delay={0.3} duration={6} distance={6}>
+            <div className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_45px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 text-center space-y-6">
+              <div className="flex items-center justify-center gap-2 text-sky-800">
+                <QrCode className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider font-mono">
+                  Chứng Chỉ Số Hóa
+                </span>
+              </div>
 
-            {/* Generated QR Code */}
-            <div className="w-48 h-48 rounded-2xl bg-white p-3 border border-slate-200 shadow-md mx-auto flex items-center justify-center">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://net.eco/trace/${selectedBatch.batchId}&bgcolor=ffffff&color=0b1e3b`}
-                alt="QR Code"
-                className="w-full h-full object-contain"
-              />
-            </div>
+              {/* Generated QR Code */}
+              <div className="w-48 h-48 rounded-2xl bg-white p-3 border border-slate-200 shadow-md mx-auto flex items-center justify-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://net.eco/trace/${selectedBatch.batchId}&bgcolor=ffffff&color=0b1e3b`}
+                  alt="QR Code"
+                  className="w-full h-full object-contain"
+                />
+              </div>
 
-            <div className="space-y-1">
-              <div className="text-xs text-slate-500 font-medium">Mã Quét Trực Tiếp:</div>
-              <div className="text-sm font-black text-[#0b1e3b] font-mono">{selectedBatch.batchId}</div>
-            </div>
+              <div className="space-y-1">
+                <div className="text-xs text-slate-500 font-medium">Mã Quét Trực Tiếp:</div>
+                <div className="text-sm font-black text-[#0b1e3b] font-mono">{selectedBatch.batchId}</div>
+              </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Mã QR này được khắc laser chìm trên chốt kim loại của từng chiếc túi để chủ nhân có thể
-              tự hào chia sẻ câu chuyện cứu hộ môi trường với bạn bè.
-            </p>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Mã QR này được khắc laser chìm trên chốt kim loại của từng chiếc túi để chủ nhân có thể
+                tự hào chia sẻ câu chuyện cứu hộ môi trường với bạn bè.
+              </p>
 
-            <div className="pt-2">
-              <GlassButton
-                variant="primary"
-                size="md"
-                className="w-full shadow-md"
-                onClick={() => alert("Đang lưu chứng chỉ tác động số về thiết bị của bạn...")}
-                icon={<Download className="w-4 h-4 text-white" />}
-              >
-                Tải Chứng Chỉ Tác Động PDF
-              </GlassButton>
+              <div className="pt-2">
+                <GlassButton
+                  variant="primary"
+                  size="md"
+                  className="w-full shadow-md cursor-pointer"
+                  onClick={() => alert("Đang lưu chứng chỉ tác động số về thiết bị của bạn...")}
+                  icon={<Download className="w-4 h-4 text-white" />}
+                >
+                  Tải Chứng Chỉ Tác Động PDF
+                </GlassButton>
+              </div>
             </div>
-          </div>
+          </OceanFloatingCard>
         </div>
+      </div>
       </div>
     </div>
   );

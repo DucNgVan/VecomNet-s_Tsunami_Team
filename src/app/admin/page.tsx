@@ -21,6 +21,8 @@ import {
   Search,
   Filter,
 } from "lucide-react";
+import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
+import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
 
 export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -134,7 +136,9 @@ export default function AdminDashboardPage() {
   );
 
   return (
-    <div className="pt-24 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="relative min-h-screen">
+      <OceanBackdrop bubbleCount={18} causticsOpacity={0.25} />
+      <div className="pt-24 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8 relative z-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
@@ -398,5 +402,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

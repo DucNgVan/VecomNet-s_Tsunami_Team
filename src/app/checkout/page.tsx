@@ -23,8 +23,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Sparkle
+  Sparkle,
+  Waves
 } from "lucide-react";
+import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
+import { OceanWaveDivider } from "@/components/ocean/OceanWaveDivider";
+import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -205,32 +209,39 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-10">
-      <div className="text-center max-w-xl mx-auto space-y-2">
-        <GlassBadge variant="ocean">THANH TOÁN AN TOÀN 1-PAGE</GlassBadge>
-        <h1 className="text-3xl sm:text-4xl font-black text-[#0b1e3b]">
-          Hoàn Tất Đặt Hàng & Giao Nhận
-        </h1>
-        <p className="text-xs text-slate-500">
-          Thông tin của bạn được mã hóa bảo mật SSL 256-bit
-        </p>
-      </div>
+    <div className="relative min-h-screen">
+      {/* Living Ocean Backdrop */}
+      <OceanBackdrop bubbleCount={20} causticsOpacity={0.3} />
 
-      <form onSubmit={handleSubmitOrder}>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Shipping & Payment Options */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Authenticated Member Notice */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-300/60 flex items-center justify-between gap-4 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
-                  <UserCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-900">
-                      {userProfile?.displayName || user.displayName || user.email}
-                    </span>
+      <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-10 relative z-10">
+        <div className="text-center max-w-xl mx-auto space-y-2">
+          <GlassBadge variant="ocean">THANH TOÁN AN TOÀN 1-PAGE</GlassBadge>
+          <h1 className="text-3xl sm:text-4xl font-black text-[#0b1e3b]">
+            Hoàn Tất Đặt Hàng & Giao Nhận
+          </h1>
+          <p className="text-xs text-slate-500">
+            Thông tin của bạn được mã hóa bảo mật SSL 256-bit
+          </p>
+        </div>
+
+        {/* Ocean Wave Ribbon */}
+        <OceanWaveDivider height={36} colorVariant="ocean" className="opacity-75" />
+
+        <form onSubmit={handleSubmitOrder}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Column: Shipping & Payment Options */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Authenticated Member Notice */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-300/60 flex items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900">
+                        {userProfile?.displayName || user.displayName || user.email}
+                      </span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
                       Đã đăng nhập
                     </span>
@@ -460,104 +471,109 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Right Column: Order Summary & Placement */}
+          {/* Right Column: Order Summary & Placement with Buoyancy Floating */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.06)] space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h3 className="text-base font-bold text-slate-900">Tóm Tắt Đơn Hàng</h3>
-                <span className="text-xs font-mono font-bold text-slate-500">{items.length} món</span>
-              </div>
-
-              {/* Items List */}
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                {items.map((item) => (
-                  <div
-                    key={item.cartItemId}
-                    className="flex items-start justify-between gap-3 text-xs pb-3 border-b border-slate-100"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
-                        {item.details?.configuration?.customSnapshotUrl ? (
-                          <img
-                            src={item.details.configuration.customSnapshotUrl}
-                            alt=""
-                            className="w-full h-full object-cover rounded-xl"
-                          />
-                        ) : (
-                          <span>{item.type === "custom_bag" ? "👜" : "✨"}</span>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-900">{item.title}</div>
-                        {item.details?.colorName && (
-                          <div className="text-[11px] text-slate-500">
-                            Màu: {item.details.colorName}
-                          </div>
-                        )}
-                        <div className="text-[11px] text-slate-500">SL: {item.quantity}</div>
-                      </div>
-                    </div>
-
-                    <div className="font-mono font-bold text-slate-900">
-                      {formatVND(item.price * item.quantity)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Impact Callout */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                <div className="text-xs">
-                  <div className="text-emerald-900 font-bold">
-                    Đơn hàng này giải cứu {formatKg(totalPlasticOffsetKg)} rác biển
-                  </div>
-                  <div className="text-[11px] text-emerald-700">
-                    Sẽ đính kèm thẻ Batch ID và chứng nhận truy xuất số
-                  </div>
-                </div>
-              </div>
-
-              {/* Price Calculation */}
-              <div className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
-                <div className="flex justify-between">
-                  <span>Tạm tính:</span>
-                  <span className="font-mono font-semibold text-slate-900">{formatVND(subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Phí vận chuyển bảo hiểm:</span>
-                  <span className="font-mono font-semibold text-slate-900">
-                    {shippingFee === 0 ? "Miễn phí" : formatVND(shippingFee)}
+            <OceanFloatingCard delay={0.3} duration={6.5} distance={4}>
+              <div className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.06)] hover:shadow-[0_16px_36px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h3 className="text-base font-bold text-slate-900">Tóm Tắt Đơn Hàng</h3>
+                  <span className="text-xs font-mono font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                    {items.length} món
                   </span>
                 </div>
-                <div className="flex justify-between items-baseline pt-2 border-t border-slate-100">
-                  <span className="text-sm font-bold text-slate-900">Tổng thanh toán:</span>
-                  <span className="text-2xl font-black font-mono text-[#0b1e3b]">
-                    {formatVND(grandTotal)}
-                  </span>
+
+                {/* Items List */}
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                  {items.map((item) => (
+                    <div
+                      key={item.cartItemId}
+                      className="flex items-start justify-between gap-3 text-xs pb-3 border-b border-slate-100"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
+                          {item.details?.configuration?.customSnapshotUrl ? (
+                            <img
+                              src={item.details.configuration.customSnapshotUrl}
+                              alt=""
+                              className="w-full h-full object-cover rounded-xl"
+                            />
+                          ) : (
+                            <span>{item.type === "custom_bag" ? "👜" : "✨"}</span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900">{item.title}</div>
+                          {item.details?.colorName && (
+                            <div className="text-[11px] text-slate-500">
+                              Màu: {item.details.colorName}
+                            </div>
+                          )}
+                          <div className="text-[11px] text-slate-500">SL: {item.quantity}</div>
+                        </div>
+                      </div>
+
+                      <div className="font-mono font-bold text-slate-900">
+                        {formatVND(item.price * item.quantity)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Impact Callout */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 flex items-center gap-3 shadow-xs">
+                  <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0 animate-pulse" />
+                  <div className="text-xs">
+                    <div className="text-emerald-900 font-bold">
+                      Đơn hàng này giải cứu {formatKg(totalPlasticOffsetKg)} rác biển
+                    </div>
+                    <div className="text-[11px] text-emerald-700">
+                      Sẽ đính kèm thẻ Batch ID và chứng nhận truy xuất số
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price Calculation */}
+                <div className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
+                  <div className="flex justify-between">
+                    <span>Tạm tính:</span>
+                    <span className="font-mono font-semibold text-slate-900">{formatVND(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Phí vận chuyển bảo hiểm:</span>
+                    <span className="font-mono font-semibold text-slate-900">
+                      {shippingFee === 0 ? "Miễn phí" : formatVND(shippingFee)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline pt-2 border-t border-slate-100">
+                    <span className="text-sm font-bold text-slate-900">Tổng thanh toán:</span>
+                    <span className="text-2xl font-black font-mono text-[#0b1e3b]">
+                      {formatVND(grandTotal)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <GlassButton
+                  variant="primary"
+                  size="lg"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full text-base font-bold shadow-lg cursor-pointer"
+                  icon={<Lock className="w-4 h-4" />}
+                >
+                  {isSubmitting ? "Đang Khởi Tạo Đơn Hàng..." : "Xác Nhận Đặt Hàng"}
+                </GlassButton>
+
+                <div className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Bảo hành phom dáng và mắt lưới 2 năm</span>
                 </div>
               </div>
-
-              {/* Submit Button */}
-              <GlassButton
-                variant="primary"
-                size="lg"
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full text-base font-bold shadow-lg"
-                icon={<Lock className="w-4 h-4" />}
-              >
-                {isSubmitting ? "Đang Khởi Tạo Đơn Hàng..." : "Xác Nhận Đặt Hàng"}
-              </GlassButton>
-
-              <div className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Bảo hành phom dáng và mắt lưới 2 năm</span>
-              </div>
-            </div>
+            </OceanFloatingCard>
           </div>
         </div>
       </form>
+      </div>
     </div>
   );
 }

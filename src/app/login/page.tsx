@@ -25,6 +25,8 @@ import {
   Hash,
   Sparkles,
 } from "lucide-react";
+import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
+import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 
 function LoginContent() {
   const router = useRouter();
@@ -113,7 +115,7 @@ function LoginContent() {
     setCountdown(60);
 
     // Simulate SMS notification
-    showToast(`[MÃ XÁC THỰC OTP]: Mã OTP của bạn là ${generated} (hiệu lực 5 phút)`, "info", 8000);
+    showToast("[MÃ XÁC THỰC OTP]", `Mã OTP của bạn là ${generated} (hiệu lực 5 phút)`, "info", 8000);
   };
 
   // Verify entered OTP
@@ -286,12 +288,15 @@ function LoginContent() {
     const isProfileIncomplete = !userProfile?.phoneVerified || !userProfile?.address;
 
     return (
-      <div className="min-h-[85vh] flex items-center justify-center px-4 py-24 sm:py-28 relative">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] space-y-6"
-        >
+      <div className="relative min-h-screen overflow-hidden">
+        <OceanBackdrop bubbleCount={24} causticsOpacity={0.35} />
+        <div className="min-h-[85vh] flex items-center justify-center px-4 py-24 sm:py-28 relative z-10">
+          <OceanFloatingCard duration={7} distance={5}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] space-y-6"
+            >
           {/* Header Card */}
           <div className="text-center space-y-3">
             <div className="relative inline-block">
@@ -497,19 +502,24 @@ function LoginContent() {
             </button>
           </div>
         </motion.div>
+          </OceanFloatingCard>
+        </div>
       </div>
     );
   }
 
   // Guest: Login / Register Form
   return (
-    <div className="min-h-[90vh] flex items-center justify-center px-4 py-20 sm:py-28 relative">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] relative overflow-hidden"
-      >
+    <div className="relative min-h-screen overflow-hidden">
+      <OceanBackdrop bubbleCount={24} causticsOpacity={0.35} />
+      <div className="min-h-[90vh] flex items-center justify-center px-4 py-20 sm:py-28 relative z-10">
+        <OceanFloatingCard duration={8} distance={5}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] relative overflow-hidden"
+          >
         {/* Subtle Decorative Ocean Top Light */}
         <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
 
@@ -833,6 +843,8 @@ function LoginContent() {
           <span>Bảo mật an toàn 100% với Firebase & SSL 256-bit</span>
         </div>
       </motion.div>
+    </OceanFloatingCard>
+  </div>
 
       {/* Forgot Password Modal */}
       <AnimatePresence>

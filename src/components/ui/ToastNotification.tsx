@@ -6,14 +6,19 @@ import { CheckCircle2, AlertCircle, Info, X, Sparkles } from "lucide-react";
 
 interface Toast {
   id: string;
-  type?: "success" | "info" | "warning";
+  type?: "success" | "info" | "warning" | "error";
   title: string;
   message?: string;
   duration?: number;
 }
 
 interface ToastContextType {
-  showToast: (title: string, message?: string, type?: "success" | "info" | "warning") => void;
+  showToast: (
+    title: string,
+    messageOrType?: string,
+    type?: "success" | "info" | "warning" | "error",
+    duration?: number
+  ) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -22,15 +27,33 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback(
-    (title: string, message?: string, type: "success" | "info" | "warning" = "success") => {
+    (
+      title: string,
+      messageOrType?: string,
+      maybeType?: "success" | "info" | "warning" | "error",
+      duration: number = 4000
+    ) => {
+      let message: string | undefined = messageOrType;
+      let type: "success" | "info" | "warning" | "error" = maybeType || "success";
+
+      if (
+        messageOrType === "success" ||
+        messageOrType === "info" ||
+        messageOrType === "warning" ||
+        messageOrType === "error"
+      ) {
+        type = messageOrType;
+        message = undefined;
+      }
+
       const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      const newToast: Toast = { id, title, message, type, duration: 4000 };
+      const newToast: Toast = { id, title, message, type, duration };
 
       setToasts((prev) => [...prev, newToast]);
 
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 4000);
+      }, duration);
     },
     []
   );
@@ -68,6 +91,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 )}
                 {toast.type === "warning" && (
                   <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                )}
+                {toast.type === "error" && (
+                  <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200">
                     <AlertCircle className="w-4 h-4" />
                   </div>
                 )}

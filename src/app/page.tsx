@@ -44,7 +44,7 @@ export default function HomePage() {
       initial={{ opacity: 0.95 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className="space-y-4 sm:space-y-6 pb-20 relative"
+      className="w-full relative pb-20 overflow-x-hidden"
     >
       {/* Floating Storyline Navigator / Scrollytelling Chapter Rail */}
       <StoryProgressRail />

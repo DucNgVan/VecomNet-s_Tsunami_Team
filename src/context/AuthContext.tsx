@@ -22,8 +22,20 @@ export interface UserProfile {
   role: "customer" | "admin";
   ecoImpactKg: number;
   phone?: string;
+  phoneVerified?: boolean;
+  dob?: string;
   address?: string;
+  postcode?: string;
   createdAt?: any;
+}
+
+export interface RegisterExtraData {
+  displayName: string;
+  dob: string;
+  address: string;
+  postcode: string;
+  phone: string;
+  phoneVerified: boolean;
 }
 
 interface AuthContextType {
@@ -32,7 +44,12 @@ interface AuthContextType {
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
-  registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
+  registerWithEmail: (
+    email: string,
+    pass: string,
+    extraData: RegisterExtraData
+  ) => Promise<void>;
+  updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -67,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.warn("Could not sync Firestore profile (check Firestore rules):", error);
-      // Fallback local profile if Firestore is not yet configured or offline
       setUserProfile({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -107,13 +123,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const registerWithEmail = async (email: string, pass: string, name: string) => {
+  const registerWithEmail = async (
+    email: string,
+    pass: string,
+    extraData: RegisterExtraData
+  ) => {
     const result = await createUserWithEmailAndPassword(auth, email, pass);
     if (result.user) {
-      if (name) {
-        await updateProfile(result.user, { displayName: name });
+      if (extraData.displayName) {
+        await updateProfile(result.user, { displayName: extraData.displayName });
       }
-      await syncUserProfile(result.user, name);
+      const newProfile: UserProfile = {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: extraData.displayName,
+        photoURL: result.user.photoURL || null,
+        dob: extraData.dob,
+        address: extraData.address,
+        postcode: extraData.postcode,
+        phone: extraData.phone,
+        phoneVerified: extraData.phoneVerified,
+        role: "customer",
+        ecoImpactKg: 0,
+        createdAt: serverTimestamp(),
+      };
+      try {
+        const userDocRef = doc(db, "users", result.user.uid);
+        await setDoc(userDocRef, newProfile, { merge: true });
+      } catch (err) {
+        console.warn("Could not write user profile to Firestore:", err);
+      }
+      setUserProfile(newProfile);
+    }
+  };
+
+  const updateUserProfile = async (data: Partial<UserProfile>) => {
+    if (!user) return;
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      await setDoc(userDocRef, data, { merge: true });
+      setUserProfile((prev) => (prev ? { ...prev, ...data } : null));
+    } catch (err) {
+      console.warn("Could not update Firestore profile:", err);
+      setUserProfile((prev) => (prev ? { ...prev, ...data } : null));
     }
   };
 

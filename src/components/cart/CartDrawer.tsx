@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { formatVND, formatKg } from "@/lib/utils";
 import { GlassButton } from "@/components/ui/GlassButton";
 import {
@@ -14,9 +15,11 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
+  Lock,
 } from "lucide-react";
 
 export const CartDrawer: React.FC = () => {
+  const { user } = useAuth();
   const {
     items,
     isCartOpen,
@@ -176,7 +179,7 @@ export const CartDrawer: React.FC = () => {
 
               {/* Checkout Button */}
               <Link
-                href="/checkout"
+                href={user ? "/checkout" : "/login?redirect=/checkout"}
                 onClick={() => setIsCartOpen(false)}
                 className="block w-full"
               >
@@ -185,14 +188,28 @@ export const CartDrawer: React.FC = () => {
                   size="lg"
                   className="w-full flex items-center justify-center gap-2 shadow-lg"
                 >
-                  <span>Tiến Hành Đặt Hàng</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {user ? (
+                    <>
+                      <span>Tiến Hành Đặt Hàng</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 text-amber-300" />
+                      <span>Đăng Nhập Để Mua Hàng</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </GlassButton>
               </Link>
 
               <div className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Giao hàng toàn quốc • Kèm chứng chỉ tác động số</span>
+                <span>
+                  {user
+                    ? "Giao hàng toàn quốc • Kèm chứng chỉ tác động số"
+                    : "Yêu cầu tài khoản hội viên để bảo chứng nguồn gốc"}
+                </span>
               </div>
             </div>
           )}

@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, doc, updateDoc, increment } from "firebase/firestore";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassBadge } from "@/components/ui/GlassBadge";
 import { formatVND, formatKg, generateOrderCode } from "@/lib/utils";
@@ -15,11 +18,18 @@ import {
   ShieldCheck,
   Sparkles,
   Lock,
+  ArrowRight,
+  UserCheck,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Sparkle
 } from "lucide-react";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, totalPlasticOffsetKg, clearCart } = useCart();
+  const { user, userProfile, loading: authLoading } = useAuth();
 
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "vnpay" | "momo" | "bank_transfer">(
     "vnpay"
@@ -34,11 +44,31 @@ export default function CheckoutPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Auto pre-fill checkout data from verified user profile
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        fullName: prev.fullName || userProfile?.displayName || user.displayName || "",
+        phone: prev.phone || userProfile?.phone || "",
+        email: prev.email || userProfile?.email || user.email || "",
+        address: prev.address || userProfile?.address || "",
+        city: prev.city || "Đà Nẵng",
+        notes: prev.notes || "",
+      }));
+    }
+  }, [user, userProfile]);
+
   const shippingFee = subtotal > 1500000 ? 0 : 35000;
   const grandTotal = subtotal + shippingFee;
 
-  const handleSubmitOrder = (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user) {
+      router.push("/login?redirect=/checkout");
+      return;
+    }
+
     if (items.length === 0) {
       alert("Giỏ hàng của bạn đang trống!");
       return;
@@ -63,15 +93,31 @@ export default function CheckoutPage() {
       paymentMethod,
       paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
       fulfillmentStatus: "crafting",
+      userId: user.uid,
     };
 
     try {
+      // Local backup for instant response
       const existingOrders: Order[] = JSON.parse(
         localStorage.getItem("net_orders_v1") || "[]"
       );
       existingOrders.unshift(newOrder);
       localStorage.setItem("net_orders_v1", JSON.stringify(existingOrders));
       localStorage.setItem("net_latest_order", JSON.stringify(newOrder));
+
+      // Sync order to Firestore database
+      if (db) {
+        await addDoc(collection(db, "orders"), {
+          ...newOrder,
+          userEmail: user.email,
+        });
+
+        // Increment user's accumulated eco impact kg
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, {
+          ecoImpactKg: increment(totalPlasticOffsetKg),
+        }).catch(() => {});
+      }
     } catch (err) {
       console.error("Order save error", err);
     }
@@ -82,6 +128,63 @@ export default function CheckoutPage() {
     }, 800);
   };
 
+  // 1. Loading auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 pt-32 space-y-3">
+        <div className="w-10 h-10 border-4 border-ocean-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-xs font-semibold text-slate-500">Đang đồng bộ phiên hội viên Nét...</p>
+      </div>
+    );
+  }
+
+  // 2. Auth guard: Must be logged in to buy products
+  if (!user) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center p-6 space-y-6 pt-32 max-w-lg mx-auto">
+        <div className="w-20 h-20 rounded-3xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shadow-md">
+          <Lock className="w-9 h-9" />
+        </div>
+        <div className="space-y-2">
+          <GlassBadge variant="ocean">YÊU CẦU ĐĂNG NHẬP ĐỂ MUA HÀNG</GlassBadge>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#0b1e3b]">
+            Vui Lòng Đăng Nhập Để Tiếp Tục
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Để đảm bảo quyền lợi bảo hành trọn đời, cấp <strong>Chứng chỉ số bảo tồn sinh thái biển</strong> và truy xuất nguồn gốc lô lưới ma của từng chiếc túi, Nét yêu cầu quý khách đăng nhập tài khoản trước khi đặt hàng.
+          </p>
+        </div>
+
+        <div className="w-full p-4 rounded-2xl bg-white/90 border border-slate-200 text-left space-y-2.5 text-xs text-slate-600 shadow-sm">
+          <div className="flex items-center gap-2 font-bold text-slate-900">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Quyền lợi tài khoản hội viên Nét:</span>
+          </div>
+          <ul className="space-y-1.5 pl-5 text-slate-600 list-disc text-[11px]">
+            <li>Lưu trữ chứng chỉ số và số kg rác lưới đại dương bạn đã góp phần thu hồi</li>
+            <li>Theo dõi trực tuyến quá trình thợ thủ công may & hoàn thiện túi</li>
+            <li>Tự động điền nhanh địa chỉ giao hàng và mã bưu chính</li>
+          </ul>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <Link href="/login?redirect=/checkout" className="flex-1">
+            <GlassButton variant="primary" size="lg" className="w-full flex items-center justify-center gap-2 shadow-lg">
+              <span>Đăng Nhập / Đăng Ký Ngay</span>
+              <ArrowRight className="w-4 h-4" />
+            </GlassButton>
+          </Link>
+          <Link href="/" className="sm:w-auto">
+            <GlassButton variant="secondary" size="lg" className="w-full">
+              Trang Chủ
+            </GlassButton>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Empty Cart State
   if (items.length === 0) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 space-y-4 pt-32">
@@ -90,11 +193,11 @@ export default function CheckoutPage() {
         </div>
         <h2 className="text-xl font-bold text-slate-900">Chưa Có Sản Phẩm Trong Giỏ Hàng</h2>
         <p className="text-xs text-slate-500 max-w-sm">
-          Hãy khám phá các thiết kế túi tái chế hoặc vào Nét Lab để tạo ra chiếc túi của riêng bạn.
+          Hãy khám phá các thiết kế túi tái chế hoặc vào Bộ sưu tập để chọn chiếc túi phù hợp với bạn.
         </p>
-        <Link href="/customizer">
+        <Link href="/shop">
           <GlassButton variant="primary" size="md">
-            Đến Nét Lab Thiết Kế
+            Khám Phá Bộ Sưu Tập
           </GlassButton>
         </Link>
       </div>
@@ -117,6 +220,34 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Shipping & Payment Options */}
           <div className="lg:col-span-7 space-y-6">
+            {/* Authenticated Member Notice */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-300/60 flex items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900">
+                      {userProfile?.displayName || user.displayName || user.email}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                      Đã đăng nhập
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Tài khoản hội viên đại dương • Thông tin giao nhận đã được tự động điền
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/login"
+                className="text-[11px] font-bold text-ocean-700 hover:text-ocean-900 hover:underline shrink-0"
+              >
+                Đổi tài khoản
+              </Link>
+            </div>
+
             {/* Step 1: Customer Info */}
             <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3.5">
@@ -142,9 +273,20 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Số điện thoại nhận hàng *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Số điện thoại nhận hàng *
+                    </label>
+                    {userProfile?.phoneVerified ? (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đã xác thực OTP
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-amber-600 font-medium">
+                        Cần số liên hệ
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="tel"
                     required
@@ -172,9 +314,16 @@ export default function CheckoutPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Địa chỉ chi tiết (Số nhà, đường, phường/xã) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Địa chỉ chi tiết (Số nhà, đường, phường/xã) *
+                    </label>
+                    {userProfile?.postcode && (
+                      <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                        Postcode: {userProfile.postcode}
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required

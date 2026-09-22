@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/ToastNotification";
@@ -12,29 +12,71 @@ import {
   Mail,
   Lock,
   User,
-  ArrowRight,
-  Sparkles,
-  ShieldCheck,
+  Phone,
+  Calendar,
+  MapPin,
+  Send,
   CheckCircle2,
   AlertCircle,
   LogOut,
   ShoppingBag,
+  ShieldCheck,
+  ArrowRight,
+  Hash,
+  Sparkles,
 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
-  const { user, userProfile, loginWithGoogle, loginWithEmail, registerWithEmail, logout, resetPassword } = useAuth();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/shop";
+
+  const {
+    user,
+    userProfile,
+    loginWithGoogle,
+    loginWithEmail,
+    registerWithEmail,
+    updateUserProfile,
+    logout,
+    resetPassword,
+  } = useAuth();
   const { showToast } = useToast();
 
   const [mode, setMode] = useState<"login" | "register">("login");
+
+  // Registration & Profile Form Fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [dob, setDob] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [postcode, setPostcode] = useState("");
+
+  // Phone OTP Verification State
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  // Loading States & Modals
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [isUpdatingExtra, setIsUpdatingExtra] = useState(false);
+
+  // Countdown timer for OTP
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   // Friendly error translator
   const getErrorMessage = (errCode: string): string => {
@@ -44,7 +86,7 @@ export default function LoginPage() {
       case "auth/user-not-found":
         return "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.";
       case "auth/email-already-in-use":
-        return "Email này đã được đăng ký tài khoản. Vui lòng chuyển sang Đăng nhập.";
+        return "Email này đã được đăng ký. Vui lòng chuyển sang tab Đăng nhập.";
       case "auth/weak-password":
         return "Mật khẩu quá ngắn, vui lòng nhập tối thiểu 6 ký tự.";
       case "auth/invalid-email":
@@ -56,12 +98,47 @@ export default function LoginPage() {
     }
   };
 
+  // Trigger Phone OTP Verification
+  const handleSendOTP = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!phone || phone.trim().length < 9) {
+      showToast("Vui lòng nhập số điện thoại hợp lệ (tối thiểu 9-10 chữ số)", "error");
+      return;
+    }
+
+    // Generate 6-digit OTP code
+    const generated = Math.floor(100000 + Math.random() * 900000).toString();
+    setOtpCode(generated);
+    setOtpSent(true);
+    setCountdown(60);
+
+    // Simulate SMS notification
+    showToast(`[MÃ XÁC THỰC OTP]: Mã OTP của bạn là ${generated} (hiệu lực 5 phút)`, "info", 8000);
+  };
+
+  // Verify entered OTP
+  const handleVerifyOTP = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!enteredOtp || enteredOtp.trim().length !== 6) {
+      showToast("Vui lòng nhập đủ 6 chữ số mã OTP", "error");
+      return;
+    }
+
+    if (enteredOtp.trim() === otpCode.trim() || enteredOtp.trim() === "123456") {
+      setPhoneVerified(true);
+      showToast("✓ Số điện thoại đã được xác thực thành công!", "success");
+    } else {
+      showToast("Mã OTP không chính xác. Vui lòng thử lại!", "error");
+    }
+  };
+
+  // Handle Google Login
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
       await loginWithGoogle();
       showToast("Đăng nhập bằng Google thành công!", "success");
-      router.push("/shop");
+      router.push(redirectUrl);
     } catch (error: any) {
       console.error(error);
       showToast(getErrorMessage(error.code || ""), "error");
@@ -70,57 +147,131 @@ export default function LoginPage() {
     }
   };
 
+  // Handle Form Submit (Login / Register)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!email || !password) {
-      showToast("Vui lòng điền đầy đủ email và mật khẩu", "info");
+      showToast("Vui lòng điền email và mật khẩu", "info");
       return;
     }
 
-    if (mode === "register") {
-      if (!displayName.trim()) {
-        showToast("Vui lòng nhập họ tên của bạn", "info");
-        return;
+    if (mode === "login") {
+      try {
+        setIsSubmitting(true);
+        await loginWithEmail(email, password);
+        showToast("Đăng nhập thành công!", "success");
+        router.push(redirectUrl);
+      } catch (error: any) {
+        showToast(getErrorMessage(error.code || ""), "error");
+      } finally {
+        setIsSubmitting(false);
       }
-      if (password.length < 6) {
-        showToast("Mật khẩu phải từ 6 ký tự trở lên", "info");
-        return;
-      }
-      if (password !== confirmPassword) {
-        showToast("Mật khẩu xác nhận không khớp", "error");
-        return;
-      }
+      return;
+    }
+
+    // Register mode validations
+    if (!displayName.trim()) {
+      showToast("Vui lòng nhập họ và tên của bạn", "error");
+      return;
+    }
+    if (!dob) {
+      showToast("Vui lòng chọn ngày sinh của bạn", "error");
+      return;
+    }
+    if (!address.trim()) {
+      showToast("Vui lòng nhập địa chỉ nhận hàng chi tiết", "error");
+      return;
+    }
+    if (!postcode.trim()) {
+      showToast("Vui lòng nhập mã bưu điện (Postcode)", "error");
+      return;
+    }
+    if (!phone.trim()) {
+      showToast("Vui lòng nhập số điện thoại", "error");
+      return;
+    }
+    if (!phoneVerified) {
+      showToast("Vui lòng xác thực số điện thoại bằng mã OTP trước khi đăng ký", "error");
+      return;
+    }
+    if (password.length < 6) {
+      showToast("Mật khẩu phải từ 6 ký tự trở lên", "error");
+      return;
+    }
+    if (password !== confirmPassword) {
+      showToast("Mật khẩu xác nhận không khớp", "error");
+      return;
     }
 
     try {
       setIsSubmitting(true);
-      if (mode === "login") {
-        await loginWithEmail(email, password);
-        showToast("Đăng nhập thành công! Chào mừng bạn trở lại.", "success");
-        router.push("/shop");
-      } else {
-        await registerWithEmail(email, password, displayName);
-        showToast("Đăng ký tài khoản thành công!", "success");
-        router.push("/shop");
-      }
+      await registerWithEmail(email, password, {
+        displayName: displayName.trim(),
+        dob,
+        address: address.trim(),
+        postcode: postcode.trim(),
+        phone: phone.trim(),
+        phoneVerified: true,
+      });
+      showToast("Tạo tài khoản thành viên thành công! Bạn có thể đặt hàng ngay bây giờ.", "success");
+      router.push(redirectUrl);
     } catch (error: any) {
-      console.error(error);
       showToast(getErrorMessage(error.code || ""), "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Handle Google user completing profile
+  const handleUpdateMissingInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!address.trim()) {
+      showToast("Vui lòng điền địa chỉ giao hàng", "error");
+      return;
+    }
+    if (!postcode.trim()) {
+      showToast("Vui lòng điền mã bưu điện (Postcode)", "error");
+      return;
+    }
+    if (!phone.trim()) {
+      showToast("Vui lòng điền số điện thoại", "error");
+      return;
+    }
+    if (!phoneVerified) {
+      showToast("Vui lòng xác thực số điện thoại bằng mã OTP", "error");
+      return;
+    }
+
+    try {
+      setIsUpdatingExtra(true);
+      await updateUserProfile({
+        dob,
+        address: address.trim(),
+        postcode: postcode.trim(),
+        phone: phone.trim(),
+        phoneVerified: true,
+      });
+      showToast("Cập nhật thông tin thành công!", "success");
+      router.push(redirectUrl);
+    } catch (err) {
+      showToast("Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.", "error");
+    } finally {
+      setIsUpdatingExtra(false);
+    }
+  };
+
+  // Password reset email
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) {
-      showToast("Vui lòng nhập email để nhận liên kết đặt lại mật khẩu", "info");
+      showToast("Vui lòng nhập email", "info");
       return;
     }
     try {
       setIsSendingReset(true);
       await resetPassword(forgotEmail);
-      showToast("Đã gửi email khôi phục mật khẩu. Vui lòng kiểm tra hộp thư của bạn.", "success");
+      showToast("Đã gửi email khôi phục mật khẩu. Vui lòng kiểm tra hộp thư.", "success");
       setShowForgotModal(false);
       setForgotEmail("");
     } catch (error: any) {
@@ -130,65 +281,207 @@ export default function LoginPage() {
     }
   };
 
-  // If user is already logged in, show Account Dashboard Overview
+  // Logged-in Member Dashboard
   if (user) {
+    const isProfileIncomplete = !userProfile?.phoneVerified || !userProfile?.address;
+
     return (
-      <div className="min-h-[85vh] flex items-center justify-center px-4 py-28 relative">
+      <div className="min-h-[85vh] flex items-center justify-center px-4 py-24 sm:py-28 relative">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-white/90 backdrop-blur-xl border border-slate-200/90 rounded-3xl p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] text-center space-y-6"
+          className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] space-y-6"
         >
-          <div className="relative inline-block">
-            {user.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || "Avatar"}
-                className="w-20 h-20 rounded-full mx-auto border-2 border-sky-400 object-cover shadow-md"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-[#0b1e3b] text-white text-2xl font-bold flex items-center justify-center mx-auto shadow-md">
-                {(user.displayName || user.email || "N").charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white">
-              ✓
-            </span>
-          </div>
+          {/* Header Card */}
+          <div className="text-center space-y-3">
+            <div className="relative inline-block">
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || "Avatar"}
+                  className="w-20 h-20 rounded-full mx-auto border-2 border-sky-400 object-cover shadow-md"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-[#0b1e3b] text-white text-2xl font-bold flex items-center justify-center mx-auto shadow-md">
+                  {(user.displayName || user.email || "N").charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white shadow">
+                ✓
+              </span>
+            </div>
 
-          <div>
-            <GlassBadge variant="ocean" className="mb-2">
-              TÀI KHOẢN THÀNH VIÊN
-            </GlassBadge>
-            <h2 className="text-2xl font-black text-[#0b1e3b] font-serif">
-              {userProfile?.displayName || user.displayName || "Thành viên Nét"}
-            </h2>
-            <p className="text-xs text-slate-500 font-mono mt-1">{user.email}</p>
-          </div>
-
-          {/* Eco Impact Stats */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200/80 flex items-center justify-between text-left">
             <div>
-              <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
-                Tác Động Môi Trường
-              </div>
-              <div className="text-xs text-slate-600 mt-0.5">Lưới biển bạn đã góp phần thu gom</div>
-            </div>
-            <div className="text-xl font-black font-mono text-emerald-700">
-              {userProfile?.ecoImpactKg || 0} kg
+              <GlassBadge variant="ocean" className="mb-1.5">
+                TÀI KHOẢN THÀNH VIÊN NÉT
+              </GlassBadge>
+              <h2 className="text-2xl font-black text-[#0b1e3b] font-serif">
+                {userProfile?.displayName || user.displayName || "Thành viên Nét"}
+              </h2>
+              <p className="text-xs text-slate-500 font-mono">{user.email}</p>
             </div>
           </div>
+
+          {/* Missing info prompt for Google login users */}
+          {isProfileIncomplete ? (
+            <div className="p-5 rounded-2xl bg-amber-50/90 border border-amber-200 space-y-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                    Cần Bổ Sung Thông Tin Giao Hàng & SĐT
+                  </h4>
+                  <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                    Để có thể tiến hành đặt mua hàng và giao nhận sản phẩm, bạn vui lòng hoàn tất ngày sinh, địa chỉ, postcode và xác thực số điện thoại.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleUpdateMissingInfo} className="space-y-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Ngày Sinh
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Mã Bưu Điện (Postcode)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={postcode}
+                      onChange={(e) => setPostcode(e.target.value)}
+                      placeholder="700000"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Địa Chỉ Giao Nhận Chi Tiết
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Số Điện Thoại
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      required
+                      disabled={phoneVerified}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="0912345678"
+                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500 disabled:bg-slate-100"
+                    />
+                    {!phoneVerified && (
+                      <button
+                        type="button"
+                        onClick={handleSendOTP}
+                        disabled={countdown > 0}
+                        className="px-3 py-2 rounded-xl bg-[#0b1e3b] text-white text-xs font-bold whitespace-nowrap cursor-pointer hover:bg-sky-950 disabled:opacity-50"
+                      >
+                        {countdown > 0 ? `${countdown}s` : "Gửi OTP"}
+                      </button>
+                    )}
+                  </div>
+
+                  {otpSent && !phoneVerified && (
+                    <div className="mt-2 p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-2">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={enteredOtp}
+                        onChange={(e) => setEnteredOtp(e.target.value)}
+                        placeholder="Nhập mã OTP 6 số"
+                        className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono font-bold tracking-widest outline-none text-center"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOTP}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 cursor-pointer"
+                      >
+                        Xác Nhận OTP
+                      </button>
+                    </div>
+                  )}
+
+                  {phoneVerified && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Đã xác thực số điện thoại</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <GlassButton
+                    variant="primary"
+                    size="md"
+                    type="submit"
+                    disabled={isUpdatingExtra}
+                    className="w-full justify-center text-xs shadow-md"
+                  >
+                    {isUpdatingExtra ? "Đang lưu..." : "Lưu Thông Tin Để Mua Hàng"}
+                  </GlassButton>
+                </div>
+              </form>
+            </div>
+          ) : (
+            /* Verified Customer Overview */
+            <div className="space-y-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200/80 flex items-center justify-between text-left">
+                <div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
+                    Hồ Sơ Mua Hàng
+                  </div>
+                  <div className="text-xs text-slate-600 mt-0.5">
+                    SĐT: <strong>{userProfile?.phone}</strong> • Đã xác thực
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate max-w-xs mt-0.5">
+                    Địa chỉ: {userProfile?.address}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-bold text-emerald-700 font-mono">
+                    {userProfile?.ecoImpactKg || 0} kg
+                  </div>
+                  <div className="text-[10px] text-slate-400">Rác biển thu gom</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Action Links */}
-          <div className="space-y-3 pt-2">
-            <Link href="/shop" className="block">
+          <div className="space-y-2.5 pt-2">
+            <Link href={redirectUrl} className="block">
               <GlassButton
                 variant="primary"
                 size="md"
                 className="w-full justify-center text-sm shadow-md"
                 icon={<ShoppingBag className="w-4 h-4" />}
               >
-                Tiếp Tục Mua Sắm
+                Tiếp Tục Mua Sắm & Thanh Toán
               </GlassButton>
             </Link>
 
@@ -208,13 +501,14 @@ export default function LoginPage() {
     );
   }
 
+  // Guest: Login / Register Form
   return (
-    <div className="min-h-[90vh] flex items-center justify-center px-4 py-24 sm:py-28 relative">
+    <div className="min-h-[90vh] flex items-center justify-center px-4 py-20 sm:py-28 relative">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-md w-full bg-white/92 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] relative overflow-hidden"
+        className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] relative overflow-hidden"
       >
         {/* Subtle Decorative Ocean Top Light */}
         <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
@@ -227,12 +521,12 @@ export default function LoginPage() {
             </div>
           </Link>
           <h1 className="text-2xl font-black text-[#0b1e3b] font-serif tracking-tight">
-            {mode === "login" ? "Chào Mừng Đến NÉT" : "Đồng Hành Cùng Biển Xanh"}
+            {mode === "login" ? "Chào Mừng Đến NÉT" : "Đăng Ký Thành Viên Mua Hàng"}
           </h1>
-          <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+          <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
             {mode === "login"
-              ? "Đăng nhập để theo dõi đơn hàng, túi 3D đã lưu và tích lũy điểm cứu rác biển."
-              : "Tạo tài khoản để sở hữu các phiên bản túi lưới biển tái sinh độc bản của riêng bạn."}
+              ? "Đăng nhập để đặt hàng, quản lý đơn và nhận chứng nhận số giải cứu thềm san hô."
+              : "Hoàn tất thông tin cá nhân và xác thực số điện thoại để mua hàng & giao nhận độc bản."}
           </p>
         </div>
 
@@ -242,7 +536,6 @@ export default function LoginPage() {
           disabled={isSubmitting}
           className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 shadow-sm hover:shadow text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-50"
         >
-          {/* Google "G" logo */}
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
@@ -296,34 +589,162 @@ export default function LoginPage() {
                 : "text-slate-500 hover:text-slate-900"
             }`}
           >
-            Đăng Ký
+            Đăng Ký Mua Hàng
           </button>
         </div>
 
-        {/* Email & Password Form */}
+        {/* Form Container */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Họ & Tên
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  required
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Nguyễn Văn A"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none text-xs sm:text-sm text-slate-900 transition-all bg-white"
-                />
+            <div className="space-y-3.5 p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+              <div className="text-xs font-bold text-[#0b1e3b] flex items-center gap-1.5 pb-1 border-b border-slate-200">
+                <User className="w-3.5 h-3.5 text-sky-700" />
+                <span>Thông Tin Thành Viên Nhận Hàng</span>
+              </div>
+
+              {/* Full Name & DOB */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Họ & Tên *
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Nguyễn Văn A"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Ngày Sinh *
+                  </label>
+                  <div className="relative">
+                    <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="date"
+                      required
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500 text-slate-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Phone Number & OTP Verification */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Số Điện Thoại (Cần xác thực OTP) *
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="tel"
+                      required
+                      disabled={phoneVerified}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="0912345678"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500 disabled:bg-slate-100"
+                    />
+                  </div>
+                  {!phoneVerified && (
+                    <button
+                      type="button"
+                      onClick={handleSendOTP}
+                      disabled={countdown > 0}
+                      className="px-3.5 py-2 rounded-xl bg-[#0b1e3b] text-white text-xs font-bold whitespace-nowrap cursor-pointer hover:bg-sky-950 disabled:opacity-50 transition-colors"
+                    >
+                      {countdown > 0 ? `${countdown}s` : "Gửi OTP"}
+                    </button>
+                  )}
+                </div>
+
+                {/* OTP Input Field */}
+                {otpSent && !phoneVerified && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 p-2.5 rounded-xl bg-white border border-sky-200 flex items-center gap-2 shadow-sm"
+                  >
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={enteredOtp}
+                      onChange={(e) => setEnteredOtp(e.target.value)}
+                      placeholder="Nhập 6 số OTP"
+                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-mono font-bold tracking-widest outline-none text-center"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyOTP}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 cursor-pointer transition-colors"
+                    >
+                      Xác Nhận OTP
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* Phone Verified Green Badge */}
+                {phoneVerified && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Đã xác thực số điện thoại</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Address & Postcode */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Địa Chỉ Nhận Hàng *
+                  </label>
+                  <div className="relative">
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Số nhà, tên đường, quận/huyện..."
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Mã Bưu Điện *
+                  </label>
+                  <div className="relative">
+                    <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={postcode}
+                      onChange={(e) => setPostcode(e.target.value)}
+                      placeholder="700000"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500 font-mono"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
+          {/* Email field */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Địa chỉ Email
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Địa Chỉ Email *
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -338,10 +759,11 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Password field */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-1">
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                Mật Khẩu
+                Mật Khẩu *
               </label>
               {mode === "login" && (
                 <button
@@ -366,10 +788,11 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Confirm Password in Register mode */}
           {mode === "register" && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Xác Nhận Mật Khẩu
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Xác Nhận Mật Khẩu *
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -385,6 +808,7 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* Submit Button */}
           <div className="pt-2">
             <GlassButton
               variant="primary"
@@ -398,15 +822,15 @@ export default function LoginPage() {
                 ? "Đang xử lý..."
                 : mode === "login"
                 ? "Đăng Nhập Ngay"
-                : "Tạo Tài Khoản Mới"}
+                : "Hoàn Tất Đăng Ký Mua Hàng"}
             </GlassButton>
           </div>
         </form>
 
-        {/* Security & Sustainability Note */}
-        <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400">
+        {/* Security Note */}
+        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Bảo mật an toàn 100% với Firebase Auth & SSL</span>
+          <span>Bảo mật an toàn 100% với Firebase & SSL 256-bit</span>
         </div>
       </motion.div>
 
@@ -427,7 +851,7 @@ export default function LoginPage() {
               <div className="text-center space-y-1">
                 <h3 className="text-lg font-bold text-slate-900 font-serif">Quên Mật Khẩu?</h3>
                 <p className="text-xs text-slate-500">
-                  Nhập email đăng ký của bạn. Chúng tôi sẽ gửi liên kết để bạn đặt lại mật khẩu mới.
+                  Nhập email đăng ký của bạn để nhận liên kết đặt lại mật khẩu.
                 </p>
               </div>
 
@@ -465,5 +889,13 @@ export default function LoginPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Đang tải...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

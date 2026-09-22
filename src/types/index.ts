@@ -142,4 +142,5 @@ export type Order = {
   paymentMethod: 'cod' | 'vnpay' | 'momo' | 'bank_transfer';
   paymentStatus: 'pending' | 'paid';
   fulfillmentStatus: 'received' | 'crafting' | 'quality_check' | 'delivering' | 'delivered';
+  userId?: string;
 };

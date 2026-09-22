@@ -44,41 +44,40 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
   }, [videoRef]);
 
   return (
-    <section id="story-hero" className="pt-24 pb-12 px-4 sm:px-8 max-w-7xl mx-auto">
-      {/* Editorial Campaign Stage Container */}
-      <div className="relative min-h-[82vh] rounded-3xl overflow-hidden border border-slate-200/80 shadow-[0_20px_50px_rgba(11,30,59,0.08)] flex items-center justify-center p-6 sm:p-12 bg-black">
-        {/* Background Video - Scaled up so there are ZERO gaps or empty borders */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <video
-            ref={videoRef}
-            src="/assets/hero-ocean.mp4"
-            autoPlay
-            muted
-            playsInline
-            loop={false}
-            preload="auto"
-            className="w-full h-full min-w-full min-h-full object-cover scale-[1.08] sm:scale-[1.06] origin-center filter brightness-[1.04] contrast-[1.02] transform-gpu"
-          />
+    <section id="story-hero" className="relative w-full min-h-[100dvh] h-screen overflow-hidden bg-black flex flex-col justify-between">
+      {/* Fullscreen Edge-to-Edge Background Video - No frame, zero empty spaces */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <video
+          ref={videoRef}
+          src="/assets/hero-ocean.mp4"
+          autoPlay
+          muted
+          playsInline
+          loop={false}
+          preload="auto"
+          className="w-full h-full min-w-full min-h-full object-cover scale-[1.12] origin-center filter brightness-[1.04] contrast-[1.02] transform-gpu"
+        />
 
-          {/* Minimalist Studio Vignette */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#061020]/85 via-black/20 to-[#061020]/40 pointer-events-none" />
-          <div className="absolute inset-0 bg-black/20 pointer-events-none" />
-        </div>
+        {/* Minimalist Studio Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#061020]/90 via-black/25 to-[#061020]/50 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+      </div>
 
-        {/* Replay Intro Film Button in Corner */}
-        {onReplayIntro && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onReplayIntro}
-            className="absolute top-6 right-6 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 text-xs font-mono font-medium shadow-md transition-all cursor-pointer"
-          >
-            <Play className="w-3 h-3 fill-white text-white" />
-            <span>Xem Lại Phim Mở Màn</span>
-          </motion.button>
-        )}
+      {/* Replay Intro Film Button in Corner */}
+      {onReplayIntro && (
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onReplayIntro}
+          className="absolute top-20 sm:top-24 right-6 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 text-xs font-mono font-medium shadow-md transition-all cursor-pointer"
+        >
+          <Play className="w-3 h-3 fill-white text-white" />
+          <span>Xem Lại Phim Mở Màn</span>
+        </motion.button>
+      )}
 
-        {/* Editorial Content: Smoothly rises and fades in as the video docks into place */}
+      {/* Editorial Content: Centered over edge-to-edge video */}
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-8 pt-20">
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{
@@ -86,7 +85,7 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
             y: isIntroShrunk ? 0 : 25,
           }}
           transition={{ duration: 0.85, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 max-w-4xl mx-auto text-center space-y-8"
+          className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8"
         >
           {/* Top Story Chapter Label */}
           <div>
@@ -143,47 +142,49 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
         </motion.div>
       </div>
 
-      {/* 3 Pillar Metrics Bar below Hero */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{
-          opacity: isIntroShrunk ? 1 : 0,
-          y: isIntroShrunk ? 0 : 20,
-        }}
-        transition={{ duration: 0.8, delay: 0.45, ease: "easeOut" }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6"
-      >
-        {[
-          {
-            val: "100%",
-            color: "text-[#0b1e3b]",
-            title: "Sợi Tái Sinh Từ Biển",
-            desc: "Không sử dụng hạt nhựa nguyên sinh từ dầu mỏ",
-          },
-          {
-            val: "3D Real-time",
-            color: "text-sky-600",
-            title: "Mắt Lưới Tự Động Snap",
-            desc: "Gắn charm chuẩn xác vào từng nút dệt thủ công",
-          },
-          {
-            val: "GPS & QR",
-            color: "text-emerald-600",
-            title: "Minh Bạch Lô Thu Gom",
-            desc: "Tra cứu trực tiếp tọa độ vùng biển được giải cứu",
-          },
-        ].map((item, idx) => (
-          <motion.div
-            key={idx}
-            whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-[0_12px_28px_rgba(11,30,59,0.08)] text-center flex flex-col items-center transition-shadow"
-          >
-            <div className={`text-2xl font-black font-mono ${item.color}`}>{item.val}</div>
-            <div className="text-xs font-bold text-slate-700 mt-0.5">{item.title}</div>
-            <div className="text-[11px] text-slate-500 mt-1">{item.desc}</div>
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* 3 Pillar Metrics Bar: Integrated at bottom of edge-to-edge Hero section */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-8 pb-8 sm:pb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{
+            opacity: isIntroShrunk ? 1 : 0,
+            y: isIntroShrunk ? 0 : 20,
+          }}
+          transition={{ duration: 0.8, delay: 0.45, ease: "easeOut" }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          {[
+            {
+              val: "100%",
+              color: "text-sky-300",
+              title: "Sợi Tái Sinh Từ Biển",
+              desc: "Không sử dụng hạt nhựa nguyên sinh từ dầu mỏ",
+            },
+            {
+              val: "3D Real-time",
+              color: "text-teal-300",
+              title: "Mắt Lưới Tự Động Snap",
+              desc: "Gắn charm chuẩn xác vào từng nút dệt thủ công",
+            },
+            {
+              val: "GPS & QR",
+              color: "text-emerald-300",
+              title: "Minh Bạch Lô Thu Gom",
+              desc: "Tra cứu trực tiếp tọa độ vùng biển được giải cứu",
+            },
+          ].map((item, idx) => (
+            <motion.div
+              key={idx}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+              className="p-4 rounded-2xl bg-black/40 border border-white/20 backdrop-blur-md text-center flex flex-col items-center transition-all hover:bg-black/60 shadow-lg"
+            >
+              <div className={`text-2xl font-black font-mono ${item.color}`}>{item.val}</div>
+              <div className="text-xs font-bold text-white mt-0.5">{item.title}</div>
+              <div className="text-[11px] text-slate-300 mt-1">{item.desc}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
     </section>
   );
 };

@@ -26,17 +26,10 @@ import { formatKg } from "@/lib/utils";
 export default function HomePage() {
   const [showIntroModal, setShowIntroModal] = useState(false);
   const [isIntroShrunk, setIsIntroShrunk] = useState(false);
-  const heroVideoRef = React.useRef<HTMLVideoElement>(null);
   const featuredBatch = TRACE_BATCHES[0];
 
-  const handleShrinkStart = (currentTime: number) => {
+  const handleShrinkStart = () => {
     setIsIntroShrunk(true);
-    if (heroVideoRef.current) {
-      try {
-        heroVideoRef.current.currentTime = currentTime;
-        heroVideoRef.current.play().catch(() => {});
-      } catch (e) {}
-    }
   };
 
   return (
@@ -52,7 +45,7 @@ export default function HomePage() {
       {/* Scroll-Driven Cinematic Background Video: scrubs smoothly through video2.mp4 */}
       <ScrollVideoBackground videoSrc="/assets/video2.mp4" />
 
-      {/* 0. Fullscreen Cinematic Video Intro: Narrates the 3 Prologue Acts & Morphs into Hero Section */}
+      {/* 0. Fullscreen Cinematic Video Intro: Narrates the 3 Prologue Acts & Transitions into Original Website Background */}
       <VideoIntroLoader
         forceShow={showIntroModal}
         onShrinkStart={handleShrinkStart}
@@ -60,10 +53,9 @@ export default function HomePage() {
         onClose={() => setShowIntroModal(false)}
       />
 
-      {/* 1. HỒI I • KHỞI NGUỒN TỪ ĐÁY BIỂN SÂU: Synchronized with the morph transition */}
+      {/* 1. HỒI I • KHỞI NGUỒN TỪ ĐÁY BIỂN SÂU: Sits directly on the website's original background */}
       <HeroVideoSection
         isIntroShrunk={isIntroShrunk}
-        externalVideoRef={heroVideoRef}
         onReplayIntro={() => {
           setIsIntroShrunk(false);
           setShowIntroModal(true);

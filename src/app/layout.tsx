@@ -6,6 +6,7 @@ import { Navbar } from "@/components/ui/Navbar";
 import { Footer } from "@/components/ui/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { OceanCanvas3D } from "@/components/3d/OceanCanvas3D";
+import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/ui/ToastNotification";
 
 export const metadata: Metadata = {
@@ -31,24 +32,26 @@ export default function RootLayout({
     <html lang="vi" className="scroll-smooth">
       <body className="min-h-screen flex flex-col relative selection:bg-sky-200 selection:text-[#0b1e3b]">
         <ToastProvider>
-          <CartProvider>
-            <IntroProvider>
-              {/* Subtle Global 3D Ambient Canvas */}
-              <OceanCanvas3D interactive={true} className="fixed inset-0 z-0 opacity-40 pointer-events-none" />
+          <AuthProvider>
+            <CartProvider>
+              <IntroProvider>
+                {/* Subtle Global 3D Ambient Canvas */}
+                <OceanCanvas3D interactive={true} className="fixed inset-0 z-0 opacity-40 pointer-events-none" />
 
-              {/* Floating Navigation */}
-              <Navbar />
+                {/* Floating Navigation */}
+                <Navbar />
 
-              {/* Side-over Cart Drawer */}
-              <CartDrawer />
+                {/* Side-over Cart Drawer */}
+                <CartDrawer />
 
-              {/* Main Content Area */}
-              <main className="flex-1 relative w-full overflow-x-hidden">{children}</main>
+                {/* Main Content Area */}
+                <main className="flex-1 relative w-full overflow-x-hidden">{children}</main>
 
-              {/* Global Footer */}
-              <Footer />
-            </IntroProvider>
-          </CartProvider>
+                {/* Global Footer */}
+                <Footer />
+              </IntroProvider>
+            </CartProvider>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import { useIntro } from "@/context/IntroContext";
+import { useAuth } from "@/context/AuthContext";
 import {
   ShoppingBag,
   Sparkles,
@@ -16,12 +17,14 @@ import {
   Box,
   Layers,
   HeartHandshake,
+  User,
 } from "lucide-react";
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { totalCount, setIsCartOpen } = useCart();
   const { isIntroPlaying } = useIntro();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -134,6 +137,32 @@ export const Navbar: React.FC = () => {
             <span>Xưởng Nét</span>
           </Link>
 
+          {/* User Profile / Login Link */}
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs text-slate-700 hover:text-[#0b1e3b] hover:bg-slate-100 transition-colors font-semibold"
+            title={user ? (user.displayName || user.email || "Tài khoản") : "Đăng nhập"}
+          >
+            {user ? (
+              user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt="Avatar"
+                  className="w-5 h-5 rounded-full object-cover border border-sky-400"
+                />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-[#0b1e3b] text-white text-[10px] font-bold flex items-center justify-center">
+                  {(user.displayName || user.email || "U").charAt(0).toUpperCase()}
+                </div>
+              )
+            ) : (
+              <User className="w-4 h-4 text-slate-700" />
+            )}
+            <span className="hidden sm:inline truncate max-w-[90px]">
+              {user ? (user.displayName?.split(" ")[0] || "Tài Khoản") : "Đăng Nhập"}
+            </span>
+          </Link>
+
           {/* Cart Trigger Button with spring bounce on badge update */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -193,6 +222,15 @@ export const Navbar: React.FC = () => {
                 )}
               </Link>
             ))}
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-sky-800 bg-sky-50/70 hover:bg-sky-100/70 flex items-center gap-2 border border-sky-100"
+            >
+              <User className="w-4 h-4 text-sky-700" />
+              <span>{user ? `Tài Khoản (${user.displayName?.split(" ")[0] || "Thành viên"})` : "Đăng Nhập / Đăng Ký"}</span>
+            </Link>
+
             <Link
               href="/admin"
               onClick={() => setMobileMenuOpen(false)}

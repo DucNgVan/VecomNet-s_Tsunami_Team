@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { COMBOS, BAG_BASES } from "@/data/products";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassBadge } from "@/components/ui/GlassBadge";
 import { formatVND, formatKg } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
@@ -49,9 +48,9 @@ export const FeaturedCollection: React.FC = () => {
         className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4"
       >
         <div>
-          <GlassBadge variant="ocean" className="mb-3">
-            HỒI IV • TUYỆT PHẨM COMBO PHỐI SẴN ĐỘC BẢN
-          </GlassBadge>
+          <div className="text-sky-700 text-xs font-bold uppercase tracking-[0.28em] mb-1.5">
+            Tuyệt Phẩm Phối Sẵn
+          </div>
           <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] tracking-tight">
             Tuyệt Phẩm Phối Sẵn Từ Biển Sâu
           </h2>

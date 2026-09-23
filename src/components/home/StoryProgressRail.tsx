@@ -15,31 +15,31 @@ export interface StoryAct {
 export const STORY_ACTS: StoryAct[] = [
   {
     id: "story-hero",
-    actNumber: "HỒI I",
+    actNumber: "01",
     title: "Khởi Nguồn Từ Biển Sâu",
     shortLabel: "01. Khởi nguồn",
   },
   {
     id: "story-bags3d",
-    actNumber: "HỒI II",
+    actNumber: "02",
     title: "4 Dáng Túi 3D Biểu Tượng",
     shortLabel: "02. Túi 3D",
   },
   {
     id: "story-charms3d",
-    actNumber: "HỒI III",
+    actNumber: "03",
     title: "Charm Hộ Mệnh 3D",
     shortLabel: "03. Charm 3D",
   },
   {
     id: "story-collection",
-    actNumber: "HỒI IV",
+    actNumber: "04",
     title: "Tuyệt Phẩm Combo Phối Sẵn",
     shortLabel: "04. Combo",
   },
   {
     id: "story-showroom",
-    actNumber: "HỒI V",
+    actNumber: "05",
     title: "Cửa Hàng Bền Vững NÉT",
     shortLabel: "05. Cửa hàng",
   },
@@ -168,7 +168,7 @@ export const StoryProgressRail: React.FC = () => {
         </span>
 
         <span className=" text-[10px] uppercase font-bold text-sky-700 tracking-wider">
-          {currentAct.actNumber}:
+          {currentAct.actNumber} •
         </span>
 
         <span className="font-semibold text-slate-800 hidden sm:inline max-w-[130px] truncate">

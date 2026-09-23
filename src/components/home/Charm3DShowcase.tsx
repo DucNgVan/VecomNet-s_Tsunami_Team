@@ -7,7 +7,6 @@ import { CHARMS } from "@/data/products";
 import { Charm } from "@/types";
 import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassBadge } from "@/components/ui/GlassBadge";
 import { formatVND } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
@@ -52,10 +51,10 @@ export const Charm3DShowcase: React.FC = () => {
         transition={{ duration: 0.6 }}
         className="text-center max-w-3xl mx-auto mb-12 space-y-3"
       >
-        <GlassBadge variant="emerald" className="gap-1.5">
+        <div className="flex items-center justify-center gap-2 text-emerald-700 text-xs font-bold uppercase tracking-[0.28em]">
           <Gem className="w-3.5 h-3.5 text-emerald-600" />
-          <span>HỒI III • BỘ SƯU TẬP CHARM 3D HỘ MỆNH BIỂN SÂU</span>
-        </GlassBadge>
+          <span>Charm Hộ Mệnh 3D • Biển Sâu</span>
+        </div>
         <h2 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight">
           Linh Hồn Đại Dương Trong Từng Chi Tiết 3D
         </h2>

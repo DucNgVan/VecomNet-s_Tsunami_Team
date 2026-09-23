@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassBadge } from "@/components/ui/GlassBadge";
 import { ShoppingBag, ArrowRight, ShieldCheck, HeartHandshake, Sparkles, Package } from "lucide-react";
 
 export const ProductShowroomBanner: React.FC = () => {
@@ -21,10 +20,10 @@ export const ProductShowroomBanner: React.FC = () => {
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
 
         <div className="max-w-3xl mx-auto space-y-6">
-          <GlassBadge variant="emerald" className="gap-1.5 mx-auto">
+          <div className="flex items-center justify-center gap-2 text-emerald-700 text-xs font-bold uppercase tracking-[0.28em]">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>HỒI V • TRẢI NGHIỆM TRỌN VẸN TẠI CỬA HÀNG NÉT</span>
-          </GlassBadge>
+            <span>Trải Nghiệm Mua Sắm • Cửa Hàng Bền Vững</span>
+          </div>
 
           <h2 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight leading-tight">
             Sở Hữu Dấu Ấn Biển Cả Của Riêng Bạn

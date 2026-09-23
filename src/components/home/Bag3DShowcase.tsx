@@ -7,7 +7,6 @@ import { BAG_BASES, BAG_COLORS } from "@/data/products";
 import { BagBase, BagMeshColor } from "@/types";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassBadge } from "@/components/ui/GlassBadge";
 import { formatVND, formatKg } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
@@ -57,10 +56,10 @@ export const Bag3DShowcase: React.FC = () => {
         transition={{ duration: 0.6 }}
         className="text-center max-w-3xl mx-auto mb-12 space-y-3"
       >
-        <GlassBadge variant="ocean" className="gap-1.5">
+        <div className="flex items-center justify-center gap-2 text-sky-700 text-xs font-bold uppercase tracking-[0.28em]">
           <Box className="w-3.5 h-3.5 text-sky-600" />
-          <span>HỒI II • 4 DÁNG TÚI BIỂU TƯỢNG (3D SHOWCASE)</span>
-        </GlassBadge>
+          <span>4 Dáng Túi Biểu Tượng • 3D Atelier</span>
+        </div>
         <h2 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight">
           Chiêm Ngưỡng Từng Mắt Lưới 3D Tái Sinh
         </h2>

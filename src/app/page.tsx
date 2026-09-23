@@ -50,48 +50,48 @@ export default function HomePage() {
         }}
       />
 
-      {/* Narrative Bridge: Hồi I -> Hồi II */}
+      {/* Narrative Bridge: 1 -> 2 */}
       <StoryBridge
-        actLabel="KIẾN TẠO DÁNG HÌNH • HỒI II"
+        actLabel="KIẾN TẠO DÁNG HÌNH"
         leadText="Khi sợi lưới ma ngủ vùi hóa thành 4 dáng túi biểu tượng..."
         subText="Mỗi phom dáng được định hình thủ công tỉ mỉ, tích hợp mô hình 3D thực tế cho phép bạn xoay 360 độ và chọn sắc màu đại dương yêu thích."
         targetId="story-bags3d"
       />
 
-      {/* 2. HỒI II • 4 DÁNG TÚI BIỂU TƯỢNG (3D BAG SHOWCASE) */}
+      {/* 2. 4 DÁNG TÚI BIỂU TƯỢNG (3D BAG SHOWCASE) */}
       <Bag3DShowcase />
 
-      {/* Narrative Bridge: Hồi II -> Hồi III */}
+      {/* Narrative Bridge: 2 -> 3 */}
       <StoryBridge
-        actLabel="LINH HỒN BIỂN CẢ • HỒI III"
+        actLabel="LINH HỒN BIỂN CẢ"
         leadText="Điểm xuyết năng lượng bình an qua từng charm hộ mệnh..."
         subText="Đúc từ đồng thau hàng hải tái sinh, pha lê rác biển và men ngọc phát quang. Soi rõ từng đường nét tinh xảo trên sân khấu 3D."
         targetId="story-charms3d"
       />
 
-      {/* 3. HỒI III • BỘ SƯU TẬP CHARM 3D HỘ MỆNH BIỂN SÂU */}
+      {/* 3. BỘ SƯU TẬP CHARM 3D HỘ MỆNH BIỂN SÂU */}
       <Charm3DShowcase />
 
-      {/* Narrative Bridge: Hồi III -> Hồi IV */}
+      {/* Narrative Bridge: 3 -> 4 */}
       <StoryBridge
-        actLabel="TUYỆT PHẨM ĐỘC BẢN • HỒI IV"
+        actLabel="TUYỆT PHẨM ĐỘC BẢN"
         leadText="Sự giao thoa hoàn mỹ giữa túi lưới và charm phong thủy..."
         subText="Khám phá các set combo phối sẵn độc quyền được các nghệ nhân tuyển chọn tỉ mỉ theo từng câu chuyện đại dương."
         targetId="story-collection"
       />
 
-      {/* 4. HỒI IV • BỘ SƯU TẬP COMBO PHỐI SẴN ĐỘC BẢN */}
+      {/* 4. BỘ SƯU TẬP COMBO PHỐI SẴN ĐỘC BẢN */}
       <FeaturedCollection />
 
-      {/* Narrative Bridge: Hồi IV -> Hồi V */}
+      {/* Narrative Bridge: 4 -> 5 */}
       <StoryBridge
-        actLabel="TRẢI NGHIỆM TRỌN VẸN • HỒI V"
+        actLabel="TRẢI NGHIỆM TRỌN VẸN"
         leadText="Tiếp nối hành trình thời trang bền vững cùng NÉT..."
         subText="Ghé thăm cửa hàng để sở hữu những tác phẩm độc bản và chung tay giải cứu rạn san hô Việt Nam."
         targetId="story-showroom"
       />
 
-      {/* 5. HỒI V • KHÁM PHÁ CỬA HÀNG BỀN VỮNG */}
+      {/* 5. KHÁM PHÁ CỬA HÀNG BỀN VỮNG */}
       <ProductShowroomBanner />
     </motion.div>
   );

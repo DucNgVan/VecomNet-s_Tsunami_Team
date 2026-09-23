@@ -32,12 +32,10 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
           transition={{ duration: 0.85, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-8"
         >
-          {/* Top Story Chapter Label */}
-          <div>
-            <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-white/90 text-[#0b1e3b] text-[10px] sm:text-xs font-bold tracking-wider shadow-sm border border-slate-200/90 backdrop-blur-md">
-              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sky-600 animate-spin" />
-              <span>HỒI I • KHỞI NGUỒN TỪ BIỂN SÂU • NÉT SIGNATURE</span>
-            </span>
+          {/* Top Category Overline */}
+          <div className="flex items-center justify-center gap-2 text-sky-800 text-[11px] sm:text-xs font-bold uppercase tracking-[0.28em]">
+            <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+            <span>Thời Trang Bền Vững Từ Biển Sâu • NÉT Signature</span>
           </div>
 
           {/* Main Headline */}

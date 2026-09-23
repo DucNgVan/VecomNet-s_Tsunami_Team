@@ -50,7 +50,7 @@ export const FeaturedCollection: React.FC = () => {
       >
         <div>
           <GlassBadge variant="ocean" className="mb-3">
-            HỒI IV • KIỆT TÁC THỜI TRANG HIỆN HỮU
+            HỒI IV • TUYỆT PHẨM COMBO PHỐI SẴN ĐỘC BẢN
           </GlassBadge>
           <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] tracking-tight">
             Tuyệt Phẩm Phối Sẵn Từ Biển Sâu
@@ -164,17 +164,14 @@ export const FeaturedCollection: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <Link
-                  href={`/customizer?bagId=${combo.bagBase.id}&colorId=${combo.color.id}`}
-                  className="w-full"
-                >
+                <Link href="/shop" className="w-full">
                   <GlassButton
                     variant="secondary"
                     size="sm"
                     className="w-full text-xs cursor-pointer"
-                    icon={<Wand2 className="w-3.5 h-3.5 text-sky-600" />}
+                    icon={<ArrowRight className="w-3.5 h-3.5 text-[#0b1e3b]" />}
                   >
-                    Tùy Biến
+                    Xem Chi Tiết
                   </GlassButton>
                 </Link>
 

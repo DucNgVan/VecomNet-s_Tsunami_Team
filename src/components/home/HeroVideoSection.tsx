@@ -49,8 +49,8 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
                 TỪ LƯỚI ĐÁNH CÁ
               </span>
 
-              {/* Line 2: Haute Couture Transformation */}
-              <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold italic uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 leading-[1.28] sm:leading-[1.22] pb-1 drop-shadow-[0_4px_24px_rgba(13,148,136,0.18)]">
+              {/* Line 2: Haute Couture Transformation - with generous top padding to prevent Vietnamese diacritic clipping */}
+              <span className="inline-block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 leading-[1.38] pt-3 pb-2 sm:pt-5 sm:pb-3 drop-shadow-[0_4px_24px_rgba(13,148,136,0.18)] [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
                 <span className="sm:hidden">
                   ĐẾN TUYỆT TÁC<br />THỜI TRANG
                 </span>
@@ -78,7 +78,7 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
                   className="w-full sm:w-auto min-w-[200px] bg-[#0b1e3b] text-white hover:bg-sky-950 border-[#0b1e3b] shadow-xl font-bold cursor-pointer text-xs sm:text-sm py-2.5 sm:py-3"
                   icon={<ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-sky-300" />}
                 >
-                  Mua Ngay • Buy Now
+                  Mua Ngay
                 </GlassButton>
               </motion.div>
             </Link>

@@ -56,11 +56,11 @@ export const Bag3DShowcase: React.FC = () => {
         transition={{ duration: 0.6 }}
         className="text-center max-w-3xl mx-auto mb-12 space-y-3"
       >
-        <div className="flex items-center justify-center gap-2 text-sky-700 text-xs font-bold uppercase tracking-[0.28em]">
-          <Box className="w-3.5 h-3.5 text-sky-600" />
-          <span>4 Dáng Túi Biểu Tượng • 3D Atelier</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+          <Box className="w-3.5 h-3.5 text-sky-400" />
+          <span>HỒI II • 4 DÁNG TÚI BIỂU TƯỢNG (3D ATELIER)</span>
         </div>
-        <h2 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight">
+        <h2 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight">
           Chiêm Ngưỡng Từng Mắt Lưới 3D Tái Sinh
         </h2>
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed">

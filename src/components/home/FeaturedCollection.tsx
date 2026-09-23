@@ -48,10 +48,11 @@ export const FeaturedCollection: React.FC = () => {
         className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4"
       >
         <div>
-          <div className="text-sky-700 text-xs font-bold uppercase tracking-[0.28em] mb-1.5">
-            Tuyệt Phẩm Phối Sẵn
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>HỒI IV • TUYỆT PHẨM COMBO PHỐI SẴN ĐỘC BẢN</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] tracking-tight">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#0b1e3b] tracking-tight">
             Tuyệt Phẩm Phối Sẵn Từ Biển Sâu
           </h2>
           <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-xl leading-relaxed">

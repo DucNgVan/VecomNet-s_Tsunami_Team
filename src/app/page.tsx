@@ -52,7 +52,7 @@ export default function HomePage() {
 
       {/* Narrative Bridge: 1 -> 2 */}
       <StoryBridge
-        actLabel="KIẾN TẠO DÁNG HÌNH"
+        actLabel="HỒI II • KIẾN TẠO DÁNG HÌNH"
         leadText="Khi sợi lưới ma ngủ vùi hóa thành 4 dáng túi biểu tượng..."
         subText="Mỗi phom dáng được định hình thủ công tỉ mỉ, tích hợp mô hình 3D thực tế cho phép bạn xoay 360 độ và chọn sắc màu đại dương yêu thích."
         targetId="story-bags3d"
@@ -63,7 +63,7 @@ export default function HomePage() {
 
       {/* Narrative Bridge: 2 -> 3 */}
       <StoryBridge
-        actLabel="LINH HỒN BIỂN CẢ"
+        actLabel="HỒI III • LINH HỒN BIỂN CẢ"
         leadText="Điểm xuyết năng lượng bình an qua từng charm hộ mệnh..."
         subText="Đúc từ đồng thau hàng hải tái sinh, pha lê rác biển và men ngọc phát quang. Soi rõ từng đường nét tinh xảo trên sân khấu 3D."
         targetId="story-charms3d"
@@ -74,7 +74,7 @@ export default function HomePage() {
 
       {/* Narrative Bridge: 3 -> 4 */}
       <StoryBridge
-        actLabel="TUYỆT PHẨM ĐỘC BẢN"
+        actLabel="HỒI IV • TUYỆT PHẨM ĐỘC BẢN"
         leadText="Sự giao thoa hoàn mỹ giữa túi lưới và charm phong thủy..."
         subText="Khám phá các set combo phối sẵn độc quyền được các nghệ nhân tuyển chọn tỉ mỉ theo từng câu chuyện đại dương."
         targetId="story-collection"
@@ -85,7 +85,7 @@ export default function HomePage() {
 
       {/* Narrative Bridge: 4 -> 5 */}
       <StoryBridge
-        actLabel="TRẢI NGHIỆM TRỌN VẸN"
+        actLabel="HỒI V • TRẢI NGHIỆM TRỌN VẸN"
         leadText="Tiếp nối hành trình thời trang bền vững cùng NÉT..."
         subText="Ghé thăm cửa hàng để sở hữu những tác phẩm độc bản và chung tay giải cứu rạn san hô Việt Nam."
         targetId="story-showroom"

@@ -15,31 +15,31 @@ export interface StoryAct {
 export const STORY_ACTS: StoryAct[] = [
   {
     id: "story-hero",
-    actNumber: "01",
-    title: "Khởi Nguồn Từ Biển Sâu",
+    actNumber: "HỒI I",
+    title: "Khởi Nguồn Biển Sâu",
     shortLabel: "01. Khởi nguồn",
   },
   {
     id: "story-bags3d",
-    actNumber: "02",
+    actNumber: "HỒI II",
     title: "4 Dáng Túi 3D Biểu Tượng",
     shortLabel: "02. Túi 3D",
   },
   {
     id: "story-charms3d",
-    actNumber: "03",
+    actNumber: "HỒI III",
     title: "Charm Hộ Mệnh 3D",
     shortLabel: "03. Charm 3D",
   },
   {
     id: "story-collection",
-    actNumber: "04",
+    actNumber: "HỒI IV",
     title: "Tuyệt Phẩm Combo Phối Sẵn",
     shortLabel: "04. Combo",
   },
   {
     id: "story-showroom",
-    actNumber: "05",
+    actNumber: "HỒI V",
     title: "Cửa Hàng Bền Vững NÉT",
     shortLabel: "05. Cửa hàng",
   },
@@ -160,18 +160,18 @@ export const StoryProgressRail: React.FC = () => {
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-white/95 hover:bg-white text-[#0b1e3b] backdrop-blur-xl border border-slate-200/90 shadow-[0_10px_30px_rgba(11,30,59,0.12)] cursor-pointer text-xs font-medium transition-all group"
+        className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0b1e3b] hover:bg-sky-950 text-white backdrop-blur-xl border border-sky-800 shadow-[0_10px_30px_rgba(11,30,59,0.18)] cursor-pointer text-xs font-medium transition-all group"
       >
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-600" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400" />
         </span>
 
-        <span className=" text-[10px] uppercase font-bold text-sky-700 tracking-wider">
+        <span className="text-[10px] uppercase font-bold text-sky-300 tracking-wider">
           {currentAct.actNumber} •
         </span>
 
-        <span className="font-semibold text-slate-800 hidden sm:inline max-w-[130px] truncate">
+        <span className="font-serif font-semibold text-slate-100 hidden sm:inline max-w-[140px] truncate">
           {currentAct.title}
         </span>
 

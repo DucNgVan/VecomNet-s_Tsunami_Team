@@ -20,12 +20,12 @@ export const ProductShowroomBanner: React.FC = () => {
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
 
         <div className="max-w-3xl mx-auto space-y-6">
-          <div className="flex items-center justify-center gap-2 text-emerald-700 text-xs font-bold uppercase tracking-[0.28em]">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Trải Nghiệm Mua Sắm • Cửa Hàng Bền Vững</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>HỒI V • TRẢI NGHIỆM TRỌN VẸN TẠI CỬA HÀNG NÉT</span>
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight leading-tight">
+          <h2 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
             Sở Hữu Dấu Ấn Biển Cả Của Riêng Bạn
           </h2>
 

@@ -35,24 +35,22 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
           {/* Subtle luminous ocean aura for crystal clear typography against background video */}
           <div className="absolute inset-0 max-w-2xl mx-auto bg-gradient-to-b from-sky-200/25 via-white/35 to-teal-100/20 blur-3xl -z-10 pointer-events-none rounded-full" />
 
-          {/* Top Category Overline */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-slate-200/80 shadow-xs mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-sky-600 animate-spin" style={{ animationDuration: "12s" }} />
-            <span className="text-sky-900 text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em]">
-              Thời Trang Bền Vững Từ Biển Sâu • NÉT Signature
-            </span>
+          {/* Top Category Overline: High Contrast Hồi I Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300 animate-spin" style={{ animationDuration: "12s" }} />
+            <span>HỒI I • KHỞI NGUỒN TỪ BIỂN SÂU • NÉT SIGNATURE</span>
           </div>
 
-          {/* Main Headline with generous vertical spacing and architectural hierarchy */}
+          {/* Main Headline with generous vertical spacing and Playfair Display editorial hierarchy */}
           <div className="space-y-4 sm:space-y-6">
-            <h1 className="flex flex-col items-center justify-center gap-2.5 sm:gap-3.5 md:gap-4">
+            <h1 className="font-serif flex flex-col items-center justify-center gap-2.5 sm:gap-3.5 md:gap-4">
               {/* Line 1: Origin */}
-              <span className="block text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight text-[#0b1e3b] leading-[1.28] sm:leading-[1.2]">
+              <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight text-[#0b1e3b] leading-[1.25] sm:leading-[1.18]">
                 TỪ LƯỚI ĐÁNH CÁ
               </span>
 
               {/* Line 2: Haute Couture Transformation */}
-              <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 leading-[1.3] sm:leading-[1.22] pb-1 drop-shadow-[0_4px_24px_rgba(13,148,136,0.18)]">
+              <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold italic uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 leading-[1.28] sm:leading-[1.22] pb-1 drop-shadow-[0_4px_24px_rgba(13,148,136,0.18)]">
                 <span className="sm:hidden">
                   ĐẾN TUYỆT TÁC<br />THỜI TRANG
                 </span>

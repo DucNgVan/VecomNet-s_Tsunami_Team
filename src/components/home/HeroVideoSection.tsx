@@ -30,24 +30,40 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
             y: isIntroShrunk ? 0 : 25,
           }}
           transition={{ duration: 0.85, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-8"
+          className="max-w-5xl mx-auto text-center space-y-5 sm:space-y-8 relative"
         >
+          {/* Subtle luminous ocean aura for crystal clear typography against background video */}
+          <div className="absolute inset-0 max-w-2xl mx-auto bg-gradient-to-b from-sky-200/25 via-white/35 to-teal-100/20 blur-3xl -z-10 pointer-events-none rounded-full" />
+
           {/* Top Category Overline */}
-          <div className="flex items-center justify-center gap-2 text-sky-800 text-[11px] sm:text-xs font-bold uppercase tracking-[0.28em]">
-            <Sparkles className="w-3.5 h-3.5 text-sky-600" />
-            <span>Thời Trang Bền Vững Từ Biển Sâu • NÉT Signature</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-slate-200/80 shadow-xs mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-sky-600 animate-spin" style={{ animationDuration: "12s" }} />
+            <span className="text-sky-900 text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em]">
+              Thời Trang Bền Vững Từ Biển Sâu • NÉT Signature
+            </span>
           </div>
 
-          {/* Main Headline */}
-          <div className="space-y-2 sm:space-y-4">
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight text-[#0b1e3b] leading-[1.15] sm:leading-[1.08]">
-              TỪ LƯỚI ĐÁNH CÁ <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-700 via-teal-600 to-emerald-700 italic">
-                ĐẾN TUYỆT TÁC THỜI TRANG
+          {/* Main Headline with generous vertical spacing and architectural hierarchy */}
+          <div className="space-y-4 sm:space-y-6">
+            <h1 className="flex flex-col items-center justify-center gap-2.5 sm:gap-3.5 md:gap-4">
+              {/* Line 1: Origin */}
+              <span className="block text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight text-[#0b1e3b] leading-[1.28] sm:leading-[1.2]">
+                TỪ LƯỚI ĐÁNH CÁ
+              </span>
+
+              {/* Line 2: Haute Couture Transformation */}
+              <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 leading-[1.3] sm:leading-[1.22] pb-1 drop-shadow-[0_4px_24px_rgba(13,148,136,0.18)]">
+                <span className="sm:hidden">
+                  ĐẾN TUYỆT TÁC<br />THỜI TRANG
+                </span>
+                <span className="hidden sm:inline sm:whitespace-nowrap">
+                  ĐẾN TUYỆT TÁC THỜI TRANG
+                </span>
               </span>
             </h1>
 
-            <p className="text-xs sm:text-base md:text-lg text-slate-600 max-w-sm sm:max-w-2xl mx-auto font-normal leading-relaxed line-clamp-3 sm:line-clamp-none">
+            {/* Editorial Description */}
+            <p className="text-xs sm:text-base md:text-lg text-slate-600 max-w-sm sm:max-w-2xl mx-auto font-normal leading-relaxed line-clamp-3 sm:line-clamp-none pt-1">
               Mỗi chiếc túi <strong className="text-[#0b1e3b] font-semibold">NÉT</strong> và charm thủy tinh
               được tái sinh từ hàng nghìn mét lưới ma giải cứu dưới đáy biển Việt Nam, hòa quyện giữa kỹ
               nghệ đan thủ công và mỹ học tối giản đương đại.

@@ -49,16 +49,16 @@ export const Charm3DShowcase: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="text-center max-w-3xl mx-auto mb-12 space-y-3"
+        className="text-center max-w-5xl mx-auto mb-12 space-y-3"
       >
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
           <Gem className="w-3.5 h-3.5 text-emerald-400" />
           <span>HỒI III • BỘ SƯU TẬP CHARM 3D HỘ MỆNH</span>
         </div>
-        <h2 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight">
+        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
           Linh Hồn Đại Dương Trong Từng Chi Tiết 3D
         </h2>
-        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+        <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl mx-auto">
           Được đúc từ đồng thau hàng hải tái sinh, pha lê ép lạnh và men ngọc phát quang.
           Mỗi chiếc charm là một biểu tượng hộ mệnh mang lại bình an và may mắn cho chủ nhân.
         </p>

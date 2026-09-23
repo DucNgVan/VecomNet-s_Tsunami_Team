@@ -45,7 +45,7 @@ export const HeroVideoSection: React.FC<HeroVideoSectionProps> = ({
           <div className="space-y-4 sm:space-y-6">
             <h1 className="font-serif flex flex-col items-center justify-center gap-2.5 sm:gap-3.5 md:gap-4">
               {/* Line 1: Origin */}
-              <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight text-[#0b1e3b] leading-[1.25] sm:leading-[1.18]">
+              <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight text-[#0b1e3b] leading-[1.25] sm:leading-[1.18] sm:whitespace-nowrap">
                 TỪ LƯỚI ĐÁNH CÁ
               </span>
 

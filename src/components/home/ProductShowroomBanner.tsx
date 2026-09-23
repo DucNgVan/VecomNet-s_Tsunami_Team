@@ -19,17 +19,17 @@ export const ProductShowroomBanner: React.FC = () => {
         {/* Glow accent */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
 
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
             <span>HỒI V • TRẢI NGHIỆM TRỌN VẸN TẠI CỬA HÀNG NÉT</span>
           </div>
 
-          <h2 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
             Sở Hữu Dấu Ấn Biển Cả Của Riêng Bạn
           </h2>
 
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl mx-auto">
             Khám phá đầy đủ các dáng túi phôi đan thủ công, charm thủy tinh phong thủy và các set combo
             được đóng gói tinh xảo trong hộp quà phủ sương biển. Mua sắm an toàn, tiện lợi và chung tay
             giải cứu rạn san hô Việt Nam.

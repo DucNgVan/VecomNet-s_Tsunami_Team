@@ -43,7 +43,7 @@ export const StoryBridge: React.FC<StoryBridgeProps> = ({
       <div className="w-[1px] h-12 bg-gradient-to-b from-transparent via-sky-400 to-sky-600 mb-4" />
 
       {/* High-Contrast Frosted Glass Atelier Story Card */}
-      <div className="w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_16px_50px_rgba(11,30,59,0.09)] transition-all duration-300 group-hover:shadow-[0_20px_60px_rgba(11,30,59,0.14)] group-hover:border-sky-200/90 relative overflow-hidden">
+      <div className="w-full max-w-3xl p-6 sm:p-8 rounded-3xl bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_16px_50px_rgba(11,30,59,0.09)] transition-all duration-300 group-hover:shadow-[0_20px_60px_rgba(11,30,59,0.14)] group-hover:border-sky-200/90 relative overflow-hidden">
         {/* Subtle top edge glow */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400 opacity-80" />
 

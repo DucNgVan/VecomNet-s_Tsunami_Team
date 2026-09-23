@@ -52,7 +52,7 @@ export const FeaturedCollection: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5 text-teal-300" />
             <span>HỒI IV • TUYỆT PHẨM COMBO PHỐI SẴN ĐỘC BẢN</span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#0b1e3b] tracking-tight">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
             Tuyệt Phẩm Phối Sẵn Từ Biển Sâu
           </h2>
           <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-xl leading-relaxed">

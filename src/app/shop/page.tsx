@@ -101,13 +101,16 @@ export default function ShopPage() {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="text-center max-w-2xl mx-auto space-y-3"
+          className="text-center max-w-3xl mx-auto space-y-3"
         >
-          <GlassBadge variant="ocean">CỬA HÀNG BỀN VỮNG NÉT</GlassBadge>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>CỬA HÀNG BỀN VỮNG NÉT</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
             Bộ Sưu Tập Túi Lưới & Charm Biển Sâu
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
             Khám phá những thiết kế được hoàn thiện thủ công từ lưới ma tái sinh hoặc đưa vào Nét Lab để gắn charm thủy tinh phong thủy độc bản.
           </p>
         </motion.div>
@@ -144,9 +147,9 @@ export default function ShopPage() {
             className="space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2">
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center gap-2">
                 <span>Bộ Sưu Tập Phối Sẵn (Combos)</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold font-sans">
                   {COMBOS.length} mẫu
                 </span>
               </h2>
@@ -197,7 +200,7 @@ export default function ShopPage() {
                     </div>
                   </div>
 
-                  <h3 className="text-base font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
+                  <h3 className="font-serif text-lg font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
                     {combo.name}
                   </h3>
                   <p className="text-xs text-slate-600 mt-1 line-clamp-2">{combo.tagline}</p>
@@ -254,9 +257,9 @@ export default function ShopPage() {
           className="space-y-4 pt-6"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center gap-2">
               <span>Phôi Túi Lưới (Bag Bases)</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold font-sans">
                 {BAG_BASES.length} mẫu dáng
               </span>
             </h2>
@@ -303,7 +306,7 @@ export default function ShopPage() {
                       </div>
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-sky-700 transition-colors">
+                    <h3 className="font-serif text-base font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
                       {bag.name}
                     </h3>
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2">{bag.tagline}</p>
@@ -355,9 +358,9 @@ export default function ShopPage() {
           className="space-y-4 pt-6"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#0b1e3b] flex items-center gap-2">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center gap-2">
               <span>Charm Đơn Biển Sâu (Charms)</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold font-sans">
                 {CHARMS.length} phụ kiện
               </span>
             </h2>
@@ -393,7 +396,7 @@ export default function ShopPage() {
                       </div>
                     </div>
 
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-sky-700 transition-colors line-clamp-1">
+                    <h4 className="font-serif text-sm font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors line-clamp-1">
                       {charm.vietnameseName}
                     </h4>
                     <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">

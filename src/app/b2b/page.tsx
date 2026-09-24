@@ -54,8 +54,11 @@ export default function B2BPage() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="text-center max-w-3xl mx-auto space-y-4"
         >
-          <GlassBadge variant="emerald">GIẢI PHÁP DOANH NGHIỆP & ESG PARTNERSHIP</GlassBadge>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b] tracking-tight leading-tight">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>GIẢI PHÁP DOANH NGHIỆP & ESG PARTNERSHIP</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-[#0b1e3b] tracking-tight leading-tight pt-2">
             Nâng Tầm Thương Hiệu Bền Vững <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-700 via-teal-700 to-emerald-700">
               Qua Quà Tặng Tái Sinh Đại Dương
@@ -70,7 +73,7 @@ export default function B2BPage() {
         {/* Interactive ESG Impact Calculator for Corporates */}
         <GlassCard className="p-8 sm:p-10 max-w-4xl mx-auto shadow-[0_12px_40px_rgba(11,30,59,0.06)] border border-slate-200/90 bg-white/95 backdrop-blur-md">
           <div className="text-center space-y-2 mb-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#0b1e3b] flex items-center justify-center gap-2">
+            <h2 className="font-serif text-xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center justify-center gap-2">
               <Sparkles className="w-5 h-5 text-emerald-600" />
               <span>Ước Tính Chỉ Số Tác Động ESG Của Doanh Nghiệp Bạn</span>
             </h2>
@@ -134,7 +137,7 @@ export default function B2BPage() {
             <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-800 flex items-center justify-center text-xl font-bold shadow-xs">
               🏷️
             </div>
-            <h3 className="text-base font-bold text-[#0b1e3b]">Khắc Logo Riêng</h3>
+            <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Khắc Logo Riêng</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               Khắc laser logo nhận diện thương hiệu công ty trên tag da vi sợi sinh học hoặc dập nổi
               trên charm kim loại tái chế cao cấp.
@@ -147,7 +150,7 @@ export default function B2BPage() {
             <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-800 flex items-center justify-center text-xl font-bold shadow-xs">
               📜
             </div>
-            <h3 className="text-base font-bold text-[#0b1e3b]">Chứng Chỉ ESG Chính Thức</h3>
+            <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Chứng Chỉ ESG Chính Thức</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               Mỗi đơn hàng được cấp chứng thư xác nhận khối lượng rác thải đại dương đã xử lý từ tổ
               chức bảo tồn biển độc lập.
@@ -160,7 +163,7 @@ export default function B2BPage() {
             <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-xl font-bold shadow-xs">
               📦
             </div>
-            <h3 className="text-base font-bold text-[#0b1e3b]">Bao Bì Thủy Tinh & Bã Mía</h3>
+            <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Bao Bì Thủy Tinh & Bã Mía</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               Hộp quà đóng gói sang trọng làm từ 100% sợi thực vật tái sinh, thiệp cảm ơn in lời nhắn
               của Ban Giám Đốc gửi đến đối tác.
@@ -177,7 +180,7 @@ export default function B2BPage() {
               <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl mx-auto">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold text-[#0b1e3b]">Gửi Yêu Cầu Báo Giá Thành Công!</h3>
+              <h3 className="font-serif text-2xl font-bold text-[#0b1e3b]">Gửi Yêu Cầu Báo Giá Thành Công!</h3>
               <p className="text-sm text-slate-600 max-w-md mx-auto">
                 Đội ngũ chuyên viên tư vấn quà tặng bền vững của NÉT sẽ liên hệ lại với bạn trong vòng
                 2 giờ làm việc kèm catalogue mẫu và bảng tính chiết khấu theo số lượng.
@@ -189,7 +192,7 @@ export default function B2BPage() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="text-center mb-6 space-y-1">
-                <h3 className="text-xl font-bold text-[#0b1e3b]">Yêu Cầu Báo Giá Quà Tặng B2B</h3>
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#0b1e3b]">Yêu Cầu Báo Giá Quà Tặng B2B</h3>
                 <p className="text-xs text-slate-500">
                   Nhận báo giá chi tiết, mẫu thử thực tế và phương án thiết kế logo miễn phí
                 </p>

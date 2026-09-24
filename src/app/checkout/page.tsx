@@ -214,8 +214,11 @@ export default function CheckoutPage() {
 
       <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-10 relative z-10">
         <div className="text-center max-w-xl mx-auto space-y-2">
-          <GlassBadge variant="ocean">THANH TOÁN AN TOÀN 1-PAGE</GlassBadge>
-          <h1 className="text-3xl sm:text-4xl font-black text-[#0b1e3b]">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>THANH TOÁN AN TOÀN 1-PAGE</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
             Hoàn Tất Đặt Hàng & Giao Nhận
           </h1>
           <p className="text-xs text-slate-500">
@@ -261,7 +264,7 @@ export default function CheckoutPage() {
                 <span className="w-6 h-6 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center text-xs font-bold">
                   1
                 </span>
-                <h3 className="text-base font-bold text-slate-900">Địa Chỉ Nhận Hàng</h3>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Địa Chỉ Nhận Hàng</h3>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -380,7 +383,7 @@ export default function CheckoutPage() {
                 <span className="w-6 h-6 rounded-md bg-[#0b1e3b] text-white flex items-center justify-center text-xs font-bold">
                   2
                 </span>
-                <h3 className="text-base font-bold text-slate-900">Phương Thức Thanh Toán</h3>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Phương Thức Thanh Toán</h3>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -472,7 +475,7 @@ export default function CheckoutPage() {
             <OceanFloatingCard delay={0.3} duration={6.5} distance={4}>
               <div className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.06)] hover:shadow-[0_16px_36px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <h3 className="text-base font-bold text-slate-900">Tóm Tắt Đơn Hàng</h3>
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Tóm Tắt Đơn Hàng</h3>
                   <span className="text-xs font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
                     {items.length} món
                   </span>

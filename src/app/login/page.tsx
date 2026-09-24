@@ -317,10 +317,11 @@ function LoginContent() {
             </div>
 
             <div>
-              <GlassBadge variant="ocean" className="mb-1.5">
-                TÀI KHOẢN THÀNH VIÊN NÉT
-              </GlassBadge>
-              <h2 className="text-2xl font-black text-[#0b1e3b]">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-sm mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+                <span>TÀI KHOẢN THÀNH VIÊN NÉT</span>
+              </div>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b]">
                 {userProfile?.displayName || user.displayName || "Thành viên Nét"}
               </h2>
               <p className="text-xs text-slate-500">{user.email}</p>
@@ -530,7 +531,13 @@ function LoginContent() {
               N
             </div>
           </Link>
-          <h1 className="text-2xl font-black text-[#0b1e3b] tracking-tight">
+          <div className="pt-1">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-sm mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+              <span>NÉT MEMBER PORTAL</span>
+            </div>
+          </div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] tracking-tight">
             {mode === "login" ? "Chào Mừng Đến NÉT" : "Đăng Ký Thành Viên Mua Hàng"}
           </h1>
           <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">

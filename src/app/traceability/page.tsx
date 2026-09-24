@@ -17,6 +17,7 @@ import {
   Radio,
   Compass,
   Waves,
+  Sparkles,
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
@@ -55,8 +56,11 @@ function TraceabilityContent() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="text-center max-w-3xl mx-auto space-y-3"
         >
-          <GlassBadge variant="ocean">HỆ THỐNG TRUY XUẤT MINH BẠCH (TRACEABILITY)</GlassBadge>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b]">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>HỆ THỐNG TRUY XUẤT MINH BẠCH</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
             Bản Đồ Cứu Hộ Lưới Biển Việt Nam
           </h1>
           <p className="text-sm sm:text-base text-slate-600">
@@ -180,7 +184,7 @@ function TraceabilityContent() {
                   <div className="text-xs text-sky-700 font-bold uppercase tracking-wider">
                     MÃ LÔ TRỤC VỚT CHÍNH THỨC
                   </div>
-                  <h2 className="text-2xl font-black text-[#0b1e3b]">{selectedBatch.batchId}</h2>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b]">{selectedBatch.batchId}</h2>
                   <div className="text-sm font-bold text-slate-700 mt-0.5">
                     {selectedBatch.seaRegion}
                   </div>
@@ -270,7 +274,7 @@ function TraceabilityContent() {
 
               <div className="space-y-1">
                 <div className="text-xs text-slate-500 font-medium">Mã Quét Trực Tiếp:</div>
-                <div className="text-sm font-black text-[#0b1e3b]">{selectedBatch.batchId}</div>
+                <div className="font-serif text-base font-bold text-[#0b1e3b]">{selectedBatch.batchId}</div>
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed">

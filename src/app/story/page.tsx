@@ -50,8 +50,11 @@ export default function StoryPage() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="text-center max-w-3xl mx-auto space-y-4"
         >
-          <GlassBadge variant="ocean">CÂU CHUYỆN THƯƠNG HIỆU</GlassBadge>
-          <h1 className="text-4xl sm:text-6xl font-black text-[#0b1e3b] leading-tight">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>CÂU CHUYỆN THƯƠNG HIỆU NÉT</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-[#0b1e3b] leading-tight pt-2">
             Hành Trình Tái Sinh <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600">
               Linh Hồn Của Biển Sâu
@@ -114,7 +117,7 @@ export default function StoryPage() {
       {/* The 4 Transformation Steps With Ocean Depth Meter */}
       <div className="space-y-10 relative">
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0b1e3b]">
+          <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#0b1e3b]">
             Quy Trình 4 Bước Tái Sinh Tuần Hoàn
           </h2>
           <p className="text-xs sm:text-sm text-slate-500">
@@ -146,7 +149,7 @@ export default function StoryPage() {
                           <span>•</span>
                           <span>{step.subtitle}</span>
                         </div>
-                        <h3 className="text-xl sm:text-2xl font-black text-[#0b1e3b] mt-0.5">
+                        <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#0b1e3b] mt-0.5">
                           {step.title}
                         </h3>
                       </div>
@@ -187,7 +190,7 @@ export default function StoryPage() {
           <div className="w-16 h-16 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-3xl mx-auto text-sky-700 shadow-sm">
             🤝
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0b1e3b]">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-[#0b1e3b]">
             Kế Thừa Nghề Dệt Lưới Biển Truyền Thống Việt Nam
           </h2>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">

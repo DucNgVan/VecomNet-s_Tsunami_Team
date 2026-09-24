@@ -17,6 +17,7 @@ import { GlassBadge } from "@/components/ui/GlassBadge";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
 import { Sparkles, Box, Grid3X3, Rotate3d, Info, CheckCircle2 } from "lucide-react";
+import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 
 function CustomizerContent() {
   const searchParams = useSearchParams();
@@ -161,18 +162,22 @@ function CustomizerContent() {
   };
 
   return (
-    <div className="pt-24 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8">
-      {/* Studio Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <GlassBadge variant="emerald">NÉT LAB 3D STUDIO</GlassBadge>
-            <span className="text-xs text-slate-500 font-medium">Thiết Kế Độc Bản Theo Ý Bạn</span>
+    <div className="relative min-h-screen">
+      {/* Living Ocean Ambient Background */}
+      <OceanBackdrop bubbleCount={20} causticsOpacity={0.25} />
+
+      <div className="pt-24 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8 relative z-10">
+        {/* Studio Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-sm mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+              <span>NÉT LAB 3D STUDIO • THIẾT KẾ ĐỘC BẢN</span>
+            </div>
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
+              Tùy Biến Túi Lưới & Gắn Charm Độc Bản
+            </h1>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-[#0b1e3b]">
-            Tùy Biến Túi Lưới & Gắn Charm Độc Bản
-          </h1>
-        </div>
 
         {/* View Mode Switcher (2D Snap Grid vs 3D Orbit Viewer) */}
         <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
@@ -339,6 +344,7 @@ function CustomizerContent() {
         placedCharms={placedCharms}
         snapshotImageUrl={snapshotUrl}
       />
+      </div>
     </div>
   );
 }

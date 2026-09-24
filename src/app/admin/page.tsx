@@ -141,11 +141,11 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <GlassBadge variant="emerald">CỔNG VẬN HÀNH & GIA CÔNG THỦ CÔNG</GlassBadge>
-            <span className="text-xs text-slate-500 tracking-wider">XƯỞNG CHẾ TÁC NÉT ATELIER</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-sm mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>CỔNG VẬN HÀNH & GIA CÔNG THỦ CÔNG</span>
           </div>
-          <h1 className="text-3xl font-black text-[#0b1e3b] tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
             Quản Lý Đơn Hàng & Bản Vẽ Gia Công
           </h1>
         </div>
@@ -273,7 +273,7 @@ export default function AdminDashboardPage() {
                   <div className="text-xs text-slate-500 uppercase tracking-wider">
                     Bản Vẽ Kỹ Thuật Độc Bản:
                   </div>
-                  <h3 className="text-lg font-bold text-[#0b1e3b]">
+                  <h3 className="font-serif text-lg sm:text-xl font-bold text-[#0b1e3b]">
                     {selectedOrder.orderCode}
                   </h3>
                 </div>

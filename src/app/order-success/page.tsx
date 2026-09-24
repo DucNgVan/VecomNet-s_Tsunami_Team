@@ -62,8 +62,11 @@ function OrderSuccessContent() {
             <span className="absolute -inset-2 rounded-full border border-emerald-400/40 animate-ping" />
             <CheckCircle2 className="w-9 h-9 relative z-10" />
           </div>
-          <GlassBadge variant="emerald">ĐẶT HÀNG THÀNH CÔNG</GlassBadge>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#0b1e3b]">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <span>ĐẶT HÀNG THÀNH CÔNG</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
             Cảm Ơn Bạn Đã Đồng Hành Cùng Biển Xanh!
           </h1>
           <p className="text-sm sm:text-base text-slate-600 max-w-lg mx-auto">
@@ -83,7 +86,7 @@ function OrderSuccessContent() {
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
               <div>
                 <div className="text-xs text-slate-500 font-medium">Mã Đơn Hàng:</div>
-                <div className="text-xl font-bold text-[#0b1e3b]">{order.orderCode}</div>
+                <div className="font-serif text-xl sm:text-2xl font-bold text-[#0b1e3b]">{order.orderCode}</div>
               </div>
 
               <div>
@@ -163,7 +166,7 @@ function OrderSuccessContent() {
                         )}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
+                        <h4 className="font-serif text-sm sm:text-base font-bold text-[#0b1e3b]">{item.title}</h4>
                         {item.details?.colorName && (
                           <div className="text-xs text-slate-500">
                             Sắc màu: {item.details.colorName}

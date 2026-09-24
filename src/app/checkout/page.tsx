@@ -67,11 +67,6 @@ export default function CheckoutPage() {
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user) {
-      router.push("/login?redirect=/checkout");
-      return;
-    }
-
     if (items.length === 0) {
       alert("Giỏ hàng của bạn đang trống!");
       return;
@@ -96,7 +91,7 @@ export default function CheckoutPage() {
       paymentMethod,
       paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
       fulfillmentStatus: "crafting",
-      userId: user.uid,
+      userId: user?.uid || "guest",
     };
 
     try {
@@ -112,14 +107,16 @@ export default function CheckoutPage() {
       if (db) {
         await addDoc(collection(db, "orders"), {
           ...newOrder,
-          userEmail: user.email,
+          userEmail: user?.email || formData.email,
         });
 
-        // Increment user's accumulated eco impact kg
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
-          ecoImpactKg: increment(totalPlasticOffsetKg),
-        }).catch(() => {});
+        // Increment user's accumulated eco impact kg if logged in
+        if (user) {
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, {
+            ecoImpactKg: increment(totalPlasticOffsetKg),
+          }).catch(() => {});
+        }
       }
     } catch (err) {
       console.error("Order save error", err);
@@ -135,59 +132,13 @@ export default function CheckoutPage() {
   if (authLoading) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 pt-32 space-y-3">
-        <div className="w-10 h-10 border-4 border-ocean-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
         <p className="text-xs font-semibold text-slate-500">Đang đồng bộ phiên hội viên Nét...</p>
       </div>
     );
   }
 
-  // 2. Auth guard: Must be logged in to buy products
-  if (!user) {
-    return (
-      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center p-6 space-y-6 pt-32 max-w-lg mx-auto">
-        <div className="w-20 h-20 rounded-3xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shadow-md">
-          <Lock className="w-9 h-9" />
-        </div>
-        <div className="space-y-2">
-          <GlassBadge variant="ocean">YÊU CẦU ĐĂNG NHẬP ĐỂ MUA HÀNG</GlassBadge>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0b1e3b]">
-            Vui Lòng Đăng Nhập Để Tiếp Tục
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Để đảm bảo quyền lợi bảo hành trọn đời, cấp <strong>Chứng chỉ số bảo tồn sinh thái biển</strong> và truy xuất nguồn gốc lô lưới ma của từng chiếc túi, Nét yêu cầu quý khách đăng nhập tài khoản trước khi đặt hàng.
-          </p>
-        </div>
-
-        <div className="w-full p-4 rounded-2xl bg-white/90 border border-slate-200 text-left space-y-2.5 text-xs text-slate-600 shadow-sm">
-          <div className="flex items-center gap-2 font-bold text-slate-900">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Quyền lợi tài khoản hội viên Nét:</span>
-          </div>
-          <ul className="space-y-1.5 pl-5 text-slate-600 list-disc text-[11px]">
-            <li>Lưu trữ chứng chỉ số và số kg rác lưới đại dương bạn đã góp phần thu hồi</li>
-            <li>Theo dõi trực tuyến quá trình thợ thủ công may & hoàn thiện túi</li>
-            <li>Tự động điền nhanh địa chỉ giao hàng và mã bưu chính</li>
-          </ul>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <Link href="/login?redirect=/checkout" className="flex-1">
-            <GlassButton variant="primary" size="lg" className="w-full flex items-center justify-center gap-2 shadow-lg">
-              <span>Đăng Nhập / Đăng Ký Ngay</span>
-              <ArrowRight className="w-4 h-4" />
-            </GlassButton>
-          </Link>
-          <Link href="/" className="sm:w-auto">
-            <GlassButton variant="secondary" size="lg" className="w-full">
-              Trang Chủ
-            </GlassButton>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // 3. Empty Cart State
+  // 2. Empty Cart State
   if (items.length === 0) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 space-y-4 pt-32">
@@ -230,33 +181,62 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Shipping & Payment Options */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Authenticated Member Notice */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-300/60 flex items-center justify-between gap-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
-                    <UserCheck className="w-5 h-5" />
+              {/* Authenticated Member or Guest Notice */}
+              {user ? (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-300/60 flex items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
+                      <UserCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900">
+                          {userProfile?.displayName || user.displayName || user.email}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          Hội viên Nét
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600">
+                        Thông tin giao nhận đã được tự động điền từ hồ sơ
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">
-                        {userProfile?.displayName || user.displayName || user.email}
-                      </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                      Đã đăng nhập
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Tài khoản hội viên đại dương • Thông tin giao nhận đã được tự động điền
-                  </p>
+                  <Link
+                    href="/login"
+                    className="text-[11px] font-bold text-sky-800 hover:text-sky-950 hover:underline shrink-0"
+                  >
+                    Đổi tài khoản
+                  </Link>
                 </div>
-              </div>
-              <Link
-                href="/login"
-                className="text-[11px] font-bold text-ocean-700 hover:text-ocean-900 hover:underline shrink-0"
-              >
-                Đổi tài khoản
-              </Link>
-            </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-200/80 flex items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#0b1e3b] text-sky-200 flex items-center justify-center font-bold shadow-sm shrink-0">
+                      <Sparkles className="w-5 h-5 text-teal-300" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900">
+                          Thanh toán nhanh (Khách vãng lai)
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">
+                          Tiện lợi
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600">
+                        Bạn có thể mua ngay mà không cần tài khoản
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/login?redirect=/checkout"
+                    className="text-xs font-bold text-sky-800 hover:text-sky-950 hover:underline shrink-0 bg-white px-3 py-1.5 rounded-xl border border-sky-200 shadow-xs"
+                  >
+                    Đăng nhập hội viên
+                  </Link>
+                </div>
+              )}
 
             {/* Step 1: Customer Info */}
             <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] space-y-4">

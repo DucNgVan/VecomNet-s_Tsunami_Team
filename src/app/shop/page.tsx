@@ -309,7 +309,7 @@ export default function ShopPage() {
                     <h3 className="font-serif text-base font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
                       {bag.name}
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{bag.tagline}</p>
+                    <p className="text-xs text-slate-600 mt-1 line-clamp-2 font-medium">{bag.tagline}</p>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-100">
@@ -317,7 +317,7 @@ export default function ShopPage() {
                       <span className="text-base font-bold text-[#0b1e3b]">
                         {formatVND(bag.basePrice)}
                       </span>
-                      <span className="text-[11px] text-slate-500 font-medium">{bag.maxCharms} mắt neo</span>
+                      <span className="text-[11px] text-slate-600 font-semibold">{bag.maxCharms} mắt neo</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -399,7 +399,7 @@ export default function ShopPage() {
                     <h4 className="font-serif text-sm font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors line-clamp-1">
                       {charm.vietnameseName}
                     </h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                    <p className="text-[11px] text-slate-600 line-clamp-1 mt-0.5 font-medium">
                       {charm.material}
                     </p>
                   </div>

@@ -11,6 +11,7 @@ import { ProductShowroomBanner } from "@/components/home/ProductShowroomBanner";
 import { StoryProgressRail } from "@/components/home/StoryProgressRail";
 import { StoryBridge } from "@/components/home/StoryBridge";
 import { ScrollVideoBackground } from "@/components/home/ScrollVideoBackground";
+import { CustomerReviewsSection } from "@/components/home/CustomerReviewsSection";
 
 export default function HomePage() {
   const [showIntroModal, setShowIntroModal] = useState(false);
@@ -93,6 +94,9 @@ export default function HomePage() {
 
       {/* 5. KHÁM PHÁ CỬA HÀNG BỀN VỮNG */}
       <ProductShowroomBanner />
+
+      {/* 6. TIẾNG NÓI CỘNG ĐỒNG & ĐÁNH GIÁ THỰC TẾ (SOCIAL PROOF) */}
+      <CustomerReviewsSection />
     </motion.div>
   );
 }

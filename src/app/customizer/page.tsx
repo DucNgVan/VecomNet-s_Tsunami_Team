@@ -226,7 +226,7 @@ function CustomizerContent() {
               />
             ) : (
               <div className="w-full max-w-[500px] mx-auto flex flex-col gap-3">
-                <div className="p-4 w-full aspect-[4/5] rounded-3xl bg-white border border-slate-200 shadow-[0_12px_40px_rgba(11,30,59,0.06)] flex items-center justify-center relative overflow-hidden">
+                <div className="p-4 w-full aspect-[4/5] rounded-3xl bg-white border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] flex items-center justify-center relative overflow-hidden group">
                   <BagCanvas3D
                     ref={bag3dRef}
                     bagBase={selectedBag}
@@ -234,18 +234,69 @@ function CustomizerContent() {
                     isInteractive={true}
                     modelUrl="/assets/models/tuixach.glb"
                   />
+                  {/* Floating 3D Badge */}
+                  <div className="absolute top-3 left-3 pointer-events-none">
+                    <span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-xs font-bold text-[#0b1e3b] shadow-xs flex items-center gap-1.5">
+                      <Rotate3d className="w-3.5 h-3.5 text-sky-700 animate-spin" />
+                      <span>Xoay 360° Phom Túi 3D Mẫu</span>
+                    </span>
+                  </div>
+
+                  {/* Active Color Tag */}
+                  <div className="absolute top-3 right-3 pointer-events-none">
+                    <span className="px-2.5 py-1 rounded-full bg-[#0b1e3b] text-white text-[11px] font-bold shadow-xs">
+                      {selectedColor.name}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Attached Charms Synergy Bar */}
+                {placedCharms.length > 0 ? (
+                  <div className="p-3.5 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                      <span className="flex items-center gap-1.5 text-[#0b1e3b]">
+                        <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                        <span>Charm Đã Đính Vào Bản Vẽ ({placedCharms.length}):</span>
+                      </span>
+                      <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Đã sẵn sàng gia công
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                      {placedCharms.map((p) => (
+                        <div
+                          key={p.instanceId}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs shrink-0"
+                        >
+                          <span className="text-base">{p.charm.symbol}</span>
+                          <span className="font-bold text-slate-900 text-[11px]">{p.charm.vietnameseName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
+                    <span>Chưa gắn charm nào vào mắt lưới.</span>
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className="text-[11px] font-bold text-sky-800 hover:underline cursor-pointer"
+                    >
+                      Bấm để gắn charm 2D
+                    </button>
+                  </div>
+                )}
+
                 {/* 3D Mode Explanatory Notice */}
-                <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-xs">
+                <div className="p-3.5 rounded-2xl bg-emerald-50/90 border border-emerald-200 text-xs text-emerald-950 flex items-center justify-between gap-3 shadow-xs">
                   <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                    <Info className="w-4 h-4 text-emerald-700 flex-shrink-0" />
                     <span>
-                      Đây là <strong>mô hình túi 3D mẫu</strong> để xoay 360°. Để gắn và phối charm 2D, bạn hãy bấm chuyển sang tab 2D.
+                      Để điều chỉnh vị trí mắt lưới hoặc xoay charm, hãy chuyển sang tab 2D.
                     </span>
                   </div>
                   <button
                     onClick={() => setViewMode("grid")}
-                    className="px-3 py-1.5 rounded-xl bg-[#0b1e3b] text-white text-[11px] font-bold whitespace-nowrap hover:bg-sky-900 transition-colors cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 rounded-xl bg-[#0b1e3b] text-white text-[11px] font-bold whitespace-nowrap hover:bg-sky-950 transition-colors cursor-pointer shadow-xs"
                   >
                     Về Gắn Charm 2D
                   </button>
@@ -255,8 +306,8 @@ function CustomizerContent() {
           </div>
 
           {/* Quick Tip Bar */}
-          <div className="w-full max-w-[500px] p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm text-xs text-slate-600 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+          <div className="w-full max-w-[500px] p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm text-xs text-slate-700 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 font-medium">
               <Info className="w-4 h-4 text-sky-700 flex-shrink-0" />
               <span>
                 {viewMode === "grid"
@@ -266,7 +317,7 @@ function CustomizerContent() {
             </span>
             <button
               onClick={() => setViewMode(viewMode === "grid" ? "3d" : "grid")}
-              className="text-[11px] font-bold text-sky-800 hover:underline cursor-pointer"
+              className="text-[11px] font-bold text-sky-800 hover:text-sky-950 hover:underline cursor-pointer ml-2 shrink-0"
             >
               Chuyển chế độ
             </button>

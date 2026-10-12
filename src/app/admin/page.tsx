@@ -124,6 +124,10 @@ function AdminDashboardInner() {
   const fetchBackendProducts = async () => {
     try {
       const res = await fetch("/api/products?admin=true");
+      if (!res.ok) {
+        console.warn("Fetch backend products returned non-OK status:", res.status);
+        return;
+      }
       const json = await res.json();
       if (json.success && json.data) {
         setBackendProducts(json.data);

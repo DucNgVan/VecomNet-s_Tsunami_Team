@@ -3,6 +3,13 @@ import { BackendProduct } from "../models";
 
 export class ProductService {
   /**
+   * Danh mục dự phòng tĩnh
+   */
+  static getFallbackProducts(): BackendProduct[] {
+    return ProductRepository.getFallbackProducts();
+  }
+
+  /**
    * Lấy danh sách sản phẩm hiển thị trên Shop
    */
   static async getActiveProducts(): Promise<BackendProduct[]> {

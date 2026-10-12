@@ -16,7 +16,14 @@ export class ProductController {
 
       return NextResponse.json({ success: true, count: products.length, data: products });
     } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.warn("[ProductController] handleGetProducts fallback:", error);
+      const fallback = ProductService.getFallbackProducts();
+      return NextResponse.json({
+        success: true,
+        count: fallback.length,
+        data: fallback,
+        fallback: true,
+      });
     }
   }
 

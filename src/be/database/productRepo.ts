@@ -40,6 +40,13 @@ function seedInitialProducts(): BackendProduct[] {
 
 export class ProductRepository {
   /**
+   * Dữ liệu dự phòng tĩnh khi DB chưa kết nối
+   */
+  static getFallbackProducts(): BackendProduct[] {
+    return seedInitialProducts();
+  }
+
+  /**
    * Lấy toàn bộ danh sách sản phẩm (nếu database trống thì tự động nạp danh mục gốc)
    */
   static async getAll(): Promise<BackendProduct[]> {

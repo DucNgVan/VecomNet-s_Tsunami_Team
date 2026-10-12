@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { BAG_BASES, CHARMS, COMBOS, BAG_COLORS } from "@/data/products";
@@ -25,6 +25,92 @@ export default function ShopPage() {
     "all"
   );
   const [selectedDetailItem, setSelectedDetailItem] = useState<ProductDetailItem | null>(null);
+  const [productStocks, setProductStocks] = useState<Record<string, { inStock: boolean; stockCount: number }>>({});
+  const [allBags, setAllBags] = useState<BagBase[]>(BAG_BASES);
+
+  useEffect(() => {
+    async function loadStock() {
+      try {
+        const res = await fetch("/api/products");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            const map: Record<string, { inStock: boolean; stockCount: number }> = {};
+            json.data.forEach((p: any) => {
+              map[p.id] = { inStock: p.inStock, stockCount: p.stockCount ?? 0 };
+              map[p.name.toLowerCase()] = { inStock: p.inStock, stockCount: p.stockCount ?? 0 };
+            });
+            setProductStocks(map);
+
+            // Merge static catalog with live DB products and any admin-created items
+            const merged: BagBase[] = [];
+            for (const base of BAG_BASES) {
+              const dbMatch = json.data.find(
+                (p: any) => p.id === base.id || p.name.toLowerCase() === base.name.toLowerCase()
+              );
+              if (dbMatch) {
+                merged.push({
+                  ...base,
+                  name: dbMatch.name || base.name,
+                  basePrice: dbMatch.basePrice || base.basePrice,
+                  description: dbMatch.description || base.description,
+                  plasticOffsetKg: dbMatch.plasticOffsetKg || base.plasticOffsetKg,
+                  image: dbMatch.imageUrl || base.image,
+                  model3dUrl: dbMatch.model3dUrl || "/assets/models/tuixach.glb",
+                  stockCount: dbMatch.stockCount,
+                  inStock: dbMatch.inStock,
+                });
+              } else {
+                merged.push(base);
+              }
+            }
+
+            // Append any new products created by Admin
+            for (const p of json.data) {
+              const exists = merged.some(
+                (m) => m.id === p.id || m.name.toLowerCase() === p.name.toLowerCase()
+              );
+              if (!exists && p.isActive !== false) {
+                merged.push({
+                  id: p.id,
+                  name: p.name,
+                  tagline: p.description ? p.description.slice(0, 80) : "Thiết kế đan thủ công từ lưới ma tái sinh",
+                  description: p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
+                  basePrice: p.basePrice || 1250000,
+                  plasticOffsetKg: p.plasticOffsetKg || 1.8,
+                  dimensions: "36cm x 32cm x 12cm",
+                  capacity: "14 Lít",
+                  colors: BAG_COLORS,
+                  anchorPoints: [
+                    { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+                    { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+                    { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+                    { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+                  ],
+                  maxCharms: 8,
+                  modelType: (["tote", "bucket", "clutch", "crossbody"].includes(p.category) ? p.category : "tote") as any,
+                  image: p.imageUrl || "/assets/products/tote-blue.png",
+                  model3dUrl: p.model3dUrl || "/assets/models/tuixach.glb",
+                  stockCount: p.stockCount,
+                  inStock: p.inStock,
+                });
+              }
+            }
+            setAllBags(merged);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load live product stock:", e);
+      }
+    }
+    loadStock();
+  }, []);
+
+  const getBagStock = (bagId: string, bagName: string) => {
+    const stockInfo = productStocks[bagId] || productStocks[bagName.toLowerCase()];
+    if (stockInfo) return stockInfo;
+    return { inStock: true, stockCount: 50 };
+  };
 
   const { addToCart } = useCart();
   const { showToast } = useToast();
@@ -36,6 +122,16 @@ export default function ShopPage() {
   };
 
   const handleAddBag = (bag: BagBase) => {
+    const stock = getBagStock(bag.id, bag.name);
+    if (!stock.inStock || stock.stockCount <= 0) {
+      showToast(
+        "Sản phẩm tạm hết hàng!",
+        `Mẫu túi "${bag.name}" hiện đang chờ xưởng đan lô mới. Vui lòng quay lại sau!`,
+        "error"
+      );
+      return;
+    }
+
     addToCart({
       type: "base_bag",
       title: `${bag.name} (Phôi tiêu chuẩn)`,
@@ -50,7 +146,7 @@ export default function ShopPage() {
 
     showToast(
       "Đã thêm phôi túi vào giỏ!",
-      `${bag.name} đã sẵn sàng. Bạn cũng có thể mở NÉT Studio để đính charm theo ý muốn.`,
+      `${bag.name} đã sẵn sàng (Kho còn: ${stock.stockCount} chiếc). Bạn cũng có thể mở NÉT Studio để đính charm theo ý muốn.`,
       "success"
     );
   };
@@ -273,13 +369,17 @@ export default function ShopPage() {
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center gap-2">
               <span>Phôi Túi Lưới (Bag Bases)</span>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold font-sans">
-                {BAG_BASES.length} mẫu dáng
+                {allBags.length} mẫu dáng
               </span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {BAG_BASES.map((bag, idx) => (
+            {allBags.map((bag, idx) => {
+              const stock = getBagStock(bag.id, bag.name);
+              const isAvailable = stock.inStock && stock.stockCount > 0;
+
+              return (
               <OceanFloatingCard
                 key={bag.id}
                 delay={idx * 0.18}
@@ -300,14 +400,25 @@ export default function ShopPage() {
                       <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         {bag.modelType.toUpperCase()}
                       </span>
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        -{formatKg(bag.plasticOffsetKg)}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isAvailable
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-rose-50 text-rose-700 border border-rose-200"
+                          }`}
+                        >
+                          {isAvailable ? `Còn ${stock.stockCount}` : "Hết hàng"}
+                        </span>
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          -{formatKg(bag.plasticOffsetKg)}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="w-full aspect-square rounded-2xl mb-4 bg-slate-50 border border-slate-200/70 flex flex-col items-center justify-center relative overflow-hidden group-hover:border-sky-300 transition-colors">
                       <BagCard3D
-                        modelUrl="/assets/models/tuixach.glb"
+                        modelUrl={bag.model3dUrl || "/assets/models/tuixach.glb"}
                         color={bag.colors[0]?.hex}
                         glowColor={bag.colors[0]?.glowHex}
                         isInteractive={false}
@@ -350,19 +461,23 @@ export default function ShopPage() {
                         Chi Tiết
                       </GlassButton>
                       <GlassButton
-                        variant="primary"
+                        variant={isAvailable ? "primary" : "secondary"}
                         size="sm"
+                        disabled={!isAvailable}
                         onClick={() => handleAddBag(bag)}
-                        className="w-full text-xs shadow-sm cursor-pointer"
+                        className={`w-full text-xs shadow-sm cursor-pointer ${
+                          !isAvailable ? "opacity-60 cursor-not-allowed" : ""
+                        }`}
                         icon={<ShoppingBag className="w-3.5 h-3.5" />}
                       >
-                        Mua Phôi
+                        {isAvailable ? "Mua Phôi" : "Hết Hàng"}
                       </GlassButton>
                     </div>
                   </div>
                 </motion.div>
               </OceanFloatingCard>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
       )}
@@ -454,6 +569,17 @@ export default function ShopPage() {
         item={selectedDetailItem}
         onClose={() => setSelectedDetailItem(null)}
         onAddToCart={handleModalAddToCart}
+        isAvailable={
+          selectedDetailItem?.type === "bag"
+            ? getBagStock(selectedDetailItem.data.id, selectedDetailItem.data.name).inStock &&
+              getBagStock(selectedDetailItem.data.id, selectedDetailItem.data.name).stockCount > 0
+            : true
+        }
+        stockCount={
+          selectedDetailItem?.type === "bag"
+            ? getBagStock(selectedDetailItem.data.id, selectedDetailItem.data.name).stockCount
+            : undefined
+        }
       />
     </div>
   );

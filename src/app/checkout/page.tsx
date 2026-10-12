@@ -163,15 +163,48 @@ export default function CheckoutPage() {
     } as any;
 
     try {
-      await saveOrderToFirestore(newOrder);
-    } catch (err) {
-      console.error("Order save error:", err);
-    }
+      const response = await fetch("/api/orders/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer,
+          items,
+          paymentMethod,
+          assignedBatchId: randomBatch.batchId,
+          totalPlasticOffsetKg,
+          userId: user?.uid || "guest",
+        }),
+      });
 
-    setTimeout(() => {
-      clearCart();
-      router.push(`/order-success?orderId=${newOrder.orderId}`);
-    }, 800);
+      const resJson = await response.json();
+      if (!resJson.success) {
+        alert(resJson.error || "Không thể hoàn tất đặt hàng!");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const createdOrder = resJson.order;
+
+      // Lưu vào Firestore client nếu có cấu hình
+      try {
+        await saveOrderToFirestore(createdOrder);
+      } catch (err) {
+        console.error("Order save client error:", err);
+      }
+
+      // Lưu vào local supply chain storage để đồng bộ tức thì
+      import("@/lib/supplyChainStorage").then(({ saveNewOrder }) => {
+        saveNewOrder(createdOrder);
+      });
+
+      setTimeout(() => {
+        clearCart();
+        router.push(`/order-success?orderId=${createdOrder.orderId}`);
+      }, 500);
+    } catch (err: any) {
+      alert("Lỗi kết nối máy chủ: " + err.message);
+      setIsSubmitting(false);
+    }
   };
 
   // 1. Loading auth state

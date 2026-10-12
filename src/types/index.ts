@@ -28,6 +28,9 @@ export type BagBase = {
   maxCharms: number;
   modelType: 'tote' | 'hobo' | 'bucket' | 'mini';
   image: string;
+  model3dUrl?: string;
+  stockCount?: number;
+  inStock?: boolean;
 };
 
 export type CharmCategory = 'marine' | 'celestial' | 'geometry' | 'special';

@@ -9,6 +9,10 @@ import { sendOrderConfirmationEmail } from "@/lib/emailService";
 export class OrderService {
   /**
    * Xử lý đặt hàng bảo mật phía máy chủ (Server-side Checkout)
+   * - Kiểm tra tồn kho & số lượng
+   * - Trừ số lượng sản phẩm trong database
+   * - Lưu đơn hàng thực tế
+   * - Gửi email & tạo VietQR
    */
   static async processCheckout(body: any): Promise<{
     order: BackendOrder;
@@ -28,7 +32,7 @@ export class OrderService {
       throw new Error("Giỏ hàng không có sản phẩm!");
     }
 
-    // 1. Đối chiếu giá phía máy chủ từ Product Repository (chống hack F12)
+    // 1. Đối chiếu giá phía máy chủ & kiểm tra số lượng tồn kho từ Product Repository
     const productCatalog = await ProductRepository.getAll();
     let calculatedSubtotal = 0;
 
@@ -46,12 +50,33 @@ export class OrderService {
 
       return {
         ...cartItem,
+        bagBaseId: matched ? matched.id : cartItem.bagBaseId,
         price: verifiedPrice,
         quantity,
       };
     });
 
-    // 2. Tính phí vận chuyển tự động theo tỉnh/thành
+    // 2. KIỂM TRA TỒN KHO: Chặn đặt hàng nếu sản phẩm hết hàng hoặc số lượng không đủ
+    for (const item of verifiedItems) {
+      const matched = productCatalog.find(
+        (p) =>
+          p.id === item.bagBaseId ||
+          p.id === item.id ||
+          item.title?.toLowerCase().includes(p.name.toLowerCase())
+      );
+      if (matched) {
+        if (!matched.inStock || matched.stockCount <= 0) {
+          throw new Error(`Sản phẩm "${matched.name}" hiện đã hết hàng trong kho!`);
+        }
+        if (matched.stockCount < item.quantity) {
+          throw new Error(
+            `Sản phẩm "${matched.name}" chỉ còn ${matched.stockCount} chiếc trong kho, không đủ đáp ứng số lượng bạn đặt (${item.quantity})!`
+          );
+        }
+      }
+    }
+
+    // 3. Tính phí vận chuyển tự động theo tỉnh/thành
     const province = customer?.city || "Đà Nẵng";
     const shippingFee = calculateShippingFee(calculatedSubtotal, province);
     const grandTotal = calculatedSubtotal + shippingFee;
@@ -59,7 +84,24 @@ export class OrderService {
     const orderCode = generateOrderCode();
     const orderId = `ord-${Date.now()}`;
 
-    // 3. Tự động tìm và trừ túi thành phẩm trong kho
+    // 4. TRỪ SỐ LƯỢNG TỒN KHO SẢN PHẨM TRONG DATABASE THỰC TẾ
+    for (const item of verifiedItems) {
+      const matched = productCatalog.find(
+        (p) =>
+          p.id === item.bagBaseId ||
+          p.id === item.id ||
+          item.title?.toLowerCase().includes(p.name.toLowerCase())
+      );
+      if (matched) {
+        try {
+          await ProductRepository.deductStock(matched.id, item.quantity);
+        } catch (e) {
+          console.warn(`[OrderService] Deduct product stock warning for ${matched.id}:`, e);
+        }
+      }
+    }
+
+    // 5. Tự động tìm và gán túi thành phẩm mẻ lưới trong kho
     let assignedSerialId: string | null = null;
     try {
       assignedSerialId = await InventoryRepository.deductItemForOrder(
@@ -70,7 +112,7 @@ export class OrderService {
       console.warn("[OrderService] Deduct inventory warning:", e);
     }
 
-    // 4. Sinh mã VietQR động
+    // 6. Sinh mã VietQR động
     const bankBin = "970422"; // MB Bank
     const bankAccountNo = "0905882119";
     const accountHolder = "NET OCEAN CRAFT";
@@ -113,10 +155,10 @@ export class OrderService {
       vietQr: vietQrData,
     };
 
-    // 5. Lưu vào Database
+    // 7. Lưu đơn hàng vào Database
     await OrderRepository.save(newOrder);
 
-    // 6. Gửi email xác nhận hóa đơn tự động
+    // 8. Gửi email xác nhận hóa đơn tự động
     let emailDispatched = false;
     try {
       const emailRes = await sendOrderConfirmationEmail(newOrder as any);
@@ -133,19 +175,30 @@ export class OrderService {
   }
 
   /**
-   * Lấy danh sách đơn hàng
+   * Lấy danh sách đơn hàng thực tế
    */
   static async getOrders(): Promise<BackendOrder[]> {
     return OrderRepository.getAll();
   }
 
   /**
-   * Cập nhật trạng thái giao nhận đơn hàng
+   * Cập nhật trạng thái đơn hàng (giao hàng / thanh toán)
    */
   static async updateOrderStatus(
     orderId: string,
-    status: BackendOrder["fulfillmentStatus"]
+    fulfillmentStatus?: BackendOrder["fulfillmentStatus"],
+    paymentStatus?: BackendOrder["paymentStatus"]
   ): Promise<boolean> {
-    return OrderRepository.updateStatus(orderId, { fulfillmentStatus: status });
+    return OrderRepository.updateStatus(orderId, {
+      fulfillmentStatus,
+      paymentStatus,
+    });
+  }
+
+  /**
+   * Xóa đơn hàng khỏi hệ thống
+   */
+  static async deleteOrder(orderId: string): Promise<boolean> {
+    return OrderRepository.delete(orderId);
   }
 }

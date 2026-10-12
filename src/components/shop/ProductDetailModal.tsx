@@ -28,12 +28,16 @@ interface ProductDetailModalProps {
   item: ProductDetailItem | null;
   onClose: () => void;
   onAddToCart: (item: ProductDetailItem) => void;
+  isAvailable?: boolean;
+  stockCount?: number;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   item,
   onClose,
   onAddToCart,
+  isAvailable = true,
+  stockCount,
 }) => {
   if (!item) return null;
 
@@ -83,6 +87,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <Sparkles className="w-3 h-3 text-emerald-600" />
                 <span>-{formatKg(plasticKg)} rác biển</span>
               </span>
+              {stockCount !== undefined && (
+                <span
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                    isAvailable
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-rose-50 text-rose-700 border-rose-200"
+                  }`}
+                >
+                  {isAvailable ? `Kho: ${stockCount}` : "Hết hàng"}
+                </span>
+              )}
             </div>
 
             <button
@@ -109,7 +124,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     />
                   ) : (
                     <BagCard3D
-                      modelUrl="/assets/models/tuixach.glb"
+                      modelUrl={bagData?.model3dUrl || "/assets/models/tuixach.glb"}
                       color={isCombo ? comboData!.color.hex : bagData!.colors[0]?.hex}
                       glowColor={isCombo ? comboData!.color.glowHex : bagData!.colors[0]?.glowHex}
                       isInteractive={true}
@@ -232,16 +247,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Action Buttons */}
                 <div className="pt-2 grid grid-cols-2 gap-2.5">
                   <GlassButton
-                    variant="primary"
+                    variant={isAvailable ? "primary" : "secondary"}
                     size="md"
+                    disabled={!isAvailable}
                     onClick={() => {
+                      if (!isAvailable) return;
                       onAddToCart(item);
                       onClose();
                     }}
-                    className="w-full justify-center shadow-md cursor-pointer text-xs sm:text-sm font-bold"
+                    className={`w-full justify-center shadow-md cursor-pointer text-xs sm:text-sm font-bold ${
+                      !isAvailable ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
                     icon={<ShoppingBag className="w-4 h-4" />}
                   >
-                    Thêm Vào Giỏ
+                    {isAvailable ? "Thêm Vào Giỏ" : "Hết Hàng"}
                   </GlassButton>
 
                   <Link

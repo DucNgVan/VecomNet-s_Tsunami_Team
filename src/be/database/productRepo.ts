@@ -4,18 +4,25 @@ import { BAG_BASES, BAG_COLORS } from "@/data/products";
 
 const COLLECTION_NAME = "products";
 
+// Bộ nhớ đệm sản phẩm trong RAM (đảm bảo đồng bộ ngay cả khi chưa kết nối Firestore)
+const memoryProductStore = new Map<string, BackendProduct>();
+
 // Chuyển đổi dữ liệu catalogue ban đầu thành sản phẩm Backend
 function seedInitialProducts(): BackendProduct[] {
-  return BAG_BASES.map((b) => ({
+  if (memoryProductStore.size > 0) {
+    return Array.from(memoryProductStore.values());
+  }
+
+  const initial = BAG_BASES.map((b) => ({
     id: b.id,
     name: b.name,
     category: b.id.includes("tote")
-      ? "tote"
+      ? ("tote" as const)
       : b.id.includes("bucket")
-      ? "bucket"
+      ? ("bucket" as const)
       : b.id.includes("clutch")
-      ? "clutch"
-      : "crossbody",
+      ? ("clutch" as const)
+      : ("crossbody" as const),
     basePrice: b.basePrice,
     description: b.description,
     plasticOffsetKg: b.plasticOffsetKg,
@@ -31,11 +38,17 @@ function seedInitialProducts(): BackendProduct[] {
       story: c.story,
     })),
     inStock: true,
-    stockCount: 45,
+    stockCount: 50, // Mặc định 50 sản phẩm trong kho
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }));
+
+  for (const p of initial) {
+    memoryProductStore.set(p.id, p);
+  }
+
+  return initial;
 }
 
 export class ProductRepository {
@@ -47,7 +60,7 @@ export class ProductRepository {
   }
 
   /**
-   * Lấy toàn bộ danh sách sản phẩm (nếu database trống thì tự động nạp danh mục gốc)
+   * Lấy toàn bộ danh sách sản phẩm (nếu Firestore trống thì tự động nạp danh mục gốc)
    */
   static async getAll(): Promise<BackendProduct[]> {
     if (!adminDb) {
@@ -56,7 +69,7 @@ export class ProductRepository {
 
     try {
       const snapshot = await adminDb.collection(COLLECTION_NAME).get();
-      if (snapshot.empty) {
+      if (!snapshot || snapshot.empty) {
         // Tự động seed sản phẩm vào Firestore nếu chưa có
         const initialProducts = seedInitialProducts();
         for (const p of initialProducts) {
@@ -65,9 +78,14 @@ export class ProductRepository {
         return initialProducts;
       }
 
-      return snapshot.docs.map((doc) => doc.data() as BackendProduct);
+      const products = snapshot.docs.map((doc) => doc.data() as BackendProduct);
+      // Đồng bộ vào memory store
+      for (const p of products) {
+        memoryProductStore.set(p.id, p);
+      }
+      return products;
     } catch (error) {
-      console.warn("[ProductRepo] Firestore read error, returning initial:", error);
+      console.warn("[ProductRepo] Firestore query failed, falling back to seed catalog:", error);
       return seedInitialProducts();
     }
   }
@@ -76,6 +94,10 @@ export class ProductRepository {
    * Lấy chi tiết 1 sản phẩm theo ID
    */
   static async getById(id: string): Promise<BackendProduct | null> {
+    if (memoryProductStore.has(id)) {
+      return memoryProductStore.get(id)!;
+    }
+
     if (!adminDb) {
       const list = seedInitialProducts();
       return list.find((p) => p.id === id) || null;
@@ -87,10 +109,13 @@ export class ProductRepository {
         const list = seedInitialProducts();
         return list.find((p) => p.id === id) || null;
       }
-      return doc.data() as BackendProduct;
+      const data = doc.data() as BackendProduct;
+      memoryProductStore.set(data.id, data);
+      return data;
     } catch (error) {
       console.warn("[ProductRepo] getById error:", error);
-      return null;
+      const list = seedInitialProducts();
+      return list.find((p) => p.id === id) || null;
     }
   }
 
@@ -99,6 +124,7 @@ export class ProductRepository {
    */
   static async create(productData: Partial<BackendProduct>): Promise<BackendProduct> {
     const id = productData.id || `product-${Date.now()}`;
+    const stockCount = Number(productData.stockCount) >= 0 ? Number(productData.stockCount) : 50;
     const newProduct: BackendProduct = {
       id,
       name: productData.name || "Sản phẩm NÉT mới",
@@ -112,46 +138,111 @@ export class ProductRepository {
       model3dUrl: productData.model3dUrl || "/models/net-tote.glb",
       defaultColor: productData.defaultColor || "ocean-abyss",
       availableColors: productData.availableColors || [],
-      inStock: productData.inStock !== false,
-      stockCount: Number(productData.stockCount) || 50,
+      inStock: stockCount > 0 && productData.inStock !== false,
+      stockCount,
       isActive: productData.isActive !== false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
+    memoryProductStore.set(id, newProduct);
+
     if (adminDb) {
-      await adminDb.collection(COLLECTION_NAME).doc(id).set(newProduct);
+      try {
+        await adminDb.collection(COLLECTION_NAME).doc(id).set(newProduct);
+      } catch (err) {
+        console.warn("[ProductRepo] Firestore create error:", err);
+      }
     }
 
     return newProduct;
   }
 
   /**
-   * Cập nhật thông tin sản phẩm (giá tiền, trạng thái tồn kho, mô tả)
+   * Cập nhật thông tin sản phẩm (giá tiền, số lượng tồn kho, mô tả)
    */
   static async update(id: string, updates: Partial<BackendProduct>): Promise<BackendProduct | null> {
     const current = await this.getById(id);
     if (!current) return null;
 
+    const nextStockCount =
+      updates.stockCount !== undefined ? Number(updates.stockCount) : current.stockCount;
+    const nextInStock =
+      updates.inStock !== undefined
+        ? updates.inStock && nextStockCount > 0
+        : nextStockCount > 0;
+
     const updated: BackendProduct = {
       ...current,
       ...updates,
+      stockCount: nextStockCount,
+      inStock: nextInStock,
       updatedAt: new Date().toISOString(),
     };
 
+    memoryProductStore.set(id, updated);
+
     if (adminDb) {
-      await adminDb.collection(COLLECTION_NAME).doc(id).set(updated, { merge: true });
+      try {
+        await adminDb.collection(COLLECTION_NAME).doc(id).set(updated, { merge: true });
+      } catch (err) {
+        console.warn("[ProductRepo] Firestore update error:", err);
+      }
     }
 
     return updated;
   }
 
   /**
+   * Trừ số lượng tồn kho sản phẩm khi khách đặt hàng
+   */
+  static async deductStock(
+    productId: string,
+    quantity: number
+  ): Promise<{ success: boolean; newStock: number; error?: string }> {
+    const all = await this.getAll();
+    const product = all.find(
+      (p) =>
+        p.id === productId ||
+        p.name.toLowerCase() === productId.toLowerCase() ||
+        productId.toLowerCase().includes(p.name.toLowerCase())
+    );
+
+    if (!product) {
+      return { success: false, newStock: 0, error: "Không tìm thấy sản phẩm trong kho!" };
+    }
+
+    if (product.stockCount < quantity) {
+      return {
+        success: false,
+        newStock: product.stockCount,
+        error: `Sản phẩm "${product.name}" chỉ còn ${product.stockCount} chiếc trong kho, không đủ số lượng (${quantity})!`,
+      };
+    }
+
+    const newStock = Math.max(0, product.stockCount - quantity);
+    await this.update(product.id, {
+      stockCount: newStock,
+      inStock: newStock > 0,
+    });
+
+    return {
+      success: true,
+      newStock,
+    };
+  }
+
+  /**
    * Xóa sản phẩm khỏi database
    */
   static async delete(id: string): Promise<boolean> {
+    memoryProductStore.delete(id);
     if (adminDb) {
-      await adminDb.collection(COLLECTION_NAME).doc(id).delete();
+      try {
+        await adminDb.collection(COLLECTION_NAME).doc(id).delete();
+      } catch (err) {
+        console.warn("[ProductRepo] Firestore delete error:", err);
+      }
     }
     return true;
   }

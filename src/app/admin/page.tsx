@@ -20,6 +20,7 @@ import {
   assignBagToOrder,
   getSupplyChainStats,
   exportInventoryToCSV,
+  deleteOrderById,
 } from "@/lib/supplyChainStorage";
 import { syncAllInventoryToFirestore } from "@/lib/firestoreService";
 import { formatVND, formatKg } from "@/lib/utils";
@@ -64,7 +65,10 @@ import {
   ShoppingBag,
   Edit,
   Trash2,
+  Box,
+  Image as ImageIcon,
 } from "lucide-react";
+import { uploadProductFile } from "@/lib/storageService";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 
 function AdminDashboardInner() {
@@ -107,7 +111,7 @@ function AdminDashboardInner() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState(() => getSupplyChainStats());
 
-  // Backend Products State (CRUD)
+  // Backend Products State (CRUD with Real Stock)
   const [backendProducts, setBackendProducts] = useState<any[]>([]);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [productForm, setProductForm] = useState({
@@ -118,8 +122,52 @@ function AdminDashboardInner() {
     description: "",
     plasticOffsetKg: 1.8,
     imageUrl: "/assets/products/tote-blue.png",
+    model3dUrl: "/assets/models/tuixach.glb",
     inStock: true,
+    stockCount: 50,
   });
+
+  // Cloud Storage File Upload States (Images & 3D Models)
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadProgress, setImageUploadProgress] = useState(0);
+  const [isUploadingModel, setIsUploadingModel] = useState(false);
+  const [modelUploadProgress, setModelUploadProgress] = useState(0);
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingImage(true);
+    setImageUploadProgress(10);
+    try {
+      const url = await uploadProductFile(file, "images", (pct) => setImageUploadProgress(pct));
+      setProductForm((prev) => ({ ...prev, imageUrl: url }));
+    } catch (err: any) {
+      alert("Lỗi tải ảnh: " + (err?.message || "Không thể tải file lên"));
+    } finally {
+      setIsUploadingImage(false);
+      setImageUploadProgress(0);
+    }
+  };
+
+  const handleModelFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".glb") && !file.name.toLowerCase().endsWith(".gltf")) {
+      alert("Vui lòng chọn file mô hình 3D (.glb hoặc .gltf)!");
+      return;
+    }
+    setIsUploadingModel(true);
+    setModelUploadProgress(10);
+    try {
+      const url = await uploadProductFile(file, "models", (pct) => setModelUploadProgress(pct));
+      setProductForm((prev) => ({ ...prev, model3dUrl: url }));
+    } catch (err: any) {
+      alert("Lỗi tải file 3D: " + (err?.message || "Không thể tải file lên"));
+    } finally {
+      setIsUploadingModel(false);
+      setModelUploadProgress(0);
+    }
+  };
 
   const fetchBackendProducts = async () => {
     try {
@@ -129,7 +177,7 @@ function AdminDashboardInner() {
         return;
       }
       const json = await res.json();
-      if (json.success && json.data) {
+      if (json.success && Array.isArray(json.data)) {
         setBackendProducts(json.data);
       }
     } catch (e) {
@@ -137,17 +185,39 @@ function AdminDashboardInner() {
     }
   };
 
+  const fetchBackendOrders = async () => {
+    try {
+      const res = await fetch("/api/orders");
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const local = getAllOrders();
+          const merged = [...json.data];
+          for (const loc of local) {
+            if (!merged.some((m) => m.orderId === loc.orderId)) {
+              merged.push(loc);
+            }
+          }
+          setOrders(merged);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Fetch backend orders error:", e);
+    }
+    setOrders(getAllOrders());
+  };
+
   // Function to refresh all data
   const reloadData = () => {
     const p = getAllNetPacks();
     const m = getManufacturedItems();
-    const o = getAllOrders();
     const s = getSupplyChainStats();
     setNetPacks(p);
     setManufacturedItems(m);
-    setOrders(o);
     setStats(s);
     fetchBackendProducts();
+    fetchBackendOrders();
   };
 
   useEffect(() => {
@@ -179,14 +249,22 @@ function AdminDashboardInner() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/products", {
-        method: "POST",
+      const isExisting = backendProducts.some((p) => p.id === productForm.id);
+      const url = isExisting ? `/api/products/${productForm.id}` : "/api/products";
+      const method = isExisting ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productForm),
       });
       const data = await res.json();
       if (data.success) {
-        alert("Đã lưu mẫu sản phẩm thành công vào Backend Database!");
+        alert(
+          isExisting
+            ? "Đã cập nhật thông tin sản phẩm và số lượng tồn kho thành công!"
+            : "Đã thêm mẫu sản phẩm mới vào Database thành công!"
+        );
         setShowAddProductModal(false);
         fetchBackendProducts();
       } else {
@@ -198,7 +276,7 @@ function AdminDashboardInner() {
   };
 
   const handleDeleteProduct = async (id: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa mẫu sản phẩm này khỏi Backend?")) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa mẫu sản phẩm này khỏi Backend Database?")) return;
     try {
       const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -400,9 +478,127 @@ function AdminDashboardInner() {
     }
   };
 
-  const handleUpdateFulfillment = (orderId: string, status: Order["fulfillmentStatus"]) => {
+  const handleUpdateFulfillment = async (orderId: string, status: Order["fulfillmentStatus"]) => {
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fulfillmentStatus: status }),
+      });
+    } catch (err) {
+      console.warn("Update fulfillment API error:", err);
+    }
     updateOrderStatus(orderId, status);
     reloadData();
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa đơn hàng này khỏi Database và Xưởng?")) return;
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.warn("Delete order API error:", err);
+    }
+    deleteOrderById(orderId);
+    reloadData();
+  };
+
+  const handleTogglePaymentStatus = async (order: Order) => {
+    const nextStatus = order.paymentStatus === "paid" ? "pending" : "paid";
+    try {
+      await fetch(`/api/orders/${order.orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus: nextStatus }),
+      });
+    } catch (err) {
+      console.warn("Toggle payment status error:", err);
+    }
+    const updated = getAllOrders().map((o) =>
+      o.orderId === order.orderId ? { ...o, paymentStatus: nextStatus as any } : o
+    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem("net_orders_v1", JSON.stringify(updated));
+    }
+    reloadData();
+  };
+
+  // State & Handler for Manual Admin Order Creation
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+  const [createOrderForm, setCreateOrderForm] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "Đà Nẵng",
+    productId: BAG_BASES[0].id,
+    quantity: 1,
+    paymentMethod: "cod" as "cod" | "vietqr",
+  });
+
+  const handleAdminCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const selectedProduct = backendProducts.find((p) => p.id === createOrderForm.productId) || {
+        id: createOrderForm.productId,
+        name: "NÉT Eco Bag",
+        basePrice: 1250000,
+        plasticOffsetKg: 1.8,
+      };
+
+      const payload = {
+        cartItems: [
+          {
+            bagBaseId: selectedProduct.id,
+            id: selectedProduct.id,
+            title: selectedProduct.name,
+            price: selectedProduct.basePrice,
+            quantity: createOrderForm.quantity,
+            plasticOffsetKg: selectedProduct.plasticOffsetKg || 1.8,
+          },
+        ],
+        customer: {
+          fullName: createOrderForm.fullName.trim(),
+          phone: createOrderForm.phone.trim(),
+          email: createOrderForm.email.trim() || `order-${Date.now()}@netcustomer.vn`,
+          address: createOrderForm.address.trim(),
+          city: createOrderForm.city.trim(),
+        },
+        paymentMethod: createOrderForm.paymentMethod,
+        total: selectedProduct.basePrice * createOrderForm.quantity,
+      };
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Đã tạo đơn hàng mới và tự động trừ tồn kho thành công!");
+        setShowCreateOrderModal(false);
+        setCreateOrderForm({
+          fullName: "",
+          phone: "",
+          email: "",
+          address: "",
+          city: "Đà Nẵng",
+          productId: BAG_BASES[0].id,
+          quantity: 1,
+          paymentMethod: "cod",
+        });
+        if (data.data) {
+          saveNewOrder(data.data);
+        }
+        reloadData();
+      } else {
+        alert(data.error || "Lỗi tạo đơn hàng");
+      }
+    } catch (err: any) {
+      alert("Lỗi kết nối máy chủ: " + err.message);
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -736,7 +932,9 @@ function AdminDashboardInner() {
                       description: "",
                       plasticOffsetKg: 1.8,
                       imageUrl: "/assets/products/tote-blue.png",
+                      model3dUrl: "/assets/models/tuixach.glb",
                       inStock: true,
+                      stockCount: 50,
                     });
                     setShowAddProductModal(true);
                   }}
@@ -796,14 +994,21 @@ function AdminDashboardInner() {
                               {p.id}
                             </span>
                             <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                p.inStock
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                p.inStock && (p.stockCount ?? 1) > 0
                                   ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
                                   : "bg-rose-950/60 text-rose-400 border border-rose-800/40"
                               }`}
                             >
-                              {p.inStock ? "Còn hàng" : "Hết hàng"}
+                              {p.inStock && (p.stockCount ?? 1) > 0
+                                ? `Còn hàng (${p.stockCount ?? 0})`
+                                : "Hết hàng"}
                             </span>
+                            {p.model3dUrl && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-950/60 text-sky-400 border border-sky-800/40 font-mono font-bold flex items-center gap-1">
+                                <Box className="w-3 h-3" /> 3D
+                              </span>
+                            )}
                           </div>
                           <h4 className="font-bold text-white text-sm mt-1 truncate">{p.name}</h4>
                           <span className="text-[10px] text-slate-400 uppercase tracking-wider">
@@ -817,8 +1022,8 @@ function AdminDashboardInner() {
                         {p.description || "Túi thời trang sinh thái tái chế từ lưới ma đại dương."}
                       </p>
 
-                      {/* Metrics */}
-                      <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800/80">
+                      {/* Metrics: 3 Columns with Live Stock */}
+                      <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80">
                         <div className="bg-slate-800/60 p-2 rounded-xl text-center">
                           <div className="text-[10px] text-slate-400">Giá Niêm Yết</div>
                           <div className="text-xs font-bold text-pink-300 font-mono mt-0.5">
@@ -826,7 +1031,15 @@ function AdminDashboardInner() {
                           </div>
                         </div>
                         <div className="bg-slate-800/60 p-2 rounded-xl text-center">
-                          <div className="text-[10px] text-slate-400">Rác Giảm Thiểu</div>
+                          <div className="text-[10px] text-slate-400">Tồn Kho</div>
+                          <div className={`text-xs font-bold font-mono mt-0.5 ${
+                            (p.stockCount ?? 0) > 0 ? "text-cyan-300" : "text-rose-400"
+                          }`}>
+                            {p.stockCount ?? 0} chiếc
+                          </div>
+                        </div>
+                        <div className="bg-slate-800/60 p-2 rounded-xl text-center">
+                          <div className="text-[10px] text-slate-400">Rác Giảm</div>
                           <div className="text-xs font-bold text-emerald-300 font-mono mt-0.5">
                             {p.plasticOffsetKg || 1.8} kg
                           </div>
@@ -847,7 +1060,9 @@ function AdminDashboardInner() {
                             description: p.description || "",
                             plasticOffsetKg: p.plasticOffsetKg || 1.8,
                             imageUrl: p.imageUrl || "/assets/products/tote-blue.png",
+                            model3dUrl: p.model3dUrl || "/assets/models/tuixach.glb",
                             inStock: p.inStock ?? true,
+                            stockCount: p.stockCount ?? 0,
                           });
                           setShowAddProductModal(true);
                         }}
@@ -1802,27 +2017,50 @@ function AdminDashboardInner() {
                 </p>
               </div>
 
-              {/* Status Filter */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                {[
-                  { id: "all", label: "Tất cả" },
-                  { id: "received", label: "Tiếp nhận" },
-                  { id: "crafting", label: "Đang may" },
-                  { id: "delivering", label: "Đang giao" },
-                  { id: "delivered", label: "Hoàn tất" },
-                ].map((s) => (
+              {/* Status Filter & Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {[
+                    { id: "all", label: "Tất cả" },
+                    { id: "received", label: "Tiếp nhận" },
+                    { id: "crafting", label: "Đang may" },
+                    { id: "delivering", label: "Đang giao" },
+                    { id: "delivered", label: "Hoàn tất" },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setOrderStatusFilter(s.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                        orderStatusFilter === s.id
+                          ? "bg-teal-600 text-white font-bold shadow-md"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
                   <button
-                    key={s.id}
-                    onClick={() => setOrderStatusFilter(s.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                      orderStatusFilter === s.id
-                        ? "bg-teal-600 text-white font-bold shadow-md"
-                        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                    }`}
+                    type="button"
+                    onClick={fetchBackendOrders}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                    title="Tải lại danh sách đơn hàng"
                   >
-                    {s.label}
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Tải Lại</span>
                   </button>
-                ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateOrderModal(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Tạo Đơn Hàng Mới</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1881,13 +2119,22 @@ function AdminDashboardInner() {
                                 {formatVND(order.total)}
                               </div>
                               <div className="mt-0.5">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                                  order.paymentStatus === "paid"
-                                    ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800/50"
-                                    : "bg-amber-950/80 text-amber-300 border border-amber-800/50"
-                                }`}>
-                                  {order.paymentStatus === "paid" ? "Đã Thanh Toán" : "Chưa Thu (COD)"}
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePaymentStatus(order)}
+                                  className="cursor-pointer group flex items-center gap-1"
+                                  title="Bấm để chuyển đổi trạng thái thanh toán (Đã thu / Chưa thu)"
+                                >
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${
+                                      order.paymentStatus === "paid"
+                                        ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 group-hover:bg-emerald-900"
+                                        : "bg-amber-950/80 text-amber-300 border border-amber-800/50 group-hover:bg-amber-900"
+                                    }`}
+                                  >
+                                    {order.paymentStatus === "paid" ? "✓ Đã Thanh Toán" : "Chưa Thu (COD) ⟳"}
+                                  </span>
+                                </button>
                               </div>
                             </td>
 
@@ -1941,13 +2188,23 @@ function AdminDashboardInner() {
                             </td>
 
                             <td className="py-3.5 px-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedOrderForAssign(order)}
-                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-semibold transition-colors cursor-pointer"
-                              >
-                                Chi Tiết Đơn
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForAssign(order)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-semibold transition-colors cursor-pointer"
+                                >
+                                  Chi Tiết
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOrder(order.orderId)}
+                                  className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 transition-colors cursor-pointer"
+                                  title="Xóa đơn hàng khỏi hệ thống"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -2065,6 +2322,148 @@ function AdminDashboardInner() {
               </div>
             )}
 
+            {/* MODAL: ADMIN CREATE ORDER MANUALLY */}
+            {showCreateOrderModal && (
+              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-indigo-700/80 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-white">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 className="font-serif text-lg font-bold text-white flex items-center gap-2">
+                      <Package className="w-5 h-5 text-indigo-400" />
+                      Tạo Đơn Hàng Mới (Admin & Khách Trực Tiếp)
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateOrderModal(false)}
+                      className="text-slate-400 hover:text-white text-sm cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAdminCreateOrder} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Họ & Tên Khách Hàng</label>
+                        <input
+                          type="text"
+                          required
+                          value={createOrderForm.fullName}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, fullName: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                          placeholder="Nguyễn Văn A"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Số Điện Thoại</label>
+                        <input
+                          type="tel"
+                          required
+                          value={createOrderForm.phone}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, phone: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                          placeholder="0905 123 456"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Địa Chỉ Nhận Hàng</label>
+                        <input
+                          type="text"
+                          required
+                          value={createOrderForm.address}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, address: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                          placeholder="123 Trần Phú, Hải Châu"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Tỉnh / Thành Phố</label>
+                        <input
+                          type="text"
+                          required
+                          value={createOrderForm.city}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, city: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                          placeholder="Đà Nẵng"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="col-span-2">
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Chọn Mẫu Sản Phẩm</label>
+                        <select
+                          value={createOrderForm.productId}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, productId: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        >
+                          {(backendProducts.length > 0 ? backendProducts : BAG_BASES).map((p: any) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} — {formatVND(p.basePrice)} (Còn: {p.stockCount ?? 50})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Số Lượng</label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          max={50}
+                          value={createOrderForm.quantity}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Phương Thức Thanh Toán</label>
+                        <select
+                          value={createOrderForm.paymentMethod}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, paymentMethod: e.target.value as any })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="cod">Tiền mặt khi nhận (COD)</option>
+                          <option value="vietqr">Chuyển khoản QR (VietQR)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Email (Tùy chọn)</label>
+                        <input
+                          type="email"
+                          value={createOrderForm.email}
+                          onChange={(e) => setCreateOrderForm({ ...createOrderForm, email: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                          placeholder="khach@email.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateOrderModal(false)}
+                        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md cursor-pointer"
+                      >
+                        Tạo Đơn Hàng & Trừ Kho
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
             {/* ADD / EDIT PRODUCT MODAL (BACKEND CLOUD CRUD) */}
             {showAddProductModal && (
               <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -2123,7 +2522,7 @@ function AdminDashboardInner() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-300 mb-1">Giá Bán (VNĐ)</label>
                         <input
@@ -2137,7 +2536,27 @@ function AdminDashboardInner() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">Rác Nhựa Tái Chế (kg)</label>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Tồn Kho (chiếc)</label>
+                        <input
+                          type="number"
+                          required
+                          min={0}
+                          step={1}
+                          value={productForm.stockCount ?? 0}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setProductForm({
+                              ...productForm,
+                              stockCount: val,
+                              inStock: val > 0 ? productForm.inStock : false,
+                            });
+                          }}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                          placeholder="50"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Rác Nhựa (kg)</label>
                         <input
                           type="number"
                           required
@@ -2150,15 +2569,101 @@ function AdminDashboardInner() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Đường Dẫn Ảnh (Image URL / Asset Path)</label>
-                      <input
-                        type="text"
-                        value={productForm.imageUrl}
-                        onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
-                        placeholder="/assets/products/tote-blue.png"
-                      />
+                    {/* Media: Image Upload (Firebase Storage) */}
+                    <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                          <ImageIcon className="w-4 h-4 text-pink-400" />
+                          <span>Ảnh Sản Phẩm (Cloud Storage)</span>
+                        </label>
+                        {isUploadingImage && (
+                          <span className="text-[10px] text-pink-400 font-mono animate-pulse">
+                            Đang tải lên: {imageUploadProgress}%
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {/* Preview Thumbnail */}
+                        <div className="w-14 h-14 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+                          {productForm.imageUrl ? (
+                            <img
+                              src={productForm.imageUrl}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80";
+                              }}
+                            />
+                          ) : (
+                            <ImageIcon className="w-6 h-6 text-slate-600" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 space-y-1.5">
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-950/60 hover:bg-pink-900/60 border border-pink-800/50 text-pink-300 text-xs font-semibold transition-all">
+                            <CloudUpload className="w-3.5 h-3.5" />
+                            <span>{isUploadingImage ? "Đang tải ảnh..." : "Chọn Tệp Ảnh Từ Máy Tính"}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={isUploadingImage}
+                              onChange={handleImageFileChange}
+                              className="hidden"
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            value={productForm.imageUrl}
+                            onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-300 focus:outline-none focus:border-pink-500 font-mono"
+                            placeholder="Hoặc nhập URL ảnh..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Media: 3D Model Upload (.glb / .gltf) */}
+                    <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                          <Box className="w-4 h-4 text-cyan-400" />
+                          <span>Mô Hình 3D Sản Phẩm (.glb / .gltf)</span>
+                        </label>
+                        {isUploadingModel && (
+                          <span className="text-[10px] text-cyan-400 font-mono animate-pulse">
+                            Đang tải lên: {modelUploadProgress}%
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-cyan-400">
+                          <Box className="w-6 h-6" />
+                        </div>
+
+                        <div className="flex-1 space-y-1.5">
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800/50 text-cyan-300 text-xs font-semibold transition-all">
+                            <CloudUpload className="w-3.5 h-3.5" />
+                            <span>{isUploadingModel ? "Đang tải 3D..." : "Chọn File 3D (.glb / .gltf)"}</span>
+                            <input
+                              type="file"
+                              accept=".glb,.gltf"
+                              disabled={isUploadingModel}
+                              onChange={handleModelFileChange}
+                              className="hidden"
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            value={productForm.model3dUrl}
+                            onChange={(e) => setProductForm({ ...productForm, model3dUrl: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-300 focus:outline-none focus:border-cyan-500 font-mono"
+                            placeholder="/assets/models/tuixach.glb"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">

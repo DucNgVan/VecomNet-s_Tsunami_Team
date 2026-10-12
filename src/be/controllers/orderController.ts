@@ -35,14 +35,39 @@ export class OrderController {
   }
 
   /**
-   * PATCH /api/orders/[id]
+   * POST /api/orders (Tạo đơn hàng thủ công từ Admin)
+   */
+  static async handleCreateOrder(req: NextRequest) {
+    try {
+      const body = await req.json();
+      const result = await OrderService.processCheckout(body);
+      return NextResponse.json({ success: true, message: "Tạo đơn hàng thành công", data: result.order });
+    } catch (error: any) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
+  }
+
+  /**
+   * PATCH /api/orders/[id] hoặc PUT /api/orders/[id]
    */
   static async handleUpdateStatus(orderId: string, req: NextRequest) {
     try {
       const body = await req.json();
-      const { fulfillmentStatus } = body;
-      await OrderService.updateOrderStatus(orderId, fulfillmentStatus);
+      const { fulfillmentStatus, paymentStatus } = body;
+      await OrderService.updateOrderStatus(orderId, fulfillmentStatus, paymentStatus);
       return NextResponse.json({ success: true, message: "Cập nhật trạng thái thành công" });
+    } catch (error: any) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
+  }
+
+  /**
+   * DELETE /api/orders/[id]
+   */
+  static async handleDeleteOrder(orderId: string) {
+    try {
+      await OrderService.deleteOrder(orderId);
+      return NextResponse.json({ success: true, message: "Xóa đơn hàng thành công" });
     } catch (error: any) {
       return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }

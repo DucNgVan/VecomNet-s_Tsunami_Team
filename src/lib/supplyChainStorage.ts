@@ -83,21 +83,13 @@ const INITIAL_MANUFACTURED_ITEMS: ManufacturedBagItem[] = [
     seaRegion: "Rạn San Hô Bán Đảo Sơn Trà, Đà Nẵng",
     coordinates: { lat: 16.1124, lng: 108.2619 },
     plasticConsumedKg: 1.6,
-    status: "assigned_to_order",
-    assignedOrderCode: "NET-ORD-8821",
+    status: "in_stock",
     qrUrl: "/passport/PACK-DN-2024-082?itemId=NET-ST-082-001",
     barcode: "893882082001",
     nfcTagUid: "04:82:01:B2:C1",
-    isClaimed: true,
-    warrantyStatus: "active",
+    isClaimed: false,
+    warrantyStatus: "unactivated",
     warrantyMonths: 24,
-    warrantyActivatedAt: "2026-10-09 10:20",
-    warrantyExpiresAt: "2028-10-09",
-    claimedBy: {
-      fullName: "Lê Minh Thảo",
-      phone: "0905 882 119",
-      email: "thao.le@gmail.com",
-    },
   },
   {
     serialId: "NET-ST-082-002",
@@ -151,21 +143,13 @@ const INITIAL_MANUFACTURED_ITEMS: ManufacturedBagItem[] = [
     seaRegion: "Vùng Biển Nam Ô, Liên Chiểu, Đà Nẵng",
     coordinates: { lat: 16.1422, lng: 108.1255 },
     plasticConsumedKg: 1.3,
-    status: "assigned_to_order",
-    assignedOrderCode: "NET-ORD-8822",
+    status: "in_stock",
     qrUrl: "/passport/PACK-NO-2024-045?itemId=NET-NO-045-001",
     barcode: "893882045001",
     nfcTagUid: "04:45:01:B2:C1",
-    isClaimed: true,
-    warrantyStatus: "active",
+    isClaimed: false,
+    warrantyStatus: "unactivated",
     warrantyMonths: 24,
-    warrantyActivatedAt: "2026-10-09 16:30",
-    warrantyExpiresAt: "2028-10-09",
-    claimedBy: {
-      fullName: "Trần Anh Khoa",
-      phone: "0912 345 678",
-      email: "khoa.tran@gmail.com",
-    },
   },
   {
     serialId: "NET-NO-045-002",
@@ -189,112 +173,8 @@ const INITIAL_MANUFACTURED_ITEMS: ManufacturedBagItem[] = [
   },
 ];
 
-// Initial mock orders if none exist
-const INITIAL_ORDERS: Order[] = [
-  {
-    orderId: "ord-seed-01",
-    orderCode: "NET-ORD-8821",
-    createdAt: "2026-10-09T08:30:00Z",
-    customer: {
-      fullName: "Lê Minh Thảo",
-      phone: "0905 882 119",
-      email: "thao.le@gmail.com",
-      address: "42 Trần Phú, P. Thạch Thang",
-      city: "Đà Nẵng",
-      note: "Gói quà giúp mình tặng đối tác nước ngoài",
-    },
-    items: [
-      {
-        cartItemId: "item-1",
-        type: "custom_bag",
-        title: "NÉT Tote Signature (Xanh Thẳm)",
-        price: 1470000,
-        quantity: 1,
-        image: "/assets/products/tote-blue.png",
-        plasticOffsetKg: 1.85,
-        details: {
-          colorName: "Xanh Thẳm Đại Dương",
-          charmsCount: 2,
-          charmsList: ["Rồng Lửa Vươn Khơi", "Giọt Sáng Lân Tinh"],
-        },
-      },
-    ],
-    subtotal: 1470000,
-    shippingFee: 0,
-    total: 1470000,
-    totalPlasticOffsetKg: 1.85,
-    assignedBatchId: "PACK-DN-2024-082",
-    assignedBagSerialId: "NET-ST-082-001",
-    paymentMethod: "bank_transfer",
-    paymentStatus: "paid",
-    fulfillmentStatus: "delivering",
-  },
-  {
-    orderId: "ord-seed-02",
-    orderCode: "NET-ORD-8822",
-    createdAt: "2026-10-09T14:15:00Z",
-    customer: {
-      fullName: "Trần Anh Khoa",
-      phone: "0912 345 678",
-      email: "khoa.tran@gmail.com",
-      address: "128 Nguyễn Đình Chiểu, Q.3",
-      city: "TP. Hồ Chí Minh",
-    },
-    items: [
-      {
-        cartItemId: "item-2",
-        type: "base_bag",
-        title: "NÉT Ocean Bucket (Xanh Thẳm)",
-        price: 1050000,
-        quantity: 1,
-        image: "/assets/products/bucket-blue.png",
-        plasticOffsetKg: 1.3,
-        details: { colorName: "Xanh Thẳm Đại Dương" },
-      },
-    ],
-    subtotal: 1050000,
-    shippingFee: 30000,
-    total: 1080000,
-    totalPlasticOffsetKg: 1.3,
-    assignedBatchId: "PACK-NO-2024-045",
-    assignedBagSerialId: "NET-NO-045-001",
-    paymentMethod: "cod",
-    paymentStatus: "pending",
-    fulfillmentStatus: "crafting",
-  },
-  {
-    orderId: "ord-seed-03",
-    orderCode: "NET-ORD-8823",
-    createdAt: "2026-10-10T09:45:00Z",
-    customer: {
-      fullName: "Nguyễn Hải Yến",
-      phone: "0988 776 554",
-      email: "haiyen.nguyen@esg.vn",
-      address: "Tòa Keangnam Hanoi Landmark, Cầu Giấy",
-      city: "Hà Nội",
-      note: "Giao trong giờ hành chính",
-    },
-    items: [
-      {
-        cartItemId: "item-3",
-        type: "combo",
-        title: "Set Đại Dương Tái Sinh (Tote + 3 Charm)",
-        price: 1890000,
-        quantity: 1,
-        image: "/assets/products/combo-tote-deluxe.png",
-        plasticOffsetKg: 2.1,
-      },
-    ],
-    subtotal: 1890000,
-    shippingFee: 0,
-    total: 1890000,
-    totalPlasticOffsetKg: 2.1,
-    assignedBatchId: "PACK-CLC-2024-019",
-    paymentMethod: "vnpay",
-    paymentStatus: "paid",
-    fulfillmentStatus: "received",
-  },
-];
+// Initial orders list: Empty by default so only real orders from DB & customers appear
+const INITIAL_ORDERS: Order[] = [];
 
 // -------------------------------------------------------------
 // 1. NET PACK OPERATIONS
@@ -350,7 +230,26 @@ export function getManufacturedItems(): ManufacturedBagItem[] {
       localStorage.setItem(MANUFACTURED_ITEMS_KEY, JSON.stringify(INITIAL_MANUFACTURED_ITEMS));
       return INITIAL_MANUFACTURED_ITEMS;
     }
-    return JSON.parse(raw);
+    const parsed: ManufacturedBagItem[] = JSON.parse(raw);
+    let changed = false;
+    const cleaned = parsed.map((item) => {
+      if (item.assignedOrderCode && ["NET-ORD-8821", "NET-ORD-8822", "NET-ORD-8823"].includes(item.assignedOrderCode)) {
+        changed = true;
+        return {
+          ...item,
+          status: "in_stock" as const,
+          assignedOrderCode: undefined,
+          isClaimed: false,
+          warrantyStatus: "unactivated" as const,
+          claimedBy: undefined,
+        };
+      }
+      return item;
+    });
+    if (changed) {
+      localStorage.setItem(MANUFACTURED_ITEMS_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned;
   } catch (e) {
     console.error("Error reading manufactured items:", e);
     return INITIAL_MANUFACTURED_ITEMS;
@@ -665,7 +564,14 @@ export function getAllOrders(): Order[] {
       localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(INITIAL_ORDERS));
       return INITIAL_ORDERS;
     }
-    return JSON.parse(raw);
+    const parsed: Order[] = JSON.parse(raw);
+    const cleaned = parsed.filter(
+      (o) => !["NET-ORD-8821", "NET-ORD-8822", "NET-ORD-8823"].includes(o.orderCode)
+    );
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned;
   } catch (e) {
     console.error("Error reading orders:", e);
     return INITIAL_ORDERS;
@@ -675,6 +581,26 @@ export function getAllOrders(): Order[] {
 export function updateOrderStatus(orderId: string, status: Order["fulfillmentStatus"]): Order[] {
   const orders = getAllOrders();
   const updated = orders.map((o) => (o.orderId === orderId ? { ...o, fulfillmentStatus: status } : o));
+  if (typeof window !== "undefined") {
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
+
+export function deleteOrderById(orderId: string): Order[] {
+  const orders = getAllOrders().filter((o) => o.orderId !== orderId && o.orderCode !== orderId);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+  }
+  return orders;
+}
+
+export function saveNewOrder(order: Order): Order[] {
+  const orders = getAllOrders();
+  const exists = orders.some((o) => o.orderId === order.orderId);
+  const updated = exists
+    ? orders.map((o) => (o.orderId === order.orderId ? order : o))
+    : [order, ...orders];
   if (typeof window !== "undefined") {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updated));
   }

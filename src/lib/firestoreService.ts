@@ -597,12 +597,30 @@ export async function getCustomerOrdersFromFirestore(
     }
   }
 
-  // 2. Fallback to localStorage if Firestore empty or offline
+  // 2. Fallback to localStorage if Firestore empty or offline, đồng thời tự động đồng bộ lên Cloud Firestore
   if (orders.length === 0 && typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem("net_orders_v1");
       if (raw) {
         const localList: Order[] = JSON.parse(raw);
+        // Tự động đẩy các đơn hàng đang lưu ở trình duyệt khách lên Cloud Firestore để Admin thấy ngay lập tức
+        for (const locOrder of localList) {
+          if (!["NET-ORD-8821", "NET-ORD-8822", "NET-ORD-8823"].includes(locOrder.orderCode)) {
+            try {
+              setDoc(
+                doc(db, "orders", locOrder.orderId),
+                {
+                  ...locOrder,
+                  timestamp: serverTimestamp(),
+                },
+                { merge: true }
+              );
+            } catch (errSync) {
+              console.warn("Auto-sync local order to Firestore notice:", errSync);
+            }
+          }
+        }
+
         if (userId && userId !== "guest") {
           return localList.filter(
             (o) => o.userId === userId || o.customer?.email === userEmail

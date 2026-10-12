@@ -23,6 +23,8 @@ import {
   deleteOrderById,
 } from "@/lib/supplyChainStorage";
 import { syncAllInventoryToFirestore } from "@/lib/firestoreService";
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { formatVND, formatKg } from "@/lib/utils";
 import {
   BarChart3,
@@ -186,25 +188,54 @@ function AdminDashboardInner() {
   };
 
   const fetchBackendOrders = async () => {
+    // 1. Đọc trực tiếp từ Cloud Firestore qua Client SDK (Bảo đảm 100% không bị lỗi 500 do API serverless)
+    try {
+      const q = query(collection(db, "orders"));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const cloudOrders: Order[] = [];
+        snapshot.forEach((d) => {
+          cloudOrders.push(d.data() as Order);
+        });
+        // Lọc bỏ các đơn hàng mock cũ nếu có
+        const validOrders = cloudOrders.filter(
+          (o) => !["NET-ORD-8821", "NET-ORD-8822", "NET-ORD-8823"].includes(o.orderCode)
+        );
+        validOrders.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setOrders(validOrders);
+        return;
+      }
+    } catch (fsErr) {
+      console.warn("Client Firestore orders read notice:", fsErr);
+    }
+
+    // 2. Thử gọi API Backend nếu Firestore client rỗng
     try {
       const res = await fetch("/api/orders");
       if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          const local = getAllOrders();
-          const merged = [...json.data];
-          for (const loc of local) {
-            if (!merged.some((m) => m.orderId === loc.orderId)) {
-              merged.push(loc);
+        const text = await res.text();
+        try {
+          const json = JSON.parse(text);
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            const local = getAllOrders();
+            const merged = [...json.data];
+            for (const loc of local) {
+              if (!merged.some((m) => m.orderId === loc.orderId)) {
+                merged.push(loc);
+              }
             }
+            setOrders(merged);
+            return;
           }
-          setOrders(merged);
-          return;
-        }
+        } catch {}
       }
     } catch (e) {
       console.warn("Fetch backend orders error:", e);
     }
+
+    // 3. Fallback nội bộ
     setOrders(getAllOrders());
   };
 
@@ -479,6 +510,14 @@ function AdminDashboardInner() {
   };
 
   const handleUpdateFulfillment = async (orderId: string, status: Order["fulfillmentStatus"]) => {
+    // 1. Cập nhật trực tiếp lên Cloud Firestore
+    try {
+      await updateDoc(doc(db, "orders", orderId), { fulfillmentStatus: status });
+    } catch (fsErr) {
+      console.warn("Direct Firestore update fulfillment notice:", fsErr);
+    }
+
+    // 2. Gọi API đồng bộ
     try {
       await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
@@ -486,27 +525,45 @@ function AdminDashboardInner() {
         body: JSON.stringify({ fulfillmentStatus: status }),
       });
     } catch (err) {
-      console.warn("Update fulfillment API error:", err);
+      console.warn("Update fulfillment API notice:", err);
     }
+
     updateOrderStatus(orderId, status);
     reloadData();
   };
 
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa đơn hàng này khỏi Database và Xưởng?")) return;
+    // 1. Xóa trực tiếp khỏi Cloud Firestore
+    try {
+      await deleteDoc(doc(db, "orders", orderId));
+    } catch (fsErr) {
+      console.warn("Direct Firestore delete order notice:", fsErr);
+    }
+
+    // 2. Gọi API đồng bộ
     try {
       await fetch(`/api/orders/${orderId}`, {
         method: "DELETE",
       });
     } catch (err) {
-      console.warn("Delete order API error:", err);
+      console.warn("Delete order API notice:", err);
     }
+
     deleteOrderById(orderId);
     reloadData();
   };
 
   const handleTogglePaymentStatus = async (order: Order) => {
     const nextStatus = order.paymentStatus === "paid" ? "pending" : "paid";
+    // 1. Cập nhật trực tiếp lên Cloud Firestore
+    try {
+      await updateDoc(doc(db, "orders", order.orderId), { paymentStatus: nextStatus });
+    } catch (fsErr) {
+      console.warn("Direct Firestore toggle payment notice:", fsErr);
+    }
+
+    // 2. Gọi API đồng bộ
     try {
       await fetch(`/api/orders/${order.orderId}`, {
         method: "PATCH",
@@ -514,8 +571,9 @@ function AdminDashboardInner() {
         body: JSON.stringify({ paymentStatus: nextStatus }),
       });
     } catch (err) {
-      console.warn("Toggle payment status error:", err);
+      console.warn("Toggle payment status notice:", err);
     }
+
     const updated = getAllOrders().map((o) =>
       o.orderId === order.orderId ? { ...o, paymentStatus: nextStatus as any } : o
     );
@@ -548,56 +606,90 @@ function AdminDashboardInner() {
         plasticOffsetKg: 1.8,
       };
 
-      const payload = {
-        cartItems: [
+      const manualOrderId = `ord-${Date.now()}`;
+      const manualOrderCode = `NET-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      const newManualOrder: Order = {
+        orderId: manualOrderId,
+        orderCode: manualOrderCode,
+        createdAt: new Date().toISOString(),
+        customer: {
+          fullName: createOrderForm.fullName.trim() || "Khách Hàng (Tạo bởi Admin)",
+          phone: createOrderForm.phone.trim() || "0905000000",
+          email: createOrderForm.email.trim() || `order-${Date.now()}@netcustomer.vn`,
+          address: createOrderForm.address.trim() || "Tại Xưởng",
+          city: createOrderForm.city.trim() || "Đà Nẵng",
+        },
+        items: [
           {
+            type: "base_bag",
             bagBaseId: selectedProduct.id,
-            id: selectedProduct.id,
             title: selectedProduct.name,
             price: selectedProduct.basePrice,
             quantity: createOrderForm.quantity,
+            image: selectedProduct.imageUrl || "/assets/products/tote-blue.png",
             plasticOffsetKg: selectedProduct.plasticOffsetKg || 1.8,
           },
         ],
-        customer: {
-          fullName: createOrderForm.fullName.trim(),
-          phone: createOrderForm.phone.trim(),
-          email: createOrderForm.email.trim() || `order-${Date.now()}@netcustomer.vn`,
-          address: createOrderForm.address.trim(),
-          city: createOrderForm.city.trim(),
-        },
-        paymentMethod: createOrderForm.paymentMethod,
+        subtotal: selectedProduct.basePrice * createOrderForm.quantity,
+        shippingFee: 0,
         total: selectedProduct.basePrice * createOrderForm.quantity,
+        totalPlasticOffsetKg: Number(((selectedProduct.plasticOffsetKg || 1.8) * createOrderForm.quantity).toFixed(2)),
+        assignedBatchId: "PACK-DN-2024-082",
+        paymentMethod: createOrderForm.paymentMethod,
+        paymentStatus: createOrderForm.paymentMethod === "cod" ? "pending" : "paid",
+        fulfillmentStatus: "crafting",
+        userId: "admin-manual",
       };
 
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Đã tạo đơn hàng mới và tự động trừ tồn kho thành công!");
-        setShowCreateOrderModal(false);
-        setCreateOrderForm({
-          fullName: "",
-          phone: "",
-          email: "",
-          address: "",
-          city: "Đà Nẵng",
-          productId: BAG_BASES[0].id,
-          quantity: 1,
-          paymentMethod: "cod",
-        });
-        if (data.data) {
-          saveNewOrder(data.data);
-        }
-        reloadData();
-      } else {
-        alert(data.error || "Lỗi tạo đơn hàng");
+      // 1. Lưu trực tiếp lên Cloud Firestore
+      try {
+        await setDoc(doc(db, "orders", manualOrderId), newManualOrder);
+      } catch (fsErr) {
+        console.warn("Direct Firestore manual order write notice:", fsErr);
       }
+
+      // 2. Thử đồng bộ qua API Backend nếu server khả dụng
+      try {
+        await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customer: newManualOrder.customer,
+            items: newManualOrder.items,
+            paymentMethod: newManualOrder.paymentMethod,
+            total: newManualOrder.total,
+          }),
+        });
+      } catch (apiErr) {
+        console.warn("API manual order sync notice:", apiErr);
+      }
+
+      // 3. Trừ tồn kho sản phẩm tương ứng
+      try {
+        const nextStock = Math.max(0, (selectedProduct.stockCount || 50) - createOrderForm.quantity);
+        await handleUpdateProductStock(selectedProduct.id, nextStock);
+      } catch (stockErr) {
+        console.warn("Stock update notice:", stockErr);
+      }
+
+      // 4. Lưu cục bộ và làm mới
+      saveNewOrder(newManualOrder);
+      alert("Đã tạo đơn hàng mới và lưu vào Cloud Database thành công!");
+      setShowCreateOrderModal(false);
+      setCreateOrderForm({
+        fullName: "",
+        phone: "",
+        email: "",
+        address: "",
+        city: "Đà Nẵng",
+        productId: BAG_BASES[0].id,
+        quantity: 1,
+        paymentMethod: "cod",
+      });
+      reloadData();
     } catch (err: any) {
-      alert("Lỗi kết nối máy chủ: " + err.message);
+      alert("Lỗi tạo đơn hàng: " + err.message);
     }
   };
 

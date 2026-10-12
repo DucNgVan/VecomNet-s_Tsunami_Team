@@ -61,6 +61,9 @@ import {
   RefreshCw,
   FileSpreadsheet,
   Database,
+  ShoppingBag,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 
@@ -68,12 +71,12 @@ function AdminDashboardInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Tab State: analytics | net-packs | manufacturing | inventory | orders
+  // Tab State: analytics | products | net-packs | manufacturing | inventory | orders
   const activeTabParam = searchParams.get("tab") || "analytics";
   const [activeTab, setActiveTab] = useState<
-    "analytics" | "net-packs" | "manufacturing" | "inventory" | "orders"
+    "analytics" | "products" | "net-packs" | "manufacturing" | "inventory" | "orders"
   >(
-    ["analytics", "net-packs", "manufacturing", "inventory", "orders"].includes(activeTabParam)
+    ["analytics", "products", "net-packs", "manufacturing", "inventory", "orders"].includes(activeTabParam)
       ? (activeTabParam as any)
       : "analytics"
   );
@@ -82,7 +85,7 @@ function AdminDashboardInner() {
     const tab = searchParams.get("tab");
     if (
       tab &&
-      ["analytics", "net-packs", "manufacturing", "inventory", "orders"].includes(tab)
+      ["analytics", "products", "net-packs", "manufacturing", "inventory", "orders"].includes(tab)
     ) {
       setActiveTab(tab as any);
     }
@@ -104,6 +107,32 @@ function AdminDashboardInner() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState(() => getSupplyChainStats());
 
+  // Backend Products State (CRUD)
+  const [backendProducts, setBackendProducts] = useState<any[]>([]);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [productForm, setProductForm] = useState({
+    id: "",
+    name: "",
+    category: "tote",
+    basePrice: 1250000,
+    description: "",
+    plasticOffsetKg: 1.8,
+    imageUrl: "/assets/products/tote-blue.png",
+    inStock: true,
+  });
+
+  const fetchBackendProducts = async () => {
+    try {
+      const res = await fetch("/api/products?admin=true");
+      const json = await res.json();
+      if (json.success && json.data) {
+        setBackendProducts(json.data);
+      }
+    } catch (e) {
+      console.warn("Fetch backend products error:", e);
+    }
+  };
+
   // Function to refresh all data
   const reloadData = () => {
     const p = getAllNetPacks();
@@ -114,6 +143,7 @@ function AdminDashboardInner() {
     setManufacturedItems(m);
     setOrders(o);
     setStats(s);
+    fetchBackendProducts();
   };
 
   useEffect(() => {
@@ -142,9 +172,43 @@ function AdminDashboardInner() {
     }
   };
 
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Đã lưu mẫu sản phẩm thành công vào Backend Database!");
+        setShowAddProductModal(false);
+        fetchBackendProducts();
+      } else {
+        alert(data.error || "Lỗi lưu sản phẩm");
+      }
+    } catch (err: any) {
+      alert("Lỗi kết nối máy chủ: " + err.message);
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa mẫu sản phẩm này khỏi Backend?")) return;
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        fetchBackendProducts();
+      }
+    } catch (err) {
+      console.warn("Delete product error:", err);
+    }
+  };
+
   // Switch tab helper
   const handleSwitchTab = (
-    tab: "analytics" | "net-packs" | "manufacturing" | "inventory" | "orders"
+    tab: "analytics" | "products" | "net-packs" | "manufacturing" | "inventory" | "orders"
   ) => {
     setActiveTab(tab);
     router.push(`/admin?tab=${tab}`);
@@ -435,8 +499,8 @@ function AdminDashboardInner() {
           </div>
         </div>
 
-        {/* 5-Step Process Tabs Navigation */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 bg-slate-900/90 p-2 rounded-2xl border border-sky-900/50 shadow-inner">
+        {/* 6-Process Tabs Navigation */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-slate-900/90 p-2 rounded-2xl border border-sky-900/50 shadow-inner">
           <button
             type="button"
             onClick={() => handleSwitchTab("analytics")}
@@ -447,7 +511,20 @@ function AdminDashboardInner() {
             }`}
           >
             <BarChart3 className="w-4 h-4 text-teal-300" />
-            <span>Thống Kê Bán Hàng</span>
+            <span>Thống Kê</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSwitchTab("products")}
+            className={`py-3 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+              activeTab === "products"
+                ? "bg-teal-600 text-white shadow-lg shadow-teal-950/60 font-extrabold"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/80"
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4 text-pink-300" />
+            <span>Sản Phẩm ({backendProducts.length})</span>
           </button>
 
           <button
@@ -460,7 +537,7 @@ function AdminDashboardInner() {
             }`}
           >
             <Anchor className="w-4 h-4 text-sky-300" />
-            <span>1. Nhập Lưới & Gán Dải ({netPacks.length})</span>
+            <span>1. Nhập Lưới ({netPacks.length})</span>
           </button>
 
           <button
@@ -473,7 +550,7 @@ function AdminDashboardInner() {
             }`}
           >
             <Hammer className="w-4 h-4 text-amber-300" />
-            <span>2. Chế Tạo & Mã Vạch</span>
+            <span>2. Chế Tạo</span>
           </button>
 
           <button
@@ -486,20 +563,20 @@ function AdminDashboardInner() {
             }`}
           >
             <Boxes className="w-4 h-4 text-emerald-300" />
-            <span>3. Kho Thành Phẩm ({manufacturedItems.length})</span>
+            <span>3. Kho Túi ({manufacturedItems.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleSwitchTab("orders")}
-            className={`py-3 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all col-span-2 sm:col-span-1 ${
+            className={`py-3 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
               activeTab === "orders"
                 ? "bg-teal-600 text-white shadow-lg shadow-teal-950/60 font-extrabold"
                 : "text-slate-300 hover:text-white hover:bg-slate-800/80"
             }`}
           >
             <Package className="w-4 h-4 text-indigo-300" />
-            <span>4. Đơn Hàng Khách ({orders.length})</span>
+            <span>4. Đơn Hàng ({orders.length})</span>
           </button>
         </div>
 
@@ -613,6 +690,182 @@ function AdminDashboardInner() {
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ----------------------------------------------------------------- */}
+        {/* TAB: PRODUCTS MANAGEMENT (BACKEND CLOUD CRUD) */}
+        {/* ----------------------------------------------------------------- */}
+        {activeTab === "products" && (
+          <div className="space-y-6">
+            {/* Top Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/90 border border-sky-800/50 p-4 rounded-2xl">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-white flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-pink-400" />
+                  Quản Lý Danh Mục Sản Phẩm (Cloud Firestore Backend CRUD)
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Quản lý trực tiếp danh mục mẫu túi qua Backend REST API (<code className="text-pink-300">/api/products</code>). Khi thêm/xóa/sửa, khách hàng sẽ thấy ngay trên trang chủ và Catalog.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={fetchBackendProducts}
+                  className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Tải lại từ backend"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Tải Lại</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductForm({
+                      id: `bag-${Date.now().toString().slice(-4)}`,
+                      name: "",
+                      category: "tote",
+                      basePrice: 1250000,
+                      description: "",
+                      plasticOffsetKg: 1.8,
+                      imageUrl: "/assets/products/tote-blue.png",
+                      inStock: true,
+                    });
+                    setShowAddProductModal(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md shrink-0 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Thêm Mẫu Sản Phẩm</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Products Grid */}
+            {backendProducts.length === 0 ? (
+              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-12 text-center space-y-4">
+                <ShoppingBag className="w-12 h-12 text-slate-600 mx-auto" />
+                <div className="text-slate-300 font-semibold text-sm">Chưa có sản phẩm nào trong Backend Database</div>
+                <p className="text-slate-500 text-xs max-w-md mx-auto">
+                  Bấm &quot;Tải Lại&quot; để Backend tự động nạp danh mục khởi tạo từ BAG_BASES hoặc bấm nút &quot;+ Thêm Mẫu Sản Phẩm&quot; để tạo mẫu túi mới.
+                </p>
+                <button
+                  type="button"
+                  onClick={fetchBackendProducts}
+                  className="px-4 py-2 bg-pink-600 text-white text-xs font-bold rounded-xl"
+                >
+                  Tải Danh Mục Từ Backend
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {backendProducts.map((p) => (
+                  <div
+                    key={p.id}
+                    className="bg-slate-900/90 border border-slate-800 hover:border-pink-900/60 transition-all rounded-2xl p-4 flex flex-col justify-between shadow-lg"
+                  >
+                    <div>
+                      {/* Product Header */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+                          {p.imageUrl ? (
+                            <img
+                              src={p.imageUrl}
+                              alt={p.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80";
+                              }}
+                            />
+                          ) : (
+                            <ShoppingBag className="w-6 h-6 text-slate-500" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] text-pink-400 bg-pink-950/60 px-1.5 py-0.5 rounded border border-pink-800/40 font-bold">
+                              {p.id}
+                            </span>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                p.inStock
+                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
+                                  : "bg-rose-950/60 text-rose-400 border border-rose-800/40"
+                              }`}
+                            >
+                              {p.inStock ? "Còn hàng" : "Hết hàng"}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-white text-sm mt-1 truncate">{p.name}</h4>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                            Phân loại: {p.category}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Product Description */}
+                      <p className="text-xs text-slate-400 mt-3 line-clamp-2 leading-relaxed">
+                        {p.description || "Túi thời trang sinh thái tái chế từ lưới ma đại dương."}
+                      </p>
+
+                      {/* Metrics */}
+                      <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800/80">
+                        <div className="bg-slate-800/60 p-2 rounded-xl text-center">
+                          <div className="text-[10px] text-slate-400">Giá Niêm Yết</div>
+                          <div className="text-xs font-bold text-pink-300 font-mono mt-0.5">
+                            {formatVND(p.basePrice)}
+                          </div>
+                        </div>
+                        <div className="bg-slate-800/60 p-2 rounded-xl text-center">
+                          <div className="text-[10px] text-slate-400">Rác Giảm Thiểu</div>
+                          <div className="text-xs font-bold text-emerald-300 font-mono mt-0.5">
+                            {p.plasticOffsetKg || 1.8} kg
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProductForm({
+                            id: p.id,
+                            name: p.name,
+                            category: p.category || "tote",
+                            basePrice: p.basePrice || 1250000,
+                            description: p.description || "",
+                            plasticOffsetKg: p.plasticOffsetKg || 1.8,
+                            imageUrl: p.imageUrl || "/assets/products/tote-blue.png",
+                            inStock: p.inStock ?? true,
+                          });
+                          setShowAddProductModal(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Sửa</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProduct(p.id)}
+                        className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Xóa</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1804,6 +2057,146 @@ function AdminDashboardInner() {
                       Xác Nhận Gán Serial Vào Đơn
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ADD / EDIT PRODUCT MODAL (BACKEND CLOUD CRUD) */}
+            {showAddProductModal && (
+              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-pink-800/80 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-white">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 className="font-serif text-lg font-bold text-white flex items-center gap-2">
+                      <ShoppingBag className="w-5 h-5 text-pink-400" />
+                      {productForm.id ? `Cập Nhật Sản Phẩm #${productForm.id}` : "Thêm Mẫu Sản Phẩm Mới"}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddProductModal(false)}
+                      className="text-slate-400 hover:text-white text-sm cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveProduct} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Mã Sản Phẩm (ID / SKU)</label>
+                        <input
+                          type="text"
+                          required
+                          value={productForm.id}
+                          onChange={(e) => setProductForm({ ...productForm, id: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                          placeholder="bag-tote-01"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Dòng Sản Phẩm</label>
+                        <select
+                          value={productForm.category}
+                          onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
+                        >
+                          <option value="tote">Túi Tote (Tote Bag)</option>
+                          <option value="crossbody">Túi Đeo Chéo (Crossbody)</option>
+                          <option value="backpack">Balo Du Lịch (Backpack)</option>
+                          <option value="accessory">Phụ Kiện / Ví (Accessory)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Tên Sản Phẩm</label>
+                      <input
+                        type="text"
+                        required
+                        value={productForm.name}
+                        onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
+                        placeholder="NÉT Marine Tote Signature"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Giá Bán (VNĐ)</label>
+                        <input
+                          type="number"
+                          required
+                          min={0}
+                          step={10000}
+                          value={productForm.basePrice}
+                          onChange={(e) => setProductForm({ ...productForm, basePrice: Number(e.target.value) })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Rác Nhựa Tái Chế (kg)</label>
+                        <input
+                          type="number"
+                          required
+                          min={0.1}
+                          step={0.1}
+                          value={productForm.plasticOffsetKg}
+                          onChange={(e) => setProductForm({ ...productForm, plasticOffsetKg: Number(e.target.value) })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Đường Dẫn Ảnh (Image URL / Asset Path)</label>
+                      <input
+                        type="text"
+                        value={productForm.imageUrl}
+                        onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                        placeholder="/assets/products/tote-blue.png"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="inStockCheck"
+                        checked={productForm.inStock}
+                        onChange={(e) => setProductForm({ ...productForm, inStock: e.target.checked })}
+                        className="rounded border-slate-700 text-pink-600 focus:ring-pink-500 w-4 h-4 bg-slate-800"
+                      />
+                      <label htmlFor="inStockCheck" className="text-xs font-semibold text-slate-300 cursor-pointer">
+                        Đang mở bán (Còn hàng trên Catalog và Trang chủ)
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Mô Tả Sản Phẩm</label>
+                      <textarea
+                        rows={3}
+                        value={productForm.description}
+                        onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-pink-500 leading-relaxed"
+                        placeholder="Mô tả chất liệu lưới ma vớt từ rạn san hô, lớp lót chống thấm và phong cách may thủ công..."
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddProductModal(false)}
+                        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs transition-all shadow-md cursor-pointer"
+                      >
+                        Lưu Sản Phẩm Vào Backend
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}

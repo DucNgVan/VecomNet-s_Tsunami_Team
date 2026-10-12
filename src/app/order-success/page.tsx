@@ -16,6 +16,12 @@ import {
   Layers,
   ArrowRight,
   Waves,
+  Copy,
+  Check,
+  QrCode,
+  Mail,
+  Phone,
+  ShieldCheck,
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
@@ -24,6 +30,14 @@ function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const [order, setOrder] = useState<Order | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   useEffect(() => {
     try {
@@ -107,6 +121,142 @@ function OrderSuccessContent() {
                 </div>
               </div>
             </div>
+
+            {/* Email Dispatch Notice */}
+            <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-sky-800 text-white flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <span className="font-bold text-slate-900">Đã gửi email biên nhận & chứng chỉ: </span>
+                <span className="text-slate-600">
+                  Hóa đơn điện tử chi tiết và thông tin kích hoạt bảo hành NFC đã được gửi đến{" "}
+                  <strong className="text-sky-800">{order.customer.email}</strong>.
+                </span>
+              </div>
+            </div>
+
+            {/* Dynamic VietQR Payment Card (for Bank Transfer) */}
+            {order.paymentMethod === "bank_transfer" && (
+              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-sky-950 via-[#071326] to-[#040d1a] text-white border border-sky-500/40 shadow-xl space-y-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-sky-800/60 pb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-teal-400 text-[#071326] flex items-center justify-center font-bold shadow-md">
+                      <QrCode className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-lg font-bold text-white flex items-center gap-2">
+                        <span>Thanh Toán Chuyển Khoản VietQR Tự Động</span>
+                        {paymentConfirmed ? (
+                          <span className="text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                            ĐÃ XÁC NHẬN
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>
+                            CHỜ QUÉT MÃ
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-xs text-sky-200">
+                        Hệ thống tự động kích hoạt trạng thái đơn hàng khi tiền vào tài khoản
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-[11px] text-sky-300">Tổng Số Tiền:</div>
+                    <div className="text-2xl font-bold font-mono text-emerald-300">
+                      {formatVND(order.total)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                  {/* QR Image */}
+                  <div className="md:col-span-5 flex flex-col items-center text-center p-4 rounded-2xl bg-white text-slate-900 shadow-md">
+                    <div className="w-48 h-48 bg-slate-50 rounded-xl p-2 flex items-center justify-center border border-slate-200">
+                      <img
+                        src={
+                          (order as any).vietQr?.qrUrl ||
+                          `https://img.vietqr.io/image/970422-0905882119-compact2.png?amount=${order.total}&addInfo=NET%20${encodeURIComponent(
+                            order.orderCode
+                          )}&accountName=NET%20OCEAN%20CRAFT`
+                        }
+                        alt="VietQR MB Bank"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-2 font-medium">
+                      Mở app ngân hàng bất kỳ (MB, Vietcombank, Techcombank, MoMo...) để quét
+                    </div>
+                  </div>
+
+                  {/* Account Details with Copy Buttons */}
+                  <div className="md:col-span-7 space-y-2.5 text-xs">
+                    <div className="p-3 rounded-xl bg-sky-950/60 border border-sky-800/80 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] text-sky-400 font-semibold uppercase">Ngân hàng thụ hưởng:</div>
+                        <div className="text-sm font-bold text-white">MB Bank (Ngân Hàng Quân Đội)</div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-sky-950/60 border border-sky-800/80 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] text-sky-400 font-semibold uppercase">Số tài khoản:</div>
+                        <div className="text-sm font-bold font-mono text-teal-300">0905882119</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy("0905882119", "stk")}
+                        className="px-2.5 py-1 rounded-lg bg-sky-800/80 hover:bg-sky-700 text-sky-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        {copiedKey === "stk" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === "stk" ? "Đã chép" : "Sao chép"}</span>
+                      </button>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-sky-950/60 border border-sky-800/80 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] text-sky-400 font-semibold uppercase">Chủ tài khoản:</div>
+                        <div className="text-sm font-bold text-white uppercase">NET OCEAN CRAFT</div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-sky-950/60 border border-sky-800/80 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] text-sky-400 font-semibold uppercase">Nội dung chuyển khoản (bắt buộc):</div>
+                        <div className="text-sm font-bold font-mono text-amber-300">NET {order.orderCode}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(`NET ${order.orderCode}`, "memo")}
+                        className="px-2.5 py-1 rounded-lg bg-sky-800/80 hover:bg-sky-700 text-sky-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        {copiedKey === "memo" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === "memo" ? "Đã chép" : "Sao chép"}</span>
+                      </button>
+                    </div>
+
+                    {!paymentConfirmed ? (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentConfirmed(true)}
+                        className="w-full mt-2 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Tôi Đã Chuyển Khoản Xong</span>
+                      </button>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-600/80 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>Giao dịch của bạn đã được ghi nhận. Xưởng đang tiến hành gia công!</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Fulfillment Status Timeline */}
             <div className="space-y-3">

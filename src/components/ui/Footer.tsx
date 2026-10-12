@@ -129,9 +129,19 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <a href="#faq" className="hover:text-white transition-colors">
-                  Chính Sách Đổi Trả & Bảo Hành
-                </a>
+                <Link href="/policies" className="hover:text-white transition-colors text-teal-300 font-semibold">
+                  Chính Sách Đổi Trả & Bảo Hành NFC
+                </Link>
+              </li>
+              <li>
+                <Link href="/policies" className="hover:text-white transition-colors">
+                  Vận Chuyển & Đồng Kiểm COD
+                </Link>
+              </li>
+              <li>
+                <Link href="/policies" className="hover:text-white transition-colors">
+                  Bảo Mật Thông Tin Khách Hàng
+                </Link>
               </li>
             </ul>
           </div>
@@ -153,12 +163,35 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
+        {/* Enterprise Legal Compliance & Bo Cong Thuong badge */}
+        <div className="pt-8 border-t border-white/10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center text-xs text-slate-400">
+          <div className="md:col-span-8 space-y-1">
+            <div className="font-bold text-slate-200">
+              CÔNG TY TNHH SÁNG TẠO SINH THÁI NÉT (NET OCEAN ECO-CRAFT)
+            </div>
+            <div>
+              Mã số thuế: <strong className="text-slate-300">0402189882</strong> do Sở Kế hoạch và Đầu tư TP. Đà Nẵng cấp | Hotline: <strong className="text-teal-300">1900 882 119</strong>
+            </div>
+            <div>
+              Địa chỉ: Lô 14 Bãi Bụt, Bán Đảo Sơn Trà, Phường Thọ Quang, Quận Sơn Trà, TP. Đà Nẵng, Việt Nam
+            </div>
+          </div>
+
+          <div className="md:col-span-4 flex items-center md:justify-end gap-3">
+            {/* Bộ Công Thương Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-teal-950/80 border border-teal-600/60 text-teal-300 font-bold text-[11px] shadow-sm">
+              <Shield className="w-4 h-4 text-teal-400" />
+              <span>ĐÃ THÔNG BÁO BỘ CÔNG THƯƠNG</span>
+            </div>
+          </div>
+        </div>
+
         {/* Bottom Copyright */}
-        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-4">
-          <div>© {new Date().getFullYear()} NÉT Eco Net Craft. All rights reserved.</div>
+        <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-4">
+          <div>© {new Date().getFullYear()} NÉT Eco Net Craft. All rights reserved. Tuân thủ Nghị định 52/2013/NĐ-CP & 85/2021/NĐ-CP.</div>
           <div className="flex items-center gap-6">
             <span>Bảo vệ đại dương Việt Nam</span>
-            <span>Handcrafted with Sustainable Passion</span>
+            <span>Mã hóa SSL 256-bit An Toàn</span>
           </div>
         </div>
       </div>

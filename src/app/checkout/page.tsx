@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
@@ -28,39 +28,81 @@ import {
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 
+import {
+  VIETNAM_PROVINCES,
+  OTHER_PROVINCES,
+  calculateShippingFee,
+} from "@/data/vietnamAddress";
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, totalPlasticOffsetKg, clearCart } = useCart();
   const { user, userProfile, loading: authLoading } = useAuth();
 
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "vnpay" | "momo" | "bank_transfer">(
-    "vnpay"
+    "bank_transfer"
   );
-  const [formData, setFormData] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "Đà Nẵng",
-    notes: "",
-  });
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [province, setProvince] = useState("Đà Nẵng");
+  const [district, setDistrict] = useState("Quận Sơn Trà");
+  const [ward, setWard] = useState("Phường Phước Mỹ");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto pre-fill checkout data from verified user profile
   useEffect(() => {
     if (user) {
-      setFormData((prev) => ({
-        fullName: prev.fullName || userProfile?.displayName || user.displayName || "",
-        phone: prev.phone || userProfile?.phone || "",
-        email: prev.email || userProfile?.email || user.email || "",
-        address: prev.address || userProfile?.address || "",
-        city: prev.city || "Đà Nẵng",
-        notes: prev.notes || "",
-      }));
+      if (userProfile?.displayName || user.displayName) setFullName(userProfile?.displayName || user.displayName || "");
+      if (userProfile?.phone) setPhone(userProfile.phone);
+      if (userProfile?.email || user.email) setEmail(userProfile?.email || user.email || "");
+      if (userProfile?.address) setStreetAddress(userProfile.address);
     }
   }, [user, userProfile]);
 
-  const shippingFee = subtotal > 1500000 ? 0 : 35000;
+  // Handle Province change and auto-populate districts
+  const currentProvinceData = useMemo(() => {
+    return VIETNAM_PROVINCES.find((p) => p.name === province);
+  }, [province]);
+
+  const availableDistricts = useMemo(() => {
+    return currentProvinceData ? currentProvinceData.districts : [];
+  }, [currentProvinceData]);
+
+  const currentDistrictData = useMemo(() => {
+    return availableDistricts.find((d) => d.name === district) || availableDistricts[0];
+  }, [availableDistricts, district]);
+
+  const availableWards = useMemo(() => {
+    return currentDistrictData ? currentDistrictData.wards : [];
+  }, [currentDistrictData]);
+
+  const handleProvinceChange = (newProv: string) => {
+    setProvince(newProv);
+    const provData = VIETNAM_PROVINCES.find((p) => p.name === newProv);
+    if (provData && provData.districts.length > 0) {
+      const firstDist = provData.districts[0];
+      setDistrict(firstDist.name);
+      if (firstDist.wards.length > 0) {
+        setWard(firstDist.wards[0]);
+      }
+    } else {
+      setDistrict("Trung tâm");
+      setWard("Phường 1");
+    }
+  };
+
+  const handleDistrictChange = (newDist: string) => {
+    setDistrict(newDist);
+    const distData = availableDistricts.find((d) => d.name === newDist);
+    if (distData && distData.wards.length > 0) {
+      setWard(distData.wards[0]);
+    }
+  };
+
+  const shippingFee = calculateShippingFee(subtotal, province);
   const grandTotal = subtotal + shippingFee;
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -76,11 +118,30 @@ export default function CheckoutPage() {
     const randomBatch = TRACE_BATCHES[Math.floor(Math.random() * TRACE_BATCHES.length)];
     const orderCode = generateOrderCode();
 
+    const fullAddress = `${streetAddress.trim()}, ${ward}, ${district}`;
+    const customer = {
+      fullName: fullName.trim() || "Khách hàng NÉT",
+      phone: phone.trim() || "0905000000",
+      email: email.trim() || "eco@net.vn",
+      address: fullAddress,
+      city: province,
+      notes: notes.trim(),
+    };
+
+    // MB Bank account for NÉT Ocean Craft
+    const bankBin = "970422"; // MB Bank
+    const bankAccountNo = "0905882119";
+    const accountHolder = "NET OCEAN CRAFT";
+    const transferMemo = `NET ${orderCode}`;
+    const vietQrUrl = `https://img.vietqr.io/image/${bankBin}-${bankAccountNo}-compact2.png?amount=${grandTotal}&addInfo=${encodeURIComponent(
+      transferMemo
+    )}&accountName=${encodeURIComponent(accountHolder)}`;
+
     const newOrder: Order = {
       orderId: `ord-${Date.now()}`,
       orderCode: orderCode,
       createdAt: new Date().toISOString(),
-      customer: formData,
+      customer,
       items: [...items],
       subtotal,
       shippingFee,
@@ -91,7 +152,15 @@ export default function CheckoutPage() {
       paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
       fulfillmentStatus: "crafting",
       userId: user?.uid || "guest",
-    };
+      vietQr: {
+        qrUrl: vietQrUrl,
+        bankName: "Ngân hàng Quân Đội (MB Bank)",
+        accountNo: bankAccountNo,
+        accountHolder,
+        transferMemo,
+        amount: grandTotal,
+      },
+    } as any;
 
     try {
       await saveOrderToFirestore(newOrder);
@@ -232,8 +301,8 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     required
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="Nguyễn Văn An"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
                   />
@@ -257,8 +326,8 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     required
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     placeholder="0905 123 456"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
                   />
@@ -267,57 +336,111 @@ export default function CheckoutPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Email nhận thông báo & chứng chỉ tác động *
+                  Email nhận hóa đơn & chứng chỉ tác động biển *
                 </label>
                 <input
                   type="email"
                   required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="an.nguyen@example.com"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Địa chỉ chi tiết (Số nhà, đường, phường/xã) *
-                    </label>
-                    {userProfile?.postcode && (
-                      <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                        Postcode: {userProfile.postcode}
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="123 Đường Bạch Đằng, P. Hải Châu 1"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
-                  />
-                </div>
-
+              {/* 3-Tier Administrative Division Selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Tỉnh / Thành phố *
                   </label>
                   <select
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white font-medium"
+                    value={province}
+                    onChange={(e) => handleProvinceChange(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white font-medium"
                   >
-                    <option value="Đà Nẵng">Đà Nẵng</option>
-                    <option value="Hồ Chí Minh">Hồ Chí Minh</option>
-                    <option value="Hà Nội">Hà Nội</option>
-                    <option value="Khánh Hòa">Khánh Hòa</option>
-                    <option value="Kiên Giang">Kiên Giang</option>
-                    <option value="Khác">Tỉnh thành khác</option>
+                    {VIETNAM_PROVINCES.map((p) => (
+                      <option key={p.id} value={p.name}>
+                        {p.name}
+                      </option>
+                    ))}
+                    {OTHER_PROVINCES.map((pName) => (
+                      <option key={pName} value={pName}>
+                        {pName}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Quận / Huyện *
+                  </label>
+                  {availableDistricts.length > 0 ? (
+                    <select
+                      value={district}
+                      onChange={(e) => handleDistrictChange(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white font-medium"
+                    >
+                      {availableDistricts.map((d) => (
+                        <option key={d.id} value={d.name}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                      placeholder="Quận / Huyện"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Phường / Xã *
+                  </label>
+                  {availableWards.length > 0 ? (
+                    <select
+                      value={ward}
+                      onChange={(e) => setWard(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white font-medium"
+                    >
+                      {availableWards.map((w, idx) => (
+                        <option key={idx} value={w}>
+                          {w}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={ward}
+                      onChange={(e) => setWard(e.target.value)}
+                      placeholder="Phường / Xã"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Số nhà, ngõ/ngách, tên đường chi tiết *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
+                  placeholder="VD: 42 Trần Phú, Khu Bãi Bụt Sơn Trà"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
+                />
               </div>
 
               <div>
@@ -326,8 +449,8 @@ export default function CheckoutPage() {
                 </label>
                 <textarea
                   rows={2}
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                   placeholder="VD: Nhắn gửi lời chúc sinh nhật, giao vào giờ hành chính..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#0b1e3b] focus:bg-white"
                 />

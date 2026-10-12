@@ -105,9 +105,17 @@ export const ScrollVideoBackground: React.FC<ScrollVideoBackgroundProps> = ({
     video.addEventListener("seeked", onSeeked);
 
     // Fallback timer if browser skips 'seeked' event
-    let seekGuardTimeout: NodeJS.Timeout | null = null;
+    let seekGuardTimeout: ReturnType<typeof setTimeout> | null = null;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const seekIntervalMs = isMobile ? 100 : 60;
+    const diffThreshold = isMobile ? 0.08 : 0.02;
 
     const renderScrubLoop = () => {
+      if (document.hidden) {
+        animFrameIdRef.current = requestAnimationFrame(renderScrubLoop);
+        return;
+      }
+
       animFrameIdRef.current = requestAnimationFrame(renderScrubLoop);
 
       if (!video || video.readyState < 2) return;
@@ -115,7 +123,7 @@ export const ScrollVideoBackground: React.FC<ScrollVideoBackgroundProps> = ({
       const diff = targetTimeRef.current - currentTimeRef.current;
 
       // Threshold to stop seeking when close enough (prevents micro-stutter)
-      if (Math.abs(diff) > 0.02) {
+      if (Math.abs(diff) > diffThreshold) {
         // Luxury cinematic lerp factor (0.09 = soft elastic deceleration)
         currentTimeRef.current += diff * 0.09;
 
@@ -141,7 +149,7 @@ export const ScrollVideoBackground: React.FC<ScrollVideoBackgroundProps> = ({
           if (seekGuardTimeout) clearTimeout(seekGuardTimeout);
           seekGuardTimeout = setTimeout(() => {
             isSeekingRef.current = false;
-          }, 60);
+          }, seekIntervalMs);
         }
       }
     };

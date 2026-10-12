@@ -48,10 +48,6 @@ export const FeaturedCollection: React.FC = () => {
         className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4"
       >
         <div>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-            <span>HỒI IV • TUYỆT PHẨM COMBO PHỐI SẴN ĐỘC BẢN</span>
-          </div>
           <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
             Tuyệt Phẩm Phối Sẵn Từ Biển Sâu
           </h2>
@@ -120,71 +116,31 @@ export const FeaturedCollection: React.FC = () => {
                 </div> */}
               </div>
 
-              {/* Title & Tagline */}
-              <h3 className="text-lg font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
+              {/* Title & Short Tag */}
+              <h3 className="text-base sm:text-lg font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
                 {combo.name}
               </h3>
-              <p className="text-xs text-slate-600 mt-1.5 line-clamp-2 leading-relaxed">
-                {combo.tagline}
+              <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                Kèm {combo.includedCharms.length} charm hộ mệnh đồng điệu
               </p>
-
-              {/* Included Charms List */}
-              <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
-                <div className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
-                  Bao gồm trong set:
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {combo.includedCharms.map((c) => (
-                    <span
-                      key={c.id}
-                      className="inline-flex items-center gap-1 text-xs text-slate-700 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200"
-                    >
-                      <span>{c.symbol}</span>
-                      <span className="font-medium">{c.vietnameseName}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
 
-            {/* Pricing & Actions */}
-            <div className="mt-6 pt-4 border-t border-slate-100">
-              <div className="flex items-baseline justify-between mb-4">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold text-[#0b1e3b]">
-                    {formatVND(combo.price)}
-                  </span>
-                  <span className="text-xs text-slate-400 line-through">
-                    {formatVND(combo.originalPrice)}
-                  </span>
-                </div>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Tiết kiệm 8%
-                </span>
-              </div>
+            {/* Price & Direct Link to Shop Detail */}
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              <span className="text-base sm:text-lg font-bold text-[#0b1e3b]">
+                {formatVND(combo.price)}
+              </span>
 
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/shop" className="w-full">
-                  <GlassButton
-                    variant="secondary"
-                    size="sm"
-                    className="w-full text-xs cursor-pointer"
-                    icon={<ArrowRight className="w-3.5 h-3.5 text-[#0b1e3b]" />}
-                  >
-                    Xem Chi Tiết
-                  </GlassButton>
-                </Link>
-
+              <Link href={`/shop`}>
                 <GlassButton
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
-                  onClick={() => handleAddCombo(combo)}
-                  className="w-full text-xs cursor-pointer"
-                  icon={<ShoppingBag className="w-3.5 h-3.5" />}
+                  className="text-xs cursor-pointer px-3"
+                  icon={<ArrowRight className="w-3.5 h-3.5 text-[#0b1e3b]" />}
                 >
-                  Mua Combo
+                  Xem Trong Shop
                 </GlassButton>
-              </div>
+              </Link>
             </div>
           </motion.div>
         ))}

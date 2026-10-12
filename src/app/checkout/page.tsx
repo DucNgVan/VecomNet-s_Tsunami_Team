@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, doc, updateDoc, increment } from "firebase/firestore";
+import { saveOrderToFirestore } from "@/lib/firestoreService";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassBadge } from "@/components/ui/GlassBadge";
 import { formatVND, formatKg, generateOrderCode } from "@/lib/utils";
@@ -95,31 +94,9 @@ export default function CheckoutPage() {
     };
 
     try {
-      // Local backup for instant response
-      const existingOrders: Order[] = JSON.parse(
-        localStorage.getItem("net_orders_v1") || "[]"
-      );
-      existingOrders.unshift(newOrder);
-      localStorage.setItem("net_orders_v1", JSON.stringify(existingOrders));
-      localStorage.setItem("net_latest_order", JSON.stringify(newOrder));
-
-      // Sync order to Firestore database
-      if (db) {
-        await addDoc(collection(db, "orders"), {
-          ...newOrder,
-          userEmail: user?.email || formData.email,
-        });
-
-        // Increment user's accumulated eco impact kg if logged in
-        if (user) {
-          const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, {
-            ecoImpactKg: increment(totalPlasticOffsetKg),
-          }).catch(() => {});
-        }
-      }
+      await saveOrderToFirestore(newOrder);
     } catch (err) {
-      console.error("Order save error", err);
+      console.error("Order save error:", err);
     }
 
     setTimeout(() => {
@@ -163,7 +140,7 @@ export default function CheckoutPage() {
       {/* Living Ocean Backdrop */}
       <OceanBackdrop bubbleCount={20} causticsOpacity={0.3} />
 
-      <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-10 relative z-10">
+      <div className="pt-20 sm:pt-28 pb-28 sm:pb-20 px-3 sm:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-10 relative z-10">
         <div className="text-center max-w-xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
             <Sparkles className="w-3.5 h-3.5 text-teal-300" />

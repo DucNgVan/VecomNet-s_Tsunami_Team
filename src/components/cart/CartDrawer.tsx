@@ -73,9 +73,9 @@ export const CartDrawer: React.FC = () => {
                   Hãy khám phá bộ sưu tập túi lưới biển hoặc vào Nét Lab để tự tay thiết kế mẫu túi của riêng bạn.
                 </p>
                 <div className="mt-5">
-                  <Link href="/customizer" onClick={() => setIsCartOpen(false)}>
+                  <Link href="/story" onClick={() => setIsCartOpen(false)}>
                     <GlassButton variant="primary" size="md">
-                      Vào Nét Lab Thiết Kế
+                      Vào Your Story Thiết Kế
                     </GlassButton>
                   </Link>
                 </div>
@@ -158,7 +158,7 @@ export const CartDrawer: React.FC = () => {
 
           {/* Footer & Checkout Action */}
           {items.length > 0 && (
-            <div className="p-5 border-t border-slate-100 bg-slate-50/50 space-y-4">
+            <div className="p-5 border-t border-slate-100 bg-slate-50/50 space-y-4 pb-safe">
               {/* Eco Plastic Counter */}
               <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5 text-emerald-800 font-bold">

@@ -2,11 +2,19 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { TOTAL_IMPACT_STATS } from "@/data/traceability";
 import { formatKg } from "@/lib/utils";
 import { Sparkles, Shield, ArrowUpRight } from "lucide-react";
 
 export const Footer: React.FC = () => {
+  const pathname = usePathname();
+
+  // Hide customer footer on internal admin portal
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <footer className="relative border-t border-slate-200 bg-[#081325] text-slate-300 pt-16 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-12">
@@ -116,8 +124,8 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/admin" className="hover:text-white transition-colors">
-                  Cổng Xưởng Gia Công
+                <Link href="/passport" className="hover:text-white transition-colors">
+                  Hải Đồ & Story Passport
                 </Link>
               </li>
               <li>

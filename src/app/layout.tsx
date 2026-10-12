@@ -8,6 +8,7 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { OceanCanvas3D } from "@/components/3d/OceanCanvas3D";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/ui/ToastNotification";
+import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 
 export const metadata: Metadata = {
   title: "NÉT | Túi Lưới Tái Chế & Charm Độc Bản Biển Sâu",
@@ -45,10 +46,13 @@ export default function RootLayout({
                 <CartDrawer />
 
                 {/* Main Content Area */}
-                <main className="flex-1 relative w-full overflow-x-hidden">{children}</main>
+                <main className="flex-1 relative w-full overflow-x-hidden pb-16 md:pb-0">{children}</main>
 
                 {/* Global Footer */}
                 <Footer />
+
+                {/* Mobile Bottom Navigation Dock */}
+                <MobileBottomNav />
               </IntroProvider>
             </CartProvider>
           </AuthProvider>

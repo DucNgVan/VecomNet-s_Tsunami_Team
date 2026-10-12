@@ -480,16 +480,28 @@ function LoginContent() {
 
           {/* Action Links */}
           <div className="space-y-2.5 pt-2">
-            <Link href={redirectUrl} className="block">
+            <Link href="/profile" className="block">
               <GlassButton
                 variant="primary"
                 size="md"
-                className="w-full justify-center text-sm shadow-md"
-                icon={<ShoppingBag className="w-4 h-4" />}
+                className="w-full justify-center text-sm shadow-md bg-gradient-to-r from-[#0b1e3b] to-teal-800 text-white font-bold"
+                icon={<Sparkles className="w-4 h-4 text-teal-300" />}
               >
-                Tiếp Tục Mua Sắm & Thanh Toán
+                Vào Hồ Sơ & Thẻ Đóng Góp Môi Trường Cá Nhân
               </GlassButton>
             </Link>
+
+            <Link href={redirectUrl} className="block">
+              <GlassButton
+                variant="secondary"
+                size="md"
+                className="w-full justify-center text-sm shadow-sm"
+                icon={<ShoppingBag className="w-4 h-4" />}
+              >
+                Tiếp Tục Mua Sắm & Thiết Kế Túi
+              </GlassButton>
+            </Link>
+
 
             <button
               onClick={async () => {
@@ -844,12 +856,24 @@ function LoginContent() {
           </div>
         </form>
 
-        {/* Security Note */}
-        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Bảo mật an toàn 100% với Firebase & SSL 256-bit</span>
+        {/* Security Note & Admin Gateway Link */}
+        <div className="mt-5 pt-4 border-t border-slate-100 space-y-2 text-center text-[11px] text-slate-400">
+          <div className="flex items-center justify-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Bảo mật an toàn 100% với Firebase & SSL 256-bit</span>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <Link
+              href="/admin/login"
+              className="text-slate-500 hover:text-[#0b1e3b] font-medium transition-colors inline-flex items-center gap-1"
+            >
+              <span>Quản trị viên & Kỹ thuật viên xưởng? Đăng nhập Admin tại đây →</span>
+            </Link>
+          </div>
         </div>
       </motion.div>
+
     </OceanFloatingCard>
   </div>
 

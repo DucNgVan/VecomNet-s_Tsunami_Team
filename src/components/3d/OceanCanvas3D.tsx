@@ -13,6 +13,11 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     const mount = mountRef.current;
     if (!mount) return;
 
+    // Mobile & low-power detection
+    const isMobile =
+      typeof window !== "undefined" &&
+      (window.innerWidth < 768 || ("ontouchstart" in window && window.innerWidth < 1024));
+
     // Scene, Camera, Renderer
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -23,13 +28,18 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     );
     camera.position.z = 25;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    // Mobile: disable heavy antialiasing and cap pixelRatio to 1.0 to eliminate GPU fillrate lag
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: !isMobile,
+      powerPreference: "high-performance",
+    });
     renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.0 : 1.75));
     mount.appendChild(renderer.domElement);
 
     // 1. Floating Bioluminescent Ocean Particles (Plankton / Light Orbs)
-    const particleCount = 180;
+    const particleCount = isMobile ? 45 : 180;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -58,7 +68,7 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    // Custom circular soft particle texture for bright editorial look
+    // Custom circular soft particle texture
     const canvas = document.createElement("canvas");
     canvas.width = 64;
     canvas.height = 64;
@@ -75,7 +85,7 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     const texture = new THREE.CanvasTexture(canvas);
 
     const particleMaterial = new THREE.PointsMaterial({
-      size: 1.1,
+      size: isMobile ? 1.4 : 1.1,
       map: texture,
       transparent: true,
       blending: THREE.NormalBlending,
@@ -87,9 +97,9 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     const particles = new THREE.Points(geometry, particleMaterial);
     scene.add(particles);
 
-    // 2. Architectural Ghost Net Spiral Curve (Delicate generative sculpture)
+    // 2. Architectural Ghost Net Spiral Curve
     const curvePoints: THREE.Vector3[] = [];
-    const numPoints = 120;
+    const numPoints = isMobile ? 50 : 120;
     for (let i = 0; i < numPoints; i++) {
       const t = i / numPoints;
       const angle = t * Math.PI * 4;
@@ -101,25 +111,31 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     }
 
     const curve = new THREE.CatmullRomCurve3(curvePoints);
-    const tubeGeometry = new THREE.TubeGeometry(curve, 90, 0.25, 8, false);
+    const tubeGeometry = new THREE.TubeGeometry(
+      curve,
+      isMobile ? 40 : 90,
+      0.25,
+      isMobile ? 6 : 8,
+      false
+    );
     const tubeMaterial = new THREE.MeshBasicMaterial({
       color: 0x0284c7,
       wireframe: true,
       transparent: true,
-      opacity: 0.12,
+      opacity: isMobile ? 0.09 : 0.12,
       blending: THREE.NormalBlending,
     });
     const netVortex = new THREE.Mesh(tubeGeometry, tubeMaterial);
     scene.add(netVortex);
 
-    // Mouse Parallax
+    // Mouse Parallax & Mobile Gyro Drift
     let mouseX = 0;
     let mouseY = 0;
     let targetX = 0;
     let targetY = 0;
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!interactive) return;
+      if (!interactive || isMobile) return;
       mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
       mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
     };
@@ -135,35 +151,52 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     };
     window.addEventListener("resize", handleResize);
 
-    // Animation Loop
+    // Animation Loop with Visibility Check
     let animationFrameId: number;
     let clock = new THREE.Clock();
+    let isTabVisible = !document.hidden;
+
+    const handleVisibilityChange = () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible && !animationFrameId) {
+        animate();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const animate = () => {
+      if (!isTabVisible) {
+        animationFrameId = 0;
+        return;
+      }
       animationFrameId = requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
 
-      // Smooth mouse follow
-      targetX += (mouseX * 4 - targetX) * 0.05;
-      targetY += (mouseY * 4 - targetY) * 0.05;
+      // Mobile organic sway or Desktop mouse follow
+      if (isMobile || !interactive) {
+        targetX = Math.sin(elapsedTime * 0.3) * 1.5;
+        targetY = Math.cos(elapsedTime * 0.25) * 1.2;
+      } else {
+        targetX += (mouseX * 4 - targetX) * 0.05;
+        targetY += (mouseY * 4 - targetY) * 0.05;
+      }
+
       camera.position.x = targetX;
       camera.position.y = -targetY;
       camera.lookAt(scene.position);
 
       // Rotate net vortex
-      netVortex.rotation.y = elapsedTime * 0.12;
+      netVortex.rotation.y = elapsedTime * (isMobile ? 0.08 : 0.12);
       netVortex.rotation.z = Math.sin(elapsedTime * 0.2) * 0.15;
 
-      // Float particles upwards like underwater bubbles / luminescent marine snow
+      // Float particles upwards like underwater marine snow
       const positionAttr = geometry.attributes.position as THREE.BufferAttribute;
       const posArray = positionAttr.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
         posArray[i * 3 + 1] += 0.04;
-        // wrap around
         if (posArray[i * 3 + 1] > 25) {
           posArray[i * 3 + 1] = -25;
         }
-        // slight drift
         posArray[i * 3] += Math.sin(elapsedTime + i) * 0.015;
       }
       positionAttr.needsUpdate = true;
@@ -176,7 +209,10 @@ export const OceanCanvas3D: React.FC<{ interactive?: boolean; className?: string
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(animationFrameId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
       if (mount && renderer.domElement) {
         mount.removeChild(renderer.domElement);
       }

@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { ShoppingBag, ArrowRight, ShieldCheck, HeartHandshake, Sparkles, Package } from "lucide-react";
+import { ShoppingBag, ArrowRight, ShieldCheck, HeartHandshake, Package } from "lucide-react";
 
 export const ProductShowroomBanner: React.FC = () => {
   return (
@@ -14,25 +14,18 @@ export const ProductShowroomBanner: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.7 }}
-        className="p-8 sm:p-14 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_20px_60px_rgba(11,30,59,0.08)] relative overflow-hidden text-center"
+        className="p-5 sm:p-14 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_20px_60px_rgba(11,30,59,0.08)] relative overflow-hidden text-center"
       >
         {/* Glow accent */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
 
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-emerald-300 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>HỒI V • TRẢI NGHIỆM TRỌN VẸN TẠI CỬA HÀNG NÉT</span>
-          </div>
-
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
+        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+          <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
             Sở Hữu Dấu Ấn Biển Cả Của Riêng Bạn
           </h2>
 
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl mx-auto">
-            Khám phá đầy đủ các dáng túi phôi đan thủ công, charm thủy tinh phong thủy và các set combo
-            được đóng gói tinh xảo trong hộp quà phủ sương biển. Mua sắm an toàn, tiện lợi và chung tay
-            giải cứu rạn san hô Việt Nam.
+          <p className="text-xs sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
+            Khám phá trọn bộ các dáng túi phôi đan thủ công và charm hộ mệnh độc bản tại Cửa Hàng Bền Vững NÉT.
           </p>
 
           {/* 3 Quality Pillars */}

@@ -15,31 +15,31 @@ export interface StoryAct {
 export const STORY_ACTS: StoryAct[] = [
   {
     id: "story-hero",
-    actNumber: "HỒI I",
+    actNumber: "01",
     title: "Khởi Nguồn Biển Sâu",
     shortLabel: "01. Khởi nguồn",
   },
   {
     id: "story-bags3d",
-    actNumber: "HỒI II",
+    actNumber: "02",
     title: "4 Dáng Túi 3D Biểu Tượng",
     shortLabel: "02. Túi 3D",
   },
   {
     id: "story-charms3d",
-    actNumber: "HỒI III",
+    actNumber: "03",
     title: "Charm Hộ Mệnh 3D",
     shortLabel: "03. Charm 3D",
   },
   {
     id: "story-collection",
-    actNumber: "HỒI IV",
+    actNumber: "04",
     title: "Tuyệt Phẩm Combo Phối Sẵn",
     shortLabel: "04. Combo",
   },
   {
     id: "story-showroom",
-    actNumber: "HỒI V",
+    actNumber: "05",
     title: "Cửa Hàng Bền Vững NÉT",
     shortLabel: "05. Cửa hàng",
   },
@@ -99,7 +99,7 @@ export const StoryProgressRail: React.FC = () => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.85, y: 20 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="fixed bottom-6 right-6 z-40"
+          className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-30"
         >
       {/* Expanded Chapter Drawer */}
       <AnimatePresence>

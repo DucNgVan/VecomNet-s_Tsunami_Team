@@ -15,7 +15,6 @@ import {
   ShoppingBag,
   ArrowRight,
   RotateCw,
-  Box,
   Check,
   Maximize2,
 } from "lucide-react";
@@ -47,60 +46,54 @@ export const Bag3DShowcase: React.FC = () => {
   };
 
   return (
-    <section id="story-bags3d" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
+    <section id="story-bags3d" className="pt-6 sm:pt-10 pb-16 px-4 sm:px-8 max-w-7xl mx-auto">
       {/* Section Header */}
       <motion.div
-        initial={{ opacity: 0, y: 25 }}
+        initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="text-center max-w-5xl mx-auto mb-12 space-y-3"
+        className="text-center max-w-3xl mx-auto mb-8 sm:mb-12 space-y-2.5"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
-          <Box className="w-3.5 h-3.5 text-sky-400" />
-          <span>HỒI II • 4 DÁNG TÚI BIỂU TƯỢNG (3D ATELIER)</span>
-        </div>
-        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
-          Chiêm Ngưỡng Từng Mắt Lưới 3D Tái Sinh
+        <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
+          Chiêm Ngưỡng Dáng Túi 3D Thực Tế
         </h2>
-        <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl mx-auto">
-          Xoay 360 độ và chuyển đổi màu sắc thời gian thực trên mô hình 3D thực tế. Mỗi phôi túi được
-          đan thủ công từ 0.8kg đến 1.6kg lưới ma vớt dưới rạn san hô Việt Nam.
+        <p className="text-xs sm:text-base text-slate-600 max-w-xl mx-auto">
+          Xoay 360° và thử nghiệm sắc màu đại dương trên mô hình 3D trước khi bước vào tùy biến.
         </p>
       </motion.div>
 
       {/* Main 3D Studio Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
         {/* Left: 3D Interactive Stage */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="lg:col-span-7 bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.07)] relative"
+          className="lg:col-span-7 bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(11,30,59,0.07)] relative"
         >
           {/* Top Control Bar */}
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 gap-2">
+          <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 gap-2">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
               </span>
               <span className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-                Mô Hình 3D Thời Gian Thực
+                Mô Hình 3D Xem Trước
               </span>
             </div>
 
             {/* Hint tag */}
             <div className="flex items-center gap-1.5 text-[11px] text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
               <RotateCw className="w-3 h-3 text-sky-600 animate-spin" style={{ animationDuration: "8s" }} />
-              <span className="hidden sm:inline">Kéo chuột hoặc vuốt để xoay 360°</span>
-              <span className="sm:hidden">Vuốt xoay 3D</span>
+              <span>Vuốt xoay 360°</span>
             </div>
           </div>
 
           {/* 3D Canvas Viewport */}
-          <div className="relative w-full h-[340px] sm:h-[460px] bg-gradient-to-b from-slate-50/80 via-white to-slate-100/50 rounded-2xl overflow-hidden my-4 border border-slate-100">
+          <div className="relative w-full h-[320px] sm:h-[440px] bg-gradient-to-b from-slate-50/80 via-white to-slate-100/50 rounded-2xl overflow-hidden my-3 sm:my-4 border border-slate-100">
             <BagCanvas3D
               bagBase={selectedBag}
               selectedColor={selectedColor}
@@ -111,9 +104,9 @@ export const Bag3DShowcase: React.FC = () => {
           </div>
 
           {/* Color Switcher Bar below 3D */}
-          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-medium">Sắc màu đại dương:</span>
+              <span className="text-xs text-slate-500 font-medium">Sắc màu:</span>
               <span className="text-xs text-[#0b1e3b] font-bold">{selectedColor.name}</span>
             </div>
 
@@ -140,20 +133,20 @@ export const Bag3DShowcase: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Right: Silhouette Selector & Detailed Specifications */}
+        {/* Right: Silhouette Quick Tabs & Direct Action Cards */}
         <motion.div
-          initial={{ opacity: 0, x: 25 }}
+          initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="lg:col-span-5 space-y-6"
+          className="lg:col-span-5 space-y-5"
         >
           {/* Silhouette Quick Tabs */}
           <div className="space-y-2">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Chọn Dáng Phôi Túi:
+              Chọn Dáng Túi Để Xem Thử 3D:
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               {BAG_BASES.map((bag) => {
                 const isSelected = selectedBag.id === bag.id;
                 return (
@@ -172,7 +165,7 @@ export const Bag3DShowcase: React.FC = () => {
                         isSelected ? "text-sky-200" : "text-slate-500"
                       }`}
                     >
-                      {formatVND(bag.basePrice)}
+                      {bag.modelType.toUpperCase()}
                     </div>
                   </button>
                 );
@@ -180,15 +173,15 @@ export const Bag3DShowcase: React.FC = () => {
             </div>
           </div>
 
-          {/* Active Bag Card Details */}
+          {/* Active Bag Preview Summary & Action Paths */}
           <AnimatePresence mode="wait">
             <motion.div
               key={selectedBag.id}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
-              className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-5"
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-4"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -201,54 +194,41 @@ export const Bag3DShowcase: React.FC = () => {
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-black text-[#0b1e3b]">{selectedBag.name}</h3>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  {selectedBag.description}
+                <h3 className="text-xl sm:text-2xl font-black text-[#0b1e3b]">{selectedBag.name}</h3>
+                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  {selectedBag.tagline}
                 </p>
               </div>
 
-              {/* Specs Grid */}
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="text-slate-400 text-[10px] uppercase font-bold">Kích thước</div>
-                  <div className="font-bold text-slate-800 mt-0.5">{selectedBag.dimensions}</div>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="text-slate-400 text-[10px] uppercase font-bold">Dung tích</div>
-                  <div className="font-bold text-slate-800 mt-0.5">{selectedBag.capacity}</div>
-                </div>
-              </div>
-
-              {/* Price & Action Buttons */}
-              <div className="pt-2 flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-[11px] text-slate-400">Giá niêm yết:</div>
-                  <div className="text-2xl font-black text-[#0b1e3b]">
-                    {formatVND(selectedBag.basePrice)}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
+              {/* Direct Experience Actions */}
+              <div className="pt-2 space-y-2.5">
+                <Link
+                  href={`/story?mode=manual&bagId=${selectedBag.id}&colorId=${selectedColor.id}`}
+                  className="block w-full"
+                >
                   <GlassButton
                     variant="primary"
                     size="md"
-                    onClick={handleAddToCart}
-                    className="shadow-md cursor-pointer text-xs"
-                    icon={<ShoppingBag className="w-4 h-4" />}
+                    className="w-full justify-center shadow-md cursor-pointer text-xs sm:text-sm font-bold"
+                    icon={<Sparkles className="w-4 h-4 text-teal-300" />}
                   >
-                    Thêm Giỏ
+                    Tự Tùy Biến Dáng Túi Này
                   </GlassButton>
-                  <Link href={`/shop`}>
-                    <GlassButton
-                      variant="secondary"
-                      size="md"
-                      className="cursor-pointer text-xs"
-                      icon={<ArrowRight className="w-4 h-4" />}
-                    >
-                      Bộ Sưu Tập
-                    </GlassButton>
-                  </Link>
-                </div>
+                </Link>
+
+                <Link
+                  href={`/shop`}
+                  className="block w-full"
+                >
+                  <GlassButton
+                    variant="secondary"
+                    size="md"
+                    className="w-full justify-center cursor-pointer text-xs font-semibold text-slate-700"
+                    icon={<ArrowRight className="w-4 h-4 text-sky-700" />}
+                  >
+                    Xem Chi Tiết Trong Bộ Sưu Tập
+                  </GlassButton>
+                </Link>
               </div>
             </motion.div>
           </AnimatePresence>

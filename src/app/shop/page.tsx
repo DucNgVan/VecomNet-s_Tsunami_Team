@@ -15,14 +15,25 @@ import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
 import { BagCard3D } from "@/components/3d/BagCard3D";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
+import {
+  ProductDetailModal,
+  ProductDetailItem,
+} from "@/components/shop/ProductDetailModal";
 
 export default function ShopPage() {
   const [filterCategory, setFilterCategory] = useState<"all" | "combos" | "bags" | "charms">(
     "all"
   );
+  const [selectedDetailItem, setSelectedDetailItem] = useState<ProductDetailItem | null>(null);
 
   const { addToCart } = useCart();
   const { showToast } = useToast();
+
+  const handleModalAddToCart = (item: ProductDetailItem) => {
+    if (item.type === "bag") handleAddBag(item.data);
+    else if (item.type === "combo") handleAddCombo(item.data);
+    else if (item.type === "charm") handleAddCharm(item.data);
+  };
 
   const handleAddBag = (bag: BagBase) => {
     addToCart({
@@ -39,7 +50,7 @@ export default function ShopPage() {
 
     showToast(
       "Đã thêm phôi túi vào giỏ!",
-      `${bag.name} đã sẵn sàng. Bạn cũng có thể mở Nét Lab để đính charm theo ý muốn.`,
+      `${bag.name} đã sẵn sàng. Bạn cũng có thể mở NÉT Studio để đính charm theo ý muốn.`,
       "success"
     );
   };
@@ -95,7 +106,7 @@ export default function ShopPage() {
       {/* Living Ocean Ambient Background */}
       <OceanBackdrop bubbleCount={24} causticsOpacity={0.35} />
 
-      <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-10 relative z-10">
+      <div className="pt-20 sm:pt-28 pb-24 sm:pb-20 px-3 sm:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10 relative z-10">
         {/* Shop Header */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
@@ -111,7 +122,7 @@ export default function ShopPage() {
             Bộ Sưu Tập Túi Lưới & Charm Biển Sâu
           </h1>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            Khám phá những thiết kế được hoàn thiện thủ công từ lưới ma tái sinh hoặc đưa vào Nét Lab để gắn charm thủy tinh phong thủy độc bản.
+            Khám phá những thiết kế được hoàn thiện thủ công từ lưới ma tái sinh hoặc đưa vào NÉT Studio để gắn charm thủy tinh phong thủy độc bản.
           </p>
         </motion.div>
 
@@ -169,78 +180,80 @@ export default function ShopPage() {
                     transition={{ duration: 0.5, delay: idx * 0.1 }}
                     className="h-full p-6 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_20px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_40px_rgba(11,30,59,0.12)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
                   >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    {combo.badge && (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">
-                        {combo.badge}
-                      </span>
-                    )}
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      -{formatKg(combo.plasticOffsetKg)} rác biển
-                    </span>
-                  </div>
-
-                  <div className="w-full aspect-[4/3] rounded-2xl mb-4 bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col items-center justify-center border border-slate-200/70 overflow-hidden relative group-hover:border-sky-300 transition-colors">
-                    <BagCard3D
-                      modelUrl="/assets/models/tuixach.glb"
-                      color={combo.color.hex}
-                      glowColor={combo.color.glowHex}
-                      isInteractive={true}
-                    />
-                    <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/90 shadow-sm text-xs pointer-events-none">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase mr-1">
-                        Kèm {combo.includedCharms.length} charm:
-                      </span>
-                      {combo.includedCharms.map((c) => (
-                        <span key={c.id} className="text-sm" title={c.vietnameseName}>
-                          {c.symbol}
+                  <div
+                    onClick={() => setSelectedDetailItem({ type: "combo", data: combo })}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      {combo.badge && (
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                          {combo.badge}
                         </span>
-                      ))}
+                      )}
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        -{formatKg(combo.plasticOffsetKg)} rác biển
+                      </span>
+                    </div>
+
+                    <div className="w-full aspect-[4/3] rounded-2xl mb-4 bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col items-center justify-center border border-slate-200/70 overflow-hidden relative group-hover:border-sky-300 transition-colors">
+                      <BagCard3D
+                        modelUrl="/assets/models/tuixach.glb"
+                        color={combo.color.hex}
+                        glowColor={combo.color.glowHex}
+                        isInteractive={false}
+                      />
+                      <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/90 shadow-sm text-xs pointer-events-none">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase mr-1">
+                          Kèm {combo.includedCharms.length} charm:
+                        </span>
+                        {combo.includedCharms.map((c) => (
+                          <span key={c.id} className="text-sm" title={c.vietnameseName}>
+                            {c.symbol}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <h3 className="font-serif text-lg font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
+                      {combo.name}
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-1 line-clamp-2">{combo.tagline}</p>
+                    <div className="text-[11px] text-sky-700 font-bold mt-1.5 hover:underline">
+                      Xem chi tiết & xoay 3D ↗
                     </div>
                   </div>
 
-                  <h3 className="font-serif text-lg font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
-                    {combo.name}
-                  </h3>
-                  <p className="text-xs text-slate-600 mt-1 line-clamp-2">{combo.tagline}</p>
-                </div>
+                  <div className="mt-5 pt-3.5 border-t border-slate-100">
+                    <div className="flex items-baseline justify-between mb-3">
+                      <span className="text-lg font-bold text-[#0b1e3b]">
+                        {formatVND(combo.price)}
+                      </span>
+                      <span className="text-xs text-slate-400 line-through">
+                        {formatVND(combo.originalPrice)}
+                      </span>
+                    </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100">
-                  <div className="flex items-baseline justify-between mb-3">
-                    <span className="text-lg font-bold text-[#0b1e3b]">
-                      {formatVND(combo.price)}
-                    </span>
-                    <span className="text-xs text-slate-400 line-through">
-                      {formatVND(combo.originalPrice)}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Link
-                      href={`/customizer?bagId=${combo.bagBase.id}&colorId=${combo.color.id}`}
-                      className="w-full"
-                    >
+                    <div className="grid grid-cols-2 gap-2">
                       <GlassButton
                         variant="secondary"
                         size="sm"
+                        onClick={() => setSelectedDetailItem({ type: "combo", data: combo })}
                         className="w-full text-xs cursor-pointer"
-                        icon={<Wand2 className="w-3.5 h-3.5 text-sky-700" />}
+                        icon={<RotateCw className="w-3.5 h-3.5 text-sky-700" />}
                       >
-                        Vào Nét Lab
+                        Chi Tiết
                       </GlassButton>
-                    </Link>
-                    <GlassButton
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleAddCombo(combo)}
-                      className="w-full text-xs shadow-sm cursor-pointer"
-                      icon={<ShoppingBag className="w-3.5 h-3.5" />}
-                    >
-                      Thêm Giỏ
-                    </GlassButton>
+                      <GlassButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleAddCombo(combo)}
+                        className="w-full text-xs shadow-sm cursor-pointer"
+                        icon={<ShoppingBag className="w-3.5 h-3.5" />}
+                      >
+                        Thêm Giỏ
+                      </GlassButton>
+                    </div>
                   </div>
-                </div>
               </motion.div>
             </OceanFloatingCard>
           ))}
@@ -279,7 +292,10 @@ export default function ShopPage() {
                   transition={{ duration: 0.5, delay: idx * 0.08 }}
                   className="h-full p-5 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-[0_16px_32px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
                 >
-                  <div>
+                  <div
+                    onClick={() => setSelectedDetailItem({ type: "bag", data: bag })}
+                    className="cursor-pointer"
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         {bag.modelType.toUpperCase()}
@@ -294,7 +310,7 @@ export default function ShopPage() {
                         modelUrl="/assets/models/tuixach.glb"
                         color={bag.colors[0]?.hex}
                         glowColor={bag.colors[0]?.glowHex}
-                        isInteractive={true}
+                        isInteractive={false}
                       />
                       <div className="absolute bottom-2 inset-x-3 flex items-center justify-between bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200/80 shadow-xs pointer-events-none">
                         <span className="text-[10px] text-slate-600 font-bold">
@@ -310,6 +326,9 @@ export default function ShopPage() {
                       {bag.name}
                     </h3>
                     <p className="text-xs text-slate-600 mt-1 line-clamp-2 font-medium">{bag.tagline}</p>
+                    <div className="text-[11px] text-sky-700 font-bold mt-1 hover:underline">
+                      Xem chi tiết thông số ↗
+                    </div>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-100">
@@ -321,16 +340,15 @@ export default function ShopPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <Link href={`/customizer?bagId=${bag.id}`} className="w-full">
-                        <GlassButton
-                          variant="secondary"
-                          size="sm"
-                          className="w-full text-xs cursor-pointer"
-                          icon={<Wand2 className="w-3.5 h-3.5 text-sky-700" />}
-                        >
-                          Gắn Charm
-                        </GlassButton>
-                      </Link>
+                      <GlassButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setSelectedDetailItem({ type: "bag", data: bag })}
+                        className="w-full text-xs cursor-pointer"
+                        icon={<RotateCw className="w-3.5 h-3.5 text-sky-700" />}
+                      >
+                        Chi Tiết
+                      </GlassButton>
                       <GlassButton
                         variant="primary"
                         size="sm"
@@ -380,18 +398,21 @@ export default function ShopPage() {
                   transition={{ duration: 0.4, delay: idx * 0.05 }}
                   className="h-full p-4 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_2px_12px_rgba(11,30,59,0.03)] hover:shadow-[0_12px_24px_rgba(11,30,59,0.08)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
                 >
-                  <div>
+                  <div
+                    onClick={() => setSelectedDetailItem({ type: "charm", data: charm })}
+                    className="cursor-pointer"
+                  >
                     <div className="w-full aspect-square rounded-2xl mb-3 border border-slate-200 shadow-sm relative overflow-hidden bg-slate-50 flex items-center justify-center group-hover:border-sky-300 transition-colors">
                       <CharmCanvas3D
                         modelUrl="/assets/models/caurongcharm.glb"
                         color={charm.color}
                         glowColor={charm.glowColor}
-                        isInteractive={true}
+                        isInteractive={false}
                       />
                       <div className="absolute top-2 left-2 pointer-events-none">
                         <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
                           <Sparkles className="w-2.5 h-2.5 text-sky-600" />
-                          <span>3D Cầu Rồng</span>
+                          <span>3D {charm.symbol}</span>
                         </span>
                       </div>
                     </div>
@@ -402,6 +423,9 @@ export default function ShopPage() {
                     <p className="text-[11px] text-slate-600 line-clamp-1 mt-0.5 font-medium">
                       {charm.material}
                     </p>
+                    <div className="text-[10px] text-sky-700 font-bold mt-1 hover:underline">
+                      Xem chi tiết ↗
+                    </div>
                   </div>
 
                   <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
@@ -424,6 +448,13 @@ export default function ShopPage() {
         </motion.div>
       )}
       </div>
+
+      {/* Exquisite Product Detail & 3D Interactive Modal */}
+      <ProductDetailModal
+        item={selectedDetailItem}
+        onClose={() => setSelectedDetailItem(null)}
+        onAddToCart={handleModalAddToCart}
+      />
     </div>
   );
 }

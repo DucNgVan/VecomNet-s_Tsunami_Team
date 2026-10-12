@@ -222,8 +222,8 @@ export const NetGridCanvas: React.FC<NetGridCanvasProps> = ({
                     onRemove={() => onRemoveCharm(placed.instanceId)}
                   />
                 ) : (
-                  /* Empty Metallic Snap Eyelet Grommet */
-                  <div className="relative group/eyelet flex items-center justify-center">
+                  /* Empty Metallic Snap Eyelet Grommet with 44px mobile touch hitbox */
+                  <div className="relative group/eyelet flex items-center justify-center p-2.5 -m-2.5 touch-manipulation">
                     {/* Metal Eyelet Ring */}
                     <motion.div
                       whileHover={{ scale: 1.3 }}

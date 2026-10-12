@@ -119,6 +119,29 @@ export type TraceBatch = {
   verificationHash: string;
   images: string[];
   story: string;
+  netPolymer?: string;
+  colorway?: string;
+  assignedPrototypeSku?: string;
+  calculatedYieldBags?: number;
+  co2OffsetKg?: number;
+  createdAt?: string;
+};
+
+export type StoryQuizAnswer = {
+  vibe: string;
+  memory: string;
+  intention: string;
+};
+
+export type StoryQuizRecommendation = {
+  vibe: string;
+  memory: string;
+  intention: string;
+  title: string;
+  poeticDedication: string;
+  recommendedCharmIds: string[];
+  suggestedAnchors: { charmId: string; anchorId: string }[];
+  impactEstimateKg: number;
 };
 
 export type Order = {
@@ -143,4 +166,66 @@ export type Order = {
   paymentStatus: 'pending' | 'paid';
   fulfillmentStatus: 'received' | 'crafting' | 'quality_check' | 'delivering' | 'delivered';
   userId?: string;
+  assignedBagSerialId?: string;
 };
+
+export type NetPack = {
+  packId: string;
+  seaRegion: string;
+  locationDetails: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  recoveryDate: string;
+  totalWeightKg: number;
+  remainingWeightKg: number;
+  depthMeters: number;
+  diverTeam: string;
+  netPolymer: string;
+  status: 'new' | 'in_production' | 'depleted';
+  notes?: string;
+  createdAt: string;
+  // Factory batch planning & serial allocation
+  producedBagModel?: string;
+  producedBagCount?: number;
+  serialRangeStart?: string;
+  serialRangeEnd?: string;
+  barcodeRangeStart?: string;
+  barcodeRangeEnd?: string;
+};
+
+export type ManufacturedBagItem = {
+  serialId: string;
+  sourcePackId: string;
+  bagBaseId: string;
+  bagName: string;
+  colorId: string;
+  colorName: string;
+  manufacturedAt: string;
+  workshopName: string;
+  seaRegion: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  plasticConsumedKg: number;
+  status: 'in_stock' | 'assigned_to_order' | 'delivered';
+  assignedOrderCode?: string;
+  qrUrl: string;
+  // Physical Garment Barcode & NFC Warranty Identity
+  barcode: string; // 1D Barcode (Code 128 / EAN format: e.g. "893882082001")
+  nfcTagUid?: string; // NFC chip hardware UID (e.g. "04:5A:2B:1C:8D:9E")
+  isClaimed: boolean; // Has the customer scanned NFC & claimed ownership?
+  warrantyStatus: 'unactivated' | 'active' | 'expired';
+  warrantyMonths: number; // e.g. 24 months
+  warrantyActivatedAt?: string; // e.g. "2026-10-10 19:15"
+  warrantyExpiresAt?: string; // e.g. "2028-10-10"
+  claimedBy?: {
+    fullName: string;
+    phone: string;
+    email?: string;
+    customerUid?: string;
+  };
+};
+

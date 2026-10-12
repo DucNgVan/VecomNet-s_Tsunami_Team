@@ -1,215 +1,615 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { RECYCLING_JOURNEY } from "@/data/stories";
-import { TOTAL_IMPACT_STATS } from "@/data/traceability";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassBadge } from "@/components/ui/GlassBadge";
-import { formatKg } from "@/lib/utils";
-import {
-  Anchor,
-  Droplets,
-  Sparkles,
-  Gem,
-  CheckCircle2,
-  ArrowRight,
-  Compass,
-  Radio,
-} from "lucide-react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
+import { BAG_BASES, BAG_COLORS, CHARMS } from "@/data/products";
+import { BagBase, BagMeshColor, Charm, PlacedCharm } from "@/types";
+import { BagCanvas3D, BagCanvas3DHandle } from "@/components/3d/BagCanvas3D";
+import { STORY_QUIZ_QUESTIONS, generateStoryRecommendation } from "@/data/storyQuiz";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/components/ui/ToastNotification";
+import { formatVND, formatKg } from "@/lib/utils";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
+import {
+  Sparkles,
+  Rotate3d,
+  ShoppingBag,
+  ArrowRight,
+  Check,
+  Wand2,
+  Palette,
+  ShieldCheck,
+  RotateCw,
+  Gem,
+  Compass,
+  Zap,
+  RefreshCw,
+  Box,
+  Layers,
+  CheckCircle2,
+  X,
+} from "lucide-react";
 
-export default function StoryPage() {
-  const stepIcons = [
-    <Anchor key="1" className="w-6 h-6 text-sky-600" />,
-    <Droplets key="2" className="w-6 h-6 text-teal-600" />,
-    <Sparkles key="3" className="w-6 h-6 text-emerald-600" />,
-    <Gem key="4" className="w-6 h-6 text-amber-600" />,
-  ];
+function YourStoryContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const stepDepths = [
-    { depth: "-30 mét", location: "Rạn San Hô Đáy Biển Sâu", badge: "Độ Sâu Cực Đại" },
-    { depth: "-15 mét", location: "Xưởng Thanh Lọc Cơ Học", badge: "Tẩy Rửa Sinh Thái" },
-    { depth: "-5 mét", location: "Làng Nghề Dệt Lưới Biển", badge: "Thủ Công Tinh Tuyển" },
-    { depth: "0 mét", location: "Mặt Biển & Kiệt Tác Hiện Hữu", badge: "Thời Trang Tuần Hoàn" },
-  ];
+  const initialMode = searchParams.get("mode") === "ai" ? "ai" : "manual";
+  const initialBagId = searchParams.get("bagId");
+  const initialColorId = searchParams.get("colorId");
+  const charmsParam = searchParams.get("charms");
+  const batchId = searchParams.get("batchId") || "NET-VN-DN-2024-082";
+
+  const { addToCart } = useCart();
+  const { showToast } = useToast();
+  const bag3dRef = useRef<BagCanvas3DHandle>(null);
+
+  // Active Mode: 'manual' (Tự thiết kế - NÉT Studio) vs 'ai' (AI thiết kế giúp)
+  const [mode, setMode] = useState<"manual" | "ai">(initialMode);
+
+  // Customizer selections
+  const [selectedBag, setSelectedBag] = useState<BagBase>(
+    BAG_BASES.find((b) => b.id === initialBagId) || BAG_BASES[0]
+  );
+  const [selectedColor, setSelectedColor] = useState<BagMeshColor>(
+    BAG_COLORS.find((c) => c.id === initialColorId) || BAG_COLORS[0]
+  );
+  const [selectedCharmIds, setSelectedCharmIds] = useState<string[]>(() => {
+    if (charmsParam) {
+      return charmsParam.split(",").filter((id) => CHARMS.some((c) => c.id === id));
+    }
+    return [CHARMS[0].id, CHARMS[1].id];
+  });
+
+  // AI Quiz Flow
+  const [aiStep, setAiStep] = useState<number>(0);
+  const [aiAnswers, setAiAnswers] = useState<{
+    vibe?: string;
+    memory?: string;
+    intention?: string;
+  }>({});
+  const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false);
+  const [aiRecommendation, setAiRecommendation] = useState<ReturnType<
+    typeof generateStoryRecommendation
+  > | null>(null);
+
+  // Sync mode with URL if needed
+  const handleSwitchMode = (newMode: "manual" | "ai") => {
+    setMode(newMode);
+    const params = new URLSearchParams(window.location.search);
+    params.set("mode", newMode);
+    router.replace(`/story?${params.toString()}`, { scroll: false });
+  };
+
+  // Toggle Charm Selection
+  const handleToggleCharm = (charmId: string) => {
+    if (selectedCharmIds.includes(charmId)) {
+      setSelectedCharmIds((prev) => prev.filter((id) => id !== charmId));
+    } else {
+      if (selectedCharmIds.length >= selectedBag.maxCharms) {
+        showToast(
+          "Đã đạt giới hạn",
+          `Mẫu ${selectedBag.name} tối đa gắn được ${selectedBag.maxCharms} charm để bảo đảm phom dáng.`,
+          "info"
+        );
+        return;
+      }
+      setSelectedCharmIds((prev) => [...prev, charmId]);
+    }
+  };
+
+  // Handle AI Quiz Answer Selection
+  const handleSelectAiAnswer = (optionId: string) => {
+    const questionKey = STORY_QUIZ_QUESTIONS[aiStep].id;
+    const nextAnswers = { ...aiAnswers, [questionKey]: optionId };
+    setAiAnswers(nextAnswers);
+
+    if (aiStep < STORY_QUIZ_QUESTIONS.length - 1) {
+      setAiStep(aiStep + 1);
+    } else {
+      runAiRecommendation(nextAnswers);
+    }
+  };
+
+  // Run AI Recommendation
+  const runAiRecommendation = (answers: typeof aiAnswers) => {
+    setIsAiGenerating(true);
+    setTimeout(() => {
+      const rec = generateStoryRecommendation(
+        answers.vibe || "mythic",
+        answers.memory || "dragon_fire",
+        answers.intention || "resilience"
+      );
+      setAiRecommendation(rec);
+      setSelectedCharmIds(rec.recommendedCharmIds);
+
+      // Select matching color / bag
+      if (answers.vibe === "mythic") {
+        setSelectedColor(BAG_COLORS.find((c) => c.id === "coral-sand") || BAG_COLORS[0]);
+      } else if (answers.vibe === "guardian") {
+        setSelectedColor(BAG_COLORS.find((c) => c.id === "kelp-emerald") || BAG_COLORS[1]);
+      } else {
+        setSelectedColor(BAG_COLORS.find((c) => c.id === "abyss-blue") || BAG_COLORS[0]);
+      }
+
+      setIsAiGenerating(false);
+      showToast(
+        "AI Đã Hoàn Thành Bộ Phối!",
+        `Đã tạo mô hình 3D độc bản: ${rec.title}`,
+        "success"
+      );
+    }, 900);
+  };
+
+  // Quick Random AI Generator
+  const handleQuickAiGenerate = () => {
+    const randomVibe = STORY_QUIZ_QUESTIONS[0].options[Math.floor(Math.random() * 4)].id;
+    const randomMem = STORY_QUIZ_QUESTIONS[1].options[Math.floor(Math.random() * 4)].id;
+    const randomInt = STORY_QUIZ_QUESTIONS[2].options[Math.floor(Math.random() * 4)].id;
+    const nextAns = { vibe: randomVibe, memory: randomMem, intention: randomInt };
+    setAiAnswers(nextAns);
+    runAiRecommendation(nextAns);
+  };
+
+  // Reset AI Quiz
+  const handleResetAiQuiz = () => {
+    setAiStep(0);
+    setAiAnswers({});
+    setAiRecommendation(null);
+  };
+
+  // Selected Charm Objects
+  const selectedCharms = selectedCharmIds
+    .map((id) => CHARMS.find((c) => c.id === id))
+    .filter((c): c is Charm => Boolean(c));
+
+  // Compute Placed Charms for 3D model
+  const placedCharmsFor3D: PlacedCharm[] = selectedCharms.map((charm, index) => {
+    const anchor = selectedBag.anchorPoints[index] || selectedBag.anchorPoints[0];
+    return {
+      instanceId: `placed-${charm.id}-${index}`,
+      charmId: charm.id,
+      charm,
+      anchorId: anchor.id,
+      x: anchor.x,
+      y: anchor.y,
+      rotation: 0,
+    };
+  });
+
+  // Calculate pricing & plastic offset
+  const charmsTotal = selectedCharms.reduce((sum, c) => sum + c.price, 0);
+  const totalPrice = selectedBag.basePrice + charmsTotal;
+  const charmsGrams = selectedCharms.reduce((sum, c) => sum + c.plasticOffsetGrams, 0);
+  const totalPlasticKg = Number((selectedBag.plasticOffsetKg + charmsGrams / 1000).toFixed(2));
+
+  // Add to cart helper
+  const handleAddToCart = (shouldRedirectToCheckout = false) => {
+    let capturedImage = selectedBag.image;
+    if (bag3dRef.current) {
+      const snap = bag3dRef.current.captureSnapshot();
+      if (snap) capturedImage = snap;
+    }
+
+    addToCart({
+      type: "custom_bag",
+      title: `${selectedBag.name} (${mode === "ai" && aiRecommendation ? aiRecommendation.title : "Tùy biến độc bản"})`,
+      price: totalPrice,
+      quantity: 1,
+      image: capturedImage,
+      plasticOffsetKg: totalPlasticKg,
+      details: {
+        colorName: selectedColor.name,
+        charmsCount: selectedCharms.length,
+        charmsList: selectedCharms.map((c) => c.vietnameseName),
+        configuration: {
+          id: `custom-${Date.now()}`,
+          bagBase: selectedBag,
+          selectedColor: selectedColor,
+          placedCharms: placedCharmsFor3D,
+          totalPrice: totalPrice,
+          totalPlasticOffsetKg: totalPlasticKg,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ["#0284c7", "#10b981", "#38bdf8", "#0b1e3b"],
+      });
+    } catch (e) {}
+
+    showToast(
+      "Đã thêm vào giỏ hàng!",
+      `${selectedBag.name} màu ${selectedColor.name} kèm ${selectedCharms.length} charm hộ mệnh.`,
+      "success"
+    );
+
+    if (shouldRedirectToCheckout) {
+      router.push("/checkout");
+    }
+  };
 
   return (
-    <div className="relative min-h-screen">
-      {/* Living Deep-Sea Ambiance */}
-      <OceanBackdrop bubbleCount={28} causticsOpacity={0.4} variant="deep" />
+    <div className="relative min-h-screen bg-gradient-to-b from-[#f0f9ff] via-[#e0f2fe]/40 to-[#f8fafc] text-slate-800 pb-28 sm:pb-20">
+      {/* Living Ocean Ambient */}
+      <OceanBackdrop bubbleCount={20} causticsOpacity={0.25} />
 
-      <div className="pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-16 relative z-10">
-        {/* Story Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="text-center max-w-3xl mx-auto space-y-4"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-            <span>CÂU CHUYỆN THƯƠNG HIỆU NÉT</span>
-          </div>
-          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-[#0b1e3b] leading-tight pt-2">
-            Hành Trình Tái Sinh <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600">
-              Linh Hồn Của Biển Sâu
-            </span>
+      <div className="pt-20 sm:pt-24 px-3.5 sm:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 relative z-10">
+        {/* Header & Mode Switcher */}
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
+            Your Story • Đồng Sáng Tạo Độc Bản
           </h1>
-          <p className="text-sm sm:text-lg text-slate-600 font-normal leading-relaxed">
-            Mỗi năm, hàng trăm tấn ngư cụ vô chủ chìm sâu dưới đáy biển Việt Nam, trở thành chiếc bẫy
-            vô hình giết chết hàng nghìn sinh vật biển. Chúng tôi chọn con đường khó khăn nhất: Trục vớt từ đáy vực,
-            tinh chế và trao cho chúng một kiếp sống mới kiêu hãnh trong thế giới thời trang cao cấp.
+          <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
+            Trực tiếp chọn dáng túi, gắn charm và chiêm ngưỡng tác phẩm 3D thực tế trước khi sở hữu.
           </p>
-        </motion.div>
 
-      {/* Impact Stats Banner with Buoyancy Floating Physics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <OceanFloatingCard delay={0} duration={6} distance={5}>
-          <div className="h-full p-6 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-card hover:border-sky-300 transition-all text-center group">
-            <div className="text-3xl sm:text-4xl font-black text-sky-700 group-hover:scale-105 transition-transform">
-              {formatKg(TOTAL_IMPACT_STATS.totalPlasticDivertedKg)}
-            </div>
-            <div className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-wider">
-              Rác Lưới Ma Đã Thu Hồi
-            </div>
+          {/* Mode Switcher Segmented Control */}
+          <div className="inline-flex items-center p-1.5 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-md gap-1.5 mt-2">
+            <button
+              onClick={() => handleSwitchMode("manual")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                mode === "manual"
+                  ? "bg-[#0b1e3b] text-white shadow-md"
+                  : "text-slate-600 hover:text-[#0b1e3b]"
+              }`}
+            >
+              <Palette className="w-4 h-4 text-teal-300" />
+              <span>Tự Thiết Kế (NÉT Studio)</span>
+            </button>
+
+            <button
+              onClick={() => handleSwitchMode("ai")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                mode === "ai"
+                  ? "bg-[#0b1e3b] text-white shadow-md"
+                  : "text-slate-600 hover:text-[#0b1e3b]"
+              }`}
+            >
+              <Wand2 className="w-4 h-4 text-teal-300" />
+              <span>AI Thiết Kế Giúp (Story Quiz)</span>
+            </button>
           </div>
-        </OceanFloatingCard>
-
-        <OceanFloatingCard delay={0.2} duration={5.5} distance={4}>
-          <div className="h-full p-6 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-card hover:border-teal-300 transition-all text-center group">
-            <div className="text-3xl sm:text-4xl font-black text-teal-700 group-hover:scale-105 transition-transform">
-              {TOTAL_IMPACT_STATS.ghostNetsRecoveredKm} km
-            </div>
-            <div className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-wider">
-              Chiều Dài Lưới Biển Đã Dỡ
-            </div>
-          </div>
-        </OceanFloatingCard>
-
-        <OceanFloatingCard delay={0.4} duration={6.5} distance={5}>
-          <div className="h-full p-6 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-card hover:border-emerald-300 transition-all text-center group">
-            <div className="text-3xl sm:text-4xl font-black text-emerald-700 group-hover:scale-105 transition-transform">
-              {TOTAL_IMPACT_STATS.marineCreaturesSaved}+
-            </div>
-            <div className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-wider">
-              Sinh Vật Biển Được Cứu
-            </div>
-          </div>
-        </OceanFloatingCard>
-
-        <OceanFloatingCard delay={0.6} duration={5.8} distance={4}>
-          <div className="h-full p-6 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-card hover:border-amber-300 transition-all text-center group">
-            <div className="text-3xl sm:text-4xl font-black text-amber-700 group-hover:scale-105 transition-transform">
-              {TOTAL_IMPACT_STATS.artisanHoursInvested}h
-            </div>
-            <div className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-wider">
-              Giờ Thủ Công Nghệ Nhân
-            </div>
-          </div>
-        </OceanFloatingCard>
-      </div>
-
-      {/* The 4 Transformation Steps With Ocean Depth Meter */}
-      <div className="space-y-10 relative">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#0b1e3b]">
-            Quy Trình 4 Bước Tái Sinh Tuần Hoàn
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Hành trình thăng hoa từ đáy biển sâu đến sàn diễn thời trang bền vững
-          </p>
         </div>
 
-        <div className="space-y-8 relative z-10">
-          {RECYCLING_JOURNEY.map((step, idx) => {
-            return (
-              <motion.div
-                key={step.stepNumber}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                className="p-8 sm:p-10 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_45px_rgba(11,30,59,0.09)] hover:border-sky-300 transition-all duration-300 relative overflow-hidden"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                  <div className="lg:col-span-8 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-50 to-teal-50 border border-sky-200 flex items-center justify-center flex-shrink-0 shadow-sm relative overflow-hidden group">
-                        {stepIcons[idx]}
-                        <span className="absolute inset-0 bg-sky-400/10 animate-ping opacity-25 rounded-2xl" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-sky-700 uppercase tracking-wider flex items-center gap-2">
-                          <span>GIAI ĐOẠN {step.stepNumber}</span>
-                          <span>•</span>
-                          <span>{step.subtitle}</span>
+        {/* AI Quiz Question Step (If in AI mode and not generated yet) */}
+        {mode === "ai" && !aiRecommendation && (
+          <div className="max-w-2xl mx-auto p-5 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] space-y-5">
+            {isAiGenerating ? (
+              <div className="py-12 text-center space-y-4">
+                <RefreshCw className="w-8 h-8 text-sky-600 animate-spin mx-auto" />
+                <h3 className="font-serif text-lg font-bold text-[#0b1e3b]">
+                  AI Đang Lắng Nghe Năng Lượng Của Bạn...
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Phối phôi túi và tuyển chọn các charm hộ mệnh tương thích.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#0b1e3b] text-white text-xs font-bold flex items-center justify-center">
+                      {aiStep + 1}
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Câu hỏi {aiStep + 1}/3
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleQuickAiGenerate}
+                    className="text-xs font-bold text-sky-700 hover:text-[#0b1e3b] flex items-center gap-1 cursor-pointer"
+                  >
+                    <Wand2 className="w-3.5 h-3.5" />
+                    <span>Gợi ý ngẫu nhiên nhanh</span>
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="font-serif text-lg sm:text-xl font-bold text-[#0b1e3b]">
+                    {STORY_QUIZ_QUESTIONS[aiStep].question}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {STORY_QUIZ_QUESTIONS[aiStep].description}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  {STORY_QUIZ_QUESTIONS[aiStep].options.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => handleSelectAiAnswer(opt.id)}
+                      className="p-4 rounded-2xl border border-slate-200/90 hover:border-[#0b1e3b] bg-slate-50 hover:bg-white text-left transition-all group cursor-pointer shadow-xs hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-2.5 mb-1.5">
+                        <span className="text-xl">{opt.icon}</span>
+                        <div className="font-bold text-xs sm:text-sm text-[#0b1e3b] group-hover:text-sky-950">
+                          {opt.title}
                         </div>
-                        <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#0b1e3b] mt-0.5">
-                          {step.title}
-                        </h3>
                       </div>
-                    </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        {opt.subtitle}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
-                    <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-                      {step.description}
-                    </p>
+        {/* AI Recommendation Banner (When AI generated successfully) */}
+        {mode === "ai" && aiRecommendation && (
+          <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-r from-sky-50 via-teal-50 to-emerald-50 border border-teal-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0b1e3b] text-teal-300 text-[11px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+                <span>BỘ PHỐI TẠO BỞI AI: {aiRecommendation.title}</span>
+              </div>
+              <p className="text-xs sm:text-sm text-[#0b1e3b] italic leading-relaxed pt-1">
+                "{aiRecommendation.poeticDedication}"
+              </p>
+            </div>
+            <button
+              onClick={handleResetAiQuiz}
+              className="self-start md:self-center px-4 py-2 rounded-xl text-xs font-bold bg-white text-[#0b1e3b] border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-sky-700" />
+              <span>Làm Lại Trắc Nghiệm AI</span>
+            </button>
+          </div>
+        )}
 
-                    <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-emerald-800 font-bold">
-                        {step.highlight}
-                      </span>
-                    </div>
+        {/* Main 3D Workbench Layout (Shows for both Manual mode, and AI mode when generated) */}
+        {(mode === "manual" || (mode === "ai" && aiRecommendation)) && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+            {/* Left Column: Interactive 3D Model Stage */}
+            <div className="lg:col-span-6 xl:col-span-7 flex flex-col gap-4 sticky top-24">
+              <div className="p-4 sm:p-6 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] relative overflow-hidden flex flex-col items-center justify-center">
+                {/* 3D Canvas Stage */}
+                <div className="w-full aspect-[4/5] sm:aspect-square max-h-[460px] relative flex items-center justify-center">
+                  <BagCanvas3D
+                    ref={bag3dRef}
+                    bagBase={selectedBag}
+                    selectedColor={selectedColor}
+                    placedCharms={placedCharmsFor3D}
+                    isInteractive={true}
+                    modelUrl="/assets/models/tuixach.glb"
+                  />
+
+                  {/* Floating 360 Badge */}
+                  <div className="absolute top-2 left-2 pointer-events-none">
+                    <span className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-[11px] font-bold text-[#0b1e3b] shadow-xs flex items-center gap-1.5">
+                      <Rotate3d className="w-3.5 h-3.5 text-sky-700 animate-spin" />
+                      <span>Xoay 360° Chiêm Ngưỡng 3D</span>
+                    </span>
                   </div>
 
-                  {/* Right Column: Step Visual */}
-                  <div className="lg:col-span-4 flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-slate-50 to-sky-50/40 border border-slate-200/80 text-center relative overflow-hidden">
-                    <div className="text-4xl mb-2 font-black text-sky-800">
-                      0{step.stepNumber}
+                  {/* Active Bag Spec Overlay */}
+                  <div className="absolute bottom-2 inset-x-2 flex items-center justify-between px-3 py-2 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200 text-xs shadow-xs">
+                    <div>
+                      <div className="font-bold text-[#0b1e3b]">{selectedBag.name}</div>
+                      <div className="text-[11px] text-slate-500">{selectedColor.name}</div>
                     </div>
-                    <div className="text-xs text-slate-500 font-medium">Tiêu chuẩn kiểm định khắt khe</div>
-                    <div className="text-xs text-emerald-700 font-bold mt-1">
-                      100% Eco-Certified Handcraft
+                    <div className="text-right">
+                      <div className="font-bold text-teal-700">{formatVND(selectedBag.basePrice)}</div>
+                      <div className="text-[10px] text-emerald-600 font-medium">-{selectedBag.plasticOffsetKg}kg nhựa biển</div>
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Artisan & Cultural Connection */}
-      <div className="p-8 sm:p-12 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] relative overflow-hidden">
-        <div className="max-w-3xl mx-auto text-center space-y-6 pt-4">
-          <div className="w-16 h-16 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-3xl mx-auto text-sky-700 shadow-sm">
-            🤝
-          </div>
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-[#0b1e3b]">
-            Kế Thừa Nghề Dệt Lưới Biển Truyền Thống Việt Nam
-          </h2>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-            Chúng tôi không sử dụng dây chuyền dập khuôn công nghiệp. Toàn bộ phôi túi NÉT đều được
-            đan tay bởi những bàn tay khéo léo của các phụ nữ và ngư dân ven biển miền Trung. Dự án
-            không chỉ làm sạch thềm san hô quê hương mà còn tạo ra nguồn sinh kế bền vững với mức thu
-            nhập cao gấp 2.5 lần nghề cá truyền thống.
-          </p>
+                {/* Attached Charms Pills Bar */}
+                <div className="w-full pt-3 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-500 mr-1">
+                    Charm đính ({selectedCharms.length}/{selectedBag.maxCharms}):
+                  </span>
+                  {selectedCharms.length === 0 ? (
+                    <span className="text-xs text-slate-400 italic">Chưa gắn charm nào</span>
+                  ) : (
+                    selectedCharms.map((charm) => (
+                      <span
+                        key={charm.id}
+                        onClick={() => handleToggleCharm(charm.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 text-xs font-semibold border border-slate-200 cursor-pointer transition-colors"
+                        title="Bấm để gỡ charm"
+                      >
+                        <span>{charm.vietnameseName}</span>
+                        <X className="w-3 h-3 text-slate-400 hover:text-rose-600" />
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
 
-          <div className="pt-2 flex items-center justify-center gap-4">
-            <Link href="/shop">
-              <GlassButton variant="primary" size="lg" icon={<Sparkles className="w-4 h-4" />}>
-                Khám Phá Bộ Sưu Tập Kiệt Tác Biển
-              </GlassButton>
-            </Link>
+            {/* Right Column: Sleek Selectors & Direct Actions */}
+            <div className="lg:col-span-6 xl:col-span-5 space-y-5">
+              {/* 1. Select Bag Silhouette */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-sm sm:text-base font-bold text-[#0b1e3b] flex items-center gap-2">
+                    <Box className="w-4 h-4 text-sky-700" />
+                    <span>1. Chọn Dáng Túi Biểu Tượng</span>
+                  </h3>
+                  <span className="text-xs text-slate-500">4 kiểu dáng</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {BAG_BASES.map((bag) => {
+                    const isSelected = selectedBag.id === bag.id;
+                    return (
+                      <button
+                        key={bag.id}
+                        onClick={() => setSelectedBag(bag)}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                          isSelected
+                            ? "bg-[#0b1e3b] text-white border-[#0b1e3b] shadow-md"
+                            : "bg-slate-50 hover:bg-white text-slate-800 border-slate-200"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-teal-400 text-slate-950 flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                        <div className={`font-bold text-xs ${isSelected ? "text-white" : "text-[#0b1e3b]"}`}>
+                          {bag.name}
+                        </div>
+                        <div className={`text-[11px] font-semibold mt-1 ${isSelected ? "text-teal-300" : "text-sky-700"}`}>
+                          {formatVND(bag.basePrice)}
+                        </div>
+                        <div className={`text-[10px] mt-0.5 ${isSelected ? "text-slate-300" : "text-slate-500"}`}>
+                          Tối đa {bag.maxCharms} charm
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. Select Ocean Mesh Color */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-sm sm:text-base font-bold text-[#0b1e3b] flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-teal-700" />
+                    <span>2. Chọn Sắc Màu Đại Dương</span>
+                  </h3>
+                  <span className="text-xs font-semibold text-sky-800">{selectedColor.name}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {BAG_COLORS.map((col) => {
+                    const isSelected = selectedColor.id === col.id;
+                    return (
+                      <button
+                        key={col.id}
+                        onClick={() => setSelectedColor(col)}
+                        className={`p-2.5 rounded-2xl border flex items-center gap-2.5 transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-[#0b1e3b] bg-sky-50/70 shadow-xs ring-1 ring-[#0b1e3b]"
+                            : "border-slate-200 bg-slate-50 hover:bg-white text-slate-700"
+                        }`}
+                      >
+                        <div
+                          className="w-5 h-5 rounded-full flex-shrink-0 border border-black/20 shadow-xs"
+                          style={{ backgroundColor: col.hex }}
+                        />
+                        <div className="text-left text-xs font-bold truncate">
+                          {col.name}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Select Charms */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-sm sm:text-base font-bold text-[#0b1e3b] flex items-center gap-2">
+                    <Gem className="w-4 h-4 text-amber-600" />
+                    <span>3. Chọn Charm Hộ Mệnh</span>
+                  </h3>
+                  <span className="text-xs font-bold text-slate-500">
+                    Đã chọn: <strong className="text-teal-700">{selectedCharms.length}</strong>/{selectedBag.maxCharms}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {CHARMS.map((charm) => {
+                    const isAttached = selectedCharmIds.includes(charm.id);
+                    return (
+                      <button
+                        key={charm.id}
+                        onClick={() => handleToggleCharm(charm.id)}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                          isAttached
+                            ? "border-teal-600 bg-teal-50/80 shadow-xs ring-1 ring-teal-600"
+                            : "border-slate-200 bg-slate-50 hover:bg-white text-slate-800"
+                        }`}
+                      >
+                        {isAttached && (
+                          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                        <div className="text-xs font-bold text-[#0b1e3b] pr-4">
+                          {charm.vietnameseName}
+                        </div>
+                        <div className="text-[11px] font-bold text-sky-800 mt-1">
+                          +{formatVND(charm.price)}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
+                          {charm.symbol}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 4. Pricing & Direct Checkout Bar */}
+              <div className="p-5 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.08)] space-y-4">
+                <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
+                      Tổng Thanh Toán:
+                    </span>
+                    <div className="text-2xl sm:text-3xl font-black text-[#0b1e3b] mt-0.5">
+                      {formatVND(totalPrice)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                      -{totalPlasticKg} kg rác biển
+                    </span>
+                  </div>
+                </div>
+
+                {/* Direct Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <button
+                    onClick={() => handleAddToCart(false)}
+                    className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 text-[#0b1e3b] border-2 border-[#0b1e3b] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-[#0b1e3b]" />
+                    <span>Thêm Vào Giỏ</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAddToCart(true)}
+                    className="w-full py-3 px-4 rounded-2xl bg-[#0b1e3b] hover:bg-sky-950 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 text-teal-300" />
+                    <span>Mua Ngay</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
       </div>
     </div>
+  );
+}
+
+export default function YourStoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-sky-50 text-slate-700">
+          Đang nạp Your Story Studio...
+        </div>
+      }
+    >
+      <YourStoryContent />
+    </Suspense>
   );
 }

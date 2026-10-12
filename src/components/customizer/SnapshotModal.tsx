@@ -1,10 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { BagBase, BagMeshColor, PlacedCharm } from "@/types";
 import { formatVND, formatKg } from "@/lib/utils";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { X, Download, FileCheck, CheckCircle2 } from "lucide-react";
+import { savePassportStory } from "@/lib/netSourceStorage";
+import {
+  X,
+  Download,
+  FileCheck,
+  CheckCircle2,
+  QrCode,
+  ArrowRight,
+  ExternalLink,
+  Sparkles,
+} from "lucide-react";
 
 interface SnapshotModalProps {
   isOpen: boolean;
@@ -13,6 +24,7 @@ interface SnapshotModalProps {
   selectedColor: BagMeshColor;
   placedCharms: PlacedCharm[];
   snapshotImageUrl?: string | null;
+  batchId?: string;
 }
 
 export const SnapshotModal: React.FC<SnapshotModalProps> = ({
@@ -22,8 +34,13 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
   selectedColor,
   placedCharms,
   snapshotImageUrl,
+  batchId,
 }) => {
+  const router = useRouter();
+  const activeBatchId = batchId || "NET-VN-DN-2024-082";
+
   if (!isOpen) return null;
+
 
   const charmsTotal = placedCharms.reduce((sum, p) => sum + p.charm.price, 0);
   const totalPrice = bagBase.basePrice + charmsTotal;
@@ -40,6 +57,26 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
     } else {
       alert("Đang chuẩn bị bản vẽ kỹ thuật...");
     }
+  };
+
+  const handleGoToPassport = () => {
+    savePassportStory({
+      batchId: activeBatchId,
+      bagName: bagBase.name,
+      colorName: selectedColor.name,
+      charms: placedCharms.map((p) => ({
+        charmId: p.charmId,
+        name: p.charm.name,
+        vietnameseName: p.charm.vietnameseName,
+        anchorId: p.anchorId,
+        material: p.charm.material,
+        symbol: p.charm.symbol,
+      })),
+      snapshotUrl: snapshotImageUrl || undefined,
+      createdAt: new Date().toISOString(),
+      plasticOffsetKg: Number(totalOffset.toFixed(2)),
+    });
+    router.push(`/passport/${encodeURIComponent(activeBatchId)}`);
   };
 
   return (
@@ -132,6 +169,38 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Dynamic QR Code & Digital Story Passport Section (Step 7 & 8) */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-50 via-teal-50/50 to-emerald-50/40 border border-teal-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-xs flex-shrink-0">
+              <QrCode className="w-10 h-10 text-[#0b1e3b]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded uppercase">
+                  MÃ QR ĐỘC BẢN THEO LÔ
+                </span>
+                <span className="font-mono text-xs font-bold text-[#0b1e3b]">{activeBatchId}</span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1">
+                Mã QR này được đính trên tem vải phôi túi để người dùng quét tra cứu Thẻ Căn Cước NÉT Story Passport.
+              </p>
+            </div>
+          </div>
+
+          <GlassButton
+            variant="primary"
+            size="md"
+            onClick={handleGoToPassport}
+            className="w-full sm:w-auto font-bold flex items-center justify-center gap-1.5 shadow-md flex-shrink-0 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-teal-300" />
+            <span>Mở NÉT Story Passport</span>
+            <ArrowRight className="w-4 h-4" />
+          </GlassButton>
+        </div>
+
 
         {/* Summary Footer */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">

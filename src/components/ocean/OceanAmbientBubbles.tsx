@@ -27,19 +27,25 @@ export const OceanAmbientBubbles: React.FC<OceanAmbientBubblesProps> = ({
   speed = "normal",
 }) => {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
 
   useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    setIsMobileDevice(isMobile);
+
     const colors: Bubble["color"][] = ["cyan", "teal", "blue", "white"];
     const baseDuration = speed === "slow" ? 14 : speed === "fast" ? 7 : 10;
+    // On mobile, render at most 6 bubbles to preserve buttery 60fps scrolling
+    const activeCount = isMobile ? Math.min(count, 6) : count;
 
-    const generated: Bubble[] = Array.from({ length: count }, (_, i) => ({
+    const generated: Bubble[] = Array.from({ length: activeCount }, (_, i) => ({
       id: i,
-      size: Math.floor(Math.random() * 16) + 6, // 6px to 22px
+      size: isMobile ? Math.floor(Math.random() * 12) + 6 : Math.floor(Math.random() * 16) + 6,
       left: Math.random() * 100, // 0% to 100%
       duration: baseDuration + Math.random() * 6,
-      delay: Math.random() * 8,
-      wobble: (Math.random() - 0.5) * 24, // horizontal drift px
-      opacity: Math.random() * 0.4 + 0.2, // 0.2 to 0.6
+      delay: Math.random() * (isMobile ? 4 : 8),
+      wobble: (Math.random() - 0.5) * (isMobile ? 14 : 24),
+      opacity: Math.random() * 0.4 + 0.2,
       color: colors[Math.floor(Math.random() * colors.length)],
     }));
 
@@ -55,10 +61,10 @@ export const OceanAmbientBubbles: React.FC<OceanAmbientBubblesProps> = ({
     >
       {bubbles.map((b) => {
         const borderColors = {
-          cyan: "border-sky-300/40 bg-sky-400/10",
-          teal: "border-teal-300/40 bg-teal-400/10",
-          blue: "border-blue-400/30 bg-blue-500/10",
-          white: "border-white/50 bg-white/10",
+          cyan: "border-sky-300/40 bg-sky-400/15",
+          teal: "border-teal-300/40 bg-teal-400/15",
+          blue: "border-blue-400/30 bg-blue-500/15",
+          white: "border-white/50 bg-white/20",
         };
 
         return (
@@ -68,13 +74,11 @@ export const OceanAmbientBubbles: React.FC<OceanAmbientBubblesProps> = ({
               y: "105%",
               x: 0,
               opacity: 0,
-              scale: 0.8,
             }}
             animate={{
               y: "-15%",
-              x: [0, b.wobble, -b.wobble, 0],
-              opacity: [0, b.opacity, b.opacity * 0.8, 0],
-              scale: [0.8, 1, 1.1, 0.9],
+              x: [0, b.wobble, 0],
+              opacity: [0, b.opacity, 0],
             }}
             transition={{
               duration: b.duration,
@@ -87,11 +91,13 @@ export const OceanAmbientBubbles: React.FC<OceanAmbientBubblesProps> = ({
               width: `${b.size}px`,
               height: `${b.size}px`,
             }}
-            className={`absolute rounded-full backdrop-blur-[1px] border shadow-[0_0_8px_rgba(56,189,248,0.25)] ${borderColors[b.color]}`}
+            className={`absolute rounded-full border shadow-[0_0_8px_rgba(56,189,248,0.2)] transform-gpu will-change-transform ${
+              isMobileDevice ? "" : "backdrop-blur-[1px]"
+            } ${borderColors[b.color]}`}
           >
             {/* Shimmering highlight reflection */}
             <span
-              className="absolute top-[18%] left-[22%] w-[28%] h-[28%] rounded-full bg-white/70 block"
+              className="absolute top-[18%] left-[22%] w-[28%] h-[28%] rounded-full bg-white/75 block"
             />
           </motion.div>
         );

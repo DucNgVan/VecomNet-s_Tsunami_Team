@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey:
@@ -18,9 +19,9 @@ const firebaseConfig = {
     process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "738588803277",
   appId:
     process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
-    "1:738588803277:web:0e6cd1a3327d8c87cf6984",
+    "1:738588803277:web:ef81302ad08db08bcf6984",
   measurementId:
-    process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-QX4TVT7FP4",
+    process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-KKZWMTKW8B",
 };
 
 // Initialize Firebase (SSR Safe: only initialize once)
@@ -28,6 +29,7 @@ const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebas
 
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 
@@ -42,4 +44,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { app, auth, db, googleProvider };
+export { app, auth, db, storage, googleProvider };

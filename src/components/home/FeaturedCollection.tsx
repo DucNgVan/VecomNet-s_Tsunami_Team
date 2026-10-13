@@ -45,23 +45,27 @@ export const FeaturedCollection: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4"
+        className="text-center max-w-3xl mx-auto mb-10 sm:mb-12 space-y-3"
       >
-        <div>
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
-            Tuyệt Phẩm Phối Sẵn Từ Biển Sâu
-          </h2>
-          <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-xl leading-relaxed">
-            Các set phối hoàn hảo giữa phôi túi NÉT Signature và những charm thủy tinh mang năng
-            lượng hộ mệnh, được các nghệ nhân tuyển chọn kỹ lưỡng.
-          </p>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-50 text-sky-800 text-xs font-bold uppercase tracking-wider border border-sky-200 shadow-xs">
+          <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+          <span>BỘ SƯU TẬP ĐỘC BẢN</span>
         </div>
+        <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
+          Tuyệt Phẩm Phối Sẵn Từ Biển Sâu
+        </h2>
+        <p className="text-xs sm:text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
+          Các set phối hoàn hảo giữa phôi túi NÉT Signature và những charm thủy tinh mang năng
+          lượng hộ mệnh, được các nghệ nhân tuyển chọn kỹ lưỡng.
+        </p>
 
-        <Link href="/shop">
-          <GlassButton variant="secondary" size="md" icon={<ArrowRight className="w-4 h-4 text-[#0b1e3b]" />}>
-            Xem Tất Cả Mẫu ({BAG_BASES.length + COMBOS.length})
-          </GlassButton>
-        </Link>
+        <div className="pt-2">
+          <Link href="/shop" className="inline-block">
+            <GlassButton variant="secondary" size="md" icon={<ArrowRight className="w-4 h-4 text-[#0b1e3b]" />}>
+              Xem Tất Cả Mẫu Trong Bộ Sưu Tập ({BAG_BASES.length + COMBOS.length})
+            </GlassButton>
+          </Link>
+        </div>
       </motion.div>
 
       {/* Combos Grid with Staggered Entrance */}

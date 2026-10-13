@@ -51,8 +51,8 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
   onClose,
 }) => {
   const { setIsIntroPlaying } = useIntro();
-  // Always auto-show fullscreen video on every link access or page reload
-  const [isVisible, setIsVisible] = useState<boolean>(true);
+  // Only auto-show once per session unless forceShow is requested
+  const [isVisible, setIsVisible] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [activeChapterIndex, setActiveChapterIndex] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -60,6 +60,32 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
   const hasTriggeredShrink = useRef<boolean>(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (forceShow) {
+      setIsVisible(true);
+      setIsIntroPlaying(true);
+      hasTriggeredShrink.current = false;
+      setProgress(0);
+      setActiveChapterIndex(0);
+
+      const video = videoRef.current;
+      if (video) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      }
+      return;
+    }
+
+    const hasShownInSession = sessionStorage.getItem("net_intro_shown_session");
+    if (hasShownInSession === "true") {
+      setIsVisible(false);
+      setIsIntroPlaying(false);
+      if (onShrinkStart) onShrinkStart(0);
+      if (onComplete) onComplete();
+      return;
+    }
+
     setIsVisible(true);
     setIsIntroPlaying(true);
     hasTriggeredShrink.current = false;
@@ -75,7 +101,7 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
     return () => {
       setIsIntroPlaying(false);
     };
-  }, [forceShow, setIsIntroPlaying]);
+  }, [forceShow, setIsIntroPlaying, onComplete, onShrinkStart]);
 
   // Handle video playback and trigger shrink transition when finished
   useEffect(() => {
@@ -116,6 +142,12 @@ export const VideoIntroLoader: React.FC<VideoIntroLoaderProps> = ({
     if (hasTriggeredShrink.current) return;
     hasTriggeredShrink.current = true;
     setIsIntroPlaying(false);
+
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("net_intro_shown_session", "true");
+      }
+    } catch {}
 
     const currentTime = videoRef.current ? videoRef.current.currentTime : 0;
     if (onShrinkStart) {

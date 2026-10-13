@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { VideoIntroLoader } from "@/components/ui/VideoIntroLoader";
 import { HeroVideoSection } from "@/components/home/HeroVideoSection";
@@ -18,6 +18,15 @@ import { BrandStoriesSection } from "@/components/home/BrandStoriesSection";
 export default function HomePage() {
   const [showIntroModal, setShowIntroModal] = useState(false);
   const [isIntroShrunk, setIsIntroShrunk] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const shown = sessionStorage.getItem("net_intro_shown_session");
+      if (shown === "true") {
+        setIsIntroShrunk(true);
+      }
+    }
+  }, []);
 
   const handleShrinkStart = () => {
     setIsIntroShrunk(true);

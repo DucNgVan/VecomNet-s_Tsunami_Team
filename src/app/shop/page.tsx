@@ -240,13 +240,13 @@ export default function ShopPage() {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="text-center max-w-3xl mx-auto space-y-3"
+          className="text-center max-w-4xl mx-auto space-y-3 px-4 flex flex-col items-center"
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
             <Sparkles className="w-3.5 h-3.5 text-teal-300" />
             <span>CỬA HÀNG BỀN VỮNG NÉT</span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-[#0b1e3b] tracking-tight leading-tight sm:whitespace-nowrap">
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight max-w-2xl mx-auto">
             Bộ Sưu Tập Túi Lưới & Charm Biển Sâu
           </h1>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">

@@ -13,7 +13,7 @@ import { StoryBridge } from "@/components/home/StoryBridge";
 import { ScrollVideoBackground } from "@/components/home/ScrollVideoBackground";
 import { CustomerReviewsSection } from "@/components/home/CustomerReviewsSection";
 import { EnterpriseImpactSection } from "@/components/home/EnterpriseImpactSection";
-
+import { BrandStoriesSection } from "@/components/home/BrandStoriesSection";
 
 export default function HomePage() {
   const [showIntroModal, setShowIntroModal] = useState(false);
@@ -98,6 +98,9 @@ export default function HomePage() {
 
       {/* 7. TIẾNG NÓI CỘNG ĐỒNG & ĐÁNH GIÁ THỰC TẾ (SOCIAL PROOF) */}
       <CustomerReviewsSection />
+
+      {/* 8. NHẬT KÝ ĐẠI DƯƠNG & CHUYỆN NGHỆ NHÂN (CMS LIVE STORIES) */}
+      <BrandStoriesSection />
     </motion.div>
   );
 }

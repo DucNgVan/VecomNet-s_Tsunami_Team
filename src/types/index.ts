@@ -232,3 +232,26 @@ export type ManufacturedBagItem = {
   };
 };
 
+export type PostCategory =
+  | 'rescue_log'
+  | 'artisan_story'
+  | 'eco_news'
+  | 'craft_guide';
+
+export type Article = {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle?: string;
+  excerpt: string;
+  content: string;
+  coverImage: string;
+  category: PostCategory;
+  authorName: string;
+  readingTimeMinutes?: number;
+  published: boolean;
+  featured?: boolean;
+  publishedAt: string;
+  updatedAt?: string;
+  tags?: string[];
+};

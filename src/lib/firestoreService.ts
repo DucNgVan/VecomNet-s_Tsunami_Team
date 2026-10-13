@@ -4,14 +4,16 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  deleteDoc,
   query,
   where,
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { TraceBatch, Order } from "@/types";
+import { TraceBatch, Order, Article } from "@/types";
 import { TRACE_BATCHES, TOTAL_IMPACT_STATS } from "@/data/traceability";
+import { INITIAL_ARTICLES } from "@/data/stories";
 
 // Type definitions for Database Entities
 export interface DbCustomerProfile {
@@ -637,4 +639,92 @@ export async function getCustomerOrdersFromFirestore(
   return orders.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+}
+
+// -------------------------------------------------------------
+// 6. ARTICLES & BRAND STORIES (CMS for Admin & Customer Story)
+// -------------------------------------------------------------
+export async function getArticlesFromFirestore(): Promise<Article[]> {
+  try {
+    const q = query(collection(db, "posts"));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const list: Article[] = [];
+      snap.forEach((d) => list.push(d.data() as Article));
+      list.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      return list;
+    }
+  } catch (err) {
+    console.warn("Firestore getArticles error (using fallback):", err);
+  }
+
+  // Fallback to localStorage or INITIAL_ARTICLES
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("net_articles_v1");
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch {}
+  }
+  return INITIAL_ARTICLES;
+}
+
+export async function saveArticleToFirestore(article: Article): Promise<boolean> {
+  const cleanArticle: Article = JSON.parse(JSON.stringify(article));
+  // 1. Local backup
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("net_articles_v1");
+      const list: Article[] = raw ? JSON.parse(raw) : [...INITIAL_ARTICLES];
+      const idx = list.findIndex((a) => a.id === cleanArticle.id);
+      if (idx >= 0) {
+        list[idx] = cleanArticle;
+      } else {
+        list.unshift(cleanArticle);
+      }
+      localStorage.setItem("net_articles_v1", JSON.stringify(list));
+    } catch (e) {
+      console.warn("LocalStorage save article warning:", e);
+    }
+  }
+
+  // 2. Direct Firestore Set
+  try {
+    const docRef = doc(db, "posts", cleanArticle.id);
+    await setDoc(
+      docRef,
+      {
+        ...cleanArticle,
+        updatedAt: new Date().toISOString(),
+        serverTime: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (err) {
+    console.warn("Firestore saveArticle error:", err);
+    return false;
+  }
+}
+
+export async function deleteArticleFromFirestore(articleId: string): Promise<boolean> {
+  // 1. Local backup
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("net_articles_v1");
+      const list: Article[] = raw ? JSON.parse(raw) : [...INITIAL_ARTICLES];
+      const filtered = list.filter((a) => a.id !== articleId);
+      localStorage.setItem("net_articles_v1", JSON.stringify(filtered));
+    } catch (e) {}
+  }
+
+  // 2. Firestore delete
+  try {
+    await deleteDoc(doc(db, "posts", articleId));
+    return true;
+  } catch (err) {
+    console.warn("Firestore deleteArticle error:", err);
+    return false;
+  }
 }

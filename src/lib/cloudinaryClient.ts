@@ -1,14 +1,21 @@
 /**
- * Client Helper: Tải ảnh trực tiếp lên Cloudinary thông qua Server API Route
+ * Client Helper: Tải ảnh hoặc mô hình 3D trực tiếp lên Cloudinary thông qua Server API Route
  */
 export async function uploadToCloudinary(
   file: File,
-  folder: "products" | "avatars" | "articles" = "products",
+  folder: "products" | "avatars" | "articles" | "models" = "products",
   onProgress?: (progressPercent: number) => void
 ): Promise<{ url: string; publicId?: string }> {
-  const maxSizeBytes = 15 * 1024 * 1024; // 15MB
+  const isModel =
+    file.name.toLowerCase().endsWith(".glb") ||
+    file.name.toLowerCase().endsWith(".gltf") ||
+    folder === "models";
+
+  const maxSizeBytes = isModel ? 50 * 1024 * 1024 : 15 * 1024 * 1024; // 50MB cho 3D, 15MB cho ảnh
   if (file.size > maxSizeBytes) {
-    throw new Error("Kích thước file ảnh vượt quá 15MB. Vui lòng chọn ảnh nhẹ hơn.");
+    throw new Error(
+      `Kích thước file vượt quá ${isModel ? "50MB" : "15MB"}. Vui lòng chọn file nhẹ hơn.`
+    );
   }
 
   if (onProgress) onProgress(30);

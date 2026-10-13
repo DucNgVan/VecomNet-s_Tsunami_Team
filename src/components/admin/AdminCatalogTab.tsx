@@ -81,8 +81,8 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       basePrice: 1250000,
       description: "Túi xách tái chế thủ công từ lưới ma đại dương Việt Nam.",
       plasticOffsetKg: 1.8,
-      imageUrl: "/assets/products/tote-blue.png",
-      model3dUrl: "/assets/models/tuixach.glb",
+      imageUrl: "",
+      model3dUrl: "",
       inStock: true,
       stockCount: 50,
     });
@@ -131,10 +131,10 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
     setIsUploadingModel(true);
     setModelProgress(0);
     try {
-      const url = await uploadProductFile(file, "models", (pct) => setModelProgress(pct));
-      setProductForm((prev) => ({ ...prev, model3dUrl: url }));
+      const res = await uploadToCloudinary(file, "models", (pct) => setModelProgress(pct));
+      setProductForm((prev) => ({ ...prev, model3dUrl: res.url }));
     } catch (err: any) {
-      alert(`Lỗi upload mô hình 3D: ${err.message}`);
+      alert(`Lỗi upload mô hình 3D lên Cloudinary: ${err.message}`);
     } finally {
       setIsUploadingModel(false);
     }
@@ -291,25 +291,46 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {products.map((prod) => {
-              const price = prod.basePrice || prod.price || 1250000;
-              const stock = prod.stockCount ?? 50;
-              const isLowStock = stock <= 5;
-              return (
-                <div
-                  key={prod.id}
-                  className="p-4 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-3 flex flex-col justify-between hover:border-teal-400 transition-all group"
-                >
-                  <div className="space-y-2">
-                    <div className="relative aspect-square rounded-2xl bg-slate-50 overflow-hidden border border-slate-100 flex items-center justify-center">
-                      <CloudinaryImage
-                        src={prod.imageUrl || prod.image || "/assets/products/tote-blue.png"}
-                        alt={prod.name}
-                        width={300}
-                        height={300}
-                        className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
-                      />
+          {products.length === 0 ? (
+            <div className="p-10 rounded-3xl bg-slate-50 border border-dashed border-slate-300 text-center space-y-4 shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center mx-auto border border-teal-100">
+                <Box className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-slate-800 text-sm sm:text-base">Chưa có sản phẩm nào trong cơ sở dữ liệu</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Bạn có thể bấm &quot;Thêm Sản Phẩm Mới&quot; để tải ảnh lên Cloudinary và gắn mô hình 3D .glb. Mọi sản phẩm đăng tại đây sẽ xuất hiện trực tiếp trên trang Bộ sưu tập.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenAddProduct}
+                className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Thêm Sản Phẩm Đầu Tiên</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {products.map((prod) => {
+                const price = prod.basePrice || prod.price || 1250000;
+                const stock = prod.stockCount ?? 50;
+                const isLowStock = stock <= 5;
+                return (
+                  <div
+                    key={prod.id}
+                    className="p-4 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-3 flex flex-col justify-between hover:border-teal-400 transition-all group"
+                  >
+                    <div className="space-y-2">
+                      <div className="relative aspect-square rounded-2xl bg-slate-50 overflow-hidden border border-slate-100 flex items-center justify-center">
+                        <CloudinaryImage
+                          src={prod.imageUrl || prod.image || ""}
+                          alt={prod.name}
+                          width={300}
+                          height={300}
+                          className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                        />
                       {prod.model3dUrl && (
                         <button
                           type="button"
@@ -388,8 +409,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    )}
 
       {/* 3. SECTION 2: ARTICLES & BRAND STORIES CMS */}
       {section === "articles" && (
@@ -522,11 +544,12 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
                   >
-                    <option value="tote">Tote Bag</option>
-                    <option value="hobo">Crossbody / Hobo</option>
-                    <option value="bucket">Bucket Bag</option>
-                    <option value="mini">Clutch / Mini</option>
-                    <option value="charm">Charm Phong Thủy</option>
+                    <option value="tote">Túi Tote (Tote Bag)</option>
+                    <option value="hobo">Túi Đeo Chéo (Crossbody / Hobo)</option>
+                    <option value="bucket">Túi Bucket (Bucket Bag)</option>
+                    <option value="mini">Túi Cầm Tay (Clutch / Mini)</option>
+                    <option value="combo">Bộ Sưu Tập Phối Sẵn (Combo)</option>
+                    <option value="charm">Charm Thủy Tinh Biển Sâu</option>
                   </select>
                 </div>
                 <div>
@@ -625,7 +648,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 <label className="font-bold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <Box className="w-3.5 h-3.5 text-indigo-600" />
-                    Mô Hình 3D (.glb / .gltf - Firebase Storage)
+                    Mô Hình 3D (.glb / .gltf - Cloudinary CDN Tối Ưu)
                   </span>
                   {isUploadingModel && (
                     <span className="text-indigo-600 font-mono text-[10px]">

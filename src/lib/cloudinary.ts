@@ -29,14 +29,14 @@ export interface CloudinaryUploadResult {
 }
 
 /**
- * Upload buffer lên Cloudinary với thư mục tương ứng
+ * Upload buffer lên Cloudinary với thư mục tương ứng (hỗ trợ ảnh và mô hình 3D .glb)
  * @param buffer - File nhị phân dạng Buffer
- * @param folder - 'products' | 'avatars' | 'articles'
+ * @param folder - 'products' | 'avatars' | 'articles' | 'models'
  * @param filename - Tên file gốc để lấy public_id
  */
 export async function uploadImageToCloudinary(
   buffer: Buffer,
-  folder: "products" | "avatars" | "articles" = "products",
+  folder: "products" | "avatars" | "articles" | "models" = "products",
   filename?: string
 ): Promise<CloudinaryUploadResult> {
   // Nếu chưa có API KEY hoặc SECRET trên môi trường server
@@ -52,23 +52,34 @@ export async function uploadImageToCloudinary(
   }
 
   return new Promise((resolve) => {
+    const isModel =
+      filename?.toLowerCase().endsWith(".glb") ||
+      filename?.toLowerCase().endsWith(".gltf") ||
+      folder === "models";
+
     const cleanName = filename
       ? filename.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_")
-      : `img_${Date.now()}`;
+      : `${isModel ? "model" : "img"}_${Date.now()}`;
+
+    const uploadOptions: any = {
+      folder: `vecomnets/${folder}`,
+      public_id: `${Date.now()}_${cleanName}`,
+      resource_type: isModel ? "auto" : "image",
+    };
+
+    // Chỉ áp dụng biến đổi nén/cắt khuôn mặt cho hình ảnh 2D thông thường, KHÔNG áp dụng cho file nhị phân 3D
+    if (!isModel) {
+      uploadOptions.transformation =
+        folder === "avatars"
+          ? [
+              { width: 400, height: 400, crop: "thumb", gravity: "face" },
+              { quality: "auto", fetch_format: "auto" },
+            ]
+          : [{ quality: "auto", fetch_format: "auto" }];
+    }
 
     const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: `vecomnets/${folder}`,
-        public_id: `${Date.now()}_${cleanName}`,
-        resource_type: "image",
-        transformation:
-          folder === "avatars"
-            ? [
-                { width: 400, height: 400, crop: "thumb", gravity: "face" },
-                { quality: "auto", fetch_format: "auto" },
-              ]
-            : [{ quality: "auto", fetch_format: "auto" }],
-      },
+      uploadOptions,
       (error, result) => {
         if (error || !result) {
           console.error("[Cloudinary Upload Error]:", error);

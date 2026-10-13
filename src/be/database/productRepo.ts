@@ -1,92 +1,43 @@
 import { adminDb } from "../config/firebaseAdmin";
 import { BackendProduct } from "../models";
-import { BAG_BASES, BAG_COLORS } from "@/data/products";
 
 const COLLECTION_NAME = "products";
 
-// Bộ nhớ đệm sản phẩm trong RAM (đảm bảo đồng bộ ngay cả khi chưa kết nối Firestore)
+// Bộ nhớ đệm sản phẩm trong RAM
 const memoryProductStore = new Map<string, BackendProduct>();
-
-// Chuyển đổi dữ liệu catalogue ban đầu thành sản phẩm Backend
-function seedInitialProducts(): BackendProduct[] {
-  if (memoryProductStore.size > 0) {
-    return Array.from(memoryProductStore.values());
-  }
-
-  const initial = BAG_BASES.map((b) => ({
-    id: b.id,
-    name: b.name,
-    category: b.id.includes("tote")
-      ? ("tote" as const)
-      : b.id.includes("bucket")
-      ? ("bucket" as const)
-      : b.id.includes("clutch")
-      ? ("clutch" as const)
-      : ("crossbody" as const),
-    basePrice: b.basePrice,
-    description: b.description,
-    plasticOffsetKg: b.plasticOffsetKg,
-    coralProtectedSqM: Number((b.plasticOffsetKg * 1.5).toFixed(1)),
-    co2AvoidedKg: Number((b.plasticOffsetKg * 1.9).toFixed(1)),
-    imageUrl: b.thumbnail,
-    model3dUrl: b.modelPath,
-    defaultColor: b.defaultColorId,
-    availableColors: BAG_COLORS.map((c) => ({
-      id: c.id,
-      name: c.name,
-      hex: c.hex,
-      story: c.story,
-    })),
-    inStock: true,
-    stockCount: 50, // Mặc định 50 sản phẩm trong kho
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }));
-
-  for (const p of initial) {
-    memoryProductStore.set(p.id, p);
-  }
-
-  return initial;
-}
 
 export class ProductRepository {
   /**
    * Dữ liệu dự phòng tĩnh khi DB chưa kết nối
    */
   static getFallbackProducts(): BackendProduct[] {
-    return seedInitialProducts();
+    return Array.from(memoryProductStore.values());
   }
 
   /**
-   * Lấy toàn bộ danh sách sản phẩm (nếu Firestore trống thì tự động nạp danh mục gốc)
+   * Lấy toàn bộ danh sách sản phẩm từ Firestore
    */
   static async getAll(): Promise<BackendProduct[]> {
     if (!adminDb) {
-      return seedInitialProducts();
+      return Array.from(memoryProductStore.values());
     }
 
     try {
       const snapshot = await adminDb.collection(COLLECTION_NAME).get();
       if (!snapshot || snapshot.empty) {
-        // Tự động seed sản phẩm vào Firestore nếu chưa có
-        const initialProducts = seedInitialProducts();
-        for (const p of initialProducts) {
-          await adminDb.collection(COLLECTION_NAME).doc(p.id).set(p);
-        }
-        return initialProducts;
+        return [];
       }
 
       const products = snapshot.docs.map((doc) => doc.data() as BackendProduct);
       // Đồng bộ vào memory store
+      memoryProductStore.clear();
       for (const p of products) {
         memoryProductStore.set(p.id, p);
       }
       return products;
     } catch (error) {
-      console.warn("[ProductRepo] Firestore query failed, falling back to seed catalog:", error);
-      return seedInitialProducts();
+      console.warn("[ProductRepo] Firestore query notice:", error);
+      return Array.from(memoryProductStore.values());
     }
   }
 
@@ -99,23 +50,20 @@ export class ProductRepository {
     }
 
     if (!adminDb) {
-      const list = seedInitialProducts();
-      return list.find((p) => p.id === id) || null;
+      return null;
     }
 
     try {
       const doc = await adminDb.collection(COLLECTION_NAME).doc(id).get();
       if (!doc.exists) {
-        const list = seedInitialProducts();
-        return list.find((p) => p.id === id) || null;
+        return null;
       }
       const data = doc.data() as BackendProduct;
       memoryProductStore.set(data.id, data);
       return data;
     } catch (error) {
       console.warn("[ProductRepo] getById error:", error);
-      const list = seedInitialProducts();
-      return list.find((p) => p.id === id) || null;
+      return null;
     }
   }
 

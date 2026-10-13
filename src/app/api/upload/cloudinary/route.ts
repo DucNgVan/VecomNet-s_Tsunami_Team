@@ -9,18 +9,24 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const folder = (formData.get("folder") as "products" | "avatars" | "articles") || "products";
+    const folder = (formData.get("folder") as "products" | "avatars" | "articles" | "models") || "products";
 
     if (!file) {
       return NextResponse.json(
-        { success: false, error: "Không tìm thấy file hình ảnh tải lên" },
+        { success: false, error: "Không tìm thấy file tải lên" },
         { status: 400 }
       );
     }
 
-    if (!file.type.startsWith("image/")) {
+    const is3dModel =
+      file.name.toLowerCase().endsWith(".glb") ||
+      file.name.toLowerCase().endsWith(".gltf") ||
+      file.type === "model/gltf-binary" ||
+      folder === "models";
+
+    if (!file.type.startsWith("image/") && !is3dModel) {
       return NextResponse.json(
-        { success: false, error: "Chỉ hỗ trợ tải lên file hình ảnh (PNG, JPG, WebP, SVG)" },
+        { success: false, error: "Chỉ hỗ trợ file hình ảnh (PNG, JPG, WebP) hoặc mô hình 3D (.glb, .gltf)" },
         { status: 400 }
       );
     }

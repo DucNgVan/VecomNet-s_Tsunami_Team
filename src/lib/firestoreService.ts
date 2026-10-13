@@ -14,7 +14,7 @@ import { db } from "@/lib/firebase";
 import { TraceBatch, Order, Article } from "@/types";
 import { TRACE_BATCHES, TOTAL_IMPACT_STATS } from "@/data/traceability";
 import { INITIAL_ARTICLES } from "@/data/stories";
-import { BAG_BASES } from "@/data/products";
+import { BAG_COLORS } from "@/data/products";
 
 // Type definitions for Database Entities
 export interface DbCustomerProfile {
@@ -737,23 +737,7 @@ export async function getProductsFromFirestore(): Promise<any[]> {
   const localProductsKey = "net_custom_products_v1";
   const productMap = new Map<string, any>();
 
-  // A. Nạp danh mục gốc mặc định (BAG_BASES)
-  for (const b of BAG_BASES) {
-    productMap.set(b.id, {
-      id: b.id,
-      name: b.name,
-      basePrice: b.basePrice,
-      description: b.description,
-      plasticOffsetKg: b.plasticOffsetKg,
-      imageUrl: b.image,
-      model3dUrl: b.model3dUrl || "/assets/models/tuixach.glb",
-      inStock: true,
-      stockCount: 50,
-      isActive: true,
-    });
-  }
-
-  // B. Thử tải từ Cloud Firestore (collection "products")
+  // A. Thử tải trực tiếp từ Cloud Firestore (collection "products")
   try {
     const q = query(collection(db, "products"));
     const snap = await getDocs(q);

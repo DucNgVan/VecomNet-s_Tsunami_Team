@@ -9,7 +9,7 @@ import {
   Order,
   Article,
 } from "@/types";
-import { BAG_BASES, BAG_COLORS } from "@/data/products";
+import { BAG_COLORS } from "@/data/products";
 import {
   getAllNetPacks,
   saveNetPack,
@@ -125,14 +125,10 @@ function AdminPortalContent() {
       // 3. Fetch Products from Cloud Firestore (Collection 'products') & Local Cache
       try {
         const prods = await getProductsFromFirestore();
-        if (prods && prods.length > 0) {
-          setBackendProducts(prods);
-        } else {
-          setBackendProducts(BAG_BASES);
-        }
+        setBackendProducts(Array.isArray(prods) ? prods : []);
       } catch (prodErr) {
         console.warn("Products fetch warning:", prodErr);
-        setBackendProducts(BAG_BASES);
+        setBackendProducts([]);
       }
 
       // 4. Fetch Articles from Firestore & Stories

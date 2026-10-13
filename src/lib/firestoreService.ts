@@ -14,6 +14,7 @@ import { db } from "@/lib/firebase";
 import { TraceBatch, Order, Article } from "@/types";
 import { TRACE_BATCHES, TOTAL_IMPACT_STATS } from "@/data/traceability";
 import { INITIAL_ARTICLES } from "@/data/stories";
+import { BAG_BASES } from "@/data/products";
 
 // Type definitions for Database Entities
 export interface DbCustomerProfile {
@@ -727,4 +728,144 @@ export async function deleteArticleFromFirestore(articleId: string): Promise<boo
     console.warn("Firestore deleteArticle error:", err);
     return false;
   }
+}
+
+// -------------------------------------------------------------
+// 7. PRODUCTS & 3D CATALOG (Firestore Collection: "products")
+// -------------------------------------------------------------
+export async function getProductsFromFirestore(): Promise<any[]> {
+  const localProductsKey = "net_custom_products_v1";
+  const productMap = new Map<string, any>();
+
+  // A. Nạp danh mục gốc mặc định (BAG_BASES)
+  for (const b of BAG_BASES) {
+    productMap.set(b.id, {
+      id: b.id,
+      name: b.name,
+      basePrice: b.basePrice,
+      description: b.description,
+      plasticOffsetKg: b.plasticOffsetKg,
+      imageUrl: b.image,
+      model3dUrl: b.model3dUrl || "/assets/models/tuixach.glb",
+      inStock: true,
+      stockCount: 50,
+      isActive: true,
+    });
+  }
+
+  // B. Thử tải từ Cloud Firestore (collection "products")
+  try {
+    const q = query(collection(db, "products"));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      snap.forEach((d) => {
+        const data = d.data();
+        productMap.set(d.id, { id: d.id, ...data });
+      });
+    }
+  } catch (err) {
+    console.warn("Firestore getProducts error:", err);
+  }
+
+  // C. Đồng bộ với LocalStorage backup
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(localProductsKey);
+      if (raw) {
+        const localList: any[] = JSON.parse(raw);
+        for (const lp of localList) {
+          if (lp && lp.id) {
+            productMap.set(lp.id, { ...productMap.get(lp.id), ...lp });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("LocalStorage getProducts error:", e);
+    }
+  }
+
+  return Array.from(productMap.values());
+}
+
+export async function saveProductToFirestore(product: any): Promise<boolean> {
+  const localProductsKey = "net_custom_products_v1";
+  const cleanProduct = JSON.parse(JSON.stringify(product));
+
+  // 1. Lưu LocalStorage ngay lập tức làm backup
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(localProductsKey);
+      const list: any[] = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex((p) => p.id === cleanProduct.id);
+      if (idx >= 0) {
+        list[idx] = cleanProduct;
+      } else {
+        list.unshift(cleanProduct);
+      }
+      localStorage.setItem(localProductsKey, JSON.stringify(list));
+    } catch (e) {
+      console.warn("LocalStorage save product warning:", e);
+    }
+  }
+
+  // 2. Lưu trực tiếp lên Cloud Firestore collection "products"
+  try {
+    const docRef = doc(db, "products", cleanProduct.id);
+    await setDoc(
+      docRef,
+      {
+        ...cleanProduct,
+        updatedAt: new Date().toISOString(),
+        serverTime: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (fsErr) {
+    console.warn("Firestore saveProduct warning:", fsErr);
+  }
+
+  // 3. Đồng bộ với Backend API
+  try {
+    await fetch("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cleanProduct),
+    });
+  } catch (apiErr) {
+    console.warn("API sync product warning:", apiErr);
+  }
+
+  return true;
+}
+
+export async function deleteProductFromFirestore(productId: string): Promise<boolean> {
+  const localProductsKey = "net_custom_products_v1";
+
+  // 1. Xóa khỏi LocalStorage
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(localProductsKey);
+      if (raw) {
+        const list: any[] = JSON.parse(raw);
+        const filtered = list.filter((p) => p.id !== productId);
+        localStorage.setItem(localProductsKey, JSON.stringify(filtered));
+      }
+    } catch {}
+  }
+
+  // 2. Xóa khỏi Cloud Firestore
+  try {
+    await deleteDoc(doc(db, "products", productId));
+  } catch (err) {
+    console.warn("Firestore deleteProduct warning:", err);
+  }
+
+  // 3. Xóa qua Backend API
+  try {
+    await fetch(`/api/products/${productId}`, { method: "DELETE" });
+  } catch (apiErr) {
+    console.warn("API delete product warning:", apiErr);
+  }
+
+  return true;
 }

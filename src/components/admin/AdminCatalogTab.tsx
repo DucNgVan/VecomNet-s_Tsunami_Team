@@ -24,6 +24,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { BagCard3D } from "@/components/3d/BagCard3D";
 
 interface AdminCatalogTabProps {
   products: any[];
@@ -50,6 +51,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
   // -------------------------------------------------------------
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [preview3dModel, setPreview3dModel] = useState<{ name: string; url: string } | null>(null);
   const [productForm, setProductForm] = useState({
     id: "",
     name: "",
@@ -305,10 +307,21 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                         className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                       />
                       {prod.model3dUrl && (
-                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-900/80 text-teal-300 backdrop-blur-sm border border-teal-500/30 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreview3dModel({
+                              name: prod.name,
+                              url: prod.model3dUrl,
+                            });
+                          }}
+                          className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-900/80 hover:bg-slate-900 text-teal-300 backdrop-blur-sm border border-teal-500/30 flex items-center gap-1 cursor-pointer transition-transform hover:scale-105"
+                          title="Bấm để xem trước mô hình 3D xoay 360 độ"
+                        >
                           <Box className="w-2.5 h-2.5" />
                           3D Live
-                        </span>
+                        </button>
                       )}
                       <span
                         className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold ${
@@ -334,14 +347,31 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <button
-                      onClick={() => handleOpenEditProduct(prod)}
-                      className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      <span>Sửa</span>
-                    </button>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenEditProduct(prod)}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Sửa</span>
+                      </button>
+                      {prod.model3dUrl && (
+                        <button
+                          onClick={() =>
+                            setPreview3dModel({
+                              name: prod.name,
+                              url: prod.model3dUrl,
+                            })
+                          }
+                          className="px-2 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                          title="Xem mô hình 3D"
+                        >
+                          <Box className="w-3 h-3 text-indigo-600" />
+                          <span>3D</span>
+                        </button>
+                      )}
+                    </div>
                     <button
                       onClick={() => onDeleteProduct(prod.id)}
                       className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
@@ -570,6 +600,18 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                   placeholder="URL ảnh hoặc chọn file để tự động upload"
                   className="w-full p-2 rounded-lg border border-slate-200 text-[11px] bg-white font-mono"
                 />
+                {productForm.imageUrl && (
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-teal-50/60 border border-teal-100">
+                    <img
+                      src={productForm.imageUrl}
+                      alt="Xem trước ảnh"
+                      className="w-10 h-10 rounded-lg object-contain bg-white border border-teal-200 shrink-0 p-0.5"
+                    />
+                    <span className="text-[10px] text-teal-800 font-mono truncate flex-1">
+                      {productForm.imageUrl}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Upload 3D Model */}
@@ -598,6 +640,28 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                   placeholder="/assets/models/tuixach.glb hoặc URL 3D cloud"
                   className="w-full p-2 rounded-lg border border-slate-200 text-[11px] bg-white font-mono"
                 />
+                {productForm.model3dUrl && (
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/60 border border-indigo-100">
+                    <div className="flex items-center gap-2 truncate">
+                      <Box className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span className="text-[10px] text-indigo-800 font-mono truncate max-w-[200px]">
+                        {productForm.model3dUrl}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPreview3dModel({
+                          name: productForm.name || "Mô hình xem trước",
+                          url: productForm.model3dUrl,
+                        })
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold shrink-0 cursor-pointer shadow-sm"
+                    >
+                      Xem Thử 3D
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -775,6 +839,53 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* 6. MODAL: 3D MODEL PREVIEW 360 */}
+      {preview3dModel && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-white space-y-4 shadow-2xl relative animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Box className="w-5 h-5 text-teal-400" />
+                <h4 className="font-bold text-sm truncate max-w-[260px]">
+                  {preview3dModel.name}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreview3dModel(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative aspect-square w-full rounded-2xl bg-gradient-to-b from-slate-950 to-slate-900 overflow-hidden border border-slate-800 flex items-center justify-center">
+              <BagCard3D
+                modelUrl={preview3dModel.url}
+                className="w-full h-full"
+                isInteractive={true}
+              />
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-slate-800 text-xs">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-[11px]">Xoay 360° bằng chuột/ngón tay</span>
+                <span className="font-mono text-[10px] text-teal-400 truncate max-w-[180px]">
+                  {preview3dModel.url}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreview3dModel(null)}
+                className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs cursor-pointer shadow-md shadow-teal-600/20"
+              >
+                Đóng Xem Trước
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

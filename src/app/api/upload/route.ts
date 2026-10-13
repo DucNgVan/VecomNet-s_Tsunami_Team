@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminStorage } from "@/lib/firebaseAdmin";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -24,48 +27,77 @@ export async function POST(req: NextRequest) {
       try {
         const bucket = adminStorage.bucket();
         const fileRef = bucket.file(filePath);
+        const downloadToken = crypto.randomUUID();
 
         await fileRef.save(buffer, {
           metadata: {
-            contentType: file.type || (folder === "models" ? "model/gltf-binary" : "image/jpeg"),
+            contentType: file.type || (folder === "models" ? "model/gltf-binary" : "application/octet-stream"),
+            metadata: {
+              firebaseStorageDownloadTokens: downloadToken,
+            },
           },
-          public: true,
         });
 
-        // Lấy public URL
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+        // Lấy Firebase Storage URL kèm download token bảo mật
+        const bucketName = bucket.name || "netsvecomnet.firebasestorage.app";
+        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(filePath)}?alt=media&token=${downloadToken}`;
+        
         return NextResponse.json({
           success: true,
           url: publicUrl,
           fileName: file.name,
           size: file.size,
+          storage: "firebase-admin",
         });
       } catch (storageError: any) {
         console.warn("[Upload API] Firebase Admin Storage save warning:", storageError?.message);
       }
     }
 
-    // 2. Fallback an toàn (Data URL cho ảnh hoặc demo URL cho mô hình 3D)
-    if (file.type.startsWith("image/") && buffer.length <= 4 * 1024 * 1024) {
+    // 2. Lưu trực tiếp vào thư mục public/assets/uploads nếu chạy môi trường Node.js / Local dev
+    try {
+      const uploadDir = path.join(process.cwd(), "public", "assets", "uploads");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const localFilename = `${timestamp}_${cleanName}`;
+      const localFilePath = path.join(uploadDir, localFilename);
+      fs.writeFileSync(localFilePath, buffer);
+
+      const fileUrl = `/assets/uploads/${localFilename}`;
+      return NextResponse.json({
+        success: true,
+        url: fileUrl,
+        fileName: file.name,
+        size: file.size,
+        storage: "local-disk",
+      });
+    } catch (fsWriteError: any) {
+      console.warn("[Upload API] Local filesystem save notice:", fsWriteError?.message);
+    }
+
+    // 3. Fallback cho ảnh nhỏ dạng Data URL (chỉ áp dụng nếu dung lượng dưới 400KB để không làm tràn 1MB document của Firestore)
+    if (file.type.startsWith("image/") && buffer.length <= 400 * 1024) {
       const base64Data = `data:${file.type};base64,${buffer.toString("base64")}`;
       return NextResponse.json({
         success: true,
         url: base64Data,
         fileName: file.name,
         size: file.size,
+        storage: "base64",
       });
     }
 
-    // Cho file 3D hoặc file lớn khi chưa cấu hình service account
-    const fallbackUrl = `/assets/models/${cleanName}`;
-    return NextResponse.json({
-      success: true,
-      url: fallbackUrl,
-      fileName: file.name,
-      size: file.size,
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Không thể lưu file. Vui lòng kiểm tra quyền thư mục hoặc cấu hình Firebase Service Account.",
+      },
+      { status: 500 }
+    );
   } catch (error: any) {
     console.error("[Upload API] Error processing file upload:", error);
     return NextResponse.json({ success: false, error: error?.message || "Lỗi tải file" }, { status: 500 });
   }
 }
+

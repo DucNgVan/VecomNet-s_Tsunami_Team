@@ -14,10 +14,10 @@ interface BagCard3DProps {
   autoRotateSpeed?: number;
 }
 
-// Global cached GLTF scene to ensure tuixach.glb is downloaded only once
-let cachedBagGltfScene: THREE.Group | null = null;
-let isBagLoading = false;
-const bagLoadCallbacks: ((scene: THREE.Group) => void)[] = [];
+// Global cached GLTF scenes keyed by modelUrl
+const cachedBagGltfMap = new Map<string, THREE.Group>();
+const bagLoadingUrls = new Set<string>();
+const bagLoadCallbacksMap = new Map<string, ((scene: THREE.Group) => void)[]>();
 
 export const BagCard3D: React.FC<BagCard3DProps> = ({
   modelUrl = "/assets/models/tuixach.glb",
@@ -29,7 +29,7 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(!cachedBagGltfScene);
+  const [isLoading, setIsLoading] = useState<boolean>(!cachedBagGltfMap.has(modelUrl));
 
   useEffect(() => {
     const container = containerRef.current;
@@ -122,30 +122,33 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       setIsLoading(false);
     };
 
-    // 5. Load or Reuse Cached GLTF Model (tuixach.glb)
-    if (cachedBagGltfScene) {
-      mountBagScene(cachedBagGltfScene);
-    } else if (isBagLoading) {
-      bagLoadCallbacks.push((scene) => {
+    // 5. Load or Reuse Cached GLTF Model by modelUrl
+    if (cachedBagGltfMap.has(modelUrl)) {
+      mountBagScene(cachedBagGltfMap.get(modelUrl)!);
+    } else if (bagLoadingUrls.has(modelUrl)) {
+      const cbs = bagLoadCallbacksMap.get(modelUrl) || [];
+      cbs.push((scene) => {
         if (isSubscribed) mountBagScene(scene);
       });
+      bagLoadCallbacksMap.set(modelUrl, cbs);
     } else {
-      isBagLoading = true;
+      bagLoadingUrls.add(modelUrl);
       const loader = new GLTFLoader();
       loader.load(
         modelUrl,
         (gltf) => {
-          cachedBagGltfScene = gltf.scene;
-          isBagLoading = false;
+          cachedBagGltfMap.set(modelUrl, gltf.scene);
+          bagLoadingUrls.delete(modelUrl);
           if (isSubscribed) mountBagScene(gltf.scene);
-          bagLoadCallbacks.forEach((cb) => cb(gltf.scene));
-          bagLoadCallbacks.length = 0;
+          const cbs = bagLoadCallbacksMap.get(modelUrl) || [];
+          cbs.forEach((cb) => cb(gltf.scene));
+          bagLoadCallbacksMap.delete(modelUrl);
         },
         undefined,
         (err) => {
           console.warn("Error loading Bag 3D card model:", err);
-          isBagLoading = false;
-          setIsLoading(false);
+          bagLoadingUrls.delete(modelUrl);
+          if (isSubscribed) setIsLoading(false);
         }
       );
     }

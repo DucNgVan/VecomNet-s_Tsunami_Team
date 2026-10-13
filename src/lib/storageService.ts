@@ -1,5 +1,6 @@
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { storage, auth } from "@/lib/firebase";
+import { signInAnonymously } from "firebase/auth";
 
 export interface UploadProgressCallback {
   (progressPercent: number): void;
@@ -24,6 +25,15 @@ export async function uploadProductFile(
     );
   }
 
+  // Thử xác thực Firebase ẩn danh nếu chưa đăng nhập (để thỏa mãn rule: request.auth != null)
+  if (typeof window !== "undefined" && auth && !auth.currentUser) {
+    try {
+      await signInAnonymously(auth);
+    } catch {
+      // Bỏ qua nếu project chưa bật Anonymous Authentication
+    }
+  }
+
   // 2. Thử tải trực tiếp lên Firebase Storage Client SDK
   try {
     const timestamp = Date.now();
@@ -46,8 +56,8 @@ export async function uploadProductFile(
           try {
             const fallbackUrl = await uploadViaServerApi(file, folder, onProgress);
             resolve(fallbackUrl);
-          } catch (serverErr) {
-            reject(error);
+          } catch (serverErr: any) {
+            reject(serverErr || error);
           }
         },
         async () => {

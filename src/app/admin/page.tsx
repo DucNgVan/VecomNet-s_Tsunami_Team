@@ -27,6 +27,9 @@ import {
   getArticlesFromFirestore,
   saveArticleToFirestore,
   deleteArticleFromFirestore,
+  getProductsFromFirestore,
+  saveProductToFirestore,
+  deleteProductFromFirestore,
 } from "@/lib/firestoreService";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -119,20 +122,16 @@ function AdminPortalContent() {
       setManufacturedItems(getManufacturedItems());
       setStats(getSupplyChainStats());
 
-      // 3. Fetch Products from Backend API & Firestore
+      // 3. Fetch Products from Cloud Firestore (Collection 'products') & Local Cache
       try {
-        const res = await fetch("/api/products");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            setBackendProducts(json.data);
-          } else {
-            setBackendProducts(BAG_BASES);
-          }
+        const prods = await getProductsFromFirestore();
+        if (prods && prods.length > 0) {
+          setBackendProducts(prods);
         } else {
           setBackendProducts(BAG_BASES);
         }
-      } catch {
+      } catch (prodErr) {
+        console.warn("Products fetch warning:", prodErr);
         setBackendProducts(BAG_BASES);
       }
 
@@ -264,19 +263,7 @@ function AdminPortalContent() {
   // -------------------------------------------------------------
   const handleSaveProduct = async (productData: any) => {
     try {
-      // 1. Save to Backend API / Products Route
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-      });
-
-      // 2. Also direct save to Firestore products collection
-      try {
-        await setDoc(doc(db, "products", productData.id), productData, { merge: true });
-      } catch (fsErr) {
-        console.warn("Direct firestore product set warning:", fsErr);
-      }
+      await saveProductToFirestore(productData);
 
       setBackendProducts((prev) => {
         const idx = prev.findIndex((p) => p.id === productData.id);
@@ -298,8 +285,7 @@ function AdminPortalContent() {
   const handleDeleteProduct = async (productId: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa sản phẩm này không?")) return false;
     try {
-      await fetch(`/api/products?id=${productId}`, { method: "DELETE" });
-      await deleteDoc(doc(db, "products", productId));
+      await deleteProductFromFirestore(productId);
       setBackendProducts((prev) => prev.filter((p) => p.id !== productId));
       return true;
     } catch {

@@ -19,6 +19,7 @@ import {
   ProductDetailModal,
   ProductDetailItem,
 } from "@/components/shop/ProductDetailModal";
+import { getProductsFromFirestore } from "@/lib/firestoreService";
 
 export default function ShopPage() {
   const [filterCategory, setFilterCategory] = useState<"all" | "combos" | "bags" | "charms">(
@@ -31,73 +32,70 @@ export default function ShopPage() {
   useEffect(() => {
     async function loadStock() {
       try {
-        const res = await fetch("/api/products");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data)) {
-            const map: Record<string, { inStock: boolean; stockCount: number }> = {};
-            json.data.forEach((p: any) => {
-              map[p.id] = { inStock: p.inStock, stockCount: p.stockCount ?? 0 };
-              map[p.name.toLowerCase()] = { inStock: p.inStock, stockCount: p.stockCount ?? 0 };
-            });
-            setProductStocks(map);
+        const productList = await getProductsFromFirestore();
+        if (Array.isArray(productList) && productList.length > 0) {
+          const map: Record<string, { inStock: boolean; stockCount: number }> = {};
+          productList.forEach((p: any) => {
+            map[p.id] = { inStock: p.inStock ?? true, stockCount: p.stockCount ?? 50 };
+            map[p.name.toLowerCase()] = { inStock: p.inStock ?? true, stockCount: p.stockCount ?? 50 };
+          });
+          setProductStocks(map);
 
-            // Merge static catalog with live DB products and any admin-created items
-            const merged: BagBase[] = [];
-            for (const base of BAG_BASES) {
-              const dbMatch = json.data.find(
-                (p: any) => p.id === base.id || p.name.toLowerCase() === base.name.toLowerCase()
-              );
-              if (dbMatch) {
-                merged.push({
-                  ...base,
-                  name: dbMatch.name || base.name,
-                  basePrice: dbMatch.basePrice || base.basePrice,
-                  description: dbMatch.description || base.description,
-                  plasticOffsetKg: dbMatch.plasticOffsetKg || base.plasticOffsetKg,
-                  image: dbMatch.imageUrl || base.image,
-                  model3dUrl: dbMatch.model3dUrl || "/assets/models/tuixach.glb",
-                  stockCount: dbMatch.stockCount,
-                  inStock: dbMatch.inStock,
-                });
-              } else {
-                merged.push(base);
-              }
+          // Merge static catalog with live DB products and any admin-created items
+          const merged: BagBase[] = [];
+          for (const base of BAG_BASES) {
+            const dbMatch = productList.find(
+              (p: any) => p.id === base.id || p.name.toLowerCase() === base.name.toLowerCase()
+            );
+            if (dbMatch) {
+              merged.push({
+                ...base,
+                name: dbMatch.name || base.name,
+                basePrice: dbMatch.basePrice || base.basePrice,
+                description: dbMatch.description || base.description,
+                plasticOffsetKg: dbMatch.plasticOffsetKg || base.plasticOffsetKg,
+                image: dbMatch.imageUrl || base.image,
+                model3dUrl: dbMatch.model3dUrl || base.model3dUrl || "/assets/models/tuixach.glb",
+                stockCount: dbMatch.stockCount ?? 50,
+                inStock: dbMatch.inStock !== false,
+              });
+            } else {
+              merged.push(base);
             }
-
-            // Append any new products created by Admin
-            for (const p of json.data) {
-              const exists = merged.some(
-                (m) => m.id === p.id || m.name.toLowerCase() === p.name.toLowerCase()
-              );
-              if (!exists && p.isActive !== false) {
-                merged.push({
-                  id: p.id,
-                  name: p.name,
-                  tagline: p.description ? p.description.slice(0, 80) : "Thiết kế đan thủ công từ lưới ma tái sinh",
-                  description: p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
-                  basePrice: p.basePrice || 1250000,
-                  plasticOffsetKg: p.plasticOffsetKg || 1.8,
-                  dimensions: "36cm x 32cm x 12cm",
-                  capacity: "14 Lít",
-                  colors: BAG_COLORS,
-                  anchorPoints: [
-                    { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
-                    { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
-                    { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
-                    { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
-                  ],
-                  maxCharms: 8,
-                  modelType: (["tote", "bucket", "clutch", "crossbody"].includes(p.category) ? p.category : "tote") as any,
-                  image: p.imageUrl || "/assets/products/tote-blue.png",
-                  model3dUrl: p.model3dUrl || "/assets/models/tuixach.glb",
-                  stockCount: p.stockCount,
-                  inStock: p.inStock,
-                });
-              }
-            }
-            setAllBags(merged);
           }
+
+          // Append any new products created by Admin
+          for (const p of productList) {
+            const exists = merged.some(
+              (m) => m.id === p.id || m.name.toLowerCase() === p.name.toLowerCase()
+            );
+            if (!exists && p.isActive !== false) {
+              merged.push({
+                id: p.id,
+                name: p.name,
+                tagline: p.description ? p.description.slice(0, 80) : "Thiết kế đan thủ công từ lưới ma tái sinh",
+                description: p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
+                basePrice: p.basePrice || 1250000,
+                plasticOffsetKg: p.plasticOffsetKg || 1.8,
+                dimensions: "36cm x 32cm x 12cm",
+                capacity: "14 Lít",
+                colors: BAG_COLORS,
+                anchorPoints: [
+                  { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+                  { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+                  { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+                  { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+                ],
+                maxCharms: 8,
+                modelType: (["tote", "bucket", "clutch", "crossbody"].includes(p.category) ? p.category : "tote") as any,
+                image: p.imageUrl || "/assets/products/tote-blue.png",
+                model3dUrl: p.model3dUrl || "/assets/models/tuixach.glb",
+                stockCount: p.stockCount ?? 50,
+                inStock: p.inStock !== false,
+              });
+            }
+          }
+          setAllBags(merged);
         }
       } catch (e) {
         console.warn("Failed to load live product stock:", e);

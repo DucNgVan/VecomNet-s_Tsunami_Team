@@ -47,23 +47,37 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const isCombo = item.type === "combo";
   const isCharm = item.type === "charm";
 
-  const bagData = isBag ? (item.data as BagBase) : isCombo ? (item.data as ProductCombo).bagBase : null;
+  const bagData = isBag ? (item.data as BagBase) : isCombo ? (item.data as ProductCombo)?.bagBase : null;
   const comboData = isCombo ? (item.data as ProductCombo) : null;
   const charmData = isCharm ? (item.data as Charm) : null;
 
-  const title = isBag ? bagData!.name : isCombo ? comboData!.name : charmData!.vietnameseName;
-  const price = isBag ? bagData!.basePrice : isCombo ? comboData!.price : charmData!.price;
-  const plasticKg = isBag
-    ? bagData!.plasticOffsetKg
+  const title = isBag
+    ? bagData?.name || "Túi Lưới NÉT"
     : isCombo
-    ? comboData!.plasticOffsetKg
-    : charmData!.plasticOffsetGrams / 1000;
+    ? comboData?.name || "Bộ Combo NÉT"
+    : charmData?.vietnameseName || charmData?.name || "Charm Biển Sâu";
+
+  const price = isBag
+    ? bagData?.basePrice || 0
+    : isCombo
+    ? comboData?.price || 0
+    : charmData?.price || 0;
+
+  const plasticKg = Number(
+    (isBag
+      ? bagData?.plasticOffsetKg
+      : isCombo
+      ? comboData?.plasticOffsetKg
+      : charmData?.plasticOffsetGrams
+      ? charmData.plasticOffsetGrams / 1000
+      : (charmData as any)?.plasticOffsetKg || 0.35) || 0
+  );
 
   const imageUrl = isBag
     ? bagData?.image
     : isCombo
-    ? (comboData?.bagBase?.image || "/assets/products/tote-blue.png")
-    : (charmData as any)?.image;
+    ? comboData?.image || comboData?.bagBase?.image || "/assets/products/tote-blue.png"
+    : charmData?.image || (charmData as any)?.imageUrl;
 
   const has3dModel = Boolean(
     isBag
@@ -232,10 +246,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
                     {isBag
-                      ? bagData!.description
+                      ? bagData?.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT."
                       : isCombo
-                      ? comboData!.tagline
-                      : charmData!.description}
+                      ? comboData?.tagline || comboData?.description || "Set túi lưới tái sinh kết hợp charm phong thủy độc bản."
+                      : charmData?.description || "Phụ kiện charm độc bản đúc thủ công từ thủy tinh biển và cước lưới ma."}
                   </p>
                 </div>
 
@@ -245,15 +259,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Kích thước</div>
-                        <div className="font-bold text-slate-900 mt-0.5">{bagData!.dimensions}</div>
+                        <div className="font-bold text-slate-900 mt-0.5">{bagData?.dimensions || "36cm x 32cm x 12cm"}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Dung tích</div>
-                        <div className="font-bold text-slate-900 mt-0.5">{bagData!.capacity}</div>
+                        <div className="font-bold text-slate-900 mt-0.5">{bagData?.capacity || "14 Lít"}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Mắt neo charm</div>
-                        <div className="font-bold text-teal-800 mt-0.5">{bagData!.maxCharms} mắt đính</div>
+                        <div className="font-bold text-teal-800 mt-0.5">{bagData?.maxCharms || 8} mắt đính</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Vật liệu lưới</div>
@@ -266,11 +280,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Phôi túi</div>
-                        <div className="font-bold text-slate-900 mt-0.5">{comboData!.bagBase.name}</div>
+                        <div className="font-bold text-slate-900 mt-0.5">{comboData?.bagBase?.name || "Túi Lưới NÉT"}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Màu sắc</div>
-                        <div className="font-bold text-slate-900 mt-0.5">{comboData!.color.name}</div>
+                        <div className="font-bold text-slate-900 mt-0.5">{comboData?.color?.name || "Đại Dương"}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 col-span-2">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Bảo chứng mẻ lưới</div>
@@ -283,7 +297,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 col-span-2">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Chất liệu chế tác</div>
-                        <div className="font-bold text-slate-900 mt-0.5">{charmData!.material}</div>
+                        <div className="font-bold text-slate-900 mt-0.5">{charmData?.material || "Thủy tinh biển & cước tái sinh"}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Ý nghĩa</div>
@@ -291,7 +305,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Rác biển thu gom</div>
-                        <div className="font-bold text-emerald-700 mt-0.5">{charmData!.plasticOffsetGrams}g rác</div>
+                        <div className="font-bold text-emerald-700 mt-0.5">{charmData?.plasticOffsetGrams || Math.round(plasticKg * 1000) || 350}g rác</div>
                       </div>
                     </>
                   )}
@@ -337,6 +351,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         ? `/story?mode=manual&bagId=${bagData!.id}`
                         : isCombo
                         ? `/story?mode=manual&bagId=${comboData!.bagBase.id}&colorId=${comboData!.color.id}`
+                        : isCharm && charmData
+                        ? `/story?mode=manual&charms=${charmData.id}`
                         : `/story?mode=manual`
                     }
                     className="w-full"

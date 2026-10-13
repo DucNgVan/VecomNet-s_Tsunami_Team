@@ -12,6 +12,7 @@ import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
 import { formatVND, formatKg } from "@/lib/utils";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
+import { getProductsFromFirestore } from "@/lib/firestoreService";
 import {
   Sparkles,
   Rotate3d,
@@ -49,6 +50,10 @@ function YourStoryContent() {
   // Active Mode: 'manual' (Tự thiết kế - NÉT Studio) vs 'ai' (AI thiết kế giúp)
   const [mode, setMode] = useState<"manual" | "ai">(initialMode);
 
+  // Dynamic Catalog from Firestore
+  const [allBags, setAllBags] = useState<BagBase[]>(BAG_BASES);
+  const [allCharms, setAllCharms] = useState<Charm[]>(CHARMS);
+
   // Customizer selections
   const [selectedBag, setSelectedBag] = useState<BagBase>(
     BAG_BASES.find((b) => b.id === initialBagId) || BAG_BASES[0]
@@ -58,10 +63,99 @@ function YourStoryContent() {
   );
   const [selectedCharmIds, setSelectedCharmIds] = useState<string[]>(() => {
     if (charmsParam) {
-      return charmsParam.split(",").filter((id) => CHARMS.some((c) => c.id === id));
+      return charmsParam
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
     return [CHARMS[0].id, CHARMS[1].id];
   });
+
+  // Tải danh mục thực tế từ Cloud Firestore
+  useEffect(() => {
+    async function loadStudioCatalog() {
+      try {
+        const dbProducts = await getProductsFromFirestore();
+        if (Array.isArray(dbProducts) && dbProducts.length > 0) {
+          // 1. Dòng Phôi Túi Lưới
+          const liveBags: BagBase[] = dbProducts
+            .filter((p: any) => p && p.isActive !== false && p.category !== "combo" && p.category !== "charm")
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name || "Túi Lưới Tái Sinh",
+              tagline:
+                p.tagline ||
+                (p.description ? p.description.slice(0, 80) : "Thiết kế đan thủ công từ lưới ma tái sinh"),
+              description:
+                p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
+              basePrice: p.basePrice || p.price || 1250000,
+              plasticOffsetKg: p.plasticOffsetKg || 1.8,
+              dimensions: p.dimensions || "36cm x 32cm x 12cm",
+              capacity: p.capacity || "14 Lít",
+              colors: p.colors || BAG_COLORS,
+              anchorPoints: p.anchorPoints || [
+                { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+                { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+                { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+                { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+              ],
+              maxCharms: p.maxCharms || 8,
+              modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(p.category)
+                ? p.category
+                : "tote") as any,
+              image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
+              model3dUrl:
+                p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach.glb",
+              stockCount: p.stockCount ?? 50,
+              inStock: p.inStock !== false && (p.stockCount ?? 50) > 0,
+            }));
+
+          // 2. Dòng Charm Biển Sâu
+          const liveCharms: Charm[] = dbProducts
+            .filter((p: any) => p && p.isActive !== false && p.category === "charm")
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name || "Charm Biển Sâu",
+              vietnameseName: p.vietnameseName || p.name || "Charm Thủy Tinh Biển",
+              category: p.charmCategory || "marine",
+              price: p.basePrice || p.price || 180000,
+              plasticOffsetGrams:
+                p.plasticOffsetGrams ||
+                (p.plasticOffsetKg ? Math.round(p.plasticOffsetKg * 1000) : 350),
+              material: p.material || "Thủy tinh biển & cước lưới tái sinh",
+              description: p.description || "Phụ kiện charm độc bản đúc thủ công.",
+              color: p.color || "#38bdf8",
+              glowColor: p.glowColor || "rgba(56, 189, 248, 0.4)",
+              symbol: p.symbol || "✨",
+              iconName: p.iconName || "Sparkles",
+              model3dUrl:
+                p.model3dUrl && p.model3dUrl.trim() !== ""
+                  ? p.model3dUrl
+                  : "/assets/models/caurongcharm.glb",
+              image: p.imageUrl || p.image || "",
+            }));
+
+          if (liveBags.length > 0) {
+            setAllBags(liveBags);
+            const found = initialBagId
+              ? liveBags.find((b) => b.id === initialBagId)
+              : liveBags[0];
+            if (found) setSelectedBag(found);
+          }
+
+          if (liveCharms.length > 0) {
+            setAllCharms(liveCharms);
+            if (!charmsParam) {
+              setSelectedCharmIds([liveCharms[0].id]);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Studio catalog load error:", err);
+      }
+    }
+    loadStudioCatalog();
+  }, [initialBagId, charmsParam]);
 
   // AI Quiz Flow
   const [aiStep, setAiStep] = useState<number>(0);
@@ -162,19 +256,25 @@ function YourStoryContent() {
 
   // Selected Charm Objects
   const selectedCharms = selectedCharmIds
-    .map((id) => CHARMS.find((c) => c.id === id))
+    .map((id) => allCharms.find((c) => c.id === id))
     .filter((c): c is Charm => Boolean(c));
 
   // Compute Placed Charms for 3D model
   const placedCharmsFor3D: PlacedCharm[] = selectedCharms.map((charm, index) => {
-    const anchor = selectedBag.anchorPoints[index] || selectedBag.anchorPoints[0];
+    const anchors = selectedBag?.anchorPoints || [
+      { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+      { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+      { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+      { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+    ];
+    const anchor = anchors[index] || anchors[0];
     return {
       instanceId: `placed-${charm.id}-${index}`,
       charmId: charm.id,
       charm,
-      anchorId: anchor.id,
-      x: anchor.x,
-      y: anchor.y,
+      anchorId: anchor?.id || `anchor-${index}`,
+      x: anchor?.x || 50,
+      y: anchor?.y || 50,
       rotation: 0,
     };
   });
@@ -381,7 +481,7 @@ function YourStoryContent() {
                     selectedColor={selectedColor}
                     placedCharms={placedCharmsFor3D}
                     isInteractive={true}
-                    modelUrl="/assets/models/tuixach.glb"
+                    modelUrl={selectedBag.model3dUrl || "/assets/models/tuixach.glb"}
                   />
 
                   {/* Floating 360 Badge */}
@@ -438,11 +538,11 @@ function YourStoryContent() {
                     <Box className="w-4 h-4 text-sky-700" />
                     <span>1. Chọn Dáng Túi Biểu Tượng</span>
                   </h3>
-                  <span className="text-xs text-slate-500">4 kiểu dáng</span>
+                  <span className="text-xs text-slate-500">{allBags.length} kiểu dáng</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
-                  {BAG_BASES.map((bag) => {
+                  {allBags.map((bag) => {
                     const isSelected = selectedBag.id === bag.id;
                     return (
                       <button
@@ -459,8 +559,17 @@ function YourStoryContent() {
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </div>
                         )}
-                        <div className={`font-bold text-xs ${isSelected ? "text-white" : "text-[#0b1e3b]"}`}>
-                          {bag.name}
+                        <div className="flex items-center gap-2 mb-1">
+                          {bag.image && (
+                            <img
+                              src={bag.image}
+                              alt={bag.name}
+                              className="w-6 h-6 rounded-md object-cover border border-slate-200"
+                            />
+                          )}
+                          <div className={`font-bold text-xs truncate ${isSelected ? "text-white" : "text-[#0b1e3b]"}`}>
+                            {bag.name}
+                          </div>
                         </div>
                         <div className={`text-[11px] font-semibold mt-1 ${isSelected ? "text-teal-300" : "text-sky-700"}`}>
                           {formatVND(bag.basePrice)}
@@ -523,7 +632,7 @@ function YourStoryContent() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
-                  {CHARMS.map((charm) => {
+                  {allCharms.map((charm) => {
                     const isAttached = selectedCharmIds.includes(charm.id);
                     return (
                       <button
@@ -540,14 +649,25 @@ function YourStoryContent() {
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </div>
                         )}
-                        <div className="text-xs font-bold text-[#0b1e3b] pr-4">
-                          {charm.vietnameseName}
+                        <div className="flex items-center gap-2 mb-1">
+                          {charm.image ? (
+                            <img
+                              src={charm.image}
+                              alt={charm.vietnameseName}
+                              className="w-6 h-6 rounded-md object-cover border border-slate-200"
+                            />
+                          ) : (
+                            <span className="text-sm">{charm.symbol || "✨"}</span>
+                          )}
+                          <div className="text-xs font-bold text-[#0b1e3b] pr-4 truncate">
+                            {charm.vietnameseName}
+                          </div>
                         </div>
-                        <div className="text-[11px] font-bold text-sky-800 mt-1">
+                        <div className="text-[11px] font-bold text-sky-800 mt-0.5">
                           +{formatVND(charm.price)}
                         </div>
                         <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
-                          {charm.symbol}
+                          {charm.description || charm.symbol}
                         </div>
                       </button>
                     );

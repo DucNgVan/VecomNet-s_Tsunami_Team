@@ -57,7 +57,7 @@ export const CharmTray: React.FC<CharmTrayProps> = ({
         <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-50 to-sky-50/60 border border-sky-300 flex items-center gap-3.5 shadow-sm">
           <div className="w-18 h-18 rounded-xl bg-white border border-slate-200 shadow-xs flex-shrink-0 relative overflow-hidden">
             <CharmCanvas3D
-              modelUrl="/assets/models/caurongcharm.glb"
+              modelUrl={selectedCharm.model3dUrl || "/assets/models/caurongcharm.glb"}
               color={selectedCharm.color}
               glowColor={selectedCharm.glowColor}
               isInteractive={true}

@@ -42,31 +42,45 @@ export const CloudinaryImage: React.FC<CloudinaryImageProps> = ({
     );
   }
 
-  // Nhận diện nếu ảnh đã được upload lên Cloudinary
-  const isCloudinary =
-    src.includes("res.cloudinary.com") ||
-    src.startsWith("vecomnets/") ||
-    (!src.startsWith("/") && !src.startsWith("http") && !src.startsWith("data:"));
+  // 1. Nếu là URL đầy đủ (Cloudinary URL hoặc Web URL), dùng thẻ img trực tiếp để tránh lỗi runtime next-cloudinary
+  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/") || src.startsWith("data:")) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className={className}
+        loading={priority ? "eager" : "lazy"}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
 
-  if (isCloudinary) {
-    // Trích xuất public_id nếu đầu vào là URL đầy đủ của Cloudinary
-    let publicId = src;
-    if (src.includes("/image/upload/")) {
-      const parts = src.split("/image/upload/");
-      const afterUpload = parts[1];
-      // Loại bỏ version tag (ví dụ: v172881234/...) nếu có
-      publicId = afterUpload.replace(/^v\d+\//, "");
-    }
-
+  // 2. Nếu là Cloudinary publicId đơn thuần
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "yiowz9tn";
+  try {
     return (
       <CldImage
-        src={publicId}
+        cloudName={cloudName}
+        src={src}
         alt={alt}
         width={width}
         height={height}
         crop={crop}
         priority={priority}
         sizes={sizes}
+        className={className}
+        onError={() => setImgError(true)}
+      />
+    );
+  } catch (err) {
+    return (
+      <img
+        src={`https://res.cloudinary.com/${cloudName}/image/upload/${src}`}
+        alt={alt}
+        width={width}
+        height={height}
         className={className}
         onError={() => setImgError(true)}
       />

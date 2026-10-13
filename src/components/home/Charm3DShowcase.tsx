@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { CHARMS } from "@/data/products";
 import { Charm } from "@/types";
 import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
 import { GlassButton } from "@/components/ui/GlassButton";
+import { getProductsFromFirestore } from "@/lib/firestoreService";
 import {
   Sparkles,
   ArrowRight,
@@ -15,7 +16,48 @@ import {
 } from "lucide-react";
 
 export const Charm3DShowcase: React.FC = () => {
+  const [allCharms, setAllCharms] = useState<Charm[]>(CHARMS);
   const [selectedCharm, setSelectedCharm] = useState<Charm>(CHARMS[0]);
+
+  useEffect(() => {
+    async function loadCharms() {
+      try {
+        const dbProducts = await getProductsFromFirestore();
+        if (dbProducts && dbProducts.length > 0) {
+          const liveCharms: Charm[] = dbProducts
+            .filter((p: any) => p && p.isActive !== false && p.category === "charm")
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name || "Charm Biển Sâu",
+              vietnameseName: p.vietnameseName || p.name || "Charm Thủy Tinh Biển",
+              category: p.charmCategory || "marine",
+              price: p.basePrice || p.price || 180000,
+              plasticOffsetGrams:
+                p.plasticOffsetGrams ||
+                (p.plasticOffsetKg ? Math.round(p.plasticOffsetKg * 1000) : 350),
+              material: p.material || "Thủy tinh biển & cước lưới tái sinh",
+              description: p.description || "Phụ kiện charm độc bản đúc thủ công.",
+              color: p.color || "#38bdf8",
+              glowColor: p.glowColor || "rgba(56, 189, 248, 0.4)",
+              symbol: p.symbol || "✨",
+              iconName: p.iconName || "Sparkles",
+              model3dUrl:
+                p.model3dUrl && p.model3dUrl.trim() !== ""
+                  ? p.model3dUrl
+                  : "/assets/models/caurongcharm.glb",
+              image: p.imageUrl || p.image || "",
+            }));
+          if (liveCharms.length > 0) {
+            setAllCharms(liveCharms);
+            setSelectedCharm(liveCharms[0]);
+          }
+        }
+      } catch (e) {
+        console.warn("Charm showcase load error:", e);
+      }
+    }
+    loadCharms();
+  }, []);
 
   return (
     <section id="story-charms3d" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
@@ -82,7 +124,7 @@ export const Charm3DShowcase: React.FC = () => {
               Chọn Charm Để Soi 3D:
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {CHARMS.map((charm) => {
+              {allCharms.map((charm) => {
                 const isSelected = selectedCharm.id === charm.id;
                 return (
                   <button

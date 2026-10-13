@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { BAG_BASES, BAG_COLORS } from "@/data/products";
@@ -10,6 +10,7 @@ import { GlassButton } from "@/components/ui/GlassButton";
 import { formatVND, formatKg } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
+import { getProductsFromFirestore } from "@/lib/firestoreService";
 import {
   Sparkles,
   ShoppingBag,
@@ -20,10 +21,57 @@ import {
 } from "lucide-react";
 
 export const Bag3DShowcase: React.FC = () => {
+  const [allBags, setAllBags] = useState<BagBase[]>(BAG_BASES);
   const [selectedBag, setSelectedBag] = useState<BagBase>(BAG_BASES[0]);
   const [selectedColor, setSelectedColor] = useState<BagMeshColor>(BAG_COLORS[0]);
   const { addToCart } = useCart();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    async function loadBags() {
+      try {
+        const dbProducts = await getProductsFromFirestore();
+        if (dbProducts && dbProducts.length > 0) {
+          const liveBags: BagBase[] = dbProducts
+            .filter((p: any) => p && p.isActive !== false && p.category !== "charm")
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name || "Túi Lưới Tái Sinh",
+              vietnameseName: p.vietnameseName || p.name || "Túi Lưới Tái Sinh",
+              description: p.description || "Dệt thủ công từ lưới rác đại dương.",
+              basePrice: p.basePrice || p.price || 420000,
+              plasticOffsetKg:
+                p.plasticOffsetKg ?? (p.plasticOffsetGrams ? p.plasticOffsetGrams / 1000 : 1.2),
+              meshPattern: "diagonal",
+              anchorPoints: [
+                { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+                { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+                { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+                { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+              ],
+              maxCharms: p.maxCharms || 4,
+              dimensions: p.dimensions || { width: 34, height: 38, depth: 10 },
+              capacity: p.capacity || "12L",
+              modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(p.category)
+                ? p.category
+                : "tote") as any,
+              image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
+              model3dUrl:
+                p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach.glb",
+              stockCount: p.stockCount ?? 50,
+              inStock: p.inStock !== false && (p.stockCount ?? 50) > 0,
+            }));
+          if (liveBags.length > 0) {
+            setAllBags(liveBags);
+            setSelectedBag(liveBags[0]);
+          }
+        }
+      } catch (e) {
+        console.warn("Bag showcase load error:", e);
+      }
+    }
+    loadBags();
+  }, []);
 
   const handleAddToCart = () => {
     addToCart({
@@ -99,7 +147,7 @@ export const Bag3DShowcase: React.FC = () => {
               selectedColor={selectedColor}
               placedCharms={[]}
               isInteractive={true}
-              modelUrl="/assets/models/tuixach.glb"
+              modelUrl={selectedBag.model3dUrl || "/assets/models/tuixach.glb"}
             />
           </div>
 
@@ -147,7 +195,7 @@ export const Bag3DShowcase: React.FC = () => {
               Chọn Dáng Túi Để Xem Thử 3D:
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {BAG_BASES.map((bag) => {
+              {allBags.map((bag) => {
                 const isSelected = selectedBag.id === bag.id;
                 return (
                   <button

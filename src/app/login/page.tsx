@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
+import { UserAvatar } from "@/components/common/UserAvatar";
 
 function LoginContent() {
   const router = useRouter();
@@ -300,17 +301,12 @@ function LoginContent() {
           {/* Header Card */}
           <div className="text-center space-y-3">
             <div className="relative inline-block">
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName || "Avatar"}
-                  className="w-20 h-20 rounded-full mx-auto border-2 border-sky-400 object-cover shadow-md"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-[#0b1e3b] text-white text-2xl font-bold flex items-center justify-center mx-auto shadow-md">
-                  {(user.displayName || user.email || "N").charAt(0).toUpperCase()}
-                </div>
-              )}
+              <UserAvatar
+                src={userProfile?.photoURL || user.photoURL}
+                name={userProfile?.displayName || user.displayName}
+                size={80}
+                className="mx-auto border-2 border-sky-400 shadow-md"
+              />
               <span className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white shadow">
                 ✓
               </span>

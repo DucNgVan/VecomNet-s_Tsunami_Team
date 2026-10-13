@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { BagCard3D } from "@/components/3d/BagCard3D";
+import { uploadToCloudinary } from "@/lib/cloudinaryClient";
+import { CloudinaryImage } from "@/components/common/CloudinaryImage";
 
 interface AdminCatalogTabProps {
   products: any[];
@@ -110,10 +112,10 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
     setIsUploadingImage(true);
     setImageProgress(0);
     try {
-      const url = await uploadProductFile(file, "images", (pct) => setImageProgress(pct));
-      setProductForm((prev) => ({ ...prev, imageUrl: url }));
+      const res = await uploadToCloudinary(file, "products", (pct) => setImageProgress(pct));
+      setProductForm((prev) => ({ ...prev, imageUrl: res.url }));
     } catch (err: any) {
-      alert(`Lỗi upload ảnh: ${err.message}`);
+      alert(`Lỗi upload ảnh Cloudinary: ${err.message}`);
     } finally {
       setIsUploadingImage(false);
     }
@@ -208,10 +210,10 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
     setIsUploadingArticleCover(true);
     setArticleCoverProgress(0);
     try {
-      const url = await uploadProductFile(file, "images", (pct) => setArticleCoverProgress(pct));
-      setArticleForm((prev) => ({ ...prev, coverImage: url }));
+      const res = await uploadToCloudinary(file, "articles", (pct) => setArticleCoverProgress(pct));
+      setArticleForm((prev) => ({ ...prev, coverImage: res.url }));
     } catch (err: any) {
-      alert(`Lỗi upload ảnh bìa: ${err.message}`);
+      alert(`Lỗi upload ảnh bài viết: ${err.message}`);
     } finally {
       setIsUploadingArticleCover(false);
     }
@@ -301,9 +303,11 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 >
                   <div className="space-y-2">
                     <div className="relative aspect-square rounded-2xl bg-slate-50 overflow-hidden border border-slate-100 flex items-center justify-center">
-                      <img
+                      <CloudinaryImage
                         src={prod.imageUrl || prod.image || "/assets/products/tote-blue.png"}
                         alt={prod.name}
+                        width={300}
+                        height={300}
                         className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                       />
                       {prod.model3dUrl && (
@@ -414,9 +418,11 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               >
                 <div className="space-y-2.5">
                   <div className="aspect-video rounded-2xl bg-slate-100 overflow-hidden relative border border-slate-200">
-                    <img
+                    <CloudinaryImage
                       src={art.coverImage}
                       alt={art.title}
+                      width={400}
+                      height={225}
                       className="w-full h-full object-cover"
                     />
                     {art.featured && (
@@ -579,7 +585,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 <label className="font-bold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5 text-teal-600" />
-                    Hình Ảnh Sản Phẩm (Firebase Storage)
+                    Hình Ảnh Sản Phẩm (Cloudinary CDN Tối Ưu)
                   </span>
                   {isUploadingImage && (
                     <span className="text-teal-600 font-mono text-[10px]">
@@ -761,7 +767,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 <label className="font-bold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5 text-sky-600" />
-                    Ảnh Bìa Bài Viết (Firebase Storage)
+                    Ảnh Bìa Bài Viết (Cloudinary CDN Tối Ưu)
                   </span>
                   {isUploadingArticleCover && (
                     <span className="text-sky-600 font-mono text-[10px]">

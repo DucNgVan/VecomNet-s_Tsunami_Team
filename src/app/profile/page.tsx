@@ -42,7 +42,11 @@ import {
   Package,
   Truck,
   Clock,
+  Camera,
+  Loader2,
 } from "lucide-react";
+import { UserAvatar } from "@/components/common/UserAvatar";
+import { uploadToCloudinary } from "@/lib/cloudinaryClient";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
@@ -62,6 +66,41 @@ export default function CustomerProfilePage() {
   const [editAddress, setEditAddress] = useState("");
   const [editPostcode, setEditPostcode] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Avatar Upload via Cloudinary
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Vui lòng chọn định dạng file ảnh (JPG, PNG, WebP)", "error");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("Dung lượng ảnh tối đa là 8MB", "error");
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      showToast("Đang tải ảnh đại diện lên Cloudinary AI...", "info");
+      const result = await uploadToCloudinary(file, "avatars");
+      await updateUserProfile({ photoURL: result.url });
+      showToast("Cập nhật ảnh đại diện thành công!", "success");
+    } catch (err: any) {
+      console.error("Avatar upload failed:", err);
+      showToast(err.message || "Tải ảnh đại diện thất bại", "error");
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -147,21 +186,37 @@ export default function CustomerProfilePage() {
         {/* Top Profile Header */}
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="relative">
-              {user?.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt="Avatar"
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-teal-500 shadow-md"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#0b1e3b] to-teal-700 text-white flex items-center justify-center font-serif text-3xl font-bold shadow-md">
-                  {(userProfile?.displayName || user?.displayName || user?.email || "N")
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-              )}
-              <span className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[11px] text-white font-bold shadow">
+            <div className="relative group shrink-0">
+              <UserAvatar
+                src={userProfile?.photoURL || user?.photoURL}
+                name={userProfile?.displayName || user?.displayName}
+                size={80}
+                className="border-2 border-teal-500 shadow-md transition-transform group-hover:scale-[1.02]"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="absolute inset-0 rounded-full bg-[#0b1e3b]/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-bold transition-opacity backdrop-blur-xs cursor-pointer shadow-sm"
+                title="Tải lên ảnh đại diện mới qua Cloudinary AI"
+              >
+                {isUploadingAvatar ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-teal-300" />
+                ) : (
+                  <>
+                    <Camera className="w-5 h-5 mb-0.5 text-teal-300" />
+                    <span>Đổi ảnh</span>
+                  </>
+                )}
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+              <span className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[11px] text-white font-bold shadow pointer-events-none">
                 ✓
               </span>
             </div>

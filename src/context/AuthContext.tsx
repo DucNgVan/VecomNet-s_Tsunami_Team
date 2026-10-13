@@ -160,6 +160,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
     try {
+      if (data.displayName !== undefined || data.photoURL !== undefined) {
+        try {
+          await updateProfile(user, {
+            displayName: data.displayName !== undefined ? data.displayName : user.displayName,
+            photoURL: data.photoURL !== undefined ? data.photoURL : user.photoURL,
+          });
+        } catch (authErr) {
+          console.warn("Could not update Firebase Auth user profile:", authErr);
+        }
+      }
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, data, { merge: true });
       setUserProfile((prev) => (prev ? { ...prev, ...data } : null));

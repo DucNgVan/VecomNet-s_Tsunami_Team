@@ -17,7 +17,9 @@ import {
   ShieldCheck,
   RotateCw,
   Compass,
+  Image as ImageIcon,
 } from "lucide-react";
+import { CloudinaryImage } from "@/components/common/CloudinaryImage";
 
 export type ProductDetailItem =
   | { type: "bag"; data: BagBase }
@@ -56,6 +58,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     : isCombo
     ? comboData!.plasticOffsetKg
     : charmData!.plasticOffsetGrams / 1000;
+
+  const imageUrl = isBag
+    ? bagData?.image
+    : isCombo
+    ? (comboData?.bagBase?.image || "/assets/products/tote-blue.png")
+    : (charmData as any)?.image;
+
+  const [viewMode, setViewMode] = React.useState<"3d" | "photo">("3d");
+
+  // Reset view mode when item changes
+  React.useEffect(() => {
+    setViewMode("3d");
+  }, [item]);
 
   return (
     <AnimatePresence>
@@ -114,8 +129,47 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
               {/* Left Column: 3D Preview Stage */}
               <div className="md:col-span-6 flex flex-col items-center">
+                {imageUrl && (
+                  <div className="flex items-center gap-1 self-start mb-2.5 p-1 rounded-xl bg-slate-100 border border-slate-200/60 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("3d")}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        viewMode === "3d"
+                          ? "bg-white text-[#0b1e3b] shadow-xs font-bold"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <RotateCw className="w-3.5 h-3.5" />
+                      <span>Xoay 3D 360°</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("photo")}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        viewMode === "photo"
+                          ? "bg-white text-[#0b1e3b] shadow-xs font-bold"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-teal-600" />
+                      <span>Ảnh Thực Tế</span>
+                    </button>
+                  </div>
+                )}
+
                 <div className="w-full aspect-square rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200/90 relative overflow-hidden flex items-center justify-center shadow-inner">
-                  {isCharm ? (
+                  {viewMode === "photo" && imageUrl ? (
+                    <div className="w-full h-full p-4 flex items-center justify-center">
+                      <CloudinaryImage
+                        src={imageUrl}
+                        alt={title}
+                        width={600}
+                        height={600}
+                        className="max-w-full max-h-full object-contain rounded-xl drop-shadow-md"
+                      />
+                    </div>
+                  ) : isCharm ? (
                     <CharmCanvas3D
                       modelUrl={charmData!.model3dUrl || "/assets/models/caurongcharm.glb"}
                       color={charmData!.color}
@@ -132,10 +186,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   )}
 
                   {/* 3D Hint */}
-                  <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 bg-white/90 backdrop-blur-md py-1 rounded-full border border-slate-200 shadow-xs pointer-events-none">
-                    <RotateCw className="w-3 h-3 text-sky-600 animate-spin" style={{ animationDuration: "8s" }} />
-                    <span>Vuốt xoay 360° mô hình 3D</span>
-                  </div>
+                  {viewMode === "3d" && (
+                    <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 bg-white/90 backdrop-blur-md py-1 rounded-full border border-slate-200 shadow-xs pointer-events-none">
+                      <RotateCw className="w-3 h-3 text-sky-600 animate-spin" style={{ animationDuration: "8s" }} />
+                      <span>Vuốt xoay 360° mô hình 3D</span>
+                    </div>
+                  )}
                 </div>
 
                 {isCombo && (

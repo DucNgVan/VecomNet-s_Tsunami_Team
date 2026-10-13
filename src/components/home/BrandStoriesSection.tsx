@@ -14,6 +14,7 @@ import {
   X,
   Sparkles,
 } from "lucide-react";
+import { CloudinaryImage } from "@/components/common/CloudinaryImage";
 
 export const BrandStoriesSection: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -52,9 +53,11 @@ export const BrandStoriesSection: React.FC = () => {
             <div className="space-y-4">
               {/* Cover Image */}
               <div className="aspect-video rounded-2xl bg-slate-100 overflow-hidden relative border border-slate-100">
-                <img
+                <CloudinaryImage
                   src={art.coverImage}
                   alt={art.title}
+                  width={600}
+                  height={340}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {art.featured && (
@@ -146,9 +149,11 @@ export const BrandStoriesSection: React.FC = () => {
 
             {/* Cover Image */}
             <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-              <img
+              <CloudinaryImage
                 src={selectedArticle.coverImage}
                 alt={selectedArticle.title}
+                width={800}
+                height={450}
                 className="w-full h-full object-cover"
               />
             </div>

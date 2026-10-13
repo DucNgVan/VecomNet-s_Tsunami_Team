@@ -17,6 +17,7 @@ import {
   Waves,
   HeartHandshake,
 } from "lucide-react";
+import { UserAvatar } from "@/components/common/UserAvatar";
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
@@ -133,19 +134,12 @@ export const Navbar: React.FC = () => {
             {user ? (
               <>
                 <div className="relative">
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt="Avatar"
-                      className="w-5 h-5 rounded-full object-cover border border-teal-500"
-                    />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-[#0b1e3b] text-white text-[10px] font-bold flex items-center justify-center">
-                      {(userProfile?.displayName || user.displayName || user.email || "N")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
+                  <UserAvatar
+                    src={userProfile?.photoURL || user.photoURL}
+                    name={userProfile?.displayName || user.displayName}
+                    size={22}
+                    className="border border-teal-500"
+                  />
                   <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-white" />
                 </div>
                 <span className="hidden sm:inline truncate max-w-[100px] text-slate-800 font-bold group-hover:text-teal-700">
@@ -226,9 +220,18 @@ export const Navbar: React.FC = () => {
             <Link
               href={user ? "/profile" : "/login"}
               onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-teal-800 bg-teal-50/70 hover:bg-teal-100/70 flex items-center gap-2 border border-teal-100 mt-1"
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-teal-800 bg-teal-50/70 hover:bg-teal-100/70 flex items-center gap-2.5 border border-teal-100 mt-1"
             >
-              <User className="w-4 h-4 text-teal-700" />
+              {user ? (
+                <UserAvatar
+                  src={userProfile?.photoURL || user.photoURL}
+                  name={userProfile?.displayName || user.displayName}
+                  size={24}
+                  className="border border-teal-500"
+                />
+              ) : (
+                <User className="w-4 h-4 text-teal-700" />
+              )}
               <span>
                 {user
                   ? `Hồ Sơ & Thẻ Đóng Góp Môi Trường (${userProfile?.displayName?.split(" ")[0] || "Thành viên"})`

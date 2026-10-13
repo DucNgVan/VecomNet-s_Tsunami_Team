@@ -186,11 +186,11 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             Lưới Ma Đã Thu Hồi
           </div>
           <div className="text-2xl sm:text-3xl font-black text-teal-700 mt-1">
-            {formatKg(stats.totalPlasticDivertedKg + totalPlasticKgFromOrders)}
+            {formatKg((stats?.consumedNetWeight || stats?.totalNetWeightRecovered || 55) + (totalPlasticKgFromOrders || 0))}
           </div>
           <div className="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-teal-500" />
-            <span>Bảo tồn {stats.coralReefProtectedSqM || 14200} m² rạn san hô</span>
+            <span>Bảo tồn {stats?.coralReefProtectedSqM || 14200} m² rạn san hô</span>
           </div>
         </div>
 

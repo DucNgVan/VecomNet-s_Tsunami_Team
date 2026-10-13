@@ -34,6 +34,7 @@ import {
   clearAllClaimedBagsFromFirestore,
   clearAllBatchesFromFirestore,
   clearAllProductsFromFirestore,
+  clearAllMembersImpact,
   resetEntireSystemDatabase,
 } from "@/lib/firestoreService";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query } from "firebase/firestore";
@@ -364,6 +365,15 @@ function AdminPortalContent() {
     }
   };
 
+  const handleResetMembersImpact = async () => {
+    try {
+      await clearAllMembersImpact();
+      alert("✅ Đã reset toàn bộ dấu chân sinh thái & tác động môi trường của tất cả thành viên về 0 kg!");
+    } catch (e: any) {
+      alert("Lỗi khi reset tác động thành viên: " + e.message);
+    }
+  };
+
   const handleClearAllProducts = async () => {
     try {
       await clearAllProductsFromFirestore();
@@ -510,6 +520,7 @@ function AdminPortalContent() {
             syncFeedback={syncFeedback}
             onResetSupplyChain={handleResetSupplyChain}
             onResetClaimedBags={handleResetClaimedBags}
+            onResetMembersImpact={handleResetMembersImpact}
           />
         )}
 

@@ -129,10 +129,11 @@ export async function mintBagItemToFirestore(bagItem: DbBagItem): Promise<boolea
       const userRef = doc(db, "users", bagItem.ownerUid);
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
-        const currentImpact = userSnap.data()?.totalPlasticSavedKg || 0;
+        const currentImpact = Number(userSnap.data()?.ecoImpactKg || userSnap.data()?.totalPlasticSavedKg || 0);
         await setDoc(
           userRef,
           {
+            ecoImpactKg: Number((currentImpact + bagItem.plasticOffsetKg).toFixed(2)),
             totalPlasticSavedKg: Number((currentImpact + bagItem.plasticOffsetKg).toFixed(2)),
             totalOrdersCount: (userSnap.data()?.totalOrdersCount || 0) + 1,
             updatedAt: serverTimestamp(),
@@ -341,6 +342,15 @@ export function getEnterpriseImpactStats(): DbEnterpriseStats {
 export async function saveOrderToFirestore(order: Order): Promise<boolean> {
   // Deep clean undefined fields to prevent Firestore serialization error
   const cleanOrder: Order = JSON.parse(JSON.stringify(order));
+
+  // Compute totalPlasticOffsetKg dynamically from items if not explicitly provided
+  if (!cleanOrder.totalPlasticOffsetKg || cleanOrder.totalPlasticOffsetKg <= 0) {
+    const itemsKg = (cleanOrder.items || []).reduce(
+      (sum, it) => sum + (Number(it.plasticOffsetKg) || 0) * (Number(it.quantity) || 1),
+      0
+    );
+    cleanOrder.totalPlasticOffsetKg = Number(itemsKg.toFixed(2));
+  }
 
   // A. Tự động trừ kho thành phẩm & gán mã túi độc bản vào đơn hàng
   if (typeof window !== "undefined") {
@@ -937,6 +947,115 @@ export async function clearAllProductsFromFirestore(): Promise<boolean> {
 }
 
 /**
+ * Reset toàn bộ tác động môi trường (dấu chân carbon, rác biển, san hô) của người dùng về 0
+ */
+export async function resetMemberEcoImpact(userId: string): Promise<boolean> {
+  if (!userId) return false;
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(
+      userRef,
+      {
+        ecoImpactKg: 0,
+        totalPlasticSavedKg: 0,
+        totalOrdersCount: 0,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (e) {
+    console.warn("resetMemberEcoImpact error:", e);
+    return false;
+  }
+}
+
+/**
+ * Xóa sạch toàn bộ tác động môi trường của tất cả thành viên về 0
+ */
+export async function clearAllMembersImpact(): Promise<boolean> {
+  try {
+    await fetch("/api/admin/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: "member_impact" }),
+    });
+    return true;
+  } catch (e) {
+    console.warn("clearAllMembersImpact notice:", e);
+    return false;
+  }
+}
+
+/**
+ * Tính toán lại chính xác 100% tác động môi trường dựa trên các sản phẩm/đơn hàng và túi thực tế khách đã mua
+ */
+export async function recalculateUserEcoImpact(
+  userId: string,
+  userEmail?: string
+): Promise<{
+  plasticSavedKg: number;
+  coralProtectedSqM: number;
+  co2AvoidedKg: number;
+  ordersCount: number;
+}> {
+  if (!userId) {
+    return { plasticSavedKg: 0, coralProtectedSqM: 0, co2AvoidedKg: 0, ordersCount: 0 };
+  }
+
+  const [bags, orders] = await Promise.all([
+    getCustomerBagsFromFirestore(userId),
+    getCustomerOrdersFromFirestore(userId, userEmail),
+  ]);
+
+  // 1. Túi độc bản đã claim
+  const bagsPlastic = bags.reduce((sum, b) => sum + (b.plasticOffsetKg || 0), 0);
+  const claimedSerials = new Set(bags.map((b) => b.itemId.toLowerCase()));
+
+  // 2. Đơn hàng thực tế đã đặt
+  const ordersPlastic = orders.reduce((sum, o) => {
+    if (o.assignedBagSerialId && claimedSerials.has(o.assignedBagSerialId.toLowerCase())) {
+      return sum;
+    }
+    if (o.totalPlasticOffsetKg && o.totalPlasticOffsetKg > 0) {
+      return sum + o.totalPlasticOffsetKg;
+    }
+    const itemsKg = (o.items || []).reduce(
+      (iSum, it) => iSum + (it.plasticOffsetKg || 0) * (it.quantity || 1),
+      0
+    );
+    return sum + itemsKg;
+  }, 0);
+
+  const totalPlastic = Number((bagsPlastic + ordersPlastic).toFixed(2));
+  const totalCoral = Number((totalPlastic * 1.5).toFixed(1));
+  const totalCo2 = Number((totalPlastic * 1.9).toFixed(1));
+
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(
+      userRef,
+      {
+        ecoImpactKg: totalPlastic,
+        totalPlasticSavedKg: totalPlastic,
+        totalOrdersCount: orders.length,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn("recalculateUserEcoImpact notice:", e);
+  }
+
+  return {
+    plasticSavedKg: totalPlastic,
+    coralProtectedSqM: totalCoral,
+    co2AvoidedKg: totalCo2,
+    ordersCount: orders.length,
+  };
+}
+
+/**
  * Reset toàn bộ hệ thống về trạng thái database thực sạch sẽ
  */
 export async function resetEntireSystemDatabase(): Promise<boolean> {
@@ -944,7 +1063,9 @@ export async function resetEntireSystemDatabase(): Promise<boolean> {
     clearAllClaimedBagsFromFirestore(),
     clearAllBatchesFromFirestore(),
     clearAllProductsFromFirestore(),
+    clearAllMembersImpact(),
   ]);
   return true;
 }
+
 

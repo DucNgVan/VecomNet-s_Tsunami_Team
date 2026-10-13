@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/ToastNotification";
 import {
   getCustomerBagsFromFirestore,
   getCustomerOrdersFromFirestore,
+  recalculateUserEcoImpact,
+  resetMemberEcoImpact,
   DbBagItem,
 } from "@/lib/firestoreService";
 import { Order } from "@/types";
@@ -16,6 +18,8 @@ import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { formatKg, formatVND } from "@/lib/utils";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
   Award,
   Sparkles,
@@ -44,9 +48,76 @@ import {
   Clock,
   Camera,
   Loader2,
+  RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { uploadToCloudinary } from "@/lib/cloudinaryClient";
+
+interface MemberTier {
+  tierName: string;
+  badgeLevel: string;
+  badgeBg: string;
+  progressPercent: number;
+  perksDescription: string;
+}
+
+function getMemberEcoTier(plasticKg: number): MemberTier {
+  if (plasticKg <= 0) {
+    return {
+      tierName: "THÀNH VIÊN MỚI • KHỞI ĐẦU HÀNH TRÌNH XANH",
+      badgeLevel: "Cấp 0 / 5 (Khởi đầu)",
+      badgeBg: "bg-slate-100 text-slate-700 border-slate-300",
+      progressPercent: 0,
+      perksDescription:
+        "Mua sản phẩm đầu tiên từ lưới ma tái chế để bắt đầu tích lũy dấu chân sinh thái và mở khóa Huy hiệu Hạt Mầm Đại Dương!",
+    };
+  } else if (plasticKg < 2) {
+    const progress = Math.min(100, Math.round((plasticKg / 2) * 100));
+    return {
+      tierName: "HẠT MẦM ĐẠI DƯƠNG • HẠNG ĐỒNG",
+      badgeLevel: "Cấp 1 / 5 (Hạt Mầm)",
+      badgeBg: "bg-amber-50 text-amber-800 border-amber-200",
+      progressPercent: progress,
+      perksDescription: `Đã thu gom ${plasticKg}kg lưới ma! Đạt mốc 2.0kg để mở khóa Huy hiệu Người Đồng Hành Biển Sâu.`,
+    };
+  } else if (plasticKg < 5) {
+    const progress = Math.min(100, Math.round(((plasticKg - 2) / 3) * 100));
+    return {
+      tierName: "NGƯỜI ĐỒNG HÀNH BIỂN SÂU • HẠNG BẠC",
+      badgeLevel: "Cấp 2 / 5 (Đồng Hành)",
+      badgeBg: "bg-sky-50 text-sky-800 border-sky-200",
+      progressPercent: progress,
+      perksDescription: `Tuyệt vời! Bạn đã cứu được ~${(plasticKg * 1.5).toFixed(1)}m² rạn san hô. Đạt mốc 5.0kg để mở khóa Hạng Vàng.`,
+    };
+  } else if (plasticKg < 10) {
+    const progress = Math.min(100, Math.round(((plasticKg - 5) / 5) * 100));
+    return {
+      tierName: "NGƯỜI HỘ MỆNH SAN HÔ • HẠNG VÀNG",
+      badgeLevel: "Cấp 3 / 5 (Hộ Mệnh San Hô)",
+      badgeBg: "bg-teal-50 text-teal-800 border-teal-200",
+      progressPercent: progress,
+      perksDescription: `Bạn đã cắt giảm được -${(plasticKg * 1.9).toFixed(1)}kg CO₂e! Đạt mốc 10.0kg để lên Hạng Bạch Kim.`,
+    };
+  } else if (plasticKg < 20) {
+    const progress = Math.min(100, Math.round(((plasticKg - 10) / 10) * 100));
+    return {
+      tierName: "KỴ SĨ BIỂN SÂU • HẠNG BẠCH KIM",
+      badgeLevel: "Cấp 4 / 5 (Kỵ Sĩ Biển Sâu)",
+      badgeBg: "bg-indigo-50 text-indigo-800 border-indigo-200",
+      progressPercent: progress,
+      perksDescription: "Đặc quyền tham gia chuyến lặn nhặt rác thực tế cùng đội thợ lặn tình nguyện NÉT!",
+    };
+  } else {
+    return {
+      tierName: "ĐẠI SỨ ĐẠI DƯƠNG XANH • HẠNG KIM CƯƠNG",
+      badgeLevel: "Cấp 5 / 5 (Đại Sứ Tối Cao)",
+      badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      progressPercent: 100,
+      perksDescription: `Kỷ lục ấn tượng: ${plasticKg}kg rác biển được giải cứu! Bạn là Đại Sứ Danh Dự của Biển Sơn Trà.`,
+    };
+  }
+}
 
 export default function CustomerProfilePage() {
   const router = useRouter();
@@ -66,6 +137,7 @@ export default function CustomerProfilePage() {
   const [editAddress, setEditAddress] = useState("");
   const [editPostcode, setEditPostcode] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
 
   // Avatar Upload via Cloudinary
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -138,15 +210,74 @@ export default function CustomerProfilePage() {
     loadOrders();
   }, [user]);
 
-  // Environmental Impact Calculation
-  const totalPlasticSaved = customerBags.reduce((sum, b) => sum + (b.plasticOffsetKg || 0), 0);
+  // Environmental Impact Calculation from real customer bags & actual orders
+  const claimedSerials = new Set(customerBags.map((b) => b.itemId.toLowerCase()));
+  const bagsPlastic = customerBags.reduce((sum, b) => sum + (b.plasticOffsetKg || 0), 0);
+  const ordersPlastic = customerOrders.reduce((sum, o) => {
+    if (o.assignedBagSerialId && claimedSerials.has(o.assignedBagSerialId.toLowerCase())) {
+      return sum;
+    }
+    if (o.totalPlasticOffsetKg && o.totalPlasticOffsetKg > 0) {
+      return sum + o.totalPlasticOffsetKg;
+    }
+    const itemsKg = (o.items || []).reduce(
+      (iSum, it) => iSum + (it.plasticOffsetKg || 0) * (it.quantity || 1),
+      0
+    );
+    return sum + itemsKg;
+  }, 0);
+
+  // Exact real impact: strictly calculated from member's purchased items and claimed bags
+  const displayPlastic = Number((bagsPlastic + ordersPlastic).toFixed(2));
   const totalCoralProtected = customerBags.reduce((sum, b) => sum + (b.coralProtectedSqM || 0), 0);
   const totalCo2Avoided = customerBags.reduce((sum, b) => sum + (b.co2AvoidedKg || 0), 0);
 
-  // Baseline display values based on real user bags & profile
-  const displayPlastic = totalPlasticSaved > 0 ? totalPlasticSaved : (userProfile?.ecoImpactKg || 0);
   const displayCoral = totalCoralProtected > 0 ? totalCoralProtected : Number((displayPlastic * 1.5).toFixed(1));
   const displayCo2 = totalCo2Avoided > 0 ? totalCo2Avoided : Number((displayPlastic * 1.9).toFixed(1));
+
+  const memberTier = getMemberEcoTier(displayPlastic);
+
+  // Auto-sync calculated impact to user document in Firestore if needed
+  useEffect(() => {
+    if (!user?.uid || loadingBags || loadingOrders) return;
+    const currentDbKg = userProfile?.ecoImpactKg ?? -1;
+    if (currentDbKg !== displayPlastic) {
+      const userRef = doc(db, "users", user.uid);
+      setDoc(
+        userRef,
+        {
+          ecoImpactKg: displayPlastic,
+          totalPlasticSavedKg: displayPlastic,
+          totalOrdersCount: customerOrders.length,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      ).catch((err) => console.warn("Sync impact to firestore error:", err));
+    }
+  }, [user?.uid, displayPlastic, loadingBags, loadingOrders, customerOrders.length, userProfile?.ecoImpactKg]);
+
+  const handleRecalculateImpact = async () => {
+    if (!user?.uid) return;
+    try {
+      setIsRecalculating(true);
+      const res = await recalculateUserEcoImpact(user.uid, user.email || undefined);
+      // Reload bags & orders
+      const [bags, orders] = await Promise.all([
+        getCustomerBagsFromFirestore(user.uid),
+        getCustomerOrdersFromFirestore(user.uid, user.email || undefined),
+      ]);
+      setCustomerBags(bags);
+      setCustomerOrders(orders);
+      showToast(
+        `Đã tính toán lại thành công: ${res.plasticSavedKg} kg lưới ma từ ${orders.length} đơn hàng & ${bags.length} túi độc bản!`,
+        "success"
+      );
+    } catch (err: any) {
+      showToast(err.message || "Lỗi khi tính toán lại tác động", "error");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,9 +353,11 @@ export default function CustomerProfilePage() {
             </div>
 
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold uppercase tracking-wider border border-emerald-200">
-                <Award className="w-3.5 h-3.5 text-emerald-600" />
-                <span>NGƯỜI BẢO TRỢ ĐẠI DƯƠNG XANH • HẠNG BẠCH KIM</span>
+              <div
+                className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${memberTier.badgeBg}`}
+              >
+                <Award className="w-3.5 h-3.5 shrink-0" />
+                <span>{memberTier.tierName}</span>
               </div>
               <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b]">
                 {userProfile?.displayName || user?.displayName || "Thành Viên NÉT"}
@@ -237,7 +370,17 @@ export default function CustomerProfilePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center flex-wrap gap-2.5">
+            <button
+              onClick={handleRecalculateImpact}
+              disabled={isRecalculating}
+              className="px-3.5 py-2 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+              title="Tính toán lại toàn bộ tác động môi trường dựa trên đơn hàng & sản phẩm thực tế"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRecalculating ? "animate-spin text-teal-600" : ""}`} />
+              <span>{isRecalculating ? "Đang tính..." : "Cập Nhật Tác Động"}</span>
+            </button>
+
             <button
               onClick={() => setIsEditingInfo(!isEditingInfo)}
               className="px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
@@ -387,7 +530,9 @@ export default function CustomerProfilePage() {
                 -{formatKg(displayPlastic)}
               </div>
               <div className="text-[11px] text-slate-300">
-                Tương đương ~180 chai nhựa đại dương được ngăn chặn
+                {displayPlastic > 0
+                  ? `Tương đương ~${Math.round(displayPlastic * 85)} chai nhựa đại dương được ngăn chặn`
+                  : "Chưa có sản phẩm nào. Hãy mua tác phẩm đầu tiên để tích lũy!"}
               </div>
             </div>
 
@@ -402,7 +547,9 @@ export default function CustomerProfilePage() {
                 ~{displayCoral.toFixed(1)} m²
               </div>
               <div className="text-[11px] text-slate-300">
-                Thềm san hô sừng hươu vịnh Nam Ô & Hòn Sụp
+                {displayCoral > 0
+                  ? "Thềm san hô sừng hươu vịnh Nam Ô & Hòn Sụp được bảo hộ"
+                  : "Bảo hộ thềm san hô vịnh Sơn Trà khi sở hữu túi tái chế NÉT"}
               </div>
             </div>
 
@@ -417,7 +564,9 @@ export default function CustomerProfilePage() {
                 -{displayCo2.toFixed(2)} kg CO₂e
               </div>
               <div className="text-[11px] text-slate-300">
-                So với vòng đời sản xuất túi nilong & da công nghiệp
+                {displayCo2 > 0
+                  ? "So với vòng đời sản xuất túi nilong & da công nghiệp"
+                  : "Cắt giảm phát thải carbon từ chuỗi tuần hoàn tái chế"}
               </div>
             </div>
           </div>
@@ -428,15 +577,18 @@ export default function CustomerProfilePage() {
               <span className="font-semibold text-slate-300 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-teal-400" />
                 <span>Tiến trình mở khóa Huy hiệu Bảo Vệ Hải Dương:</span>
-                <strong className="text-teal-300">Cấp 3 / 5 (Người Hộ Mệnh San Hô)</strong>
+                <strong className="text-teal-300">{memberTier.badgeLevel}</strong>
               </span>
-              <span className="text-teal-400 font-bold">68%</span>
+              <span className="text-teal-400 font-bold">{memberTier.progressPercent}%</span>
             </div>
             <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden">
-              <div className="w-[68%] h-full bg-gradient-to-r from-teal-400 to-sky-400 rounded-full transition-all duration-1000" />
+              <div
+                className="h-full bg-gradient-to-r from-teal-400 to-sky-400 rounded-full transition-all duration-1000"
+                style={{ width: `${memberTier.progressPercent}%` }}
+              />
             </div>
             <p className="text-[11px] text-slate-400">
-              Sở hữu thêm 1 sản phẩm tái chế để mở khóa Huy hiệu Kỵ Sĩ Biển Sâu và nhận đặc quyền tham gia chuyến lặn nhặt rác thực tế cùng NÉT.
+              {memberTier.perksDescription}
             </p>
           </div>
         </div>

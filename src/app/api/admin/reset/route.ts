@@ -37,6 +37,28 @@ export async function POST(req: NextRequest) {
           console.warn(`[Reset API] Warning clearing collection ${colName}:`, colErr);
         }
       }
+
+      // Reset tác động môi trường & dấu chân carbon của các thành viên về 0
+      if (target === "member_impact" || target === "all") {
+        try {
+          const userSnap = await adminDb.collection("users").get();
+          if (!userSnap.empty) {
+            const batch = adminDb.batch();
+            userSnap.docs.forEach((doc) => {
+              batch.update(doc.ref, {
+                ecoImpactKg: 0,
+                totalPlasticSavedKg: 0,
+                totalOrdersCount: 0,
+                updatedAt: new Date().toISOString(),
+              });
+              totalDeleted++;
+            });
+            await batch.commit();
+          }
+        } catch (uErr) {
+          console.warn("[Reset API] Reset users eco impact notice:", uErr);
+        }
+      }
     }
 
     return NextResponse.json({

@@ -24,7 +24,7 @@ export class OrderService {
       items = [],
       paymentMethod = "cod",
       assignedBatchId = "PACK-DN-2024-082",
-      totalPlasticOffsetKg = 2.14,
+      totalPlasticOffsetKg = 0,
       userId,
     } = body;
 
@@ -48,11 +48,17 @@ export class OrderService {
       const quantity = Math.max(1, Number(cartItem.quantity) || 1);
       calculatedSubtotal += verifiedPrice * quantity;
 
+      const plasticOffsetKg =
+        Number(cartItem.plasticOffsetKg) > 0
+          ? Number(cartItem.plasticOffsetKg)
+          : Number(matched?.plasticOffsetKg) || 0;
+
       return {
         ...cartItem,
         bagBaseId: matched ? matched.id : cartItem.bagBaseId,
         price: verifiedPrice,
         quantity,
+        plasticOffsetKg,
       };
     });
 
@@ -130,6 +136,19 @@ export class OrderService {
       amount: grandTotal,
     };
 
+    const calculatedPlasticOffset = verifiedItems.reduce((sum, item) => {
+      const itemKg = Number(item.plasticOffsetKg) || 0;
+      return sum + itemKg * (item.quantity || 1);
+    }, 0);
+    const finalPlasticOffsetKg = Number(
+      (calculatedPlasticOffset > 0
+        ? calculatedPlasticOffset
+        : Number(totalPlasticOffsetKg) > 0
+        ? Number(totalPlasticOffsetKg)
+        : 0
+      ).toFixed(2)
+    );
+
     const newOrder: BackendOrder = {
       orderId,
       orderCode,
@@ -145,7 +164,7 @@ export class OrderService {
       subtotal: calculatedSubtotal,
       shippingFee,
       total: grandTotal,
-      totalPlasticOffsetKg: Number(totalPlasticOffsetKg) || 2.14,
+      totalPlasticOffsetKg: finalPlasticOffsetKg,
       assignedBatchId,
       assignedBagSerialId: assignedSerialId,
       paymentMethod,
@@ -157,6 +176,32 @@ export class OrderService {
 
     // 7. Lưu đơn hàng vào Database
     await OrderRepository.save(newOrder);
+
+    // Cập nhật tác động môi trường của tài khoản người dùng
+    if (userId && userId !== "guest") {
+      try {
+        const { adminDb } = await import("../config/firebaseAdmin");
+        if (adminDb) {
+          const userRef = adminDb.collection("users").doc(userId);
+          const userDoc = await userRef.get();
+          if (userDoc.exists) {
+            const currentImpact = Number(userDoc.data()?.ecoImpactKg || userDoc.data()?.totalPlasticSavedKg || 0);
+            const currentCount = Number(userDoc.data()?.totalOrdersCount || 0);
+            await userRef.set(
+              {
+                ecoImpactKg: Number((currentImpact + finalPlasticOffsetKg).toFixed(2)),
+                totalPlasticSavedKg: Number((currentImpact + finalPlasticOffsetKg).toFixed(2)),
+                totalOrdersCount: currentCount + 1,
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
+          }
+        }
+      } catch (uErr) {
+        console.warn("[OrderService] User impact update notice:", uErr);
+      }
+    }
 
     // 8. Gửi email xác nhận hóa đơn tự động
     let emailDispatched = false;

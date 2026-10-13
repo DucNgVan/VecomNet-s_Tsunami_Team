@@ -23,6 +23,7 @@ import {
   ChevronRight,
   ExternalLink,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -42,6 +43,7 @@ interface AdminSupplyChainTabProps {
   syncFeedback: { success: boolean; message: string } | null;
   onResetSupplyChain?: () => Promise<void>;
   onResetClaimedBags?: () => Promise<void>;
+  onResetMembersImpact?: () => Promise<void>;
 }
 
 export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
@@ -54,6 +56,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
   syncFeedback,
   onResetSupplyChain,
   onResetClaimedBags,
+  onResetMembersImpact,
 }) => {
   // Active Sub-Step: 1 (Inbound Net) | 2 (Production) | 3 (Serialized Inventory)
   const [subStep, setSubStep] = useState<"inbound" | "production" | "inventory">("inbound");
@@ -174,6 +177,26 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
             >
               <Trash2 className="w-3.5 h-3.5 text-amber-600" />
               <span>Xoá Túi Đã Định Danh</span>
+            </button>
+          )}
+
+          {onResetMembersImpact && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (
+                  confirm(
+                    "⚠️ BẠN CÓ CHẮC CHẮN MUỐN RESET TÁC ĐỘNG MÔI TRƯỜNG & DẤU CHÂN CARBON CỦA TẤT CẢ THÀNH VIÊN?\n\nToàn bộ chỉ số kg lưới ma, m² san hô, kg CO2e của mọi tài khoản sẽ được đặt về 0 và chỉ tính lại dựa trên sản phẩm thực tế họ mua."
+                  )
+                ) {
+                  await onResetMembersImpact();
+                }
+              }}
+              className="px-3.5 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-xs border border-teal-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Reset toàn bộ dấu chân sinh thái của thành viên về 0"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-teal-600" />
+              <span>Reset Tác Động Thành Viên</span>
             </button>
           )}
 

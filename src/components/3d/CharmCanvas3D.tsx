@@ -22,6 +22,21 @@ const charmLoadCallbacks: ((scene: THREE.Group) => void)[] = [];
 // Snapshot cache for charm cards to eliminate excessive WebGL contexts
 const charmSnapshotCache = new Map<string, string>();
 
+function parseThreeColor(val?: string, fallback = "#38bdf8"): THREE.Color {
+  if (!val) return new THREE.Color(fallback);
+  try {
+    if (val.startsWith("rgba(")) {
+      const match = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        return new THREE.Color(`rgb(${match[1]}, ${match[2]}, ${match[3]})`);
+      }
+    }
+    return new THREE.Color(val);
+  } catch {
+    return new THREE.Color(fallback);
+  }
+}
+
 export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
   modelUrl = "/assets/models/caurongcharm.glb",
   color = "#38bdf8",
@@ -60,7 +75,7 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 50);
     camera.position.set(0, 0.2, 3.2);
 
-    // 2. High-Performance WebGL Renderer với bảo vệ mất Context
+    // 2. High-Performance WebGL Renderer
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
@@ -86,7 +101,6 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
     dom.style.height = "100%";
     dom.style.display = "block";
 
-    // Chặn hành vi mặc định của trình duyệt để không hiện mặt buồn :-(
     const handleContextLost = (event: Event) => {
       event.preventDefault();
       console.warn("[CharmCanvas3D] WebGL context loss được chặn an toàn.");
@@ -104,11 +118,11 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
     keyLight.position.set(3, 5, 4);
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(new THREE.Color(color), 3.0);
+    const rimLight = new THREE.DirectionalLight(parseThreeColor(color, "#38bdf8"), 3.0);
     rimLight.position.set(-3, 2, -2);
     scene.add(rimLight);
 
-    const pointLight = new THREE.PointLight(new THREE.Color(glowColor), 2.5, 6);
+    const pointLight = new THREE.PointLight(parseThreeColor(glowColor, "#38bdf8"), 2.5, 6);
     pointLight.position.set(0, -1, 1);
     scene.add(pointLight);
 
@@ -117,6 +131,65 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
     scene.add(rootGroup);
 
     let animId: number | null = null;
+    let isDragging = false;
+    let prevMouse = { x: 0, y: 0 };
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      prevMouse = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - prevMouse.x;
+      const dy = e.clientY - prevMouse.y;
+      rootGroup.rotation.y += dx * 0.012;
+      rootGroup.rotation.x = Math.max(-0.6, Math.min(0.6, rootGroup.rotation.x + dy * 0.01));
+      prevMouse = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseUp = () => {
+      isDragging = false;
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      isDragging = true;
+      prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDragging || e.touches.length === 0) return;
+      const dx = e.touches[0].clientX - prevMouse.x;
+      const dy = e.touches[0].clientY - prevMouse.y;
+      rootGroup.rotation.y += dx * 0.012;
+      rootGroup.rotation.x = Math.max(-0.6, Math.min(0.6, rootGroup.rotation.x + dy * 0.01));
+      prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
+    // 5. Setup interaction handlers & render loop BEFORE loading/mounting model
+    const clock = new THREE.Clock();
+    const startRenderLoop = () => {
+      if (animId !== null) return;
+      dom.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+
+      dom.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: true });
+      window.addEventListener("touchend", onMouseUp);
+
+      const renderLoop = () => {
+        animId = requestAnimationFrame(renderLoop);
+        const t = clock.getElapsedTime();
+        if (!isDragging && rootGroup) {
+          rootGroup.rotation.y += autoRotateSpeed;
+          rootGroup.position.y = Math.sin(t * 1.8) * 0.05;
+        }
+        renderer.render(scene, camera);
+      };
+      renderLoop();
+    };
 
     // Helper: Mount and auto-fit cloned charm model
     const mountCharmScene = (baseScene: THREE.Group) => {
@@ -155,7 +228,7 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
       rootGroup.add(charmWrapper);
       setIsLoading(false);
 
-      // Nếu không tương tác -> render 1 frame lấy snapshot và HỦY CONTEXT NGAY
+      // Nếu không tương tác -> render 1 frame lấy snapshot và hủy context an toàn
       if (!isInteractive) {
         renderer.render(scene, camera);
         try {
@@ -172,17 +245,16 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
               container.removeChild(dom);
             }
             renderer.dispose();
-            renderer.forceContextLoss();
           } catch {}
         }, 50);
         return;
       }
 
-      // Bắt đầu vòng lặp tương tác nếu isInteractive = true
-      startInteractiveLoop();
+      // Khởi động vòng lặp tương tác an toàn
+      startRenderLoop();
     };
 
-    // 5. Load or Reuse Cached GLTF Scene
+    // 6. Load or Reuse Cached GLTF Scene
     if (cachedCharmGltfScene) {
       mountCharmScene(cachedCharmGltfScene);
     } else if (isCharmLoading) {
@@ -213,65 +285,6 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
       );
     }
 
-    // 6. Interactive Orbit & Drag Rotation (Chỉ khi isInteractive = true)
-    let isDragging = false;
-    let prevMouse = { x: 0, y: 0 };
-
-    const onMouseDown = (e: MouseEvent) => {
-      isDragging = true;
-      prevMouse = { x: e.clientX, y: e.clientY };
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const dx = e.clientX - prevMouse.x;
-      const dy = e.clientY - prevMouse.y;
-      rootGroup.rotation.y += dx * 0.012;
-      rootGroup.rotation.x = Math.max(-0.6, Math.min(0.6, rootGroup.rotation.x + dy * 0.01));
-      prevMouse = { x: e.clientX, y: e.clientY };
-    };
-
-    const onMouseUp = () => {
-      isDragging = false;
-    };
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 0) return;
-      isDragging = true;
-      prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!isDragging || e.touches.length === 0) return;
-      const dx = e.touches[0].clientX - prevMouse.x;
-      const dy = e.touches[0].clientY - prevMouse.y;
-      rootGroup.rotation.y += dx * 0.012;
-      rootGroup.rotation.x = Math.max(-0.6, Math.min(0.6, rootGroup.rotation.x + dy * 0.01));
-      prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    };
-
-    function startInteractiveLoop() {
-      dom.addEventListener("mousedown", onMouseDown);
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-
-      dom.addEventListener("touchstart", onTouchStart, { passive: true });
-      window.addEventListener("touchmove", onTouchMove, { passive: true });
-      window.addEventListener("touchend", onMouseUp);
-
-      const clock = new THREE.Clock();
-      const renderLoop = () => {
-        animId = requestAnimationFrame(renderLoop);
-        const t = clock.getElapsedTime();
-        if (!isDragging && rootGroup) {
-          rootGroup.rotation.y += autoRotateSpeed;
-          rootGroup.position.y = Math.sin(t * 1.8) * 0.05;
-        }
-        renderer.render(scene, camera);
-      };
-      renderLoop();
-    }
-
     return () => {
       isSubscribed = false;
       dom.removeEventListener("mousedown", onMouseDown);
@@ -281,14 +294,13 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onMouseUp);
       dom.removeEventListener("webglcontextlost", handleContextLost);
-      if (animId) cancelAnimationFrame(animId);
+      if (animId !== null) cancelAnimationFrame(animId);
 
       try {
         if (dom.parentNode === container) {
           container.removeChild(dom);
         }
         renderer.dispose();
-        renderer.forceContextLoss();
       } catch {}
     };
   }, [modelUrl, color, glowColor, isInteractive, autoRotateSpeed, cacheKey]);

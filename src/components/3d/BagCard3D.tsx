@@ -22,6 +22,21 @@ const bagLoadCallbacksMap = new Map<string, ((scene: THREE.Group) => void)[]>();
 // Global snapshot cache to eliminate duplicate WebGL contexts completely
 const bagSnapshotCache = new Map<string, string>();
 
+function parseThreeColor(val?: string, fallback = "#0c2340"): THREE.Color {
+  if (!val) return new THREE.Color(fallback);
+  try {
+    if (val.startsWith("rgba(")) {
+      const match = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        return new THREE.Color(`rgb(${match[1]}, ${match[2]}, ${match[3]})`);
+      }
+    }
+    return new THREE.Color(val);
+  } catch {
+    return new THREE.Color(fallback);
+  }
+}
+
 export const BagCard3D: React.FC<BagCard3DProps> = ({
   modelUrl = "/assets/models/tuixach.glb",
   color = "#0c2340",
@@ -60,13 +75,13 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 50);
     camera.position.set(0, 0.15, 6.2);
 
-    // 2. High-Performance WebGL Renderer với bảo vệ mất Context
+    // 2. High-Performance WebGL Renderer
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
-        preserveDrawingBuffer: true, // Cho phép chụp toDataURL mà không bị đen hình
+        preserveDrawingBuffer: true,
         powerPreference: "high-performance",
       });
     } catch (e) {
@@ -86,7 +101,6 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     dom.style.height = "100%";
     dom.style.display = "block";
 
-    // Chặn hành vi mặc định của trình duyệt để KHÔNG HIỂN THỊ ICON MẶT BUỒN :-(
     const handleContextLost = (event: Event) => {
       event.preventDefault();
       console.warn("[BagCard3D] WebGL Context Lost được xử lý an toàn.");
@@ -108,8 +122,7 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     fillLight.position.set(-3, -1, 3);
     scene.add(fillLight);
 
-    // Dynamic Underglow matching bag color
-    const underGlow = new THREE.PointLight(new THREE.Color(glowColor || color), 3.0, 9);
+    const underGlow = new THREE.PointLight(parseThreeColor(glowColor || color, "#38bdf8"), 3.0, 9);
     underGlow.position.set(0, -2.5, 1.5);
     scene.add(underGlow);
 
@@ -118,116 +131,6 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     scene.add(rootGroup);
 
     let animId: number | null = null;
-
-    // Helper: Mount and auto-fit cloned bag model
-    const mountBagScene = (baseScene: THREE.Group) => {
-      if (!isSubscribed) return;
-      rootGroup.clear();
-
-      const instance = baseScene.clone(true);
-      const box = new THREE.Box3().setFromObject(instance);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-
-      instance.position.x = -center.x;
-      instance.position.y = -center.y;
-      instance.position.z = -center.z;
-
-      const bagWrapper = new THREE.Group();
-      bagWrapper.add(instance);
-
-      // Rotate 90 degrees if depth is larger than width so front faces camera
-      if (size.z > size.x) {
-        bagWrapper.rotation.y = Math.PI / 2;
-      }
-
-      // Auto-scale to comfortably fit the card stage
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const targetDim = 3.6;
-      const scale = maxDim > 0 ? targetDim / maxDim : 1;
-      bagWrapper.scale.setScalar(scale);
-
-      // Materials
-      instance.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          const m = child as THREE.Mesh;
-          if (m.material) {
-            const mat = m.material as THREE.MeshStandardMaterial;
-            mat.roughness = Math.max(0.25, mat.roughness ?? 0.4);
-            mat.envMapIntensity = 1.3;
-          }
-        }
-      });
-
-      rootGroup.add(bagWrapper);
-      setIsLoading(false);
-
-      // Nếu không tương tác (isInteractive = false), chỉ render 1 frame lấy snapshot rồi HỦY WEBGL NGAY
-      // Giúp giải phóng 100% WebGL Context, không bao giờ bị lỗi "Too many active WebGL contexts"
-      if (!isInteractive) {
-        renderer.render(scene, camera);
-        try {
-          const shot = dom.toDataURL("image/webp", 0.92);
-          bagSnapshotCache.set(cacheKey, shot);
-          setSnapshotUrl(shot);
-        } catch {
-          // Bỏ qua nếu toDataURL bị chặn bởi cross-origin
-        }
-
-        // HỦY NGAY LẬP TỨC WebGL Context để nhường bộ nhớ cho các thẻ khác
-        setTimeout(() => {
-          if (!isSubscribed) return;
-          try {
-            dom.removeEventListener("webglcontextlost", handleContextLost);
-            if (dom.parentNode === container) {
-              container.removeChild(dom);
-            }
-            renderer.dispose();
-            renderer.forceContextLoss();
-          } catch {}
-        }, 50);
-        return;
-      }
-
-      // Nếu là chế độ tương tác (isInteractive = true), khởi động vòng lặp render mượt mà
-      startInteractiveLoop();
-    };
-
-    // 5. Load or Reuse Cached GLTF Model by modelUrl
-    if (cachedBagGltfMap.has(modelUrl)) {
-      mountBagScene(cachedBagGltfMap.get(modelUrl)!);
-    } else if (bagLoadingUrls.has(modelUrl)) {
-      const cbs = bagLoadCallbacksMap.get(modelUrl) || [];
-      cbs.push((scene) => {
-        if (isSubscribed) mountBagScene(scene);
-      });
-      bagLoadCallbacksMap.set(modelUrl, cbs);
-    } else {
-      bagLoadingUrls.add(modelUrl);
-      const loader = new GLTFLoader();
-      loader.load(
-        modelUrl,
-        (gltf) => {
-          cachedBagGltfMap.set(modelUrl, gltf.scene);
-          bagLoadingUrls.delete(modelUrl);
-          if (isSubscribed) mountBagScene(gltf.scene);
-          const cbs = bagLoadCallbacksMap.get(modelUrl) || [];
-          cbs.forEach((cb) => cb(gltf.scene));
-          bagLoadCallbacksMap.delete(modelUrl);
-        },
-        undefined,
-        (err) => {
-          console.warn("Error loading Bag 3D model:", err);
-          bagLoadingUrls.delete(modelUrl);
-          if (isSubscribed) {
-            setHasWebGLError(true);
-            setIsLoading(false);
-          }
-        }
-      );
-    }
-
-    // 6. Interactive Orbit & Drag Rotation (Chỉ khi isInteractive = true)
     let isDragging = false;
     let prevX = 0;
     let targetRotY = 0;
@@ -261,7 +164,19 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       targetRotY += deltaX * 0.015;
     };
 
-    function startInteractiveLoop() {
+    const handleResize = () => {
+      if (!container || !renderer) return;
+      const w = container.clientWidth || 280;
+      const h = container.clientHeight || 240;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener("resize", handleResize);
+
+    // 5. Interactive render loop Setup (ALWAYS declared & ready BEFORE loading/mounting model)
+    const startInteractiveLoop = () => {
+      if (animId !== null) return;
       dom.addEventListener("mousedown", onMouseDown);
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
@@ -281,17 +196,105 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
         renderer.render(scene, camera);
       };
       animate();
-    }
-
-    const handleResize = () => {
-      if (!container || !renderer) return;
-      const w = container.clientWidth || 280;
-      const h = container.clientHeight || 240;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
     };
-    window.addEventListener("resize", handleResize);
+
+    // Helper: Mount and auto-fit cloned bag model
+    const mountBagScene = (baseScene: THREE.Group) => {
+      if (!isSubscribed) return;
+      rootGroup.clear();
+
+      const instance = baseScene.clone(true);
+      const box = new THREE.Box3().setFromObject(instance);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+
+      instance.position.x = -center.x;
+      instance.position.y = -center.y;
+      instance.position.z = -center.z;
+
+      const bagWrapper = new THREE.Group();
+      bagWrapper.add(instance);
+
+      if (size.z > size.x) {
+        bagWrapper.rotation.y = Math.PI / 2;
+      }
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const targetDim = 3.6;
+      const scale = maxDim > 0 ? targetDim / maxDim : 1;
+      bagWrapper.scale.setScalar(scale);
+
+      instance.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const m = child as THREE.Mesh;
+          if (m.material) {
+            const mat = m.material as THREE.MeshStandardMaterial;
+            mat.roughness = Math.max(0.25, mat.roughness ?? 0.4);
+            mat.envMapIntensity = 1.3;
+          }
+        }
+      });
+
+      rootGroup.add(bagWrapper);
+      setIsLoading(false);
+
+      if (!isInteractive) {
+        renderer.render(scene, camera);
+        try {
+          const shot = dom.toDataURL("image/webp", 0.92);
+          bagSnapshotCache.set(cacheKey, shot);
+          setSnapshotUrl(shot);
+        } catch {}
+
+        setTimeout(() => {
+          if (!isSubscribed) return;
+          try {
+            dom.removeEventListener("webglcontextlost", handleContextLost);
+            if (dom.parentNode === container) {
+              container.removeChild(dom);
+            }
+            renderer.dispose();
+          } catch {}
+        }, 50);
+        return;
+      }
+
+      startInteractiveLoop();
+    };
+
+    // 6. Load or Reuse Cached GLTF Model by modelUrl
+    if (cachedBagGltfMap.has(modelUrl)) {
+      mountBagScene(cachedBagGltfMap.get(modelUrl)!);
+    } else if (bagLoadingUrls.has(modelUrl)) {
+      const cbs = bagLoadCallbacksMap.get(modelUrl) || [];
+      cbs.push((scene) => {
+        if (isSubscribed) mountBagScene(scene);
+      });
+      bagLoadCallbacksMap.set(modelUrl, cbs);
+    } else {
+      bagLoadingUrls.add(modelUrl);
+      const loader = new GLTFLoader();
+      loader.load(
+        modelUrl,
+        (gltf) => {
+          cachedBagGltfMap.set(modelUrl, gltf.scene);
+          bagLoadingUrls.delete(modelUrl);
+          if (isSubscribed) mountBagScene(gltf.scene);
+          const cbs = bagLoadCallbacksMap.get(modelUrl) || [];
+          cbs.forEach((cb) => cb(gltf.scene));
+          bagLoadCallbacksMap.delete(modelUrl);
+        },
+        undefined,
+        (err) => {
+          console.warn("Error loading Bag 3D model:", err);
+          bagLoadingUrls.delete(modelUrl);
+          if (isSubscribed) {
+            setHasWebGLError(true);
+            setIsLoading(false);
+          }
+        }
+      );
+    }
 
     return () => {
       isSubscribed = false;
@@ -303,14 +306,13 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       window.removeEventListener("touchend", onMouseUp);
       dom.removeEventListener("webglcontextlost", handleContextLost);
       window.removeEventListener("resize", handleResize);
-      if (animId) cancelAnimationFrame(animId);
+      if (animId !== null) cancelAnimationFrame(animId);
 
       try {
         if (dom.parentNode === container) {
           container.removeChild(dom);
         }
         renderer.dispose();
-        renderer.forceContextLoss();
       } catch {}
     };
   }, [modelUrl, color, glowColor, isInteractive, autoRotateSpeed, cacheKey]);
@@ -325,7 +327,7 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
           className="w-full h-full object-contain pointer-events-none drop-shadow-md animate-fadeIn"
         />
       ) : hasWebGLError ? (
-        /* 2. Giao diện Vector bảo vệ khi WebGL bị mất context -> Tuyệt đối không hiển thị mặt buồn */
+        /* 2. Giao diện Vector bảo vệ khi WebGL bị mất context */
         <div className="w-full h-full flex flex-col items-center justify-center p-4">
           <div className="relative w-24 h-24 flex items-center justify-center">
             <div

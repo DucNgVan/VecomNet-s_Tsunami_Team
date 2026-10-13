@@ -65,12 +65,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? (comboData?.bagBase?.image || "/assets/products/tote-blue.png")
     : (charmData as any)?.image;
 
-  const [viewMode, setViewMode] = React.useState<"3d" | "photo">("3d");
+  const has3dModel = Boolean(
+    isBag
+      ? Boolean(bagData?.model3dUrl && bagData.model3dUrl.trim() !== "")
+      : isCombo
+      ? Boolean(comboData?.bagBase?.model3dUrl && comboData.bagBase.model3dUrl.trim() !== "")
+      : Boolean(charmData?.model3dUrl && charmData.model3dUrl.trim() !== "")
+  );
+
+  const [viewMode, setViewMode] = React.useState<"3d" | "photo">(has3dModel ? "3d" : "photo");
 
   // Reset view mode when item changes
   React.useEffect(() => {
-    setViewMode("3d");
-  }, [item]);
+    setViewMode(has3dModel ? "3d" : "photo");
+  }, [item, has3dModel]);
 
   return (
     <AnimatePresence>
@@ -129,7 +137,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
               {/* Left Column: 3D Preview Stage */}
               <div className="md:col-span-6 flex flex-col items-center">
-                {imageUrl && (
+                {has3dModel && imageUrl && (
                   <div className="flex items-center gap-1 self-start mb-2.5 p-1 rounded-xl bg-slate-100 border border-slate-200/60 text-xs font-semibold">
                     <button
                       type="button"
@@ -159,7 +167,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 )}
 
                 <div className="w-full aspect-square rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200/90 relative overflow-hidden flex items-center justify-center shadow-inner">
-                  {viewMode === "photo" && imageUrl ? (
+                  {(!has3dModel || viewMode === "photo") && imageUrl ? (
                     <div className="w-full h-full p-4 flex items-center justify-center">
                       <CloudinaryImage
                         src={imageUrl}
@@ -169,24 +177,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         className="max-w-full max-h-full object-contain rounded-xl drop-shadow-md"
                       />
                     </div>
-                  ) : isCharm ? (
+                  ) : isCharm && has3dModel ? (
                     <CharmCanvas3D
-                      modelUrl={charmData!.model3dUrl || "/assets/models/caurongcharm.glb"}
+                      modelUrl={charmData!.model3dUrl!}
                       color={charmData!.color}
                       glowColor={charmData!.glowColor}
                       isInteractive={true}
                     />
-                  ) : (
+                  ) : has3dModel ? (
                     <BagCard3D
-                      modelUrl={bagData?.model3dUrl || "/assets/models/tuixach.glb"}
+                      modelUrl={isCombo ? comboData!.bagBase.model3dUrl! : bagData!.model3dUrl!}
                       color={isCombo ? comboData!.color.hex : bagData!.colors[0]?.hex}
                       glowColor={isCombo ? comboData!.color.glowHex : bagData!.colors[0]?.glowHex}
                       isInteractive={true}
                     />
+                  ) : (
+                    <div className="w-full h-full p-4 flex items-center justify-center text-slate-400 text-xs">
+                      Không có ảnh xem trước
+                    </div>
                   )}
 
                   {/* 3D Hint */}
-                  {viewMode === "3d" && (
+                  {has3dModel && viewMode === "3d" && (
                     <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 bg-white/90 backdrop-blur-md py-1 rounded-full border border-slate-200 shadow-xs pointer-events-none">
                       <RotateCw className="w-3 h-3 text-sky-600 animate-spin" style={{ animationDuration: "8s" }} />
                       <span>Vuốt xoay 360° mô hình 3D</span>

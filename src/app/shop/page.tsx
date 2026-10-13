@@ -79,7 +79,7 @@ export default function ShopPage() {
           ? p.category
           : "tote") as any,
         image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
-        model3dUrl: p.model3dUrl || "/assets/models/tuixach.glb",
+        model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : undefined,
         stockCount: p.stockCount ?? 50,
         inStock: p.inStock !== false && (p.stockCount ?? 50) > 0,
       }));
@@ -117,7 +117,7 @@ export default function ShopPage() {
           maxCharms: 6,
           modelType: "tote",
           image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
-          model3dUrl: p.model3dUrl || "/assets/models/tuixach.glb",
+          model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : undefined,
         },
         color: BAG_COLORS[0],
         includedCharms: Array.isArray(p.includedCharms) ? p.includedCharms : [],
@@ -143,7 +143,8 @@ export default function ShopPage() {
         glowColor: p.glowColor || "rgba(56, 189, 248, 0.4)",
         symbol: p.symbol || "✨",
         iconName: p.iconName || "Sparkles",
-        model3dUrl: p.model3dUrl || "/assets/models/caurongcharm.glb",
+        model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : undefined,
+        image: p.imageUrl || p.image || "",
       }));
   }, [products]);
 
@@ -188,7 +189,7 @@ export default function ShopPage() {
       title: `${charm.vietnameseName} (${charm.name})`,
       price: charm.price,
       quantity: 1,
-      image: "",
+      image: charm.image || "",
       plasticOffsetKg: charm.plasticOffsetGrams / 1000,
     });
 
@@ -637,15 +638,23 @@ export default function ShopPage() {
                                   glowColor={charm.glowColor}
                                   isInteractive={false}
                                 />
+                              ) : charm.image ? (
+                                <img
+                                  src={charm.image}
+                                  alt={charm.name}
+                                  className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                                />
                               ) : (
-                                <span className="text-4xl">{charm.symbol}</span>
+                                <span className="text-4xl">{charm.symbol || "✨"}</span>
                               )}
-                              <div className="absolute top-2 left-2 pointer-events-none">
-                                <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
-                                  <Sparkles className="w-2.5 h-2.5 text-sky-600" />
-                                  <span>3D {charm.symbol}</span>
-                                </span>
-                              </div>
+                              {charm.model3dUrl && (
+                                <div className="absolute top-2 left-2 pointer-events-none">
+                                  <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
+                                    <Sparkles className="w-2.5 h-2.5 text-sky-600" />
+                                    <span>3D {charm.symbol}</span>
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             <h4 className="font-serif text-sm font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors line-clamp-1">

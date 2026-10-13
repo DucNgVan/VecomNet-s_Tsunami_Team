@@ -61,8 +61,8 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
     basePrice: 1250000,
     description: "",
     plasticOffsetKg: 1.8,
-    imageUrl: "/assets/products/tote-blue.png",
-    model3dUrl: "/assets/models/tuixach.glb",
+    imageUrl: "",
+    model3dUrl: "",
     inStock: true,
     stockCount: 50,
   });
@@ -98,8 +98,8 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       basePrice: prod.basePrice || prod.price || 1250000,
       description: prod.description || "",
       plasticOffsetKg: prod.plasticOffsetKg || 1.8,
-      imageUrl: prod.imageUrl || prod.image || "/assets/products/tote-blue.png",
-      model3dUrl: prod.model3dUrl || "/assets/models/tuixach.glb",
+      imageUrl: prod.imageUrl || prod.image || "",
+      model3dUrl: prod.model3dUrl || "",
       inStock: prod.inStock ?? true,
       stockCount: prod.stockCount ?? 50,
     });
@@ -538,18 +538,33 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Phân Loại Dáng</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Phân Loại Sản Phẩm{" "}
+                    <span className="text-teal-600 font-normal">
+                      ({productForm.category === "charm"
+                        ? "Mục Charm"
+                        : productForm.category === "combo"
+                        ? "Mục Combo"
+                        : "Mục Túi"})
+                    </span>
+                  </label>
                   <select
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium text-xs"
                   >
-                    <option value="tote">Túi Tote (Tote Bag)</option>
-                    <option value="hobo">Túi Đeo Chéo (Crossbody / Hobo)</option>
-                    <option value="bucket">Túi Bucket (Bucket Bag)</option>
-                    <option value="mini">Túi Cầm Tay (Clutch / Mini)</option>
-                    <option value="combo">Bộ Sưu Tập Phối Sẵn (Combo)</option>
-                    <option value="charm">Charm Thủy Tinh Biển Sâu</option>
+                    <optgroup label="Dòng Phôi Túi Lưới (Bag Bases)">
+                      <option value="tote">Túi Tote (Tote Bag)</option>
+                      <option value="hobo">Túi Đeo Chéo (Crossbody / Hobo)</option>
+                      <option value="bucket">Túi Bucket (Bucket Bag)</option>
+                      <option value="mini">Túi Cầm Tay (Clutch / Mini)</option>
+                    </optgroup>
+                    <optgroup label="Bộ Sưu Tập Phối Sẵn">
+                      <option value="combo">Bộ Combo Túi + Charm (Combo)</option>
+                    </optgroup>
+                    <optgroup label="Phụ Kiện Charm Biển Sâu">
+                      <option value="charm">Charm Thủy Tinh Biển Sâu (Charm)</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div>

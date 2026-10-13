@@ -49,6 +49,7 @@ export type Charm = {
   symbol: string;
   iconName: string;
   model3dUrl?: string;
+  image?: string;
 };
 
 export type PlacedCharm = {

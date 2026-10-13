@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { NetPack, ManufacturedBagItem } from "@/types";
 import { BAG_BASES, BAG_COLORS } from "@/data/products";
 import { formatKg, formatVND } from "@/lib/utils";

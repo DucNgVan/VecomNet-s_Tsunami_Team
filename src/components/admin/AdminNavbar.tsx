@@ -17,15 +17,15 @@ import {
 } from "lucide-react";
 
 interface AdminNavbarProps {
-  activeTab: string;
-  onSelectTab: (tabId: string) => void;
+  activeTab?: string;
+  onSelectTab?: (tabId: string) => void;
   onRefreshAll?: () => void;
   isRefreshing?: boolean;
 }
 
 export const AdminNavbar: React.FC<AdminNavbarProps> = ({
-  activeTab,
-  onSelectTab,
+  activeTab = "dashboard",
+  onSelectTab = () => {},
   onRefreshAll,
   isRefreshing = false,
 }) => {

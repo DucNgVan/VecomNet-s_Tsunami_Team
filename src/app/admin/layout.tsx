@@ -1,5 +1,4 @@
 import React from "react";
-import { AdminNavbar } from "@/components/admin/AdminNavbar";
 
 export const metadata = {
   title: "NÉT WORKSHOP OS | Cổng Điều Hành Xưởng & Quản Lý Mẻ Lưới",
@@ -12,8 +11,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#071326] text-slate-100 flex flex-col">
-      <AdminNavbar />
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col">
       <div className="flex-1 w-full">{children}</div>
     </div>
   );

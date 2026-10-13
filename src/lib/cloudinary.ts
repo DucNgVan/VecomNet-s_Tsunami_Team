@@ -1,12 +1,13 @@
 import { v2 as cloudinary } from "cloudinary";
 
 // Cấu hình Cloudinary Server SDK
-const cloudName =
+const cloudName = (
   process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
   process.env.CLOUDINARY_CLOUD_NAME ||
-  "netsvecomnet";
-const apiKey = process.env.CLOUDINARY_API_KEY;
-const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  "yiowz9tn"
+).trim();
+const apiKey = process.env.CLOUDINARY_API_KEY ? process.env.CLOUDINARY_API_KEY.trim() : undefined;
+const apiSecret = process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.trim() : undefined;
 
 cloudinary.config({
   cloud_name: cloudName,

@@ -763,8 +763,29 @@ export async function getProductsFromFirestore(): Promise<any[]> {
         productMap.set(d.id, { id: d.id, ...data });
       });
     }
-  } catch (err) {
-    console.warn("Firestore getProducts error:", err);
+  } catch (err: any) {
+    if (err?.code === "permission-denied") {
+      console.info(
+        "[Firestore] Collection 'products' đang chờ cấu hình Security Rules mở quyền đọc. Hệ thống đang tự động sử dụng Server API & Cache an toàn."
+      );
+    } else {
+      console.warn("Firestore getProducts notice:", err?.message || err);
+    }
+  }
+
+  // B2. Tự động dự phòng qua Backend Server API nếu Firestore client bị giới hạn
+  if (typeof window !== "undefined") {
+    try {
+      const apiRes = await fetch("/api/products");
+      if (apiRes.ok) {
+        const json = await apiRes.json();
+        if (json.success && Array.isArray(json.data)) {
+          for (const ap of json.data) {
+            productMap.set(ap.id, { ...productMap.get(ap.id), ...ap });
+          }
+        }
+      }
+    } catch {}
   }
 
   // C. Đồng bộ với LocalStorage backup

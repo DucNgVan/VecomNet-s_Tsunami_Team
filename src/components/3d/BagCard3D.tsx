@@ -19,6 +19,9 @@ const cachedBagGltfMap = new Map<string, THREE.Group>();
 const bagLoadingUrls = new Set<string>();
 const bagLoadCallbacksMap = new Map<string, ((scene: THREE.Group) => void)[]>();
 
+// Global snapshot cache to eliminate duplicate WebGL contexts completely
+const bagSnapshotCache = new Map<string, string>();
+
 export const BagCard3D: React.FC<BagCard3DProps> = ({
   modelUrl = "/assets/models/tuixach.glb",
   color = "#0c2340",
@@ -28,10 +31,23 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
   autoRotateSpeed = 0.008,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(!cachedBagGltfMap.has(modelUrl));
+  const cacheKey = `${modelUrl}_${color}_${glowColor}`;
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
+    bagSnapshotCache.get(cacheKey) || null
+  );
+  const [hasWebGLError, setHasWebGLError] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(
+    !bagSnapshotCache.has(cacheKey) && !cachedBagGltfMap.has(modelUrl)
+  );
 
   useEffect(() => {
+    // Nếu chế độ tĩnh (isInteractive = false) và đã có ảnh snapshot -> không cần tạo WebGL context
+    if (!isInteractive && bagSnapshotCache.has(cacheKey)) {
+      setSnapshotUrl(bagSnapshotCache.get(cacheKey)!);
+      setIsLoading(false);
+      return;
+    }
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -44,18 +60,41 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 50);
     camera.position.set(0, 0.15, 6.2);
 
-    // 2. High-Performance WebGL Renderer
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
+    // 2. High-Performance WebGL Renderer với bảo vệ mất Context
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        preserveDrawingBuffer: true, // Cho phép chụp toDataURL mà không bị đen hình
+        powerPreference: "high-performance",
+      });
+    } catch (e) {
+      console.warn("[BagCard3D] Không thể khởi tạo WebGL, chuyển sang giao diện dự phòng:", e);
+      setHasWebGLError(true);
+      setIsLoading(false);
+      return;
+    }
+
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.6;
-    rendererRef.current = renderer;
-    container.appendChild(renderer.domElement);
+
+    const dom = renderer.domElement;
+    dom.style.width = "100%";
+    dom.style.height = "100%";
+    dom.style.display = "block";
+
+    // Chặn hành vi mặc định của trình duyệt để KHÔNG HIỂN THỊ ICON MẶT BUỒN :-(
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      console.warn("[BagCard3D] WebGL Context Lost được xử lý an toàn.");
+      setHasWebGLError(true);
+    };
+    dom.addEventListener("webglcontextlost", handleContextLost, false);
+
+    container.appendChild(dom);
 
     // 3. Studio Lighting Rig
     const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
@@ -78,12 +117,14 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     const rootGroup = new THREE.Group();
     scene.add(rootGroup);
 
+    let animId: number | null = null;
+
     // Helper: Mount and auto-fit cloned bag model
     const mountBagScene = (baseScene: THREE.Group) => {
+      if (!isSubscribed) return;
       rootGroup.clear();
 
       const instance = baseScene.clone(true);
-
       const box = new THREE.Box3().setFromObject(instance);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
@@ -120,6 +161,36 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
 
       rootGroup.add(bagWrapper);
       setIsLoading(false);
+
+      // Nếu không tương tác (isInteractive = false), chỉ render 1 frame lấy snapshot rồi HỦY WEBGL NGAY
+      // Giúp giải phóng 100% WebGL Context, không bao giờ bị lỗi "Too many active WebGL contexts"
+      if (!isInteractive) {
+        renderer.render(scene, camera);
+        try {
+          const shot = dom.toDataURL("image/webp", 0.92);
+          bagSnapshotCache.set(cacheKey, shot);
+          setSnapshotUrl(shot);
+        } catch {
+          // Bỏ qua nếu toDataURL bị chặn bởi cross-origin
+        }
+
+        // HỦY NGAY LẬP TỨC WebGL Context để nhường bộ nhớ cho các thẻ khác
+        setTimeout(() => {
+          if (!isSubscribed) return;
+          try {
+            dom.removeEventListener("webglcontextlost", handleContextLost);
+            if (dom.parentNode === container) {
+              container.removeChild(dom);
+            }
+            renderer.dispose();
+            renderer.forceContextLoss();
+          } catch {}
+        }, 50);
+        return;
+      }
+
+      // Nếu là chế độ tương tác (isInteractive = true), khởi động vòng lặp render mượt mà
+      startInteractiveLoop();
     };
 
     // 5. Load or Reuse Cached GLTF Model by modelUrl
@@ -146,26 +217,28 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
         },
         undefined,
         (err) => {
-          console.warn("Error loading Bag 3D card model:", err);
+          console.warn("Error loading Bag 3D model:", err);
           bagLoadingUrls.delete(modelUrl);
-          if (isSubscribed) setIsLoading(false);
+          if (isSubscribed) {
+            setHasWebGLError(true);
+            setIsLoading(false);
+          }
         }
       );
     }
 
-    // 6. Interactive Orbit & Drag Rotation
+    // 6. Interactive Orbit & Drag Rotation (Chỉ khi isInteractive = true)
     let isDragging = false;
     let prevX = 0;
     let targetRotY = 0;
 
     const onMouseDown = (e: MouseEvent) => {
-      if (!isInteractive) return;
       isDragging = true;
       prevX = e.clientX;
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isInteractive || !isDragging) return;
+      if (!isDragging) return;
       const deltaX = e.clientX - prevX;
       prevX = e.clientX;
       targetRotY += deltaX * 0.012;
@@ -176,46 +249,42 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     };
 
     const onTouchStart = (e: TouchEvent) => {
-      if (!isInteractive || e.touches.length === 0) return;
+      if (e.touches.length === 0) return;
       isDragging = true;
       prevX = e.touches[0].clientX;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!isInteractive || !isDragging || e.touches.length === 0) return;
+      if (!isDragging || e.touches.length === 0) return;
       const deltaX = e.touches[0].clientX - prevX;
       prevX = e.touches[0].clientX;
       targetRotY += deltaX * 0.015;
     };
 
-    const dom = renderer.domElement;
-    dom.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    function startInteractiveLoop() {
+      dom.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
 
-    dom.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("touchend", onMouseUp);
+      dom.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: true });
+      window.addEventListener("touchend", onMouseUp);
 
-    // 7. Animation Loop with smooth dampening
-    let animId: number;
-    const animate = () => {
-      animId = requestAnimationFrame(animate);
-
-      if (rootGroup) {
-        if (!isDragging) {
-          targetRotY += autoRotateSpeed;
+      const animate = () => {
+        animId = requestAnimationFrame(animate);
+        if (rootGroup) {
+          if (!isDragging) {
+            targetRotY += autoRotateSpeed;
+          }
+          rootGroup.rotation.y += (targetRotY - rootGroup.rotation.y) * 0.08;
         }
-        rootGroup.rotation.y += (targetRotY - rootGroup.rotation.y) * 0.08;
-      }
-
-      renderer.render(scene, camera);
-    };
-
-    animate();
+        renderer.render(scene, camera);
+      };
+      animate();
+    }
 
     const handleResize = () => {
-      if (!container) return;
+      if (!container || !renderer) return;
       const w = container.clientWidth || 280;
       const h = container.clientHeight || 240;
       camera.aspect = w / h;
@@ -232,35 +301,83 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       dom.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onMouseUp);
+      dom.removeEventListener("webglcontextlost", handleContextLost);
       window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(animId);
+      if (animId) cancelAnimationFrame(animId);
 
-      if (renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
-      renderer.dispose();
+      try {
+        if (dom.parentNode === container) {
+          container.removeChild(dom);
+        }
+        renderer.dispose();
+        renderer.forceContextLoss();
+      } catch {}
     };
-  }, [modelUrl, color, glowColor, isInteractive, autoRotateSpeed]);
+  }, [modelUrl, color, glowColor, isInteractive, autoRotateSpeed, cacheKey]);
 
   return (
     <div className={`relative w-full h-full min-h-[190px] select-none ${className}`}>
-      <div
-        ref={containerRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center"
-      />
+      {/* 1. Nếu có ảnh Snapshot (chế độ không tương tác) -> hiển thị ảnh tĩnh mượt mà, 0 tốn WebGL */}
+      {!isInteractive && snapshotUrl ? (
+        <img
+          src={snapshotUrl}
+          alt="3D Bag Model"
+          className="w-full h-full object-contain pointer-events-none drop-shadow-md animate-fadeIn"
+        />
+      ) : hasWebGLError ? (
+        /* 2. Giao diện Vector bảo vệ khi WebGL bị mất context -> Tuyệt đối không hiển thị mặt buồn */
+        <div className="w-full h-full flex flex-col items-center justify-center p-4">
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            <div
+              className="absolute inset-0 rounded-2xl opacity-20 blur-xl animate-pulse"
+              style={{ backgroundColor: color }}
+            />
+            <svg viewBox="0 0 100 100" className="w-20 h-20 drop-shadow-md">
+              <path
+                d="M32 38 C32 18, 68 18, 68 38"
+                fill="none"
+                stroke={color}
+                strokeWidth="4"
+                strokeLinecap="round"
+              />
+              <path
+                d="M20 38 L25 88 C25 91, 75 91, 75 88 L80 38 Z"
+                fill={color}
+                opacity="0.85"
+              />
+              <path
+                d="M28 48 L72 48 M26 58 L74 58 M25 68 L75 68 M25 78 L75 78"
+                stroke="rgba(255,255,255,0.3)"
+                strokeWidth="1.5"
+                strokeDasharray="2,2"
+              />
+            </svg>
+          </div>
+          <span className="text-[10px] font-bold text-slate-500 mt-2">Mẫu Túi NÉT Tái Sinh</span>
+        </div>
+      ) : (
+        /* 3. Vùng chứa Canvas WebGL */
+        <div
+          ref={containerRef}
+          className="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center"
+        />
+      )}
 
       {/* Loading Spinner */}
-      {isLoading && (
+      {isLoading && !snapshotUrl && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-50/60 backdrop-blur-xs pointer-events-none">
           <Loader2 className="w-5 h-5 text-sky-600 animate-spin" />
         </div>
       )}
 
       {/* Interactive 3D Badge */}
-      {isInteractive && !isLoading && (
+      {isInteractive && !isLoading && !hasWebGLError && (
         <div className="absolute top-2 left-2 pointer-events-none z-10">
           <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
-            <RotateCw className="w-2.5 h-2.5 text-sky-600 animate-spin" style={{ animationDuration: "6s" }} />
+            <RotateCw
+              className="w-2.5 h-2.5 text-sky-600 animate-spin"
+              style={{ animationDuration: "6s" }}
+            />
             <span>3D Xoay 360°</span>
           </span>
         </div>

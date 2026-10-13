@@ -19,6 +19,9 @@ let cachedCharmGltfScene: THREE.Group | null = null;
 let isCharmLoading = false;
 const charmLoadCallbacks: ((scene: THREE.Group) => void)[] = [];
 
+// Snapshot cache for charm cards to eliminate excessive WebGL contexts
+const charmSnapshotCache = new Map<string, string>();
+
 export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
   modelUrl = "/assets/models/caurongcharm.glb",
   color = "#38bdf8",
@@ -28,10 +31,23 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
   autoRotateSpeed = 0.012,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(!cachedCharmGltfScene);
+  const cacheKey = `${modelUrl}_${color}_${glowColor}`;
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
+    charmSnapshotCache.get(cacheKey) || null
+  );
+  const [hasWebGLError, setHasWebGLError] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(
+    !charmSnapshotCache.has(cacheKey) && !cachedCharmGltfScene
+  );
 
   useEffect(() => {
+    // Nếu chế độ tĩnh (isInteractive = false) và đã có snapshot -> không tạo WebGL context
+    if (!isInteractive && charmSnapshotCache.has(cacheKey)) {
+      setSnapshotUrl(charmSnapshotCache.get(cacheKey)!);
+      setIsLoading(false);
+      return;
+    }
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -44,18 +60,41 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 50);
     camera.position.set(0, 0.2, 3.2);
 
-    // 2. High-Performance WebGL Renderer
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
+    // 2. High-Performance WebGL Renderer với bảo vệ mất Context
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        preserveDrawingBuffer: true,
+        powerPreference: "high-performance",
+      });
+    } catch (e) {
+      console.warn("[CharmCanvas3D] WebGL không khả dụng, dùng giao diện dự phòng:", e);
+      setHasWebGLError(true);
+      setIsLoading(false);
+      return;
+    }
+
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.6;
-    rendererRef.current = renderer;
-    container.appendChild(renderer.domElement);
+
+    const dom = renderer.domElement;
+    dom.style.width = "100%";
+    dom.style.height = "100%";
+    dom.style.display = "block";
+
+    // Chặn hành vi mặc định của trình duyệt để không hiện mặt buồn :-(
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      console.warn("[CharmCanvas3D] WebGL context loss được chặn an toàn.");
+      setHasWebGLError(true);
+    };
+    dom.addEventListener("webglcontextlost", handleContextLost, false);
+
+    container.appendChild(dom);
 
     // 3. Studio Ocean Jewel Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 2.4);
@@ -69,20 +108,22 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
     rimLight.position.set(-3, 2, -2);
     scene.add(rimLight);
 
-    const underGlow = new THREE.PointLight(new THREE.Color(color), 3.0, 8);
-    underGlow.position.set(0, -2, 1.5);
-    scene.add(underGlow);
+    const pointLight = new THREE.PointLight(new THREE.Color(glowColor), 2.5, 6);
+    pointLight.position.set(0, -1, 1);
+    scene.add(pointLight);
 
-    // 4. Root Charm Object
+    // 4. Root Charm Group
     const rootGroup = new THREE.Group();
     scene.add(rootGroup);
 
-    // Helper: Mount and setup cloned charm
+    let animId: number | null = null;
+
+    // Helper: Mount and auto-fit cloned charm model
     const mountCharmScene = (baseScene: THREE.Group) => {
+      if (!isSubscribed) return;
       rootGroup.clear();
 
       const instance = baseScene.clone(true);
-
       const box = new THREE.Box3().setFromObject(instance);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
@@ -94,51 +135,54 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
       const charmWrapper = new THREE.Group();
       charmWrapper.add(instance);
 
-      // Rotate 90 degrees if length is along Z
-      if (size.z > size.x) {
-        charmWrapper.rotation.y = Math.PI / 2;
-      }
-
-      // Scale to fit viewport comfortably
       const maxDim = Math.max(size.x, size.y, size.z);
       const targetDim = 1.9;
       const scale = maxDim > 0 ? targetDim / maxDim : 1;
       charmWrapper.scale.setScalar(scale);
 
-      // Apply subtle jewel color accent to cloned materials
-      charmWrapper.traverse((child) => {
+      instance.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh;
-          if (mesh.material) {
-            const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
-            mat.roughness = Math.max(0.2, mat.roughness ?? 0.35);
-            mat.metalness = Math.min(0.9, (mat.metalness ?? 0.5) + 0.1);
-            mat.emissive = new THREE.Color(color);
-            mat.emissiveIntensity = 0.25;
-            mesh.material = mat;
+          const m = child as THREE.Mesh;
+          if (m.material) {
+            const mat = m.material as THREE.MeshStandardMaterial;
+            mat.roughness = 0.2;
+            mat.metalness = 0.85;
+            mat.envMapIntensity = 1.8;
           }
         }
       });
 
       rootGroup.add(charmWrapper);
+      setIsLoading(false);
 
-      // Add delicate metallic top ring
-      const ringGeo = new THREE.TorusGeometry(0.18, 0.035, 12, 24);
-      const ringMat = new THREE.MeshStandardMaterial({
-        color: 0xf1f5f9,
-        metalness: 0.95,
-        roughness: 0.1,
-      });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.position.set(0, 0.95, 0);
-      rootGroup.add(ring);
+      // Nếu không tương tác -> render 1 frame lấy snapshot và HỦY CONTEXT NGAY
+      if (!isInteractive) {
+        renderer.render(scene, camera);
+        try {
+          const shot = dom.toDataURL("image/webp", 0.92);
+          charmSnapshotCache.set(cacheKey, shot);
+          setSnapshotUrl(shot);
+        } catch {}
 
-      if (isSubscribed) {
-        setIsLoading(false);
+        setTimeout(() => {
+          if (!isSubscribed) return;
+          try {
+            dom.removeEventListener("webglcontextlost", handleContextLost);
+            if (dom.parentNode === container) {
+              container.removeChild(dom);
+            }
+            renderer.dispose();
+            renderer.forceContextLoss();
+          } catch {}
+        }, 50);
+        return;
       }
+
+      // Bắt đầu vòng lặp tương tác nếu isInteractive = true
+      startInteractiveLoop();
     };
 
-    // 5. Load or reuse cached GLTF
+    // 5. Load or Reuse Cached GLTF Scene
     if (cachedCharmGltfScene) {
       mountCharmScene(cachedCharmGltfScene);
     } else if (isCharmLoading) {
@@ -153,37 +197,37 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
         (gltf) => {
           cachedCharmGltfScene = gltf.scene;
           isCharmLoading = false;
-          mountCharmScene(gltf.scene);
+          if (isSubscribed) mountCharmScene(gltf.scene);
           charmLoadCallbacks.forEach((cb) => cb(gltf.scene));
           charmLoadCallbacks.length = 0;
         },
         undefined,
         (err) => {
-          console.warn("Failed to load charm model:", err);
+          console.warn("Error loading charm model:", err);
           isCharmLoading = false;
-          if (isSubscribed) setIsLoading(false);
+          if (isSubscribed) {
+            setHasWebGLError(true);
+            setIsLoading(false);
+          }
         }
       );
     }
 
-    // 6. Interactive Dragging (Mouse & Touch)
+    // 6. Interactive Orbit & Drag Rotation (Chỉ khi isInteractive = true)
     let isDragging = false;
     let prevMouse = { x: 0, y: 0 };
 
     const onMouseDown = (e: MouseEvent) => {
-      if (!isInteractive) return;
       isDragging = true;
       prevMouse = { x: e.clientX, y: e.clientY };
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !isInteractive) return;
+      if (!isDragging) return;
       const dx = e.clientX - prevMouse.x;
       const dy = e.clientY - prevMouse.y;
-
       rootGroup.rotation.y += dx * 0.012;
       rootGroup.rotation.x = Math.max(-0.6, Math.min(0.6, rootGroup.rotation.x + dy * 0.01));
-
       prevMouse = { x: e.clientX, y: e.clientY };
     };
 
@@ -192,48 +236,41 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
     };
 
     const onTouchStart = (e: TouchEvent) => {
-      if (!isInteractive || e.touches.length === 0) return;
+      if (e.touches.length === 0) return;
       isDragging = true;
       prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!isDragging || !isInteractive || e.touches.length === 0) return;
+      if (!isDragging || e.touches.length === 0) return;
       const dx = e.touches[0].clientX - prevMouse.x;
       const dy = e.touches[0].clientY - prevMouse.y;
-
       rootGroup.rotation.y += dx * 0.012;
       rootGroup.rotation.x = Math.max(-0.6, Math.min(0.6, rootGroup.rotation.x + dy * 0.01));
-
       prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
 
-    const dom = renderer.domElement;
-    dom.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    function startInteractiveLoop() {
+      dom.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
 
-    dom.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("touchend", onMouseUp);
+      dom.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: true });
+      window.addEventListener("touchend", onMouseUp);
 
-    // 7. Render Loop
-    let animId: number;
-    const clock = new THREE.Clock();
-
-    const renderLoop = () => {
-      animId = requestAnimationFrame(renderLoop);
-      const t = clock.getElapsedTime();
-
-      // Gentle auto-rotation and floating when not dragging
-      if (!isDragging) {
-        rootGroup.rotation.y += autoRotateSpeed;
-        rootGroup.position.y = Math.sin(t * 1.8) * 0.05;
-      }
-
-      renderer.render(scene, camera);
-    };
-    renderLoop();
+      const clock = new THREE.Clock();
+      const renderLoop = () => {
+        animId = requestAnimationFrame(renderLoop);
+        const t = clock.getElapsedTime();
+        if (!isDragging && rootGroup) {
+          rootGroup.rotation.y += autoRotateSpeed;
+          rootGroup.position.y = Math.sin(t * 1.8) * 0.05;
+        }
+        renderer.render(scene, camera);
+      };
+      renderLoop();
+    }
 
     return () => {
       isSubscribed = false;
@@ -243,31 +280,65 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
       dom.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onMouseUp);
-      cancelAnimationFrame(animId);
+      dom.removeEventListener("webglcontextlost", handleContextLost);
+      if (animId) cancelAnimationFrame(animId);
 
-      if (renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
-      renderer.dispose();
+      try {
+        if (dom.parentNode === container) {
+          container.removeChild(dom);
+        }
+        renderer.dispose();
+        renderer.forceContextLoss();
+      } catch {}
     };
-  }, [modelUrl, color, isInteractive, autoRotateSpeed]);
+  }, [modelUrl, color, glowColor, isInteractive, autoRotateSpeed, cacheKey]);
 
   return (
-    <div className={`relative w-full h-full flex items-center justify-center select-none overflow-hidden ${className}`}>
-      <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+    <div className={`relative w-full h-full min-h-[160px] select-none ${className}`}>
+      {/* 1. Nếu có ảnh Snapshot (chế độ không tương tác) -> hiển thị ảnh tĩnh mượt mà, 0 tốn WebGL */}
+      {!isInteractive && snapshotUrl ? (
+        <img
+          src={snapshotUrl}
+          alt="3D Charm"
+          className="w-full h-full object-contain pointer-events-none drop-shadow-md animate-fadeIn"
+        />
+      ) : hasWebGLError ? (
+        /* 2. Giao diện Vector bảo vệ khi WebGL lỗi */
+        <div className="w-full h-full flex flex-col items-center justify-center p-3">
+          <div className="relative w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-tr from-slate-900 to-slate-800 border border-slate-700/60 shadow-lg">
+            <div
+              className="absolute inset-0 rounded-full opacity-30 blur-md"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-2xl relative z-10">✨</span>
+          </div>
+          <span className="text-[9px] font-bold text-slate-500 mt-1">Charm NÉT</span>
+        </div>
+      ) : (
+        /* 3. Vùng chứa Canvas WebGL */
+        <div
+          ref={containerRef}
+          className="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center"
+        />
+      )}
 
-      {/* Loading State */}
-      {isLoading && (
+      {/* Loading Spinner */}
+      {isLoading && !snapshotUrl && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-50/60 backdrop-blur-xs pointer-events-none">
-          <Loader2 className="w-5 h-5 text-sky-600 animate-spin" />
+          <Loader2 className="w-4 h-4 text-sky-600 animate-spin" />
         </div>
       )}
 
-      {/* Discreet 3D Indicator */}
-      {isInteractive && !isLoading && (
-        <div className="absolute bottom-2 right-2 pointer-events-none px-2 py-0.5 rounded-full bg-slate-900/60 backdrop-blur-md text-[10px] text-white/90 flex items-center gap-1">
-          <RotateCw className="w-2.5 h-2.5 text-sky-400" />
-          <span>3D 360°</span>
+      {/* Interactive 3D Badge */}
+      {isInteractive && !isLoading && !hasWebGLError && (
+        <div className="absolute top-2 left-2 pointer-events-none z-10">
+          <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
+            <RotateCw
+              className="w-2.5 h-2.5 text-sky-600 animate-spin"
+              style={{ animationDuration: "6s" }}
+            />
+            <span>3D Xoay</span>
+          </span>
         </div>
       )}
     </div>

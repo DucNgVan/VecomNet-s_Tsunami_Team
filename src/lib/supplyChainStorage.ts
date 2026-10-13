@@ -5,173 +5,9 @@ const NET_PACKS_KEY = "net_packs_v1";
 const MANUFACTURED_ITEMS_KEY = "net_manufactured_items_v1";
 const ORDERS_STORAGE_KEY = "net_orders_v1";
 
-// Initial seed data for Net Packs
-const INITIAL_NET_PACKS: NetPack[] = [
-  {
-    packId: "PACK-DN-2024-082",
-    seaRegion: "Rạn San Hô Bán Đảo Sơn Trà, Đà Nẵng",
-    locationDetails: "Tọa độ rạn Bãi Bụt, độ sâu đáy 24m",
-    coordinates: { lat: 16.1124, lng: 108.2619 },
-    recoveryDate: "2026-09-18",
-    totalWeightKg: 65,
-    remainingWeightKg: 33,
-    depthMeters: 24,
-    diverTeam: "Danang SAS Volunteer Divers",
-    netPolymer: "Nylon-6 (Polyamide)",
-    status: "in_production",
-    notes: "Lưới rê đánh bắt mực vô chủ chùm lên rạn san hô sừng hươu",
-    createdAt: "2026-09-18T10:30:00Z",
-  },
-  {
-    packId: "PACK-NO-2024-045",
-    seaRegion: "Vùng Biển Nam Ô, Liên Chiểu, Đà Nẵng",
-    locationDetails: "Mỏm đá Rạn Nam Ô, độ sâu 16m",
-    coordinates: { lat: 16.1422, lng: 108.1255 },
-    recoveryDate: "2026-09-28",
-    totalWeightKg: 48,
-    remainingWeightKg: 22,
-    depthMeters: 16,
-    diverTeam: "Hợp Tác Xã Ngư Dân Nam Ô",
-    netPolymer: "Polyethylene & PA66",
-    status: "in_production",
-    notes: "Lưới cào đáy vướng rạn đá cổ, đã rửa sạch muối cơ học",
-    createdAt: "2026-09-28T08:15:00Z",
-  },
-  {
-    packId: "PACK-CLC-2024-019",
-    seaRegion: "Khu Bảo Tồn Biển Cù Lao Chàm, Quảng Nam",
-    locationDetails: "Khu vực Bãi Chồng - Hòn Lao, độ sâu 28m",
-    coordinates: { lat: 15.9521, lng: 108.5142 },
-    recoveryDate: "2026-10-02",
-    totalWeightKg: 80,
-    remainingWeightKg: 64,
-    depthMeters: 28,
-    diverTeam: "Đội Tuần Tra Bảo Tồn Biển Cù Lao Chàm",
-    netPolymer: "Nylon-6 Marine High-Grade",
-    status: "in_production",
-    notes: "Lưới vây lớn giải cứu 8 cá thể đồi mồi và cá ngựa",
-    createdAt: "2026-10-02T14:00:00Z",
-  },
-  {
-    packId: "PACK-CD-2024-007",
-    seaRegion: "Vườn Quốc Gia Côn Đảo, Bà Rịa - Vũng Tàu",
-    locationDetails: "Hòn Bảy Cạnh, bãi đẻ rùa biển, độ sâu 12m",
-    coordinates: { lat: 8.6833, lng: 106.6 },
-    recoveryDate: "2026-10-05",
-    totalWeightKg: 55,
-    remainingWeightKg: 55,
-    depthMeters: 12,
-    diverTeam: "Kiểm Lâm VQG Côn Đảo & WWF",
-    netPolymer: "Nylon Monofilament",
-    status: "new",
-    notes: "Lưới bén sợi trong suốt, đã khử trùng sinh thái",
-    createdAt: "2026-10-05T09:00:00Z",
-  },
-];
-
-// Initial seed data for Manufactured Items (with unique Serials and timestamps)
-const INITIAL_MANUFACTURED_ITEMS: ManufacturedBagItem[] = [
-  {
-    serialId: "NET-ST-082-001",
-    sourcePackId: "PACK-DN-2024-082",
-    bagBaseId: "net-tote-01",
-    bagName: "NÉT Tote Signature",
-    colorId: "abyss-blue",
-    colorName: "Xanh Thẳm Đại Dương",
-    manufacturedAt: "2026-10-06 09:15",
-    workshopName: "Làng nghề đan lưới Nam Ô",
-    seaRegion: "Rạn San Hô Bán Đảo Sơn Trà, Đà Nẵng",
-    coordinates: { lat: 16.1124, lng: 108.2619 },
-    plasticConsumedKg: 1.6,
-    status: "in_stock",
-    qrUrl: "/passport/PACK-DN-2024-082?itemId=NET-ST-082-001",
-    barcode: "893882082001",
-    nfcTagUid: "04:82:01:B2:C1",
-    isClaimed: false,
-    warrantyStatus: "unactivated",
-    warrantyMonths: 24,
-  },
-  {
-    serialId: "NET-ST-082-002",
-    sourcePackId: "PACK-DN-2024-082",
-    bagBaseId: "net-tote-01",
-    bagName: "NÉT Tote Signature",
-    colorId: "kelp-emerald",
-    colorName: "Lục Tảo Biển Sâu",
-    manufacturedAt: "2026-10-06 10:30",
-    workshopName: "Làng nghề đan lưới Nam Ô",
-    seaRegion: "Rạn San Hô Bán Đảo Sơn Trà, Đà Nẵng",
-    coordinates: { lat: 16.1124, lng: 108.2619 },
-    plasticConsumedKg: 1.6,
-    status: "in_stock",
-    qrUrl: "/passport/PACK-DN-2024-082?itemId=NET-ST-082-002",
-    barcode: "893882082002",
-    nfcTagUid: "04:82:02:B2:C1",
-    isClaimed: false,
-    warrantyStatus: "unactivated",
-    warrantyMonths: 24,
-  },
-  {
-    serialId: "NET-ST-082-003",
-    sourcePackId: "PACK-DN-2024-082",
-    bagBaseId: "net-crossbody-02",
-    bagName: "NÉT Crossbody Mini",
-    colorId: "coral-sand",
-    colorName: "Cát San Hô Ánh Dương",
-    manufacturedAt: "2026-10-07 14:00",
-    workshopName: "Xưởng NÉT Sơn Trà Studio",
-    seaRegion: "Rạn San Hô Bán Đảo Sơn Trà, Đà Nẵng",
-    coordinates: { lat: 16.1124, lng: 108.2619 },
-    plasticConsumedKg: 0.9,
-    status: "in_stock",
-    qrUrl: "/passport/PACK-DN-2024-082?itemId=NET-ST-082-003",
-    barcode: "893882082003",
-    nfcTagUid: "04:82:03:B2:C1",
-    isClaimed: false,
-    warrantyStatus: "unactivated",
-    warrantyMonths: 24,
-  },
-  {
-    serialId: "NET-NO-045-001",
-    sourcePackId: "PACK-NO-2024-045",
-    bagBaseId: "net-bucket-03",
-    bagName: "NÉT Ocean Bucket",
-    colorId: "abyss-blue",
-    colorName: "Xanh Thẳm Đại Dương",
-    manufacturedAt: "2026-10-08 11:20",
-    workshopName: "Làng nghề đan lưới Nam Ô",
-    seaRegion: "Vùng Biển Nam Ô, Liên Chiểu, Đà Nẵng",
-    coordinates: { lat: 16.1422, lng: 108.1255 },
-    plasticConsumedKg: 1.3,
-    status: "in_stock",
-    qrUrl: "/passport/PACK-NO-2024-045?itemId=NET-NO-045-001",
-    barcode: "893882045001",
-    nfcTagUid: "04:45:01:B2:C1",
-    isClaimed: false,
-    warrantyStatus: "unactivated",
-    warrantyMonths: 24,
-  },
-  {
-    serialId: "NET-NO-045-002",
-    sourcePackId: "PACK-NO-2024-045",
-    bagBaseId: "net-clutch-04",
-    bagName: "NÉT Evening Clutch",
-    colorId: "ghost-pearl",
-    colorName: "Bạc Lưới Ma Tinh Khiết",
-    manufacturedAt: "2026-10-08 16:45",
-    workshopName: "Xưởng NÉT Sơn Trà Studio",
-    seaRegion: "Vùng Biển Nam Ô, Liên Chiểu, Đà Nẵng",
-    coordinates: { lat: 16.1422, lng: 108.1255 },
-    plasticConsumedKg: 0.7,
-    status: "in_stock",
-    qrUrl: "/passport/PACK-NO-2024-045?itemId=NET-NO-045-002",
-    barcode: "893882045002",
-    nfcTagUid: "04:45:02:B2:C1",
-    isClaimed: false,
-    warrantyStatus: "unactivated",
-    warrantyMonths: 24,
-  },
-];
+// Initial seed data: Để trống hoàn toàn để hệ thống dùng 100% dữ liệu thực từ Cloud Firestore & Admin
+const INITIAL_NET_PACKS: NetPack[] = [];
+const INITIAL_MANUFACTURED_ITEMS: ManufacturedBagItem[] = [];
 
 // Initial orders list: Empty by default so only real orders from DB & customers appear
 const INITIAL_ORDERS: Order[] = [];
@@ -795,4 +631,17 @@ export function exportInventoryToCSV(): void {
   link.click();
   document.body.removeChild(link);
 }
+
+/**
+ * Reset sạch toàn bộ kho và kiện lưới trong LocalStorage về mảng rỗng
+ */
+export function clearLocalSupplyChainData(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(NET_PACKS_KEY);
+    localStorage.removeItem(MANUFACTURED_ITEMS_KEY);
+    localStorage.setItem(NET_PACKS_KEY, JSON.stringify([]));
+    localStorage.setItem(MANUFACTURED_ITEMS_KEY, JSON.stringify([]));
+  }
+}
+
 

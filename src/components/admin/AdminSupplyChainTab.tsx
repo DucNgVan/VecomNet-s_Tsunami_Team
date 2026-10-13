@@ -22,6 +22,7 @@ import {
   ArrowRight,
   ChevronRight,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -39,6 +40,8 @@ interface AdminSupplyChainTabProps {
   onSyncFirestore: () => Promise<void>;
   isSyncing: boolean;
   syncFeedback: { success: boolean; message: string } | null;
+  onResetSupplyChain?: () => Promise<void>;
+  onResetClaimedBags?: () => Promise<void>;
 }
 
 export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
@@ -49,6 +52,8 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
   onSyncFirestore,
   isSyncing,
   syncFeedback,
+  onResetSupplyChain,
+  onResetClaimedBags,
 }) => {
   // Active Sub-Step: 1 (Inbound Net) | 2 (Production) | 3 (Serialized Inventory)
   const [subStep, setSubStep] = useState<"inbound" | "production" | "inventory">("inbound");
@@ -151,7 +156,47 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {onResetClaimedBags && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (
+                  confirm(
+                    "⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ TÚI ĐÃ ĐỊNH DANH CỦA KHÁCH HÀNG?\n\nToàn bộ dữ liệu hộ chiếu số (Digital Passport) đã kích hoạt trên Cloud Firestore và máy khách sẽ bị xóa hoàn toàn."
+                  )
+                ) {
+                  await onResetClaimedBags();
+                }
+              }}
+              className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Xóa toàn bộ túi đã định danh của khách hàng"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-amber-600" />
+              <span>Xoá Túi Đã Định Danh</span>
+            </button>
+          )}
+
+          {onResetSupplyChain && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (
+                  confirm(
+                    "⚠️ BẠN CÓ CHẮC CHẮN MUỐN RESET KHO & LƯỚI THU GOM?\n\nToàn bộ kiện lưới (batches) và túi kho (bag_items) sẽ được làm sạch trên Cloud Firestore và bộ nhớ để dùng 100% dữ liệu thực từ đầu."
+                  )
+                ) {
+                  await onResetSupplyChain();
+                }
+              }}
+              className="px-3.5 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Reset sạch kho & lưới mẫu để dùng database thực"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              <span>Reset Kho & Lưới Mẫu</span>
+            </button>
+          )}
+
           <button
             onClick={onSyncFirestore}
             disabled={isSyncing}

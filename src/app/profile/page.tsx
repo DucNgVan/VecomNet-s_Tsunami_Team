@@ -143,10 +143,10 @@ export default function CustomerProfilePage() {
   const totalCoralProtected = customerBags.reduce((sum, b) => sum + (b.coralProtectedSqM || 0), 0);
   const totalCo2Avoided = customerBags.reduce((sum, b) => sum + (b.co2AvoidedKg || 0), 0);
 
-  // Baseline display values if first-time user
-  const displayPlastic = totalPlasticSaved > 0 ? totalPlasticSaved : (userProfile?.ecoImpactKg || 2.14);
-  const displayCoral = totalCoralProtected > 0 ? totalCoralProtected : 3.2;
-  const displayCo2 = totalCo2Avoided > 0 ? totalCo2Avoided : 4.07;
+  // Baseline display values based on real user bags & profile
+  const displayPlastic = totalPlasticSaved > 0 ? totalPlasticSaved : (userProfile?.ecoImpactKg || 0);
+  const displayCoral = totalCoralProtected > 0 ? totalCoralProtected : Number((displayPlastic * 1.5).toFixed(1));
+  const displayCo2 = totalCo2Avoided > 0 ? totalCo2Avoided : Number((displayPlastic * 1.9).toFixed(1));
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();

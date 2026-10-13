@@ -98,14 +98,14 @@ export async function getBatchesFromFirestore(): Promise<TraceBatch[]> {
     const colRef = collection(db, "batches");
     const snapshot = await getDocs(colRef);
     if (snapshot.empty) {
-      return TRACE_BATCHES;
+      return [];
     }
     const list: TraceBatch[] = [];
     snapshot.forEach((d) => list.push(d.data() as TraceBatch));
     return list;
   } catch (error) {
-    console.warn("Firestore getBatches error (using fallback):", error);
-    return TRACE_BATCHES;
+    console.warn("Firestore getBatches error:", error);
+    return [];
   }
 }
 
@@ -188,47 +188,8 @@ export async function getCustomerBagsFromFirestore(ownerUid?: string): Promise<D
     }
   } catch (e) {}
 
-  // 3. Demo Mock Bags for the Customer Dashboard so it's instantly impressive
-  return [
-    {
-      itemId: "NET-DN-082-001",
-      parentBatchId: "NET-VN-DN-2024-082",
-      itemIndex: 1,
-      bagName: "NÉT Tote Signature (Độc Bản)",
-      colorName: "Xanh Thẳm Đại Dương",
-      ownerUid: ownerUid || "mock-user-1",
-      ownerName: "Lê Minh Thảo",
-      ownerPhone: "0905 882 119",
-      selectedCharms: [
-        {
-          charmId: "charm-caurong",
-          vietnameseName: "Charm Cầu Rồng Đà Nẵng",
-          material: "Đồng thau hàng hải tái sinh mạ vàng",
-          symbol: "🐉",
-          anchorId: "a2",
-        },
-        {
-          charmId: "charm-bioluminescent-drop",
-          vietnameseName: "Charm Giọt Lân Tinh",
-          material: "Pha lê rác biển ép nguội phát quang",
-          symbol: "💧",
-          anchorId: "a5",
-        },
-      ],
-      quizIntention: {
-        vibe: "Năng Lượng Huyền Thoại",
-        memory: "Rồng Vàng Phun Lửa Sông Hàn",
-        intention: "Bản Lĩnh Vươn Khơi",
-      },
-      poeticDedication:
-        "Được tôi luyện từ ánh lửa kiêu hùng của Rồng thiêng Đà Nẵng và sợi lưới đại dương Sơn Trà kiên cường.",
-      plasticOffsetKg: 2.14,
-      coralProtectedSqM: 3.2,
-      co2AvoidedKg: 4.07,
-      qrUrl: "/passport/NET-DN-082-001",
-      createdAt: new Date().toLocaleDateString("vi-VN"),
-    },
-  ];
+  // 3. Không có túi nào -> trả về mảng rỗng để phản ánh trung thực database
+  return [];
 }
 
 // -------------------------------------------------------------
@@ -874,3 +835,116 @@ export async function deleteProductFromFirestore(productId: string): Promise<boo
 
   return true;
 }
+
+// -------------------------------------------------------------
+// 8. DATABASE PURGE / RESET UTILITIES (Reset Kho, Lưới, Sản Phẩm & Túi Khách Hàng)
+// -------------------------------------------------------------
+
+/**
+ * Xóa toàn bộ túi đã định danh của khách hàng (collection "bag_items" & local storage)
+ */
+export async function clearAllClaimedBagsFromFirestore(): Promise<boolean> {
+  // 1. Client-side Firestore delete
+  try {
+    const snap = await getDocs(collection(db, "bag_items"));
+    for (const d of snap.docs) {
+      await deleteDoc(d.ref);
+    }
+  } catch (e) {
+    console.warn("Client clearAllClaimedBags notice:", e);
+  }
+
+  // 2. Server-side API delete (Admin SDK)
+  try {
+    await fetch("/api/admin/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: "bag_items" }),
+    });
+  } catch (e) {}
+
+  // 3. Clear local client cache
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("net_bag_items_v1");
+    localStorage.removeItem("net_passport_stories_v1");
+    localStorage.setItem("net_manufactured_items_v1", JSON.stringify([]));
+  }
+  return true;
+}
+
+/**
+ * Xóa toàn bộ mẻ lưới & kiện lưới kho (collection "batches" & local storage)
+ */
+export async function clearAllBatchesFromFirestore(): Promise<boolean> {
+  // 1. Client-side Firestore delete
+  try {
+    const snap = await getDocs(collection(db, "batches"));
+    for (const d of snap.docs) {
+      await deleteDoc(d.ref);
+    }
+  } catch (e) {
+    console.warn("Client clearAllBatches notice:", e);
+  }
+
+  // 2. Server-side API delete (Admin SDK)
+  try {
+    await fetch("/api/admin/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: "batches" }),
+    });
+  } catch (e) {}
+
+  // 3. Clear local client cache
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("net_packs_v1");
+    localStorage.removeItem("net_source_batches_v1");
+    localStorage.removeItem("net_source_packs_v1");
+    localStorage.setItem("net_packs_v1", JSON.stringify([]));
+  }
+  return true;
+}
+
+/**
+ * Xóa toàn bộ sản phẩm trong danh mục (collection "products" & local storage) để ID bắt đầu lại từ 1
+ */
+export async function clearAllProductsFromFirestore(): Promise<boolean> {
+  // 1. Client-side Firestore delete
+  try {
+    const snap = await getDocs(collection(db, "products"));
+    for (const d of snap.docs) {
+      await deleteDoc(d.ref);
+    }
+  } catch (e) {
+    console.warn("Client clearAllProducts notice:", e);
+  }
+
+  // 2. Server-side API delete (Admin SDK)
+  try {
+    await fetch("/api/admin/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: "products" }),
+    });
+  } catch (e) {}
+
+  // 3. Clear local client cache
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("net_custom_products_v1");
+    localStorage.setItem("net_custom_products_v1", JSON.stringify([]));
+  }
+  return true;
+}
+
+/**
+ * Reset toàn bộ hệ thống về trạng thái database thực sạch sẽ
+ */
+export async function resetEntireSystemDatabase(): Promise<boolean> {
+  await Promise.all([
+    clearAllClaimedBagsFromFirestore(),
+    clearAllBatchesFromFirestore(),
+    clearAllProductsFromFirestore(),
+  ]);
+  return true;
+}
+

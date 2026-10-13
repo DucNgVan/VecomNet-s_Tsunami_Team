@@ -35,6 +35,7 @@ interface AdminCatalogTabProps {
   onDeleteProduct: (productId: string) => Promise<boolean>;
   onSaveArticle: (article: Article) => Promise<boolean>;
   onDeleteArticle: (articleId: string) => Promise<boolean>;
+  onClearAllProducts?: () => Promise<boolean>;
 }
 
 export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
@@ -44,9 +45,28 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
   onDeleteProduct,
   onSaveArticle,
   onDeleteArticle,
+  onClearAllProducts,
 }) => {
   // Sub-section: 'products' | 'articles'
   const [section, setSection] = useState<"products" | "articles">("products");
+
+  // Hàm tính ID sản phẩm tự động tăng tuần tự bắt đầu từ 1
+  const getNextProductId = (existingProducts: any[]): string => {
+    if (!existingProducts || existingProducts.length === 0) return "1";
+    let maxId = 0;
+    for (const p of existingProducts) {
+      if (!p || !p.id) continue;
+      // Trích xuất số từ ID (VD: "1", "2", "prod-3",...)
+      const match = String(p.id).match(/\d+/);
+      if (match) {
+        const num = parseInt(match[0], 10);
+        if (!isNaN(num) && num > maxId) {
+          maxId = num;
+        }
+      }
+    }
+    return String(maxId + 1);
+  };
 
   // -------------------------------------------------------------
   // 1. PRODUCT CRUD MODAL & FORM STATE
@@ -55,7 +75,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [preview3dModel, setPreview3dModel] = useState<{ name: string; url: string } | null>(null);
   const [productForm, setProductForm] = useState({
-    id: "",
+    id: "1",
     name: "",
     category: "tote",
     basePrice: 1250000,
@@ -74,8 +94,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
 
   const handleOpenAddProduct = () => {
     setEditingProductId(null);
+    const nextId = getNextProductId(products);
     setProductForm({
-      id: `prod-${Date.now()}`,
+      id: nextId,
       name: "",
       category: "tote",
       basePrice: 1250000,
@@ -282,13 +303,34 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 Sản phẩm được lưu trữ trên Cloud Firestore và hiển thị ra trang /shop, /customizer
               </p>
             </div>
-            <button
-              onClick={handleOpenAddProduct}
-              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/20"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Thêm Sản Phẩm Mới</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {products.length > 0 && onClearAllProducts && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (
+                      confirm(
+                        "⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA SẠCH TOÀN BỘ SẢN PHẨM?\n\nSau khi xóa, danh mục sản phẩm sẽ về 0 và mã ID của sản phẩm tiếp theo sẽ bắt đầu lại từ 1."
+                      )
+                    ) {
+                      await onClearAllProducts();
+                    }
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-red-200 transition-colors"
+                  title="Xóa danh mục để ID sản phẩm bắt đầu lại từ 1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Reset ID Về 1</span>
+                </button>
+              )}
+              <button
+                onClick={handleOpenAddProduct}
+                className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/20"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Thêm Sản Phẩm Mới (Mã ID: {getNextProductId(products)})</span>
+              </button>
+            </div>
           </div>
 
           {products.length === 0 ? (
@@ -524,16 +566,31 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
             </div>
 
             <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Tên Sản Phẩm</label>
-                <input
-                  type="text"
-                  required
-                  value={productForm.name}
-                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  placeholder="VD: NÉT Tote Signature V2"
-                  className="w-full p-2.5 rounded-xl border border-slate-300"
-                />
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Mã ID Sản Phẩm <span className="text-teal-600 font-semibold">(Bắt đầu từ 1)</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={productForm.id}
+                    onChange={(e) => setProductForm({ ...productForm, id: e.target.value.trim() })}
+                    placeholder="1"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 font-mono font-bold text-teal-800 bg-teal-50/50"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="font-bold text-slate-700 block mb-1">Tên Sản Phẩm</label>
+                  <input
+                    type="text"
+                    required
+                    value={productForm.name}
+                    onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                    placeholder="VD: NÉT Tote Signature V2"
+                    className="w-full p-2.5 rounded-xl border border-slate-300"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

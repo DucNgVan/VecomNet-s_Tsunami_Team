@@ -30,22 +30,19 @@ export interface PassportStoryData {
 
 export function getAllBatches(): TraceBatch[] {
   if (typeof window === "undefined") {
-    return TRACE_BATCHES;
+    return [];
   }
 
   try {
     const raw = localStorage.getItem(BATCHES_STORAGE_KEY);
     if (!raw) {
-      return TRACE_BATCHES;
+      return [];
     }
     const stored: TraceBatch[] = JSON.parse(raw);
-    // Merge stored batches with initial batches (avoiding duplicates)
-    const storedIds = new Set(stored.map((b) => b.batchId.toLowerCase()));
-    const missingDefaults = TRACE_BATCHES.filter((b) => !storedIds.has(b.batchId.toLowerCase()));
-    return [...stored, ...missingDefaults];
+    return Array.isArray(stored) ? stored : [];
   } catch (err) {
     console.error("Error reading batches from localStorage:", err);
-    return TRACE_BATCHES;
+    return [];
   }
 }
 

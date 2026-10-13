@@ -20,6 +20,7 @@ import {
   updateOrderStatus,
   getSupplyChainStats,
   deleteOrderById,
+  clearLocalSupplyChainData,
 } from "@/lib/supplyChainStorage";
 import {
   syncAllInventoryToFirestore,
@@ -30,6 +31,10 @@ import {
   getProductsFromFirestore,
   saveProductToFirestore,
   deleteProductFromFirestore,
+  clearAllClaimedBagsFromFirestore,
+  clearAllBatchesFromFirestore,
+  clearAllProductsFromFirestore,
+  resetEntireSystemDatabase,
 } from "@/lib/firestoreService";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -117,9 +122,84 @@ function AdminPortalContent() {
         setOrders(getAllOrders());
       }
 
-      // 2. Fetch Net Packs & Manufactured Items
-      setNetPacks(getAllNetPacks());
-      setManufacturedItems(getManufacturedItems());
+      // 2. Fetch Net Packs (batches) & Manufactured Items (bag_items) from Cloud Firestore
+      try {
+        const snapBatches = await getDocs(collection(db, "batches"));
+        if (!snapBatches.empty) {
+          const cloudPacks: NetPack[] = [];
+          snapBatches.forEach((d) => {
+            const data = d.data();
+            cloudPacks.push({
+              packId: data.packId || data.batchId || d.id,
+              seaRegion: data.seaRegion || "Vùng Biển Việt Nam",
+              locationDetails: data.locationDetails || "",
+              coordinates: data.coordinates || { lat: 16.0, lng: 108.0 },
+              recoveryDate: data.recoveryDate || new Date().toISOString().split("T")[0],
+              totalWeightKg: data.totalWeightKg || data.plasticRecoveredKg || 0,
+              remainingWeightKg: data.remainingWeightKg ?? data.plasticRecoveredKg ?? data.totalWeightKg ?? 0,
+              depthMeters: data.depthMeters || 0,
+              diverTeam: data.diverTeam || data.recoveryTeam || "",
+              netPolymer: data.netPolymer || "Nylon-6",
+              status: data.status || "in_production",
+              notes: data.notes || "",
+              createdAt: data.createdAt || new Date().toISOString(),
+              producedBagModel: data.producedBagModel,
+              producedBagCount: data.producedBagCount,
+              serialRangeStart: data.serialRangeStart,
+              serialRangeEnd: data.serialRangeEnd,
+            });
+          });
+          setNetPacks(cloudPacks);
+          localStorage.setItem("net_packs_v1", JSON.stringify(cloudPacks));
+        } else {
+          setNetPacks(getAllNetPacks());
+        }
+      } catch (err) {
+        console.warn("Batches read error:", err);
+        setNetPacks(getAllNetPacks());
+      }
+
+      try {
+        const snapBagItems = await getDocs(collection(db, "bag_items"));
+        if (!snapBagItems.empty) {
+          const cloudItems: ManufacturedBagItem[] = [];
+          snapBagItems.forEach((d) => {
+            const data = d.data();
+            if (data.serialId || data.itemId) {
+              cloudItems.push({
+                serialId: data.serialId || data.itemId || d.id,
+                sourcePackId: data.sourcePackId || data.parentBatchId || "",
+                bagBaseId: data.bagBaseId || "net-tote-01",
+                bagName: data.bagName || "Túi Lưới NÉT",
+                colorId: data.colorId || "abyss-blue",
+                colorName: data.colorName || "Xanh Thẳm Đại Dương",
+                manufacturedAt: data.manufacturedAt || data.createdAt || "",
+                workshopName: data.workshopName || "Xưởng NÉT",
+                seaRegion: data.seaRegion || "",
+                coordinates: data.coordinates || { lat: 16.0, lng: 108.0 },
+                plasticConsumedKg: data.plasticConsumedKg || data.plasticOffsetKg || 1.8,
+                status: data.status || (data.ownerUid ? "claimed" : "in_stock"),
+                qrUrl: data.qrUrl || `/passport/${data.sourcePackId || d.id}?itemId=${data.serialId || d.id}`,
+                barcode: data.barcode,
+                nfcTagUid: data.nfcTagUid,
+                isClaimed: !!data.isClaimed || !!data.ownerUid,
+                claimedBy: data.claimedBy || (data.ownerName ? { fullName: data.ownerName, phone: data.ownerPhone || "" } : undefined),
+                assignedOrderCode: data.assignedOrderCode,
+                warrantyStatus: data.warrantyStatus || "unactivated",
+                warrantyMonths: data.warrantyMonths || 24,
+              });
+            }
+          });
+          setManufacturedItems(cloudItems);
+          localStorage.setItem("net_manufactured_items_v1", JSON.stringify(cloudItems));
+        } else {
+          setManufacturedItems(getManufacturedItems());
+        }
+      } catch (err) {
+        console.warn("Bag items read error:", err);
+        setManufacturedItems(getManufacturedItems());
+      }
+
       setStats(getSupplyChainStats());
 
       // 3. Fetch Products from Cloud Firestore (Collection 'products') & Local Cache
@@ -237,6 +317,8 @@ function AdminPortalContent() {
       setNetPacks(getAllNetPacks());
       setManufacturedItems(getManufacturedItems());
       setStats(getSupplyChainStats());
+      // Tự động đẩy kho vừa may lên Cloud Firestore
+      syncAllInventoryToFirestore().catch(() => {});
     }
     return result;
   };
@@ -251,6 +333,46 @@ function AdminPortalContent() {
       setSyncFeedback({ success: false, message: e.message || "Lỗi đồng bộ dữ liệu" });
     } finally {
       setIsSyncingFirestore(false);
+    }
+  };
+
+  // -------------------------------------------------------------
+  // DATABASE PURGE & RESET HANDLERS
+  // -------------------------------------------------------------
+  const handleResetSupplyChain = async () => {
+    try {
+      await clearAllBatchesFromFirestore();
+      clearLocalSupplyChainData();
+      setNetPacks([]);
+      setManufacturedItems([]);
+      setStats(getSupplyChainStats());
+      alert("✅ Đã reset thành công Kho & Lưới về database thực rỗng!");
+    } catch (e: any) {
+      alert("Lỗi khi reset kho & lưới: " + e.message);
+    }
+  };
+
+  const handleResetClaimedBags = async () => {
+    try {
+      await clearAllClaimedBagsFromFirestore();
+      setManufacturedItems((prev) =>
+        prev.map((i) => ({ ...i, isClaimed: false, status: "in_stock", claimedBy: undefined }))
+      );
+      alert("✅ Đã xóa toàn bộ dữ liệu túi đã định danh (digital passport) của khách hàng thành công!");
+    } catch (e: any) {
+      alert("Lỗi khi xóa túi đã định danh: " + e.message);
+    }
+  };
+
+  const handleClearAllProducts = async () => {
+    try {
+      await clearAllProductsFromFirestore();
+      setBackendProducts([]);
+      alert("✅ Đã xóa sạch toàn bộ sản phẩm! Mã ID sản phẩm tiếp theo sẽ bắt đầu lại từ 1.");
+      return true;
+    } catch (e: any) {
+      alert("Lỗi khi xóa danh mục sản phẩm: " + e.message);
+      return false;
     }
   };
 
@@ -386,6 +508,8 @@ function AdminPortalContent() {
             onSyncFirestore={handleSyncFirestore}
             isSyncing={isSyncingFirestore}
             syncFeedback={syncFeedback}
+            onResetSupplyChain={handleResetSupplyChain}
+            onResetClaimedBags={handleResetClaimedBags}
           />
         )}
 
@@ -397,6 +521,7 @@ function AdminPortalContent() {
             onDeleteProduct={handleDeleteProduct}
             onSaveArticle={handleSaveArticle}
             onDeleteArticle={handleDeleteArticle}
+            onClearAllProducts={handleClearAllProducts}
           />
         )}
       </main>

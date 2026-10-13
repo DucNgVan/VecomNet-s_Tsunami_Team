@@ -98,6 +98,11 @@ export interface ManufactureParams {
   colorId: string;
   quantity: number;
   workshopName: string;
+  customProduct?: {
+    id: string;
+    name: string;
+    plasticOffsetKg?: number;
+  };
 }
 
 export function manufactureBags(params: ManufactureParams): {
@@ -108,19 +113,25 @@ export function manufactureBags(params: ManufactureParams): {
   const packs = getAllNetPacks();
   const pack = packs.find((p) => p.packId === params.packId);
   if (!pack) {
-    return { success: false, message: "Không tìm thấy Pack Lưới nguồn!", newItems: [] };
+    return { success: false, message: "Không tìm thấy Kiện Lưới nguồn!", newItems: [] };
   }
 
-  const bag = BAG_BASES.find((b) => b.id === params.bagBaseId) || BAG_BASES[0];
+  // Đối chiếu mẫu túi từ sản phẩm Bộ Sưu Tập hoặc BAG_BASES
+  const matchedBagBase = BAG_BASES.find((b) => b.id === params.bagBaseId);
+  const bagName = params.customProduct?.name || matchedBagBase?.name || "Túi Lưới Tái Sinh";
+  const netRequiredPerBag = Number(
+    params.customProduct?.plasticOffsetKg || matchedBagBase?.plasticOffsetKg || 1.8
+  );
+  const targetBagId = params.customProduct?.id || matchedBagBase?.id || params.bagBaseId;
+
   const color = BAG_COLORS.find((c) => c.id === params.colorId) || BAG_COLORS[0];
-  const netRequiredPerBag = bag.plasticOffsetKg;
   const totalNetNeeded = Number((netRequiredPerBag * params.quantity).toFixed(2));
 
   if (pack.remainingWeightKg < totalNetNeeded) {
     return {
       success: false,
-      message: `Khối lượng lưới khả dụng trong Pack (${pack.remainingWeightKg}kg) không đủ để sản xuất ${params.quantity} túi (cần ${totalNetNeeded}kg)!`,
-      newItems: []
+      message: `Khối lượng lưới khả dụng trong Kiện (${pack.remainingWeightKg}kg) không đủ để sản xuất ${params.quantity} túi (cần ${totalNetNeeded}kg, định mức ~${netRequiredPerBag}kg/túi)! Vui lòng giảm số lượng hoặc nhập thêm kiện lưới ma mới.`,
+      newItems: [],
     };
   }
 
@@ -158,8 +169,8 @@ export function manufactureBags(params: ManufactureParams): {
     newItems.push({
       serialId,
       sourcePackId: pack.packId,
-      bagBaseId: bag.id,
-      bagName: bag.name,
+      bagBaseId: targetBagId,
+      bagName,
       colorId: color.id,
       colorName: color.name,
       manufacturedAt: dateFormatted,
@@ -185,9 +196,29 @@ export function manufactureBags(params: ManufactureParams): {
 
   return {
     success: true,
-    message: `Đã chế tạo thành công ${params.quantity} chiếc ${bag.name} và cấp ${params.quantity} mã định danh & mã vạch độc bản!`,
+    message: `Đã sản xuất thành công ${params.quantity} chiếc "${bagName}" (tiêu thụ ${totalNetNeeded}kg lưới từ ${pack.packId}) và cấp ${params.quantity} mã định danh & mã vạch độc bản!`,
     newItems,
   };
+}
+
+/**
+ * Lấy số lượng túi thành phẩm thực tế đang có sẵn trong kho (in_stock, chưa bán, chưa claim)
+ * cho một sản phẩm cụ thể (đối chiếu theo id, tên hoặc category)
+ */
+export function getInStockCountForProduct(
+  productId: string,
+  productName?: string,
+  category?: string
+): number {
+  const items = getManufacturedItems();
+  return items.filter(
+    (item) =>
+      item.status === "in_stock" &&
+      !item.isClaimed &&
+      (item.bagBaseId === productId ||
+        (category && item.bagBaseId === category) ||
+        (productName && item.bagName.trim().toLowerCase() === productName.trim().toLowerCase()))
+  ).length;
 }
 
 export function getManufacturedItemBySerial(serialId: string): ManufacturedBagItem | undefined {

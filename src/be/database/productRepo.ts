@@ -72,7 +72,7 @@ export class ProductRepository {
    */
   static async create(productData: Partial<BackendProduct>): Promise<BackendProduct> {
     const id = productData.id || `product-${Date.now()}`;
-    const stockCount = Number(productData.stockCount) >= 0 ? Number(productData.stockCount) : 50;
+    const stockCount = Number(productData.stockCount) >= 0 ? Number(productData.stockCount) : 0;
     const newProduct: BackendProduct = {
       id,
       name: productData.name || "Sản phẩm NÉT mới",

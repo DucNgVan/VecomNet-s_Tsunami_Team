@@ -15,6 +15,7 @@ import {
   saveNetPack,
   getManufacturedItems,
   manufactureBags,
+  getInStockCountForProduct,
   createNetPackWithBatchPlan,
   getAllOrders,
   updateOrderStatus,
@@ -206,7 +207,25 @@ function AdminPortalContent() {
       // 3. Fetch Products from Cloud Firestore (Collection 'products') & Local Cache
       try {
         const prods = await getProductsFromFirestore();
-        setBackendProducts(Array.isArray(prods) ? prods : []);
+        const rawProducts = Array.isArray(prods) ? prods : [];
+        const currentItems = getManufacturedItems();
+        // Đối chiếu tồn kho thực tế của từng sản phẩm từ kho túi thành phẩm (circular supply chain)
+        const reconciledProducts = rawProducts.map((p) => {
+          const realStock = currentItems.filter(
+            (item) =>
+              item.status === "in_stock" &&
+              !item.isClaimed &&
+              (item.bagBaseId === p.id ||
+                (p.category && item.bagBaseId === p.category) ||
+                (p.name && item.bagName?.trim().toLowerCase() === p.name.trim().toLowerCase()))
+          ).length;
+          return {
+            ...p,
+            stockCount: realStock,
+            inStock: realStock > 0,
+          };
+        });
+        setBackendProducts(reconciledProducts);
       } catch (prodErr) {
         console.warn("Products fetch warning:", prodErr);
         setBackendProducts([]);
@@ -312,12 +331,54 @@ function AdminPortalContent() {
     colorId: string;
     quantity: number;
     workshopName: string;
+    customProduct?: {
+      id: string;
+      name: string;
+      plasticOffsetKg?: number;
+    };
   }) => {
-    const result = createNetPackWithBatchPlan(params);
+    const result = manufactureBags({
+      packId: params.sourcePackId,
+      bagBaseId: params.bagBaseId,
+      colorId: params.colorId,
+      quantity: params.quantity,
+      workshopName: params.workshopName,
+      customProduct: params.customProduct,
+    });
+
     if (result.success) {
-      setNetPacks(getAllNetPacks());
-      setManufacturedItems(getManufacturedItems());
+      const updatedPacks = getAllNetPacks();
+      const updatedItems = getManufacturedItems();
+      setNetPacks(updatedPacks);
+      setManufacturedItems(updatedItems);
       setStats(getSupplyChainStats());
+
+      // Cập nhật tồn kho thực tế cho các sản phẩm trong Bộ Sưu Tập & Cloud Firestore
+      setBackendProducts((prev) => {
+        const updated = prev.map((p) => {
+          const realStock = updatedItems.filter(
+            (item) =>
+              item.status === "in_stock" &&
+              !item.isClaimed &&
+              (item.bagBaseId === p.id ||
+                (p.category && item.bagBaseId === p.category) ||
+                (p.name && item.bagName?.trim().toLowerCase() === p.name.trim().toLowerCase()))
+          ).length;
+          const updatedProd = {
+            ...p,
+            stockCount: realStock,
+            inStock: realStock > 0,
+          };
+          if (p.stockCount !== realStock || p.inStock !== (realStock > 0)) {
+            saveProductToFirestore(updatedProd).catch((e) =>
+              console.warn("Lỗi đồng bộ tồn kho sản phẩm lên Firestore:", e)
+            );
+          }
+          return updatedProd;
+        });
+        return updated;
+      });
+
       // Tự động đẩy kho vừa may lên Cloud Firestore
       syncAllInventoryToFirestore().catch(() => {});
     }
@@ -347,7 +408,22 @@ function AdminPortalContent() {
       setNetPacks([]);
       setManufacturedItems([]);
       setStats(getSupplyChainStats());
-      alert("✅ Đã reset thành công Kho & Lưới về database thực rỗng!");
+
+      // Đồng thời cập nhật tồn kho tất cả sản phẩm về 0 trên state & Cloud Firestore
+      setBackendProducts((prev) => {
+        const resetProds = prev.map((p) => {
+          const updated = {
+            ...p,
+            stockCount: 0,
+            inStock: false,
+          };
+          saveProductToFirestore(updated).catch(() => {});
+          return updated;
+        });
+        return resetProds;
+      });
+
+      alert("✅ Đã reset thành công Kho & Lưới về database thực rỗng và cập nhật tồn kho tất cả sản phẩm về 0!");
     } catch (e: any) {
       alert("Lỗi khi reset kho & lưới: " + e.message);
     }
@@ -513,6 +589,7 @@ function AdminPortalContent() {
           <AdminSupplyChainTab
             netPacks={netPacks}
             manufacturedItems={manufacturedItems}
+            products={backendProducts}
             onAddNetPack={handleAddNetPack}
             onProduceBags={handleProduceBags}
             onSyncFirestore={handleSyncFirestore}
@@ -528,6 +605,8 @@ function AdminPortalContent() {
           <AdminCatalogTab
             products={backendProducts}
             articles={articles}
+            manufacturedItems={manufacturedItems}
+            onNavigateTab={handleSelectTab}
             onSaveProduct={handleSaveProduct}
             onDeleteProduct={handleDeleteProduct}
             onSaveArticle={handleSaveArticle}

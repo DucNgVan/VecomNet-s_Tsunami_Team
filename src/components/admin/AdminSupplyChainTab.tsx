@@ -30,6 +30,7 @@ import Link from "next/link";
 interface AdminSupplyChainTabProps {
   netPacks: NetPack[];
   manufacturedItems: ManufacturedBagItem[];
+  products?: any[];
   onAddNetPack: (packData: Partial<NetPack>) => void;
   onProduceBags: (params: {
     sourcePackId: string;
@@ -37,6 +38,11 @@ interface AdminSupplyChainTabProps {
     colorId: string;
     quantity: number;
     workshopName: string;
+    customProduct?: {
+      id: string;
+      name: string;
+      plasticOffsetKg?: number;
+    };
   }) => { success: boolean; message: string };
   onSyncFirestore: () => Promise<void>;
   isSyncing: boolean;
@@ -49,6 +55,7 @@ interface AdminSupplyChainTabProps {
 export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
   netPacks,
   manufacturedItems,
+  products = [],
   onAddNetPack,
   onProduceBags,
   onSyncFirestore,
@@ -77,16 +84,65 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
     notes: "Lưới rê đánh bắt mực vô chủ chùm lên rạn san hô",
   });
 
-  // Production Order Form Modal
+  // Danh sách các mẫu túi thực tế để sản xuất: Ưu tiên các sản phẩm thực tế trong Bộ Sưu Tập (Catalog)
+  const availableBagModels = useMemo(() => {
+    const catalogBags = (products || [])
+      .filter((p) => p.category !== "charm")
+      .map((p) => ({
+        id: String(p.id),
+        name: p.name || `Túi #${p.id}`,
+        plasticOffsetKg: Number(p.plasticOffsetKg) || 1.8,
+        isFromCatalog: true,
+      }));
+
+    if (catalogBags.length > 0) {
+      return catalogBags;
+    }
+
+    return BAG_BASES.map((b) => ({
+      id: b.id,
+      name: b.name,
+      plasticOffsetKg: b.plasticOffsetKg,
+      isFromCatalog: false,
+    }));
+  }, [products]);
+
+  // Production Order Form Modal & State
   const [showProductionModal, setShowProductionModal] = useState(false);
   const [productionForm, setProductionForm] = useState({
     sourcePackId: netPacks[0]?.packId || "",
-    bagBaseId: BAG_BASES[0]?.id || "net-tote-01",
+    bagBaseId: availableBagModels[0]?.id || "1",
     colorId: BAG_COLORS[0]?.id || "abyss-blue",
     quantity: 10,
     workshopName: "Làng nghề đan lưới Nam Ô",
   });
   const [productionMessage, setProductionMessage] = useState<string | null>(null);
+
+  // Sync default packId and bagBaseId when data loads
+  useEffect(() => {
+    if (!productionForm.sourcePackId && netPacks.length > 0) {
+      setProductionForm((prev) => ({ ...prev, sourcePackId: netPacks[0].packId }));
+    }
+  }, [netPacks, productionForm.sourcePackId]);
+
+  useEffect(() => {
+    if (availableBagModels.length > 0) {
+      const exists = availableBagModels.some((b) => b.id === productionForm.bagBaseId);
+      if (!exists) {
+        setProductionForm((prev) => ({ ...prev, bagBaseId: availableBagModels[0].id }));
+      }
+    }
+  }, [availableBagModels, productionForm.bagBaseId]);
+
+  // Live calculation of net consumption
+  const selectedPack = netPacks.find((p) => p.packId === productionForm.sourcePackId) || netPacks[0];
+  const selectedBagModel =
+    availableBagModels.find((b) => b.id === productionForm.bagBaseId) || availableBagModels[0];
+  const netRequiredPerBag = selectedBagModel?.plasticOffsetKg || 1.8;
+  const totalNetNeeded = Number((netRequiredPerBag * (Number(productionForm.quantity) || 1)).toFixed(2));
+  const availableKgInPack = selectedPack?.remainingWeightKg ?? 0;
+  const isEnoughNet = availableKgInPack >= totalNetNeeded && availableKgInPack > 0;
+  const projectedRemainingKg = Number((availableKgInPack - totalNetNeeded).toFixed(2));
 
   // Inventory Search & Filter
   const [inventorySearch, setInventorySearch] = useState("");
@@ -134,7 +190,20 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
   // Handle Production Submit
   const handleProductionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const result = onProduceBags(productionForm);
+    if (!isEnoughNet) {
+      alert(`Khối lượng lưới khả dụng trong Kiện (${availableKgInPack}kg) không đủ để sản xuất ${productionForm.quantity} chiếc (cần ${totalNetNeeded}kg)! Vui lòng giảm số lượng hoặc nhập thêm kiện lưới.`);
+      return;
+    }
+    const result = onProduceBags({
+      ...productionForm,
+      customProduct: selectedBagModel
+        ? {
+            id: selectedBagModel.id,
+            name: selectedBagModel.name,
+            plasticOffsetKg: selectedBagModel.plasticOffsetKg,
+          }
+        : undefined,
+    });
     setProductionMessage(result.message);
     if (result.success) {
       setTimeout(() => {
@@ -439,7 +508,9 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">2. Chọn Dáng Túi</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    2. Chọn Mẫu Sản Phẩm Cần May (Từ Bộ Sưu Tập)
+                  </label>
                   <select
                     value={productionForm.bagBaseId}
                     onChange={(e) =>
@@ -447,9 +518,9 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                     }
                     className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
                   >
-                    {BAG_BASES.map((bag) => (
+                    {availableBagModels.map((bag) => (
                       <option key={bag.id} value={bag.id}>
-                        {bag.name} (Tiêu thụ ~{bag.plasticOffsetKg} kg lưới)
+                        {bag.name} {bag.isFromCatalog ? `(ID: ${bag.id})` : ""} • Tiêu thụ ~{bag.plasticOffsetKg} kg lưới/chiếc
                       </option>
                     ))}
                   </select>
@@ -479,10 +550,10 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                   <input
                     type="number"
                     min="1"
-                    max="50"
+                    max="100"
                     value={productionForm.quantity}
                     onChange={(e) =>
-                      setProductionForm({ ...productionForm, quantity: Number(e.target.value) })
+                      setProductionForm({ ...productionForm, quantity: Math.max(1, Number(e.target.value)) })
                     }
                     className="w-full p-2.5 rounded-xl border border-slate-300"
                   />
@@ -501,6 +572,60 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                 </div>
               </div>
 
+              {/* Bảng cân đối định mức lưới tuần hoàn thời gian thực */}
+              <div
+                className={`p-4 rounded-2xl border text-xs space-y-2 ${
+                  isEnoughNet
+                    ? "bg-teal-50/80 border-teal-200 text-teal-900"
+                    : "bg-rose-50 border-rose-200 text-rose-900"
+                }`}
+              >
+                <div className="font-bold flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-teal-600" />
+                    <span>Cân Đối Nguyên Liệu Lưới Ma Tuần Hoàn</span>
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                      isEnoughNet
+                        ? "bg-emerald-200 text-emerald-900"
+                        : "bg-rose-200 text-rose-900"
+                    }`}
+                  >
+                    {isEnoughNet ? "Đủ nguyên liệu lưới" : "Thiếu nguyên liệu lưới"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1">
+                  <div>
+                    <span className="text-slate-500 block">Kiện Lưới nguồn:</span>
+                    <strong className="text-slate-900">
+                      {selectedPack?.packId || "Chưa chọn"} ({availableKgInPack} kg)
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Tiêu thụ dự kiến:</span>
+                    <strong className="text-teal-700">
+                      -{totalNetNeeded} kg ({productionForm.quantity} chiếc × {netRequiredPerBag}kg)
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Còn lại sau may:</span>
+                    <strong
+                      className={
+                        projectedRemainingKg >= 0 ? "text-emerald-700" : "text-rose-700"
+                      }
+                    >
+                      {projectedRemainingKg} kg
+                    </strong>
+                  </div>
+                </div>
+                {!isEnoughNet && (
+                  <p className="text-[11px] text-rose-700 font-semibold pt-1">
+                    ⚠️ Khối lượng lưới còn lại trong kiện ({availableKgInPack} kg) không đủ để sản xuất {productionForm.quantity} chiếc (cần {totalNetNeeded} kg). Vui lòng giảm số lượng may hoặc nhập thêm kiện lưới ma tại bước 1.
+                  </p>
+                )}
+              </div>
+
               {productionMessage && (
                 <div className="p-3.5 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-teal-600" />
@@ -511,10 +636,15 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
               <div className="flex items-center justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 flex items-center gap-1.5 cursor-pointer"
+                  disabled={!isEnoughNet || netPacks.length === 0}
+                  className={`px-6 py-2.5 rounded-xl font-bold text-xs shadow-md flex items-center gap-1.5 transition-all ${
+                    isEnoughNet && netPacks.length > 0
+                      ? "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-600/20 cursor-pointer"
+                      : "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
+                  }`}
                 >
                   <Hammer className="w-4 h-4" />
-                  <span>Phát Lệnh Sản Xuất & Cấp Serial Tự Động</span>
+                  <span>Phát Lệnh Sản Xuất & Tăng Tồn Kho Bộ Sưu Tập</span>
                 </button>
               </div>
             </form>

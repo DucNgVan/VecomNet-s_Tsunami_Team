@@ -80,8 +80,8 @@ export default function ShopPage() {
           : "tote") as any,
         image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
         model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : undefined,
-        stockCount: p.stockCount ?? 50,
-        inStock: p.inStock !== false && (p.stockCount ?? 50) > 0,
+        stockCount: Number(p.stockCount) >= 0 ? Number(p.stockCount) : 0,
+        inStock: Boolean(p.inStock && Number(p.stockCount) > 0),
       }));
   }, [products]);
 

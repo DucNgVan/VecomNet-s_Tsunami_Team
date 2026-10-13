@@ -36,6 +36,8 @@ interface AdminCatalogTabProps {
   onSaveArticle: (article: Article) => Promise<boolean>;
   onDeleteArticle: (articleId: string) => Promise<boolean>;
   onClearAllProducts?: () => Promise<boolean>;
+  manufacturedItems?: any[];
+  onNavigateTab?: (tabId: string) => void;
 }
 
 export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
@@ -46,9 +48,24 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
   onSaveArticle,
   onDeleteArticle,
   onClearAllProducts,
+  manufacturedItems = [],
+  onNavigateTab,
 }) => {
   // Sub-section: 'products' | 'articles'
   const [section, setSection] = useState<"products" | "articles">("products");
+
+  // Hàm tính số lượng tồn kho thực tế từ các túi thành phẩm đã may trong kho
+  const getProductRealStock = (prod: any) => {
+    if (!manufacturedItems || manufacturedItems.length === 0) return 0;
+    return manufacturedItems.filter(
+      (item) =>
+        (item.bagBaseId === String(prod.id) ||
+          item.bagBaseId === prod.category ||
+          (prod.name && item.bagName?.trim().toLowerCase() === prod.name?.trim().toLowerCase())) &&
+        item.status === "in_stock" &&
+        !item.isClaimed
+    ).length;
+  };
 
   // Hàm tính ID sản phẩm tự động tăng tuần tự bắt đầu từ 1
   const getNextProductId = (existingProducts: any[]): string => {
@@ -83,8 +100,8 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
     plasticOffsetKg: 1.8,
     imageUrl: "",
     model3dUrl: "",
-    inStock: true,
-    stockCount: 50,
+    inStock: false,
+    stockCount: 0,
   });
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -104,13 +121,14 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       plasticOffsetKg: 1.8,
       imageUrl: "",
       model3dUrl: "",
-      inStock: true,
-      stockCount: 50,
+      inStock: false,
+      stockCount: 0,
     });
     setShowProductModal(true);
   };
 
   const handleOpenEditProduct = (prod: any) => {
+    const realStock = getProductRealStock(prod);
     setEditingProductId(prod.id);
     setProductForm({
       id: prod.id,
@@ -121,8 +139,8 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       plasticOffsetKg: prod.plasticOffsetKg || 1.8,
       imageUrl: prod.imageUrl || prod.image || "",
       model3dUrl: prod.model3dUrl || "",
-      inStock: prod.inStock ?? true,
-      stockCount: prod.stockCount ?? 50,
+      inStock: realStock > 0,
+      stockCount: realStock,
     });
     setShowProductModal(true);
   };
@@ -163,11 +181,18 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
 
   const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productForm.name) {
+    if (!productForm.name.trim()) {
       alert("Vui lòng nhập tên sản phẩm!");
       return;
     }
-    const success = await onSaveProduct(productForm);
+    const realStock = getProductRealStock(productForm);
+    const cleanProd = {
+      ...productForm,
+      stockCount: realStock,
+      inStock: realStock > 0,
+      updatedAt: new Date().toISOString(),
+    };
+    const success = await onSaveProduct(cleanProd);
     if (success) {
       setShowProductModal(false);
     }
@@ -357,8 +382,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {products.map((prod) => {
                 const price = prod.basePrice || prod.price || 1250000;
-                const stock = prod.stockCount ?? 50;
-                const isLowStock = stock <= 5;
+                const stock = getProductRealStock(prod);
+                const isOutOfStock = stock <= 0;
+                const isLowStock = stock > 0 && stock <= 3;
                 return (
                   <div
                     key={prod.id}
@@ -391,13 +417,15 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                         </button>
                       )}
                       <span
-                        className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                          isLowStock
+                        className={`absolute bottom-2 left-2 px-2.5 py-0.5 rounded-full text-[9px] font-bold shadow-xs ${
+                          isOutOfStock
+                            ? "bg-amber-500/90 text-white"
+                            : isLowStock
                             ? "bg-rose-500 text-white"
-                            : "bg-emerald-500/90 text-white"
+                            : "bg-emerald-600/95 text-white"
                         }`}
                       >
-                        Tồn: {stock}
+                        {isOutOfStock ? "Hết hàng (0)" : `Kho xưởng: ${stock}`}
                       </span>
                     </div>
 
@@ -423,6 +451,17 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                         <Edit2 className="w-3 h-3" />
                         <span>Sửa</span>
                       </button>
+                      {onNavigateTab && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateTab("supply-chain")}
+                          className="px-2 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-[10px] flex items-center gap-1 cursor-pointer border border-teal-200"
+                          title="Lập lệnh sản xuất may mẫu này từ Kiện Lưới"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>May Xưởng</span>
+                        </button>
+                      )}
                       {prod.model3dUrl && (
                         <button
                           onClick={() =>
@@ -639,29 +678,57 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Số Lượng Tồn Kho Thực</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={productForm.stockCount}
-                    onChange={(e) =>
-                      setProductForm({ ...productForm, stockCount: Number(e.target.value) })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-slate-300"
-                  />
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-700 block text-xs">
+                      Số Lượng Hàng Đang Có
+                    </label>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        productForm.stockCount > 0
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {productForm.stockCount > 0
+                        ? `Còn ${productForm.stockCount} chiếc`
+                        : "Hết hàng (0 chiếc)"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    Tồn kho được tính tự động từ số túi may thành phẩm từ Kiện Lưới trong Chuỗi Cung Ứng. Không nhập thủ công.
+                  </p>
+                  {onNavigateTab && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProductModal(false);
+                        onNavigateTab("supply-chain");
+                      }}
+                      className="text-[11px] font-bold text-teal-700 hover:text-teal-900 inline-flex items-center gap-1 cursor-pointer pt-0.5"
+                    >
+                      <span>➔ Đến Chuỗi Cung Ứng May Thêm Túi</span>
+                    </button>
+                  )}
                 </div>
+
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Số Kg Rác Biển Giảm</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Số Kg Lưới Tiêu Thụ / Chiếc
+                  </label>
                   <input
                     type="number"
                     step="0.1"
+                    min="0.1"
                     value={productForm.plasticOffsetKg}
                     onChange={(e) =>
                       setProductForm({ ...productForm, plasticOffsetKg: Number(e.target.value) })
                     }
                     className="w-full p-2.5 rounded-xl border border-slate-300"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Định mức lưới trừ từ Kiện Lưới nhập khi xưởng nhận lệnh may mẫu này.
+                  </p>
                 </div>
               </div>
 

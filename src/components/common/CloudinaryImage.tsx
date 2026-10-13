@@ -28,7 +28,19 @@ export const CloudinaryImage: React.FC<CloudinaryImageProps> = ({
   priority = false,
   sizes,
 }) => {
-  if (!src) return null;
+  const [imgError, setImgError] = React.useState(false);
+
+  if (!src || imgError) {
+    return (
+      <div
+        className={`bg-gradient-to-br from-[#0b1e3b] via-teal-950 to-sky-950 text-teal-200 flex flex-col items-center justify-center p-2 rounded-xl border border-teal-800/30 select-none ${className}`}
+        style={{ minWidth: 40, minHeight: 40 }}
+      >
+        <span className="font-serif font-black text-sm tracking-widest text-teal-300">NÉT</span>
+        <span className="text-[9px] font-medium tracking-tight opacity-70">Eco Ocean</span>
+      </div>
+    );
+  }
 
   // Nhận diện nếu ảnh đã được upload lên Cloudinary
   const isCloudinary =
@@ -56,6 +68,7 @@ export const CloudinaryImage: React.FC<CloudinaryImageProps> = ({
         priority={priority}
         sizes={sizes}
         className={className}
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -69,6 +82,7 @@ export const CloudinaryImage: React.FC<CloudinaryImageProps> = ({
       height={height}
       className={className}
       loading={priority ? "eager" : "lazy"}
+      onError={() => setImgError(true)}
     />
   );
 };

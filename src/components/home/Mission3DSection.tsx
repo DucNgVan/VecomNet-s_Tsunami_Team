@@ -1,19 +1,80 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
-import { BAG_BASES, BAG_COLORS, CHARMS } from "@/data/products";
-import { BagMeshColor, PlacedCharm } from "@/types";
+import { BAG_COLORS } from "@/data/products";
+import { BagMeshColor, BagBase } from "@/types";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassBadge } from "@/components/ui/GlassBadge";
-import { Sparkles, Layers, Box, ArrowRight, RotateCw } from "lucide-react";
+import { Sparkles, Layers, Box, ArrowRight } from "lucide-react";
 import { formatKg } from "@/lib/utils";
+import { getProductsFromFirestore } from "@/lib/firestoreService";
 
 export const Mission3DSection: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState<BagMeshColor>(BAG_COLORS[0]);
-  const featuredBag = BAG_BASES[0];
+  const [featuredBag, setFeaturedBag] = useState<BagBase | null>(null);
+
+  useEffect(() => {
+    async function loadBag() {
+      try {
+        const dbProducts = await getProductsFromFirestore();
+        if (Array.isArray(dbProducts) && dbProducts.length > 0) {
+          const bags = dbProducts.filter(
+            (p: any) => p && p.isActive !== false && p.category !== "charm" && p.category !== "combo"
+          );
+          if (bags.length > 0) {
+            const b = bags[0];
+            setFeaturedBag({
+              id: b.id,
+              name: b.name || "Túi Lưới Tái Sinh",
+              vietnameseName: b.vietnameseName || b.name || "Túi Lưới Tái Sinh",
+              description: b.description || "Dệt thủ công từ lưới rác đại dương.",
+              basePrice: b.basePrice || b.price || 420000,
+              plasticOffsetKg: b.plasticOffsetKg ?? 1.8,
+              meshPattern: "diagonal",
+              anchorPoints: [
+                { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+                { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+                { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+                { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+              ],
+              maxCharms: b.maxCharms || 4,
+              dimensions: b.dimensions || { width: 34, height: 38, depth: 10 },
+              capacity: b.capacity || "12L",
+              modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(b.category)
+                ? b.category
+                : "tote") as any,
+              image: b.imageUrl || b.image || "/assets/products/tote-blue.png",
+              model3dUrl:
+                b.model3dUrl && b.model3dUrl.trim() !== "" ? b.model3dUrl : "/assets/models/tuixach.glb",
+            });
+          }
+        }
+      } catch (e) {
+        // silent notice
+      }
+    }
+    loadBag();
+  }, []);
+
+  const activeBag: BagBase = featuredBag || {
+    id: "net-tote",
+    name: "Túi Lưới Tái Sinh NÉT",
+    vietnameseName: "Túi Lưới Tái Sinh NÉT",
+    description: "Dệt thủ công từ sợi cước lưới ma đại dương.",
+    basePrice: 420000,
+    plasticOffsetKg: 1.8,
+    meshPattern: "diagonal",
+    anchorPoints: [],
+    maxCharms: 4,
+    dimensions: { width: 34, height: 38, depth: 10 },
+    capacity: "12L",
+    modelType: "tote",
+    image: "/assets/products/tote-blue.png",
+    model3dUrl: "/assets/models/tuixach.glb",
+  };
 
   return (
     <section id="story-lab3d" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
@@ -62,24 +123,24 @@ export const Mission3DSection: React.FC = () => {
             {/* 3D WebGL Canvas */}
             <div className="relative w-full h-[320px] sm:h-[480px] bg-gradient-to-b from-slate-50 to-slate-100/60 rounded-2xl overflow-hidden">
               <BagCanvas3D
-                bagBase={featuredBag}
+                bagBase={activeBag}
                 selectedColor={selectedColor}
                 placedCharms={[]}
                 isInteractive={true}
-                modelUrl="/assets/models/tuixach.glb"
+                modelUrl={activeBag.model3dUrl || "/assets/models/tuixach.glb"}
               />
             </div>
 
             {/* Bottom Spec Footer */}
             <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-3 text-slate-600">
-                <span>Dáng: <strong className="text-slate-900 font-bold">{featuredBag.name}</strong></span>
+                <span>Dáng: <strong className="text-slate-900 font-bold">{activeBag.name}</strong></span>
                 <span>Màu: <strong className="text-sky-700 font-bold">{selectedColor.name}</strong></span>
               </div>
 
               <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Thu hồi {formatKg(featuredBag.plasticOffsetKg + 0.63)} rác biển</span>
+                <span>Thu hồi {formatKg(activeBag.plasticOffsetKg + 0.63)} rác biển</span>
               </div>
             </div>
           </div>

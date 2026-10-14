@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import { BAG_BASES, BAG_COLORS, CHARMS } from "@/data/products";
+import { BAG_COLORS } from "@/data/products";
 import { BagBase, BagMeshColor, Charm, PlacedCharm } from "@/types";
 import { BagCanvas3D, BagCanvas3DHandle } from "@/components/3d/BagCanvas3D";
 import { STORY_QUIZ_QUESTIONS, generateStoryRecommendation } from "@/data/storyQuiz";
@@ -50,108 +50,118 @@ function YourStoryContent() {
   // Active Mode: 'manual' (Tự thiết kế - NÉT Studio) vs 'ai' (AI thiết kế giúp)
   const [mode, setMode] = useState<"manual" | "ai">(initialMode);
 
-  // Dynamic Catalog from Firestore
-  const [allBags, setAllBags] = useState<BagBase[]>(BAG_BASES);
-  const [allCharms, setAllCharms] = useState<Charm[]>(CHARMS);
-
-  // Customizer selections
-  const [selectedBag, setSelectedBag] = useState<BagBase>(
-    BAG_BASES.find((b) => b.id === initialBagId) || BAG_BASES[0]
-  );
+  // Dynamic Catalog strictly from Firestore
+  const [allBags, setAllBags] = useState<BagBase[]>([]);
+  const [allCharms, setAllCharms] = useState<Charm[]>([]);
+  const [selectedBag, setSelectedBag] = useState<BagBase | null>(null);
+  const [isLoadingStudio, setIsLoadingStudio] = useState<boolean>(true);
   const [selectedColor, setSelectedColor] = useState<BagMeshColor>(
     BAG_COLORS.find((c) => c.id === initialColorId) || BAG_COLORS[0]
   );
-  const [selectedCharmIds, setSelectedCharmIds] = useState<string[]>(() => {
-    if (charmsParam) {
-      return charmsParam
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-    return [CHARMS[0].id, CHARMS[1].id];
-  });
+  const [selectedCharmIds, setSelectedCharmIds] = useState<string[]>([]);
 
-  // Tải danh mục thực tế từ Cloud Firestore
+  // Tải danh mục thực tế từ Cloud Firestore (Chỉ lấy sản phẩm có trong Bộ Sưu Tập)
   useEffect(() => {
     async function loadStudioCatalog() {
       try {
+        setIsLoadingStudio(true);
         const dbProducts = await getProductsFromFirestore();
-        if (Array.isArray(dbProducts) && dbProducts.length > 0) {
-          // 1. Dòng Phôi Túi Lưới
-          const liveBags: BagBase[] = dbProducts
-            .filter((p: any) => p && p.isActive !== false && p.category !== "combo" && p.category !== "charm")
-            .map((p: any) => ({
-              id: p.id,
-              name: p.name || "Túi Lưới Tái Sinh",
-              tagline:
-                p.tagline ||
-                (p.description ? p.description.slice(0, 80) : "Thiết kế đan thủ công từ lưới ma tái sinh"),
-              description:
-                p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
-              basePrice: p.basePrice || p.price || 1250000,
-              plasticOffsetKg: p.plasticOffsetKg || 1.8,
-              dimensions: p.dimensions || "36cm x 32cm x 12cm",
-              capacity: p.capacity || "14 Lít",
-              colors: p.colors || BAG_COLORS,
-              anchorPoints: p.anchorPoints || [
-                { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
-                { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
-                { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
-                { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
-              ],
-              maxCharms: p.maxCharms || 8,
-              modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(p.category)
-                ? p.category
-                : "tote") as any,
-              image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
-              model3dUrl:
-                p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach.glb",
-              stockCount: p.stockCount ?? 50,
-              inStock: p.inStock !== false && (p.stockCount ?? 50) > 0,
-            }));
+        const rawProds = Array.isArray(dbProducts) ? dbProducts : [];
 
-          // 2. Dòng Charm Biển Sâu
-          const liveCharms: Charm[] = dbProducts
-            .filter((p: any) => p && p.isActive !== false && p.category === "charm")
-            .map((p: any) => ({
-              id: p.id,
-              name: p.name || "Charm Biển Sâu",
-              vietnameseName: p.vietnameseName || p.name || "Charm Thủy Tinh Biển",
-              category: p.charmCategory || "marine",
-              price: p.basePrice || p.price || 180000,
-              plasticOffsetGrams:
-                p.plasticOffsetGrams ||
-                (p.plasticOffsetKg ? Math.round(p.plasticOffsetKg * 1000) : 350),
-              material: p.material || "Thủy tinh biển & cước lưới tái sinh",
-              description: p.description || "Phụ kiện charm độc bản đúc thủ công.",
-              color: p.color || "#38bdf8",
-              glowColor: p.glowColor || "rgba(56, 189, 248, 0.4)",
-              symbol: p.symbol || "✨",
-              iconName: p.iconName || "Sparkles",
-              model3dUrl:
-                p.model3dUrl && p.model3dUrl.trim() !== ""
-                  ? p.model3dUrl
-                  : "/assets/models/caurongcharm.glb",
-              image: p.imageUrl || p.image || "",
-            }));
+        // 1. Dòng Phôi Túi Lưới có trong Bộ Sưu Tập
+        const liveBags: BagBase[] = rawProds
+          .filter(
+            (p: any) =>
+              p && p.isActive !== false && p.category !== "combo" && p.category !== "charm"
+          )
+          .map((p: any) => ({
+            id: String(p.id),
+            name: p.name || "Túi Lưới Tái Sinh",
+            tagline:
+              p.tagline ||
+              (p.description
+                ? p.description.slice(0, 80)
+                : "Thiết kế đan thủ công từ lưới ma tái sinh"),
+            description:
+              p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
+            basePrice: Number(p.basePrice) || Number(p.price) || 1250000,
+            plasticOffsetKg: Number(p.plasticOffsetKg) || 1.8,
+            dimensions: p.dimensions || "36cm x 32cm x 12cm",
+            capacity: p.capacity || "14 Lít",
+            colors: p.colors || BAG_COLORS,
+            anchorPoints: p.anchorPoints || [
+              { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+              { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+              { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+              { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+            ],
+            maxCharms: p.maxCharms || 8,
+            modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(
+              p.category
+            )
+              ? p.category
+              : "tote") as any,
+            image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
+            model3dUrl:
+              p.model3dUrl && p.model3dUrl.trim() !== ""
+                ? p.model3dUrl
+                : "/assets/models/tuixach.glb",
+            stockCount: Number(p.stockCount) || 0,
+            inStock: Boolean(p.inStock && Number(p.stockCount) > 0),
+          }));
 
-          if (liveBags.length > 0) {
-            setAllBags(liveBags);
-            const found = initialBagId
-              ? liveBags.find((b) => b.id === initialBagId)
-              : liveBags[0];
-            if (found) setSelectedBag(found);
+        // 2. Dòng Charm Biển Sâu có trong Bộ Sưu Tập
+        const liveCharms: Charm[] = rawProds
+          .filter((p: any) => p && p.isActive !== false && p.category === "charm")
+          .map((p: any) => ({
+            id: String(p.id),
+            name: p.name || "Charm Biển Sâu",
+            vietnameseName: p.vietnameseName || p.name || "Charm Thủy Tinh Biển",
+            category: p.charmCategory || "marine",
+            price: Number(p.basePrice) || Number(p.price) || 180000,
+            plasticOffsetGrams:
+              p.plasticOffsetGrams ||
+              (p.plasticOffsetKg ? Math.round(p.plasticOffsetKg * 1000) : 350),
+            material: p.material || "Thủy tinh biển & cước lưới tái sinh",
+            description: p.description || "Phụ kiện charm độc bản đúc thủ công.",
+            color: p.color || "#38bdf8",
+            glowColor: p.glowColor || "rgba(56, 189, 248, 0.4)",
+            symbol: p.symbol || "✨",
+            iconName: p.iconName || "Sparkles",
+            model3dUrl:
+              p.model3dUrl && p.model3dUrl.trim() !== ""
+                ? p.model3dUrl
+                : "/assets/models/caurongcharm.glb",
+            image: p.imageUrl || p.image || "",
+          }));
+
+        setAllBags(liveBags);
+        setAllCharms(liveCharms);
+
+        if (liveBags.length > 0) {
+          const found = initialBagId ? liveBags.find((b) => b.id === initialBagId) : undefined;
+          setSelectedBag(found || liveBags[0]);
+        } else {
+          setSelectedBag(null);
+        }
+
+        if (liveCharms.length > 0) {
+          if (charmsParam) {
+            const valid = charmsParam
+              .split(",")
+              .map((s) => s.trim())
+              .filter((id) => liveCharms.some((c) => c.id === id));
+            setSelectedCharmIds(valid.length > 0 ? valid : [liveCharms[0].id]);
+          } else {
+            setSelectedCharmIds([liveCharms[0].id]);
           }
-
-          if (liveCharms.length > 0) {
-            setAllCharms(liveCharms);
-            if (!charmsParam) {
-              setSelectedCharmIds([liveCharms[0].id]);
-            }
-          }
+        } else {
+          setSelectedCharmIds([]);
         }
       } catch (err) {
         console.warn("Studio catalog load error:", err);
+      } finally {
+        setIsLoadingStudio(false);
       }
     }
     loadStudioCatalog();
@@ -217,7 +227,17 @@ function YourStoryContent() {
         answers.intention || "resilience"
       );
       setAiRecommendation(rec);
-      setSelectedCharmIds(rec.recommendedCharmIds);
+      // Gợi ý charm chỉ từ những charm thực tế có trong bộ sưu tập
+      if (allCharms.length > 0) {
+        const matchedCharms = rec.recommendedCharmIds.filter((id) =>
+          allCharms.some((c) => c.id === id)
+        );
+        setSelectedCharmIds(
+          matchedCharms.length > 0 ? matchedCharms : [allCharms[0].id]
+        );
+      } else {
+        setSelectedCharmIds([]);
+      }
 
       // Select matching color / bag
       if (answers.vibe === "mythic") {
@@ -281,12 +301,18 @@ function YourStoryContent() {
 
   // Calculate pricing & plastic offset
   const charmsTotal = selectedCharms.reduce((sum, c) => sum + c.price, 0);
-  const totalPrice = selectedBag.basePrice + charmsTotal;
+  const totalPrice = (selectedBag ? selectedBag.basePrice : 0) + charmsTotal;
   const charmsGrams = selectedCharms.reduce((sum, c) => sum + c.plasticOffsetGrams, 0);
-  const totalPlasticKg = Number((selectedBag.plasticOffsetKg + charmsGrams / 1000).toFixed(2));
+  const totalPlasticKg = Number(
+    ((selectedBag ? selectedBag.plasticOffsetKg : 0) + charmsGrams / 1000).toFixed(2)
+  );
 
   // Add to cart helper
   const handleAddToCart = (shouldRedirectToCheckout = false) => {
+    if (!selectedBag) {
+      showToast("Thông báo", "Vui lòng chọn một mẫu túi trong bộ sưu tập!", "error");
+      return;
+    }
     let capturedImage = selectedBag.image;
     if (bag3dRef.current) {
       const snap = bag3dRef.current.captureSnapshot();
@@ -469,10 +495,42 @@ function YourStoryContent() {
 
         {/* Main 3D Workbench Layout (Shows for both Manual mode, and AI mode when generated) */}
         {(mode === "manual" || (mode === "ai" && aiRecommendation)) && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-            {/* Left Column: Interactive 3D Model Stage */}
-            <div className="lg:col-span-6 xl:col-span-7 flex flex-col gap-4 sticky top-24">
-              <div className="p-4 sm:p-6 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] relative overflow-hidden flex flex-col items-center justify-center">
+          isLoadingStudio ? (
+            <div className="py-20 text-center space-y-4 bg-white/80 rounded-3xl border border-slate-200 p-8 max-w-xl mx-auto shadow-sm">
+              <RefreshCw className="w-8 h-8 text-sky-600 animate-spin mx-auto" />
+              <h3 className="font-serif text-lg font-bold text-[#0b1e3b]">
+                Đang Đồng Bộ Mẫu Mã Từ Bộ Sưu Tập...
+              </h3>
+              <p className="text-xs text-slate-500">
+                Nạp trực tiếp các dáng túi và phụ kiện charm thực tế vào NÉT Studio.
+              </p>
+            </div>
+          ) : allBags.length === 0 ? (
+            <div className="py-20 text-center space-y-4 bg-white/95 rounded-3xl border border-slate-200 p-8 max-w-xl mx-auto shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center mx-auto border border-teal-100">
+                <Box className="w-8 h-8" />
+              </div>
+              <h3 className="font-serif text-lg font-bold text-[#0b1e3b]">
+                Bộ Sưu Tập Chưa Có Mẫu Túi Nào
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+                NÉT Studio chỉ hiển thị các mẫu mã thực tế có trong Bộ Sưu Tập. Quản trị viên vui lòng vào trang Quản trị để đăng mẫu mã túi trước.
+              </p>
+              <div className="pt-2">
+                <a
+                  href="/admin?tab=catalog"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                >
+                  <span>Đến Trang Quản Trị Đăng Mẫu</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          ) : selectedBag ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+              {/* Left Column: Interactive 3D Model Stage */}
+              <div className="lg:col-span-6 xl:col-span-7 flex flex-col gap-4 sticky top-24">
+                <div className="p-4 sm:p-6 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] relative overflow-hidden flex flex-col items-center justify-center">
                 {/* 3D Canvas Stage */}
                 <div className="w-full aspect-[4/5] sm:aspect-square max-h-[460px] relative flex items-center justify-center">
                   <BagCanvas3D
@@ -631,48 +689,54 @@ function YourStoryContent() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  {allCharms.map((charm) => {
-                    const isAttached = selectedCharmIds.includes(charm.id);
-                    return (
-                      <button
-                        key={charm.id}
-                        onClick={() => handleToggleCharm(charm.id)}
-                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${
-                          isAttached
-                            ? "border-teal-600 bg-teal-50/80 shadow-xs ring-1 ring-teal-600"
-                            : "border-slate-200 bg-slate-50 hover:bg-white text-slate-800"
-                        }`}
-                      >
-                        {isAttached && (
-                          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 mb-1">
-                          {charm.image ? (
-                            <img
-                              src={charm.image}
-                              alt={charm.vietnameseName}
-                              className="w-6 h-6 rounded-md object-cover border border-slate-200"
-                            />
-                          ) : (
-                            <span className="text-sm">{charm.symbol || "✨"}</span>
+                {allCharms.length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
+                    Bộ sưu tập hiện chưa có phụ kiện charm nào được đăng.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {allCharms.map((charm) => {
+                      const isAttached = selectedCharmIds.includes(charm.id);
+                      return (
+                        <button
+                          key={charm.id}
+                          onClick={() => handleToggleCharm(charm.id)}
+                          className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                            isAttached
+                              ? "border-teal-600 bg-teal-50/80 shadow-xs ring-1 ring-teal-600"
+                              : "border-slate-200 bg-slate-50 hover:bg-white text-slate-800"
+                          }`}
+                        >
+                          {isAttached && (
+                            <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
                           )}
-                          <div className="text-xs font-bold text-[#0b1e3b] pr-4 truncate">
-                            {charm.vietnameseName}
+                          <div className="flex items-center gap-2 mb-1">
+                            {charm.image ? (
+                              <img
+                                src={charm.image}
+                                alt={charm.vietnameseName}
+                                className="w-6 h-6 rounded-md object-cover border border-slate-200"
+                              />
+                            ) : (
+                              <span className="text-sm">{charm.symbol || "✨"}</span>
+                            )}
+                            <div className="text-xs font-bold text-[#0b1e3b] pr-4 truncate">
+                              {charm.vietnameseName}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-[11px] font-bold text-sky-800 mt-0.5">
-                          +{formatVND(charm.price)}
-                        </div>
-                        <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
-                          {charm.description || charm.symbol}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                          <div className="text-[11px] font-bold text-sky-800 mt-0.5">
+                            +{formatVND(charm.price)}
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
+                            {charm.description || charm.symbol}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* 4. Pricing & Direct Checkout Bar */}
@@ -714,7 +778,8 @@ function YourStoryContent() {
               </div>
             </div>
           </div>
-        )}
+        ) : null
+      )}
       </div>
     </div>
   );

@@ -99,7 +99,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
     description: "",
     plasticOffsetKg: 1.8,
     imageUrl: "",
-    model3dUrl: "",
+    model3dUrl: "/assets/models/tuixach.glb",
     inStock: false,
     stockCount: 0,
   });
@@ -117,10 +117,10 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       name: "",
       category: "tote",
       basePrice: 1250000,
-      description: "Túi xách tái chế thủ công từ lưới ma đại dương Việt Nam.",
+      description: "Mẫu túi đan thủ công từ sợi cước lưới ma đại dương Việt Nam.",
       plasticOffsetKg: 1.8,
       imageUrl: "",
-      model3dUrl: "",
+      model3dUrl: "/assets/models/tuixach.glb",
       inStock: false,
       stockCount: 0,
     });
@@ -138,7 +138,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       description: prod.description || "",
       plasticOffsetKg: prod.plasticOffsetKg || 1.8,
       imageUrl: prod.imageUrl || prod.image || "",
-      model3dUrl: prod.model3dUrl || "",
+      model3dUrl: prod.model3dUrl || "/assets/models/tuixach.glb",
       inStock: realStock > 0,
       stockCount: realStock,
     });
@@ -353,7 +353,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/20"
               >
                 <Plus className="w-4 h-4" />
-                <span>Thêm Sản Phẩm Mới (Mã ID: {getNextProductId(products)})</span>
+                <span>Đăng Mẫu Mã Mới (Mã ID: {getNextProductId(products)})</span>
               </button>
             </div>
           </div>
@@ -364,9 +364,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 <Box className="w-7 h-7" />
               </div>
               <div className="space-y-1">
-                <h3 className="font-bold text-slate-800 text-sm sm:text-base">Chưa có sản phẩm nào trong cơ sở dữ liệu</h3>
+                <h3 className="font-bold text-slate-800 text-sm sm:text-base">Chưa có mẫu mã nào trong Bộ Sưu Tập</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                  Bạn có thể bấm &quot;Thêm Sản Phẩm Mới&quot; để tải ảnh lên Cloudinary và gắn mô hình 3D .glb. Mọi sản phẩm đăng tại đây sẽ xuất hiện trực tiếp trên trang Bộ sưu tập.
+                  Bấm &quot;Đăng Mẫu Mã Mới&quot; để tạo bản vẽ thiết kế (hình ảnh, mô hình 3D, dáng túi). Mẫu mã sau khi tạo sẽ hiển thị trên Bộ Sưu Tập &amp; NÉT Studio, và dùng để chọn may trong Chuỗi Cung Ứng.
                 </p>
               </div>
               <button
@@ -375,7 +375,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Thêm Sản Phẩm Đầu Tiên</span>
+                <span>Đăng Mẫu Mã Đầu Tiên</span>
               </button>
             </div>
           ) : (
@@ -592,16 +592,29 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
             className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto animate-scaleUp"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-black text-slate-900">
-                {editingProductId ? "Chỉnh Sửa Sản Phẩm" : "Thêm Sản Phẩm Mới"}
-              </h3>
+              <div>
+                <h3 className="text-lg font-black text-slate-900">
+                  {editingProductId ? "Chỉnh Sửa Thông Số Mẫu Mã" : "Đăng Mẫu Mã Mới Lên Bộ Sưu Tập"}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tạo bản vẽ và quy chuẩn thiết kế sản phẩm (không có trường nhập số lượng)
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowProductModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Circular Economy Guidance Alert */}
+            <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <strong>Quy trình kinh tế tuần hoàn:</strong> Mục này thuần túy để định nghĩa <strong>Mẫu Mã Thiết Kế</strong> (tên mẫu, phân loại dáng, định mức cước lưới, giá bán, mô hình 3D). Mẫu mã sau khi lưu sẽ xuất hiện trên <strong>Bộ Sưu Tập</strong> và <strong>NÉT Studio</strong>. <strong>Không hề có trường nhập số lượng tại đây</strong> — số lượng hàng có sẵn để bán sẽ được quyết định tự động khi xưởng nhập lưới và sản xuất theo mẫu này trong mục Chuỗi Cung Ứng.
+              </div>
             </div>
 
             <div className="space-y-3 text-xs">
@@ -677,58 +690,26 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-700 block text-xs">
-                      Số Lượng Hàng Đang Có
-                    </label>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        productForm.stockCount > 0
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {productForm.stockCount > 0
-                        ? `Còn ${productForm.stockCount} chiếc`
-                        : "Hết hàng (0 chiếc)"}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-tight">
-                    Tồn kho được tính tự động từ số túi may thành phẩm từ Kiện Lưới trong Chuỗi Cung Ứng. Không nhập thủ công.
-                  </p>
-                  {onNavigateTab && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowProductModal(false);
-                        onNavigateTab("supply-chain");
-                      }}
-                      className="text-[11px] font-bold text-teal-700 hover:text-teal-900 inline-flex items-center gap-1 cursor-pointer pt-0.5"
-                    >
-                      <span>➔ Đến Chuỗi Cung Ứng May Thêm Túi</span>
-                    </button>
-                  )}
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Số Kg Lưới Tiêu Thụ / Chiếc
-                  </label>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Định Mức Lưới Ma Tiêu Thụ / Chiếc (kg)
+                </label>
+                <div className="flex items-center gap-3">
                   <input
                     type="number"
                     step="0.1"
                     min="0.1"
+                    required
                     value={productForm.plasticOffsetKg}
                     onChange={(e) =>
                       setProductForm({ ...productForm, plasticOffsetKg: Number(e.target.value) })
                     }
-                    className="w-full p-2.5 rounded-xl border border-slate-300"
+                    className="w-48 p-2.5 rounded-xl border border-slate-300 font-mono font-bold text-teal-800 bg-teal-50/30"
+                    placeholder="1.8"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Định mức lưới trừ từ Kiện Lưới nhập khi xưởng nhận lệnh may mẫu này.
-                  </p>
+                  <div className="text-[11px] text-slate-500 leading-tight">
+                    Khối lượng lưới ma sẽ tự động trừ vào <strong>Kiện Lưới nguồn</strong> mỗi khi xưởng may 1 chiếc túi theo mẫu này.
+                  </div>
                 </div>
               </div>
 
@@ -843,9 +824,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/20"
+                className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/20 cursor-pointer"
               >
-                Lưu Sản Phẩm
+                {editingProductId ? "Lưu Thay Đổi Mẫu Mã" : "Đăng Mẫu Mã Lên Bộ Sưu Tập & NÉT Studio"}
               </button>
             </div>
           </form>

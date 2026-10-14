@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { BAG_BASES, BAG_COLORS } from "@/data/products";
+import { BAG_COLORS } from "@/data/products";
 import { BagBase, BagMeshColor } from "@/types";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
 import { GlassButton } from "@/components/ui/GlassButton";
@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 
 export const Bag3DShowcase: React.FC = () => {
-  const [allBags, setAllBags] = useState<BagBase[]>(BAG_BASES);
-  const [selectedBag, setSelectedBag] = useState<BagBase>(BAG_BASES[0]);
+  const [allBags, setAllBags] = useState<BagBase[]>([]);
+  const [selectedBag, setSelectedBag] = useState<BagBase | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedColor, setSelectedColor] = useState<BagMeshColor>(BAG_COLORS[0]);
   const { addToCart } = useCart();
   const { showToast } = useToast();
@@ -30,10 +31,11 @@ export const Bag3DShowcase: React.FC = () => {
   useEffect(() => {
     async function loadBags() {
       try {
+        setIsLoading(true);
         const dbProducts = await getProductsFromFirestore();
         if (dbProducts && dbProducts.length > 0) {
           const liveBags: BagBase[] = dbProducts
-            .filter((p: any) => p && p.isActive !== false && p.category !== "charm")
+            .filter((p: any) => p && p.isActive !== false && p.category !== "charm" && p.category !== "combo")
             .map((p: any) => ({
               id: p.id,
               name: p.name || "Túi Lưới Tái Sinh",
@@ -58,22 +60,31 @@ export const Bag3DShowcase: React.FC = () => {
               image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
               model3dUrl:
                 p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach.glb",
-              stockCount: p.stockCount ?? 50,
-              inStock: p.inStock !== false && (p.stockCount ?? 50) > 0,
+              stockCount: Number(p.stockCount) || 0,
+              inStock: Boolean(p.inStock && Number(p.stockCount) > 0),
             }));
           if (liveBags.length > 0) {
             setAllBags(liveBags);
             setSelectedBag(liveBags[0]);
+          } else {
+            setAllBags([]);
+            setSelectedBag(null);
           }
+        } else {
+          setAllBags([]);
+          setSelectedBag(null);
         }
       } catch (e) {
         console.warn("Bag showcase load error:", e);
+      } finally {
+        setIsLoading(false);
       }
     }
     loadBags();
   }, []);
 
   const handleAddToCart = () => {
+    if (!selectedBag) return;
     addToCart({
       type: "base_bag",
       title: `${selectedBag.name} (${selectedColor.name})`,
@@ -111,16 +122,41 @@ export const Bag3DShowcase: React.FC = () => {
         </p>
       </motion.div>
 
-      {/* Main 3D Studio Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
-        {/* Left: 3D Interactive Stage */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="lg:col-span-7 bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(11,30,59,0.07)] relative"
-        >
+      {/* Main 3D Studio Container / Loading / Empty State */}
+      {isLoading ? (
+        <div className="p-12 text-center rounded-3xl bg-white/80 border border-slate-200/90 shadow-sm max-w-xl mx-auto space-y-3">
+          <div className="w-10 h-10 mx-auto rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">
+            Đang tải dữ liệu mô hình 3D từ Bộ Sưu Tập...
+          </p>
+        </div>
+      ) : allBags.length === 0 ? (
+        <div className="p-10 text-center rounded-3xl bg-white/80 border border-slate-200/90 shadow-sm max-w-xl mx-auto space-y-3">
+          <div className="w-12 h-12 mx-auto rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">
+            <ShoppingBag className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[#0b1e3b]">Chưa Có Mẫu Túi 3D Trong Bộ Sưu Tập</h3>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Các mẫu túi dệt tái sinh đang được cập nhật từ xưởng may. Quản trị viên có thể thêm mẫu thiết kế mới trong trang Quản trị.
+            </p>
+          </div>
+          <Link href="/admin" className="inline-block pt-1">
+            <GlassButton variant="secondary" size="sm" icon={<ArrowRight className="w-4 h-4 text-[#0b1e3b]" />}>
+              Đăng Mẫu Thiết Kế Mới
+            </GlassButton>
+          </Link>
+        </div>
+      ) : selectedBag && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
+          {/* Left: 3D Interactive Stage */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="lg:col-span-7 bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(11,30,59,0.07)] relative"
+          >
           {/* Top Control Bar */}
           <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 gap-2">
             <div className="flex items-center gap-2">
@@ -282,6 +318,7 @@ export const Bag3DShowcase: React.FC = () => {
           </AnimatePresence>
         </motion.div>
       </div>
+      )}
     </section>
   );
 };

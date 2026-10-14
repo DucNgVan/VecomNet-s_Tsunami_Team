@@ -3,19 +3,14 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { COMBOS, BAG_BASES } from "@/data/products";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { formatVND, formatKg } from "@/lib/utils";
-import { useCart } from "@/context/CartContext";
-import { useToast } from "@/components/ui/ToastNotification";
-import { Sparkles, ShoppingBag, ArrowRight, Wand2 } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowRight } from "lucide-react";
 import { BagCard3D } from "@/components/3d/BagCard3D";
 import { CloudinaryImage } from "@/components/common/CloudinaryImage";
 import { getProductsFromFirestore } from "@/lib/firestoreService";
 
 export const FeaturedCollection: React.FC = () => {
-  const { addToCart } = useCart();
-  const { showToast } = useToast();
   const [dbProducts, setDbProducts] = React.useState<any[]>([]);
 
   React.useEffect(() => {
@@ -31,28 +26,6 @@ export const FeaturedCollection: React.FC = () => {
     }
     loadLiveProducts();
   }, []);
-
-  const handleAddCombo = (combo: (typeof COMBOS)[0]) => {
-    addToCart({
-      type: "combo",
-      title: combo.name,
-      price: combo.price,
-      quantity: 1,
-      image: combo.image,
-      plasticOffsetKg: combo.plasticOffsetKg,
-      details: {
-        colorName: combo.color.name,
-        charmsCount: combo.includedCharms.length,
-        charmsList: combo.includedCharms.map((c) => c.vietnameseName),
-      },
-    });
-
-    showToast(
-      "Đã thêm vào giỏ hàng!",
-      `Set phối độc bản "${combo.name}" đã được đưa vào túi của bạn.`,
-      "success"
-    );
-  };
 
   return (
     <section id="story-collection" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
@@ -79,22 +52,40 @@ export const FeaturedCollection: React.FC = () => {
         <div className="pt-2">
           <Link href="/shop" className="inline-block">
             <GlassButton variant="secondary" size="md" icon={<ArrowRight className="w-4 h-4 text-[#0b1e3b]" />}>
-              Xem Tất Cả Mẫu Trong Bộ Sưu Tập ({dbProducts.length > 0 ? dbProducts.length : (BAG_BASES.length + COMBOS.length)})
+              Xem Tất Cả Mẫu Trong Bộ Sưu Tập ({dbProducts.length})
             </GlassButton>
           </Link>
         </div>
       </motion.div>
 
-      {/* Combos & Dynamic Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {(dbProducts.length > 0 ? dbProducts.slice(0, 6) : COMBOS).map((item, idx) => {
-          const isDbItem = dbProducts.length > 0;
-          const id = item.id;
-          const name = item.name;
-          const price = item.basePrice || item.price || 1250000;
-          const plasticKg = item.plasticOffsetKg || 1.8;
-          const model3d = item.model3dUrl || (!isDbItem ? "/assets/models/tuixach.glb" : undefined);
-          const img = item.imageUrl || item.image || "/assets/products/tote-blue.png";
+      {/* Dynamic Products Grid */}
+      {dbProducts.length === 0 ? (
+        <div className="p-10 text-center rounded-3xl bg-white/80 border border-slate-200/90 shadow-sm max-w-xl mx-auto space-y-3">
+          <div className="w-12 h-12 mx-auto rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">
+            <ShoppingBag className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[#0b1e3b]">Bộ Sưu Tập Đang Chờ Ra Mắt</h3>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Hiện chưa có mẫu mã nào được kích hoạt trong Bộ Sưu Tập. Mời bạn ghé thăm trang Shop hoặc vào trang Quản trị để đăng mẫu mã thiết kế mới.
+            </p>
+          </div>
+          <Link href="/admin" className="inline-block pt-1">
+            <GlassButton variant="secondary" size="sm" icon={<ArrowRight className="w-4 h-4 text-[#0b1e3b]" />}>
+              Đăng Mẫu Thiết Kế Mới
+            </GlassButton>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {dbProducts.slice(0, 6).map((item, idx) => {
+            const id = item.id;
+            const name = item.name;
+            const price = item.basePrice || item.price || 1250000;
+            const plasticKg = item.plasticOffsetKg || 1.8;
+            const model3d = item.model3dUrl;
+            const img = item.imageUrl || item.image || "/assets/products/tote-blue.png";
+            const inStock = Boolean(item.inStock && Number(item.stockCount) > 0);
 
           return (
             <motion.div
@@ -110,7 +101,7 @@ export const FeaturedCollection: React.FC = () => {
                 {/* Badge & Impact Header */}
                 <div className="flex items-center justify-between mb-4">
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">
-                    {isDbItem ? `Mã ID: ${id}` : (item.badge || "Độc Bản")}
+                    Mã ID: {id}
                   </span>
                   <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                     <Sparkles className="w-3 h-3 text-emerald-600" />
@@ -147,11 +138,16 @@ export const FeaturedCollection: React.FC = () => {
                 </p>
               </div>
 
-              {/* Price & Direct Link to Shop Detail */}
+              {/* Price & Stock Status & Direct Link to Shop Detail */}
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                <span className="text-base sm:text-lg font-bold text-[#0b1e3b]">
-                  {formatVND(price)}
-                </span>
+                <div>
+                  <span className="text-base sm:text-lg font-bold text-[#0b1e3b] block">
+                    {formatVND(price)}
+                  </span>
+                  <span className={`text-[11px] font-semibold ${inStock ? "text-emerald-600" : "text-amber-600"}`}>
+                    {inStock ? `Còn ${item.stockCount} chiếc` : "Chờ xưởng may"}
+                  </span>
+                </div>
 
                 <Link href={`/shop`}>
                   <GlassButton
@@ -168,6 +164,7 @@ export const FeaturedCollection: React.FC = () => {
           );
         })}
       </div>
+      )}
     </section>
   );
 };

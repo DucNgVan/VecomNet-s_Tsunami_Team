@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { NetPack, ManufacturedBagItem } from "@/types";
-import { BAG_BASES, BAG_COLORS } from "@/data/products";
+import { BAG_COLORS } from "@/data/products";
 import { formatKg, formatVND } from "@/lib/utils";
 import {
   Anchor,
@@ -84,27 +84,16 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
     notes: "Lưới rê đánh bắt mực vô chủ chùm lên rạn san hô",
   });
 
-  // Danh sách các mẫu túi thực tế để sản xuất: Ưu tiên các sản phẩm thực tế trong Bộ Sưu Tập (Catalog)
+  // Danh sách các mẫu túi thực tế để sản xuất: Lấy 100% từ các mẫu mã trong Bộ Sưu Tập (Catalog)
   const availableBagModels = useMemo(() => {
-    const catalogBags = (products || [])
-      .filter((p) => p.category !== "charm")
+    return (products || [])
+      .filter((p) => p && p.category !== "charm")
       .map((p) => ({
         id: String(p.id),
-        name: p.name || `Túi #${p.id}`,
+        name: p.name || `Mẫu #${p.id}`,
         plasticOffsetKg: Number(p.plasticOffsetKg) || 1.8,
         isFromCatalog: true,
       }));
-
-    if (catalogBags.length > 0) {
-      return catalogBags;
-    }
-
-    return BAG_BASES.map((b) => ({
-      id: b.id,
-      name: b.name,
-      plasticOffsetKg: b.plasticOffsetKg,
-      isFromCatalog: false,
-    }));
   }, [products]);
 
   // Production Order Form Modal & State
@@ -140,8 +129,8 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
     availableBagModels.find((b) => b.id === productionForm.bagBaseId) || availableBagModels[0];
   const netRequiredPerBag = selectedBagModel?.plasticOffsetKg || 1.8;
   const totalNetNeeded = Number((netRequiredPerBag * (Number(productionForm.quantity) || 1)).toFixed(2));
-  const availableKgInPack = selectedPack?.remainingWeightKg ?? 0;
-  const isEnoughNet = availableKgInPack >= totalNetNeeded && availableKgInPack > 0;
+  const isEnoughNet =
+    availableBagModels.length > 0 && availableKgInPack >= totalNetNeeded && availableKgInPack > 0;
   const projectedRemainingKg = Number((availableKgInPack - totalNetNeeded).toFixed(2));
 
   // Inventory Search & Filter
@@ -509,21 +498,30 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
 
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">
-                    2. Chọn Mẫu Sản Phẩm Cần May (Từ Bộ Sưu Tập)
+                    2. Chọn Mẫu Sản Phẩm Cần May (Từ Mẫu Mã Bộ Sưu Tập)
                   </label>
-                  <select
-                    value={productionForm.bagBaseId}
-                    onChange={(e) =>
-                      setProductionForm({ ...productionForm, bagBaseId: e.target.value })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
-                  >
-                    {availableBagModels.map((bag) => (
-                      <option key={bag.id} value={bag.id}>
-                        {bag.name} {bag.isFromCatalog ? `(ID: ${bag.id})` : ""} • Tiêu thụ ~{bag.plasticOffsetKg} kg lưới/chiếc
-                      </option>
-                    ))}
-                  </select>
+                  {availableBagModels.length === 0 ? (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs space-y-1">
+                      <p className="font-bold">⚠️ Chưa có mẫu mã nào trong Bộ Sưu Tập!</p>
+                      <p className="text-[11px] text-slate-600">
+                        Vui lòng sang tab <strong>Bộ Sưu Tập &amp; CMS</strong> để đăng bản thiết kế mẫu mã trước khi phát lệnh may xưởng.
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      value={productionForm.bagBaseId}
+                      onChange={(e) =>
+                        setProductionForm({ ...productionForm, bagBaseId: e.target.value })
+                      }
+                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                    >
+                      {availableBagModels.map((bag) => (
+                        <option key={bag.id} value={bag.id}>
+                          {bag.name} (Mã ID: {bag.id}) • Tiêu thụ ~{bag.plasticOffsetKg} kg lưới/chiếc
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 
@@ -636,9 +634,9 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
               <div className="flex items-center justify-end pt-2">
                 <button
                   type="submit"
-                  disabled={!isEnoughNet || netPacks.length === 0}
+                  disabled={!isEnoughNet || netPacks.length === 0 || availableBagModels.length === 0}
                   className={`px-6 py-2.5 rounded-xl font-bold text-xs shadow-md flex items-center gap-1.5 transition-all ${
-                    isEnoughNet && netPacks.length > 0
+                    isEnoughNet && netPacks.length > 0 && availableBagModels.length > 0
                       ? "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-600/20 cursor-pointer"
                       : "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
                   }`}

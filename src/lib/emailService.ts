@@ -125,7 +125,7 @@ export function generateOrderReceiptHTML(order: Order): string {
           <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">📍 ĐỊA CHỈ NHẬN HÀNG:</div>
           <div style="color: #334155;"><strong>Người nhận:</strong> ${order.customer.fullName} - ${order.customer.phone}</div>
           <div style="color: #334155;"><strong>Địa chỉ:</strong> ${order.customer.address}, ${order.customer.city}</div>
-          ${order.customer.notes ? `<div style="color: #64748b; margin-top: 4px;"><strong>Ghi chú:</strong> ${order.customer.notes}</div>` : ""}
+          ${order.customer.note ? `<div style="color: #64748b; margin-top: 4px;"><strong>Ghi chú:</strong> ${order.customer.note}</div>` : ""}
 
           <hr style="border: none; border-top: 1px dashed #cbd5e1; margin: 12px 0;" />
 

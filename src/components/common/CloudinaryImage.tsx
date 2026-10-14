@@ -62,7 +62,7 @@ export const CloudinaryImage: React.FC<CloudinaryImageProps> = ({
   try {
     return (
       <CldImage
-        cloudName={cloudName}
+        config={{ cloud: { cloudName } }}
         src={src}
         alt={alt}
         width={width}

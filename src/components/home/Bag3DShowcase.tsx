@@ -40,10 +40,12 @@ export const Bag3DShowcase: React.FC = () => {
               id: p.id,
               name: p.name || "Túi Lưới Tái Sinh",
               vietnameseName: p.vietnameseName || p.name || "Túi Lưới Tái Sinh",
+              tagline: p.tagline || p.description || "Dệt thủ công từ lưới rác đại dương.",
               description: p.description || "Dệt thủ công từ lưới rác đại dương.",
               basePrice: p.basePrice || p.price || 420000,
               plasticOffsetKg:
                 p.plasticOffsetKg ?? (p.plasticOffsetGrams ? p.plasticOffsetGrams / 1000 : 1.2),
+              colors: p.colors || BAG_COLORS,
               meshPattern: "diagonal",
               anchorPoints: [
                 { id: "a1", x: 26, y: 32, label: "Góc trên trái" },

@@ -48,7 +48,7 @@ export class OrderRepository {
    * Tìm đơn hàng theo Order Code (ví dụ NET-ORD-8821)
    */
   static async getByCode(orderCode: string): Promise<BackendOrder | null> {
-    for (const order of memoryOrderStore.values()) {
+    for (const order of Array.from(memoryOrderStore.values())) {
       if (order.orderCode === orderCode) return order;
     }
 

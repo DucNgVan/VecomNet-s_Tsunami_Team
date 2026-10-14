@@ -33,7 +33,7 @@ export const BrandStoriesSection: React.FC = () => {
     <section id="story-journal" className="py-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-12">
       {/* Section Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
-        <GlassBadge variant="sky">NHẬT KÝ ĐẠI DƯƠNG • CÂU CHUYỆN NGHỆ NHÂN</GlassBadge>
+        <GlassBadge variant="ocean">NHẬT KÝ ĐẠI DƯƠNG • CÂU CHUYỆN NGHỆ NHÂN</GlassBadge>
         <h2 className="text-3xl sm:text-4xl font-black text-[#0b1e3b] tracking-tight">
           Những Chuyến Hải Trình & Ký Sự Tái Sinh
         </h2>

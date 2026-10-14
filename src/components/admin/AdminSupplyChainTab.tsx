@@ -125,6 +125,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
 
   // Live calculation of net consumption
   const selectedPack = netPacks.find((p) => p.packId === productionForm.sourcePackId) || netPacks[0];
+  const availableKgInPack = Number(selectedPack?.remainingWeightKg ?? 0);
   const selectedBagModel =
     availableBagModels.find((b) => b.id === productionForm.bagBaseId) || availableBagModels[0];
   const netRequiredPerBag = selectedBagModel?.plasticOffsetKg || 1.8;

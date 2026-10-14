@@ -189,6 +189,7 @@ function YourStoryContent() {
 
   // Toggle Charm Selection
   const handleToggleCharm = (charmId: string) => {
+    if (!selectedBag) return;
     if (selectedCharmIds.includes(charmId)) {
       setSelectedCharmIds((prev) => prev.filter((id) => id !== charmId));
     } else {

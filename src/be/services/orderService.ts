@@ -136,7 +136,7 @@ export class OrderService {
       amount: grandTotal,
     };
 
-    const calculatedPlasticOffset = verifiedItems.reduce((sum, item) => {
+    const calculatedPlasticOffset = verifiedItems.reduce((sum: number, item: any) => {
       const itemKg = Number(item.plasticOffsetKg) || 0;
       return sum + itemKg * (item.quantity || 1);
     }, 0);

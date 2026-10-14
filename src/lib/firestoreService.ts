@@ -296,6 +296,7 @@ export async function getPassportDataFromFirestore(passportId: string): Promise<
               story: pack.notes || `Lưới ma thu hồi tại ${pack.seaRegion}, độ sâu ${pack.depthMeters}m bởi ${pack.diverTeam}.`,
               marineAnimalsSavedCount: 14,
               locationDetails: pack.locationDetails,
+              images: pack.images || [],
               verificationHash: `0xNET-${pack.packId.replace(/[^a-zA-Z0-9]/g, "")}-VERIFIED`,
               co2OffsetKg: Number((pack.totalWeightKg * 1.9).toFixed(1)),
             };

@@ -29,11 +29,11 @@ export const Mission3DSection: React.FC = () => {
             setFeaturedBag({
               id: b.id,
               name: b.name || "Túi Lưới Tái Sinh",
-              vietnameseName: b.vietnameseName || b.name || "Túi Lưới Tái Sinh",
+              tagline: b.tagline || b.description || "Dệt thủ công từ lưới rác đại dương.",
               description: b.description || "Dệt thủ công từ lưới rác đại dương.",
               basePrice: b.basePrice || b.price || 420000,
               plasticOffsetKg: b.plasticOffsetKg ?? 1.8,
-              meshPattern: "diagonal",
+              colors: b.colors || BAG_COLORS,
               anchorPoints: [
                 { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
                 { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
@@ -41,9 +41,9 @@ export const Mission3DSection: React.FC = () => {
                 { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
               ],
               maxCharms: b.maxCharms || 4,
-              dimensions: b.dimensions || { width: 34, height: 38, depth: 10 },
+              dimensions: typeof b.dimensions === "string" ? b.dimensions : "34cm x 38cm x 10cm",
               capacity: b.capacity || "12L",
-              modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(b.category)
+              modelType: (["tote", "bucket", "mini", "hobo"].includes(b.category)
                 ? b.category
                 : "tote") as any,
               image: b.imageUrl || b.image || "/assets/products/tote-blue.png",
@@ -62,14 +62,14 @@ export const Mission3DSection: React.FC = () => {
   const activeBag: BagBase = featuredBag || {
     id: "net-tote",
     name: "Túi Lưới Tái Sinh NÉT",
-    vietnameseName: "Túi Lưới Tái Sinh NÉT",
+    tagline: "Dệt thủ công từ sợi cước lưới ma đại dương.",
     description: "Dệt thủ công từ sợi cước lưới ma đại dương.",
     basePrice: 420000,
     plasticOffsetKg: 1.8,
-    meshPattern: "diagonal",
+    colors: BAG_COLORS,
     anchorPoints: [],
     maxCharms: 4,
-    dimensions: { width: 34, height: 38, depth: 10 },
+    dimensions: "34cm x 38cm x 10cm",
     capacity: "12L",
     modelType: "tote",
     image: "/assets/products/tote-blue.png",

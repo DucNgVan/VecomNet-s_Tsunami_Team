@@ -37,11 +37,14 @@ export class OrderService {
     let calculatedSubtotal = 0;
 
     const verifiedItems = items.map((cartItem: any) => {
+      const bagBaseId = cartItem.bagBaseId || cartItem.details?.configuration?.bagBase?.id;
+      const bagBaseName = cartItem.details?.configuration?.bagBase?.name;
       const matched = productCatalog.find(
         (p) =>
-          p.id === cartItem.bagBaseId ||
+          (bagBaseId && (p.id === bagBaseId || p.category === bagBaseId)) ||
           p.id === cartItem.id ||
-          cartItem.title?.toLowerCase().includes(p.name.toLowerCase())
+          (p.name && cartItem.title?.toLowerCase().includes(p.name.toLowerCase())) ||
+          (bagBaseName && p.name && p.name.toLowerCase() === bagBaseName.toLowerCase())
       );
 
       const verifiedPrice = matched ? matched.basePrice : Number(cartItem.price) || 1250000;
@@ -55,7 +58,7 @@ export class OrderService {
 
       return {
         ...cartItem,
-        bagBaseId: matched ? matched.id : cartItem.bagBaseId,
+        bagBaseId: matched ? matched.id : bagBaseId || cartItem.bagBaseId,
         price: verifiedPrice,
         quantity,
         plasticOffsetKg,
@@ -64,20 +67,52 @@ export class OrderService {
 
     // 2. KIỂM TRA TỒN KHO: Chặn đặt hàng nếu sản phẩm hết hàng hoặc số lượng không đủ
     for (const item of verifiedItems) {
+      const bagBaseId = item.bagBaseId || item.details?.configuration?.bagBase?.id;
+      const bagBaseName = item.details?.configuration?.bagBase?.name;
       const matched = productCatalog.find(
         (p) =>
-          p.id === item.bagBaseId ||
+          (bagBaseId && (p.id === bagBaseId || p.category === bagBaseId)) ||
           p.id === item.id ||
-          item.title?.toLowerCase().includes(p.name.toLowerCase())
+          (p.name && item.title?.toLowerCase().includes(p.name.toLowerCase())) ||
+          (bagBaseName && p.name && p.name.toLowerCase() === bagBaseName.toLowerCase())
       );
       if (matched) {
         if (!matched.inStock || matched.stockCount <= 0) {
-          throw new Error(`Sản phẩm "${matched.name}" hiện đã hết hàng trong kho!`);
+          throw new Error(`Sản phẩm "${matched.name}" hiện đã HẾT HÀNG trong kho! Vui lòng chọn sản phẩm khác.`);
         }
         if (matched.stockCount < item.quantity) {
           throw new Error(
             `Sản phẩm "${matched.name}" chỉ còn ${matched.stockCount} chiếc trong kho, không đủ đáp ứng số lượng bạn đặt (${item.quantity})!`
           );
+        }
+      }
+    }
+
+    // 2B. Đối chiếu kho thành phẩm thực tế từ InventoryRepository
+    const bagCartItems = verifiedItems.filter(
+      (it: any) => it.type === "base_bag" || it.type === "custom_bag" || it.type === "combo"
+    );
+    if (bagCartItems.length > 0) {
+      const allBagItems = await InventoryRepository.getAllBagItems();
+      if (allBagItems.length > 0) {
+        for (const item of bagCartItems) {
+          const targetBaseId = String(item.bagBaseId || item.details?.configuration?.bagBase?.id || "").toLowerCase();
+          const targetTitle = String(item.title || "").toLowerCase();
+          const bagBaseName = String(item.details?.configuration?.bagBase?.name || "").toLowerCase();
+
+          const matchingInStock = allBagItems.filter(
+            (bi) =>
+              bi.status === "in_stock" &&
+              !bi.isClaimed &&
+              ((targetBaseId !== "" && (String(bi.bagBaseId).toLowerCase() === targetBaseId || String(bi.bagBaseId).toLowerCase().includes(targetBaseId))) ||
+                (targetTitle !== "" && bi.bagName && (targetTitle.includes(bi.bagName.toLowerCase()) || bi.bagName.toLowerCase().includes(targetTitle))) ||
+                (bagBaseName !== "" && bi.bagName && (bagBaseName.includes(bi.bagName.toLowerCase()) || bi.bagName.toLowerCase().includes(bagBaseName))))
+          );
+          if (matchingInStock.length < item.quantity) {
+            throw new Error(
+              `Kho xưởng hiện không đủ túi "${item.title}" để giao (chỉ còn ${matchingInStock.length} chiếc sẵn sàng)!`
+            );
+          }
         }
       }
     }

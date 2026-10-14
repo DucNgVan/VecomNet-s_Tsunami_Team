@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/ToastNotification";
 import { formatVND, formatKg } from "@/lib/utils";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { getProductsFromFirestore } from "@/lib/firestoreService";
+import { getManufacturedItems } from "@/lib/supplyChainStorage";
 import {
   Sparkles,
   Rotate3d,
@@ -31,6 +32,7 @@ import {
   Layers,
   CheckCircle2,
   X,
+  AlertCircle,
 } from "lucide-react";
 
 function YourStoryContent() {
@@ -68,47 +70,65 @@ function YourStoryContent() {
         const dbProducts = await getProductsFromFirestore();
         const rawProds = Array.isArray(dbProducts) ? dbProducts : [];
 
+        const mfgItems = typeof window !== "undefined" ? getManufacturedItems() : [];
+
         // 1. Dòng Phôi Túi Lưới có trong Bộ Sưu Tập
         const liveBags: BagBase[] = rawProds
           .filter(
             (p: any) =>
               p && p.isActive !== false && p.category !== "combo" && p.category !== "charm"
           )
-          .map((p: any) => ({
-            id: String(p.id),
-            name: p.name || "Túi Lưới Tái Sinh",
-            tagline:
-              p.tagline ||
-              (p.description
-                ? p.description.slice(0, 80)
-                : "Thiết kế đan thủ công từ lưới ma tái sinh"),
-            description:
-              p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
-            basePrice: Number(p.basePrice) || Number(p.price) || 1250000,
-            plasticOffsetKg: Number(p.plasticOffsetKg) || 1.8,
-            dimensions: p.dimensions || "36cm x 32cm x 12cm",
-            capacity: p.capacity || "14 Lít",
-            colors: p.colors || BAG_COLORS,
-            anchorPoints: p.anchorPoints || [
-              { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
-              { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
-              { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
-              { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
-            ],
-            maxCharms: p.maxCharms || 8,
-            modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(
-              p.category
-            )
-              ? p.category
-              : "tote") as any,
-            image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
-            model3dUrl:
-              p.model3dUrl && p.model3dUrl.trim() !== ""
-                ? p.model3dUrl
-                : "/assets/models/tuixach.glb",
-            stockCount: Number(p.stockCount) || 0,
-            inStock: Boolean(p.inStock && Number(p.stockCount) > 0),
-          }));
+          .map((p: any) => {
+            const realStock = mfgItems.length > 0
+              ? mfgItems.filter(
+                  (item) =>
+                    item.status === "in_stock" &&
+                    !item.isClaimed &&
+                    (item.bagBaseId === String(p.id) ||
+                      (p.category && item.bagBaseId === p.category) ||
+                      (p.name && item.bagName?.trim().toLowerCase() === p.name.trim().toLowerCase()) ||
+                      (p.name && item.bagName && item.bagName.toLowerCase().includes(p.name.toLowerCase())) ||
+                      (p.name && item.bagName && p.name.toLowerCase().includes(item.bagName.toLowerCase())))
+                ).length
+              : (Number(p.stockCount) >= 0 ? Number(p.stockCount) : 0);
+            const inStock = Boolean(realStock > 0 && p.inStock !== false);
+
+            return {
+              id: String(p.id),
+              name: p.name || "Túi Lưới Tái Sinh",
+              tagline:
+                p.tagline ||
+                (p.description
+                  ? p.description.slice(0, 80)
+                  : "Thiết kế đan thủ công từ lưới ma tái sinh"),
+              description:
+                p.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT.",
+              basePrice: Number(p.basePrice) || Number(p.price) || 1250000,
+              plasticOffsetKg: Number(p.plasticOffsetKg) || 1.8,
+              dimensions: p.dimensions || "36cm x 32cm x 12cm",
+              capacity: p.capacity || "14 Lít",
+              colors: p.colors || BAG_COLORS,
+              anchorPoints: p.anchorPoints || [
+                { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+                { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+                { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+                { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+              ],
+              maxCharms: p.maxCharms || 8,
+              modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(
+                p.category
+              )
+                ? p.category
+                : "tote") as any,
+              image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
+              model3dUrl:
+                p.model3dUrl && p.model3dUrl.trim() !== ""
+                  ? p.model3dUrl
+                  : "/assets/models/tuixach.glb",
+              stockCount: realStock,
+              inStock,
+            };
+          });
 
         // 2. Dòng Charm Biển Sâu có trong Bộ Sưu Tập
         const liveCharms: Charm[] = rawProds
@@ -314,6 +334,16 @@ function YourStoryContent() {
       showToast("Thông báo", "Vui lòng chọn một mẫu túi trong bộ sưu tập!", "error");
       return;
     }
+
+    if (!selectedBag.inStock || (selectedBag.stockCount ?? 0) <= 0) {
+      showToast(
+        "Mẫu túi tạm hết hàng!",
+        `Dáng túi "${selectedBag.name}" hiện đang chờ xưởng đan mẻ lưới mới. Vui lòng chọn dáng túi khác còn hàng!`,
+        "error"
+      );
+      return;
+    }
+
     let capturedImage = selectedBag.image;
     if (bag3dRef.current) {
       const snap = bag3dRef.current.captureSnapshot();
@@ -327,6 +357,8 @@ function YourStoryContent() {
       quantity: 1,
       image: capturedImage,
       plasticOffsetKg: totalPlasticKg,
+      bagBaseId: selectedBag.id,
+      stockCount: selectedBag.stockCount,
       details: {
         colorName: selectedColor.name,
         charmsCount: selectedCharms.length,
@@ -603,6 +635,7 @@ function YourStoryContent() {
                 <div className="grid grid-cols-2 gap-2.5">
                   {allBags.map((bag) => {
                     const isSelected = selectedBag.id === bag.id;
+                    const isBagAvailable = bag.inStock !== false && (bag.stockCount ?? 0) > 0;
                     return (
                       <button
                         key={bag.id}
@@ -611,7 +644,7 @@ function YourStoryContent() {
                           isSelected
                             ? "bg-[#0b1e3b] text-white border-[#0b1e3b] shadow-md"
                             : "bg-slate-50 hover:bg-white text-slate-800 border-slate-200"
-                        }`}
+                        } ${!isBagAvailable ? "opacity-75" : ""}`}
                       >
                         {isSelected && (
                           <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-teal-400 text-slate-950 flex items-center justify-center">
@@ -630,8 +663,15 @@ function YourStoryContent() {
                             {bag.name}
                           </div>
                         </div>
-                        <div className={`text-[11px] font-semibold mt-1 ${isSelected ? "text-teal-300" : "text-sky-700"}`}>
-                          {formatVND(bag.basePrice)}
+                        <div className={`text-[11px] font-semibold mt-1 flex items-center justify-between ${isSelected ? "text-teal-300" : "text-sky-700"}`}>
+                          <span>{formatVND(bag.basePrice)}</span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                            isBagAvailable
+                              ? (isSelected ? "bg-teal-400/20 text-teal-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200")
+                              : (isSelected ? "bg-rose-500/30 text-rose-200" : "bg-rose-50 text-rose-700 border border-rose-200")
+                          }`}>
+                            {isBagAvailable ? `Còn ${bag.stockCount}` : "Hết hàng"}
+                          </span>
                         </div>
                         <div className={`text-[10px] mt-0.5 ${isSelected ? "text-slate-300" : "text-slate-500"}`}>
                           Tối đa {bag.maxCharms} charm
@@ -758,23 +798,45 @@ function YourStoryContent() {
                   </div>
                 </div>
 
+                {/* Warning if selected bag is out of stock */}
+                {selectedBag && (!selectedBag.inStock || (selectedBag.stockCount ?? 0) <= 0) && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2.5 text-xs text-rose-700 font-semibold">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>
+                      Mẫu phôi túi <strong>&ldquo;{selectedBag.name}&rdquo;</strong> hiện đang hết hàng sẵn tại kho xưởng NÉT. Vui lòng chọn dáng túi khác!
+                    </span>
+                  </div>
+                )}
+
                 {/* Direct Action Buttons */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
-                  <button
-                    onClick={() => handleAddToCart(false)}
-                    className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 text-[#0b1e3b] border-2 border-[#0b1e3b] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <ShoppingBag className="w-4 h-4 text-[#0b1e3b]" />
-                    <span>Thêm Vào Giỏ</span>
-                  </button>
+                  {selectedBag && (!selectedBag.inStock || (selectedBag.stockCount ?? 0) <= 0) ? (
+                    <button
+                      disabled
+                      className="col-span-2 w-full py-3 px-4 rounded-2xl bg-slate-200 text-slate-500 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed opacity-80"
+                    >
+                      <AlertCircle className="w-4 h-4 text-slate-400" />
+                      <span>Mẫu Túi Đã Hết Hàng Sẵn</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleAddToCart(false)}
+                        className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 text-[#0b1e3b] border-2 border-[#0b1e3b] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <ShoppingBag className="w-4 h-4 text-[#0b1e3b]" />
+                        <span>Thêm Vào Giỏ</span>
+                      </button>
 
-                  <button
-                    onClick={() => handleAddToCart(true)}
-                    className="w-full py-3 px-4 rounded-2xl bg-[#0b1e3b] hover:bg-sky-950 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer"
-                  >
-                    <Zap className="w-4 h-4 text-teal-300" />
-                    <span>Mua Ngay</span>
-                  </button>
+                      <button
+                        onClick={() => handleAddToCart(true)}
+                        className="w-full py-3 px-4 rounded-2xl bg-[#0b1e3b] hover:bg-sky-950 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                      >
+                        <Zap className="w-4 h-4 text-teal-300" />
+                        <span>Mua Ngay</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

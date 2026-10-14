@@ -50,6 +50,8 @@ export type Charm = {
   iconName: string;
   model3dUrl?: string;
   image?: string;
+  inStock?: boolean;
+  stockCount?: number;
 };
 
 export type PlacedCharm = {
@@ -87,6 +89,8 @@ export type ProductCombo = {
   includedCharms: Charm[];
   image: string;
   badge?: string;
+  inStock?: boolean;
+  stockCount?: number;
 };
 
 export type CartItemType = 'custom_bag' | 'base_bag' | 'charm_single' | 'combo';
@@ -99,6 +103,8 @@ export type CartItem = {
   quantity: number;
   image: string;
   plasticOffsetKg: number;
+  bagBaseId?: string;
+  stockCount?: number;
   details?: {
     colorName?: string;
     charmsCount?: number;
@@ -171,6 +177,7 @@ export type Order = {
   fulfillmentStatus: 'received' | 'crafting' | 'quality_check' | 'delivering' | 'delivered';
   userId?: string;
   assignedBagSerialId?: string;
+  assignedSerialIds?: string[];
   shopDeliveredConfirmed?: boolean;
   shopDeliveredAt?: string;
   customerReceivedConfirmed?: boolean;

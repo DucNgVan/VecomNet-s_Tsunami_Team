@@ -82,15 +82,34 @@ export class InventoryRepository {
   static async deductItemForOrder(orderCode: string, bagNameMatch?: string): Promise<string | null> {
     if (!adminDb) return null;
     try {
-      let query = adminDb
+      const snapshot = await adminDb
         .collection(BAG_ITEMS_COLLECTION)
         .where("status", "==", "in_stock")
-        .limit(1);
+        .get();
 
-      const snapshot = await query.get();
       if (snapshot.empty) return null;
 
-      const itemDoc = snapshot.docs[0];
+      let itemDoc = snapshot.docs[0];
+
+      if (bagNameMatch && bagNameMatch.trim() !== "") {
+        const cleanMatch = bagNameMatch.trim().toLowerCase();
+        const found = snapshot.docs.find((d) => {
+          const data = d.data();
+          const bagName = String(data.bagName || "").toLowerCase();
+          const bagBaseId = String(data.bagBaseId || "").toLowerCase();
+          return (
+            (bagName !== "" && (cleanMatch.includes(bagName) || bagName.includes(cleanMatch))) ||
+            (bagBaseId !== "" && (cleanMatch.includes(bagBaseId) || bagBaseId.includes(cleanMatch)))
+          );
+        });
+
+        if (!found) {
+          // Không có túi nào khớp dáng túi trong kho -> Trả về null để chặn bán nhầm
+          return null;
+        }
+        itemDoc = found;
+      }
+
       const serialId = itemDoc.id;
 
       await itemDoc.ref.update({

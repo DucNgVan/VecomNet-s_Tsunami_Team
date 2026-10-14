@@ -60,7 +60,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
         if (existingIndex > -1) {
           const updated = [...prev];
-          updated[existingIndex].quantity += newItem.quantity;
+          const newQty = updated[existingIndex].quantity + newItem.quantity;
+          const maxStock = updated[existingIndex].stockCount ?? newItem.stockCount;
+          if (maxStock !== undefined && maxStock > 0 && newQty > maxStock) {
+            updated[existingIndex].quantity = maxStock;
+          } else {
+            updated[existingIndex].quantity = newQty;
+          }
           return updated;
         }
         return [...prev, fullItem];
@@ -82,7 +88,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     setItems((prev) =>
-      prev.map((i) => (i.cartItemId === cartItemId ? { ...i, quantity } : i))
+      prev.map((i) => {
+        if (i.cartItemId !== cartItemId) return i;
+        if (i.stockCount !== undefined && i.stockCount > 0 && quantity > i.stockCount) {
+          return { ...i, quantity: i.stockCount };
+        }
+        return { ...i, quantity };
+      })
     );
   };
 

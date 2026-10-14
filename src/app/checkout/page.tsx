@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/ToastNotification";
 import { saveOrderToFirestore } from "@/lib/firestoreService";
+import { getManufacturedItems, deductInventoryForOrder } from "@/lib/supplyChainStorage";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassBadge } from "@/components/ui/GlassBadge";
 import { formatVND, formatKg, generateOrderCode } from "@/lib/utils";
@@ -51,6 +53,41 @@ export default function CheckoutPage() {
   const [streetAddress, setStreetAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useToast();
+
+  const [mfgItems, setMfgItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setMfgItems(getManufacturedItems());
+    }
+  }, []);
+
+  const getItemStock = (item: any): number => {
+    if (item.type === "custom_bag" || item.type === "base_bag") {
+      const bagBaseId = item.bagBaseId || item.details?.configuration?.bagBase?.id;
+      const bagName = item.details?.configuration?.bagBase?.name || item.title;
+      if (mfgItems.length > 0) {
+        const pId = String(bagBaseId || "").trim().toLowerCase();
+        const pName = String(bagName || "").trim().toLowerCase();
+        const count = mfgItems.filter((m) => {
+          if (m.status !== "in_stock" || m.isClaimed) return false;
+          const mBaseId = String(m.bagBaseId || "").trim().toLowerCase();
+          const mName = String(m.bagName || "").trim().toLowerCase();
+          const matchId = pId !== "" && (mBaseId === pId || mBaseId.includes(pId) || pId.includes(mBaseId));
+          const matchName = pName !== "" && (mName === pName || mName.includes(pName) || pName.includes(mName));
+          return matchId || matchName;
+        }).length;
+        return count;
+      }
+      return item.stockCount !== undefined ? item.stockCount : 0;
+    }
+    return item.stockCount !== undefined ? item.stockCount : 99;
+  };
+
+  const hasOutOfStockItems = items.some((item) => getItemStock(item) <= 0);
+  const hasOverStockItems = items.some((item) => item.quantity > getItemStock(item));
+  const isBlocked = hasOutOfStockItems || hasOverStockItems;
 
   // Auto pre-fill checkout data from verified user profile
   useEffect(() => {
@@ -109,7 +146,16 @@ export default function CheckoutPage() {
     e.preventDefault();
 
     if (items.length === 0) {
-      alert("Giỏ hàng của bạn đang trống!");
+      showToast("Giỏ hàng trống", "Giỏ hàng của bạn đang trống!", "error");
+      return;
+    }
+
+    if (isBlocked) {
+      showToast(
+        "Không thể đặt hàng",
+        "Một hoặc nhiều sản phẩm trong giỏ hàng đã hết hàng sẵn tại xưởng NÉT. Quý khách vui lòng điều chỉnh giỏ hàng!",
+        "error"
+      );
       return;
     }
 
@@ -162,17 +208,11 @@ export default function CheckoutPage() {
       },
     } as any;
 
-    let finalOrder: Order = newOrder;
-
     try {
-      // 1. Lưu trực tiếp vào Cloud Firestore ngay lập tức (Bảo đảm 100% không mất đơn)
-      try {
-        await saveOrderToFirestore(newOrder);
-      } catch (clientFsErr) {
-        console.warn("Client Firestore direct save notice:", clientFsErr);
-      }
+      // 1. Gửi lên Server Backend API TRƯỚC TIÊN để xác thực tồn kho thực tế và trừ kho an toàn
+      let apiSuccess = false;
+      let finalOrder: Order = newOrder;
 
-      // 2. Gửi đồng bộ lên Server Backend API (với xử lý an toàn chống lỗi 500 HTML)
       try {
         const response = await fetch("/api/orders/checkout", {
           method: "POST",
@@ -187,22 +227,55 @@ export default function CheckoutPage() {
           }),
         });
 
-        if (response.ok) {
-          const resText = await response.text();
-          try {
-            const resJson = JSON.parse(resText);
-            if (resJson?.success && resJson?.order) {
-              finalOrder = resJson.order;
-            }
-          } catch (jsonErr) {
-            console.warn("JSON parse notice:", jsonErr);
-          }
+        const resText = await response.text();
+        let resJson: any = null;
+        try {
+          resJson = JSON.parse(resText);
+        } catch (jsonErr) {
+          console.warn("JSON parse notice:", jsonErr);
         }
-      } catch (apiErr) {
-        console.warn("API checkout sync notice (fallback to direct Firestore):", apiErr);
+
+        if (response.ok && resJson?.success && resJson?.order) {
+          apiSuccess = true;
+          finalOrder = resJson.order;
+        } else {
+          // Server từ chối vì hết hàng hoặc lỗi kiểm tra tồn kho
+          const errorMsg = resJson?.error || "Sản phẩm đã hết hàng hoặc không đủ số lượng trong kho!";
+          showToast("Không thể hoàn tất đơn hàng", errorMsg, "error");
+          setIsSubmitting(false);
+          return; // DỪNG LẠI NGAY! Tuyệt đối không lưu Firestore đơn ảo, không xóa giỏ, không chuyển trang!
+        }
+      } catch (networkErr: any) {
+        console.warn("API checkout network error, attempting offline fallback verification:", networkErr);
       }
 
-      // 3. Cập nhật vào kho lưu trữ nội bộ
+      // 2. Nếu offline / server không kết nối được, fallback sang trừ kho client-side nghiêm ngặt
+      if (!apiSuccess) {
+        const clientDeduction = deductInventoryForOrder(newOrder);
+        if (!clientDeduction.success) {
+          showToast(
+            "Hết hàng sẵn tại kho xưởng",
+            clientDeduction.error || "Mẫu túi bạn chọn hiện không còn hàng sẵn!",
+            "error"
+          );
+          setIsSubmitting(false);
+          return; // Hết hàng -> DỪNG LẠI NGAY!
+        }
+        finalOrder = {
+          ...newOrder,
+          assignedSerialIds: clientDeduction.assignedSerialIds,
+          assignedBagSerialId: clientDeduction.assignedSerialIds[0],
+        };
+      }
+
+      // 3. Lưu đơn hàng hợp lệ vào Cloud Firestore
+      try {
+        await saveOrderToFirestore(finalOrder);
+      } catch (clientFsErr) {
+        console.warn("Client Firestore direct save notice:", clientFsErr);
+      }
+
+      // 4. Cập nhật vào kho lưu trữ nội bộ
       try {
         const { saveNewOrder } = await import("@/lib/supplyChainStorage");
         saveNewOrder(finalOrder);
@@ -210,16 +283,13 @@ export default function CheckoutPage() {
         console.warn("Local storage save notice:", storageErr);
       }
 
-      // 4. Hoàn tất & chuyển đến màn hình thành công
-      setTimeout(() => {
-        clearCart();
-        router.push(`/order-success?orderId=${finalOrder.orderId}`);
-      }, 400);
-    } catch (err: any) {
-      console.error("Checkout unhandled error:", err);
-      // Ngay cả khi có lỗi phát sinh ngoài dự kiến, đơn hàng vẫn được đưa vào order-success
+      // 5. Hoàn tất & chuyển đến màn hình thành công
       clearCart();
       router.push(`/order-success?orderId=${finalOrder.orderId}`);
+    } catch (err: any) {
+      console.error("Checkout unhandled error:", err);
+      showToast("Lỗi đặt hàng", err?.message || "Đã xảy ra lỗi không xác định khi xử lý thanh toán.", "error");
+      setIsSubmitting(false);
     }
   };
 
@@ -612,39 +682,64 @@ export default function CheckoutPage() {
 
                 {/* Items List */}
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                  {items.map((item) => (
-                    <div
-                      key={item.cartItemId}
-                      className="flex items-start justify-between gap-3 text-xs pb-3 border-b border-slate-100"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
-                          {item.details?.configuration?.customSnapshotUrl ? (
-                            <img
-                              src={item.details.configuration.customSnapshotUrl}
-                              alt=""
-                              className="w-full h-full object-cover rounded-xl"
-                            />
-                          ) : (
-                            <span>{item.type === "custom_bag" ? "👜" : "✨"}</span>
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-bold text-slate-900">{item.title}</div>
-                          {item.details?.colorName && (
-                            <div className="text-[11px] text-slate-500">
-                              Màu: {item.details.colorName}
-                            </div>
-                          )}
-                          <div className="text-[11px] text-slate-500">SL: {item.quantity}</div>
-                        </div>
-                      </div>
+                  {items.map((item) => {
+                    const stock = getItemStock(item);
+                    const isOutOfStock = stock <= 0;
+                    const isOverStock = item.quantity > stock;
 
-                      <div className=" font-bold text-slate-900">
-                        {formatVND(item.price * item.quantity)}
+                    return (
+                      <div
+                        key={item.cartItemId}
+                        className={`flex items-start justify-between gap-3 text-xs pb-3 border-b border-slate-100 rounded-xl p-2 transition-all ${
+                          isOutOfStock
+                            ? "bg-rose-50/70 border-rose-200"
+                            : isOverStock
+                            ? "bg-amber-50/70 border-amber-200"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
+                            {item.details?.configuration?.customSnapshotUrl ? (
+                              <img
+                                src={item.details.configuration.customSnapshotUrl}
+                                alt=""
+                                className="w-full h-full object-cover rounded-xl"
+                              />
+                            ) : (
+                              <span>{item.type === "custom_bag" ? "👜" : "✨"}</span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900">{item.title}</div>
+                            {item.details?.colorName && (
+                              <div className="text-[11px] text-slate-500">
+                                Màu: {item.details.colorName}
+                              </div>
+                            )}
+                            <div className="text-[11px] text-slate-500">SL: {item.quantity}</div>
+                            {isOutOfStock ? (
+                              <span className="inline-block mt-0.5 text-[10px] font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
+                                Hết hàng sẵn
+                              </span>
+                            ) : isOverStock ? (
+                              <span className="inline-block mt-0.5 text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                                Kho chỉ còn {stock} cái
+                              </span>
+                            ) : (
+                              <span className="inline-block mt-0.5 text-[10px] text-emerald-700 font-medium">
+                                Kho còn: {stock} cái
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="font-bold text-slate-900">
+                          {formatVND(item.price * item.quantity)}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Impact Callout */}
@@ -659,6 +754,16 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Out of Stock Warning Notice */}
+                {isBlocked && (
+                  <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs text-rose-700 font-semibold shadow-xs">
+                    <AlertCircle className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
+                    <span>
+                      Đơn hàng có sản phẩm hiện đã HẾT HÀNG hoặc vượt tồn kho xưởng NÉT. Quý khách vui lòng điều chỉnh giỏ hàng trước khi đặt!
+                    </span>
+                  </div>
+                )}
 
                 {/* Price Calculation */}
                 <div className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
@@ -685,11 +790,15 @@ export default function CheckoutPage() {
                   variant="primary"
                   size="lg"
                   type="submit"
-                  disabled={isSubmitting}
-                  className="w-full text-base font-bold shadow-lg cursor-pointer"
-                  icon={<Lock className="w-4 h-4" />}
+                  disabled={isSubmitting || isBlocked}
+                  className="w-full text-base font-bold shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  icon={isBlocked ? <AlertCircle className="w-4 h-4 text-rose-300" /> : <Lock className="w-4 h-4" />}
                 >
-                  {isSubmitting ? "Đang Khởi Tạo Đơn Hàng..." : "Xác Nhận Đặt Hàng"}
+                  {isSubmitting
+                    ? "Đang Khởi Tạo Đơn Hàng..."
+                    : isBlocked
+                    ? "Không Thể Đặt Hàng Do Hết Hàng"
+                    : "Xác Nhận Đặt Hàng"}
                 </GlassButton>
 
                 <div className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5 font-medium">

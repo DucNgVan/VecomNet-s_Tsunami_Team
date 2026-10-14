@@ -370,14 +370,13 @@ export async function saveOrderToFirestore(order: Order): Promise<boolean> {
 
   // A. Tự động trừ kho thành phẩm & gán mã túi độc bản vào đơn hàng
   if (typeof window !== "undefined") {
-    try {
-      const { deductInventoryForOrder } = await import("@/lib/supplyChainStorage");
-      const deductionRes = deductInventoryForOrder(cleanOrder);
-      if (deductionRes.success && deductionRes.assignedSerialIds.length > 0) {
-        cleanOrder.assignedBagSerialId = deductionRes.assignedSerialIds[0];
-      }
-    } catch (deductErr) {
-      console.warn("Auto warehouse deduction notice:", deductErr);
+    const { deductInventoryForOrder } = await import("@/lib/supplyChainStorage");
+    const deductionRes = deductInventoryForOrder(cleanOrder);
+    if (!deductionRes.success && deductionRes.error) {
+      throw new Error(deductionRes.error);
+    }
+    if (deductionRes.success && deductionRes.assignedSerialIds.length > 0) {
+      cleanOrder.assignedBagSerialId = deductionRes.assignedSerialIds[0];
     }
   }
 

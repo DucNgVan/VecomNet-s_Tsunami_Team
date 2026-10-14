@@ -244,6 +244,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] leading-tight">
                     {title}
                   </h2>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span
+                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                        isAvailable
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border border-rose-200"
+                      }`}
+                    >
+                      {isAvailable ? `Kho xưởng sẵn: ${stockCount !== undefined ? stockCount : 1} chiếc` : "Hết hàng sẵn tại kho"}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      -{formatKg(plasticKg)} rác biển
+                    </span>
+                  </div>
                   <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
                     {isBag
                       ? bagData?.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT."

@@ -211,14 +211,68 @@ export function getInStockCountForProduct(
   category?: string
 ): number {
   const items = getManufacturedItems();
-  return items.filter(
-    (item) =>
-      item.status === "in_stock" &&
-      !item.isClaimed &&
-      (item.bagBaseId === productId ||
-        (category && item.bagBaseId === category) ||
-        (productName && item.bagName.trim().toLowerCase() === productName.trim().toLowerCase()))
-  ).length;
+  const pId = String(productId || "").trim().toLowerCase();
+  const pName = String(productName || "").trim().toLowerCase();
+  const pCat = String(category || "").trim().toLowerCase();
+
+  return items.filter((item) => {
+    if (item.status !== "in_stock" || item.isClaimed) return false;
+    const itemBaseId = String(item.bagBaseId || "").trim().toLowerCase();
+    const itemBagName = String(item.bagName || "").trim().toLowerCase();
+
+    const matchId = pId !== "" && (itemBaseId === pId || itemBaseId.includes(pId) || pId.includes(itemBaseId));
+    const matchCategory = pCat !== "" && itemBaseId === pCat;
+    const matchName =
+      pName !== "" &&
+      (itemBagName === pName ||
+        itemBagName.includes(pName) ||
+        pName.includes(itemBagName));
+
+    return matchId || matchCategory || matchName;
+  }).length;
+}
+
+/**
+ * Kiểm tra số lượng tồn kho khả dụng thực tế của một sản phẩm
+ * Ưu tiên đối chiếu trực tiếp từ kho túi thành phẩm (manufactured items).
+ * Nếu kho thành phẩm chưa có dữ liệu mẻ may, đối chiếu theo stockCount trong DB/product doc.
+ */
+export function getProductAvailableStock(product: {
+  id?: string;
+  name?: string;
+  category?: string;
+  stockCount?: number;
+  inStock?: boolean;
+}): number {
+  if (typeof window === "undefined") {
+    if (product.inStock === false) return 0;
+    return Number(product.stockCount) >= 0 ? Number(product.stockCount) : 0;
+  }
+
+  const items = getManufacturedItems();
+  // Nếu đã có dữ liệu túi thành phẩm sản xuất trong xưởng, số lượng thực tế trong kho là chân lý tuyệt đối
+  if (items.length > 0) {
+    return getInStockCountForProduct(
+      product.id || "",
+      product.name,
+      product.category
+    );
+  }
+
+  if (product.inStock === false) return 0;
+  return Number(product.stockCount) >= 0 ? Number(product.stockCount) : 0;
+}
+
+/**
+ * Kiểm tra nhanh xem một mẫu túi có sẵn hàng hay hết hàng
+ */
+export function isBagModelInStock(
+  productId: string,
+  productName?: string,
+  category?: string,
+  requiredQty = 1
+): boolean {
+  return getInStockCountForProduct(productId, productName, category) >= requiredQty;
 }
 
 export function getManufacturedItemBySerial(serialId: string): ManufacturedBagItem | undefined {
@@ -572,39 +626,76 @@ export function getSupplyChainStats() {
 export function deductInventoryForOrder(order: Order): {
   success: boolean;
   assignedSerialIds: string[];
+  error?: string;
 } {
   const items = getManufacturedItems();
   const assignedSerialIds: string[] = [];
 
-  for (const cartItem of order.items) {
+  // Lọc các món hàng yêu cầu phôi túi sản xuất từ mẻ lưới
+  const bagItems = (order.items || []).filter(
+    (item) => item.type === "base_bag" || item.type === "custom_bag" || item.type === "combo"
+  );
+
+  // Nếu đơn hàng chỉ bao gồm phụ kiện Charm đơn lẻ, không cần trừ phôi túi
+  if (bagItems.length === 0) {
+    return { success: true, assignedSerialIds: [] };
+  }
+
+  // Nếu trong kho không có túi thành phẩm nào
+  if (items.length === 0) {
+    return {
+      success: false,
+      assignedSerialIds: [],
+      error: "Kho xưởng hiện không còn túi thành phẩm nào có sẵn!",
+    };
+  }
+
+  // Clone mảng items tạm thời để kiểm tra đủ hàng cho TOÀN BỘ đơn trước khi lưu
+  const workingItems = [...items];
+  const matchedIndices: number[] = [];
+
+  for (const cartItem of bagItems) {
     const qty = cartItem.quantity || 1;
+    const targetBaseId = String(cartItem.bagBaseId || cartItem.details?.configuration?.bagBase?.id || "").trim().toLowerCase();
+    const targetTitle = String(cartItem.title || "").trim().toLowerCase();
+    const bagBaseName = String(cartItem.details?.configuration?.bagBase?.name || "").trim().toLowerCase();
+
     for (let q = 0; q < qty; q++) {
-      // Find an in-stock bag matching model or fallback
-      let matchedIndex = items.findIndex(
-        (i) =>
+      let matchedIndex = workingItems.findIndex(
+        (i, idx) =>
+          !matchedIndices.includes(idx) &&
           i.status === "in_stock" &&
-          (cartItem.title.toLowerCase().includes(i.bagName.toLowerCase()) ||
-            i.bagName.toLowerCase().includes(cartItem.title.toLowerCase()))
+          !i.isClaimed &&
+          ((targetBaseId !== "" && (String(i.bagBaseId).toLowerCase() === targetBaseId || String(i.bagBaseId).toLowerCase().includes(targetBaseId))) ||
+            (targetTitle !== "" && i.bagName && (targetTitle.includes(i.bagName.toLowerCase()) || i.bagName.toLowerCase().includes(targetTitle))) ||
+            (bagBaseName !== "" && i.bagName && (bagBaseName.includes(i.bagName.toLowerCase()) || i.bagName.toLowerCase().includes(bagBaseName))))
       );
 
-      // Fallback: any available in_stock item
+      // Nếu không tìm thấy túi thành phẩm phù hợp còn tồn kho -> CHẶN BÁN HẾT HÀNG!
       if (matchedIndex === -1) {
-        matchedIndex = items.findIndex((i) => i.status === "in_stock");
+        return {
+          success: false,
+          assignedSerialIds: [],
+          error: `Sản phẩm "${cartItem.title}" hiện đã hết hàng trong kho xưởng NÉT!`,
+        };
       }
 
-      if (matchedIndex !== -1) {
-        const item = items[matchedIndex];
-        item.status = "assigned_to_order";
-        item.assignedOrderCode = order.orderCode;
-        assignedSerialIds.push(item.serialId);
+      matchedIndices.push(matchedIndex);
+    }
+  }
 
-        // Async sync to Firestore
-        if (typeof window !== "undefined") {
-          import("@/lib/firestoreService").then(({ syncSingleItemToFirestore }) => {
-            syncSingleItemToFirestore(item).catch(() => {});
-          });
-        }
-      }
+  // Tất cả sản phẩm đều đủ hàng -> Tiến hành xuất kho chính thức
+  for (const idx of matchedIndices) {
+    const item = items[idx];
+    item.status = "assigned_to_order";
+    item.assignedOrderCode = order.orderCode;
+    assignedSerialIds.push(item.serialId);
+
+    // Async sync to Firestore
+    if (typeof window !== "undefined") {
+      import("@/lib/firestoreService").then(({ syncSingleItemToFirestore }) => {
+        syncSingleItemToFirestore(item).catch(() => {});
+      });
     }
   }
 
@@ -616,7 +707,7 @@ export function deductInventoryForOrder(order: Order): {
   }
 
   return {
-    success: assignedSerialIds.length > 0,
+    success: true,
     assignedSerialIds,
   };
 }

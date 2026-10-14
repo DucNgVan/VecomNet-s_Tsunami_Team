@@ -253,17 +253,27 @@ function AdminPortalContent() {
   // ORDER ACTIONS
   // -------------------------------------------------------------
   const handleUpdateOrderStatus = async (orderId: string, newStatus: Order["fulfillmentStatus"]) => {
+    const isDelivered = newStatus === "delivered";
+    const updatePayload: any = {
+      fulfillmentStatus: newStatus,
+      ...(isDelivered
+        ? {
+            shopDeliveredConfirmed: true,
+            shopDeliveredAt: new Date().toISOString(),
+          }
+        : {}),
+    };
     try {
       // 1. Firestore update
       const docRef = doc(db, "orders", orderId);
-      await updateDoc(docRef, { fulfillmentStatus: newStatus });
+      await updateDoc(docRef, updatePayload);
     } catch (e) {
       console.warn("Firestore updateOrderStatus warning:", e);
     }
     // 2. Local update
-    updateOrderStatus(orderId, newStatus);
+    updateOrderStatus(orderId, newStatus, updatePayload);
     setOrders((prev) =>
-      prev.map((o) => (o.orderId === orderId ? { ...o, fulfillmentStatus: newStatus } : o))
+      prev.map((o) => (o.orderId === orderId ? { ...o, ...updatePayload } : o))
     );
   };
 

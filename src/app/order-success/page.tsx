@@ -130,7 +130,7 @@ function OrderSuccessContent() {
               <div className="text-xs">
                 <span className="font-bold text-slate-900">Đã gửi email biên nhận & chứng chỉ: </span>
                 <span className="text-slate-600">
-                  Hóa đơn điện tử chi tiết và thông tin kích hoạt bảo hành NFC đã được gửi đến{" "}
+                  Hóa đơn điện tử chi tiết và hướng dẫn định danh số chiếc túi vào tài khoản đã được gửi đến{" "}
                   <strong className="text-sky-800">{order.customer.email}</strong>.
                 </span>
               </div>
@@ -368,21 +368,33 @@ function OrderSuccessContent() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
-              <Link href="/admin">
+              <Link href="/profile">
                 <GlassButton
-                  variant="secondary"
+                  variant="primary"
                   size="md"
-                  icon={<Layers className="w-4 h-4 text-slate-700" />}
+                  icon={<Sparkles className="w-4 h-4 text-amber-300" />}
                 >
-                  Theo Dõi Tại Xưởng NÉT
+                  Theo Dõi Đơn & Định Danh Túi Tại Hồ Sơ
                 </GlassButton>
               </Link>
 
-              <Link href="/shop">
-                <GlassButton variant="primary" size="md" icon={<ArrowRight className="w-4 h-4" />}>
-                  Tiếp Tục Mua Sắm
-                </GlassButton>
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link href="/admin">
+                  <GlassButton
+                    variant="secondary"
+                    size="md"
+                    icon={<Layers className="w-4 h-4 text-slate-700" />}
+                  >
+                    Xem Xưởng Chế Tác
+                  </GlassButton>
+                </Link>
+
+                <Link href="/shop">
+                  <GlassButton variant="secondary" size="md" icon={<ArrowRight className="w-4 h-4" />}>
+                    Tiếp Tục Mua Sắm
+                  </GlassButton>
+                </Link>
+              </div>
             </div>
           </div>
         </OceanFloatingCard>

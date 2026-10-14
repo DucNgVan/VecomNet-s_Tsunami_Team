@@ -63,7 +63,7 @@ export class InventoryRepository {
   }
 
   /**
-   * Cập nhật thông tin túi (trạng thái kho, kích hoạt bảo hành NFC)
+   * Cập nhật thông tin túi (trạng thái kho, kích hoạt bảo hành điện tử)
    */
   static async updateBagItem(serialId: string, updates: Partial<BackendInventoryItem>): Promise<boolean> {
     if (!adminDb) return true;

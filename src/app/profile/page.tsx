@@ -11,6 +11,7 @@ import {
   getCustomerOrdersFromFirestore,
   recalculateUserEcoImpact,
   resetMemberEcoImpact,
+  mintBagItemToFirestore,
   DbBagItem,
 } from "@/lib/firestoreService";
 import { Order } from "@/types";
@@ -18,8 +19,10 @@ import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { formatKg, formatVND } from "@/lib/utils";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { updateOrderStatus, claimBagWarranty } from "@/lib/supplyChainStorage";
+import confetti from "canvas-confetti";
 import {
   Award,
   Sparkles,
@@ -50,6 +53,7 @@ import {
   Loader2,
   RefreshCw,
   RotateCcw,
+  Copy,
 } from "lucide-react";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { uploadToCloudinary } from "@/lib/cloudinaryClient";
@@ -138,6 +142,8 @@ export default function CustomerProfilePage() {
   const [editPostcode, setEditPostcode] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
   // Avatar Upload via Cloudinary
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -296,6 +302,189 @@ export default function CustomerProfilePage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  /**
+   * Khách hàng xác nhận đã nhận được túi thực tế
+   */
+  const handleConfirmReceived = async (order: Order) => {
+    try {
+      setProcessingOrderId(order.orderId);
+      const receivedAt = new Date().toISOString();
+
+      // 1. Cập nhật Firestore
+      try {
+        const orderRef = doc(db, "orders", order.orderId);
+        await updateDoc(orderRef, {
+          customerReceivedConfirmed: true,
+          customerReceivedAt: receivedAt,
+          fulfillmentStatus: "delivered",
+          updatedAt: serverTimestamp(),
+        });
+      } catch (firestoreErr) {
+        console.warn("Firestore order update error:", firestoreErr);
+      }
+
+      // 2. Cập nhật LocalStorage
+      updateOrderStatus(order.orderId, "delivered", {
+        customerReceivedConfirmed: true,
+        customerReceivedAt: receivedAt,
+      });
+
+      // 3. Cập nhật state trực tiếp
+      setCustomerOrders((prev) =>
+        prev.map((o) =>
+          o.orderId === order.orderId
+            ? {
+                ...o,
+                customerReceivedConfirmed: true,
+                customerReceivedAt: receivedAt,
+                fulfillmentStatus: "delivered",
+              }
+            : o
+        )
+      );
+
+      showToast(
+        "✅ Bạn đã xác nhận nhận hàng thành công! Vui lòng định danh túi bên dưới để đưa vào Bộ Sưu Tập cá nhân.",
+        "success"
+      );
+    } catch (err: any) {
+      showToast(err.message || "Lỗi khi xác nhận nhận hàng", "error");
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  /**
+   * Khách hàng định danh túi độc bản vào tài khoản cá nhân
+   */
+  const handleClaimBagToAccount = async (order: Order) => {
+    if (!user?.uid) {
+      showToast("Vui lòng đăng nhập để định danh túi vào tài khoản!", "error");
+      return;
+    }
+
+    try {
+      setProcessingOrderId(order.orderId);
+      showToast("Đang kết nối hải đồ và đúc thẻ Căn Cước NÉT Story Passport...", "info");
+
+      const firstItem = order.items?.[0];
+      const serialId =
+        order.assignedBagSerialId ||
+        `NET-DN-${order.orderCode.replace(/[^0-9]/g, "").slice(-4) || "001"}`;
+      const batchId = order.assignedBatchId || "NET-VN-DN-2024-082";
+      const plasticKg =
+        order.totalPlasticOffsetKg && order.totalPlasticOffsetKg > 0
+          ? order.totalPlasticOffsetKg
+          : (firstItem?.plasticOffsetKg || 0.65) * (firstItem?.quantity || 1);
+
+      const bagItem: DbBagItem = {
+        itemId: serialId,
+        parentBatchId: batchId,
+        itemIndex: 1,
+        bagName: firstItem?.title || "Túi Lưới Tái Chế NÉT",
+        colorName: "Đại Dương Xanh",
+        ownerUid: user.uid,
+        ownerName:
+          userProfile?.displayName || user?.displayName || order.customer?.fullName || "Khách Hàng NÉT",
+        ownerPhone: userProfile?.phone || order.customer?.phone || "",
+        selectedCharms: [],
+        poeticDedication: `Kỷ vật bảo hành điện tử chính hãng - Đơn hàng #${order.orderCode}`,
+        snapshotImageUrl: firstItem?.image || undefined,
+        plasticOffsetKg: plasticKg,
+        coralProtectedSqM: Number((plasticKg * 1.5).toFixed(1)),
+        co2AvoidedKg: Number((plasticKg * 1.9).toFixed(1)),
+        qrUrl: `/passport/${encodeURIComponent(batchId)}?itemId=${encodeURIComponent(serialId)}`,
+        createdAt: new Date().toISOString(),
+      };
+
+      // 1. Lưu túi vào Firestore bag_items
+      await mintBagItemToFirestore(bagItem);
+
+      // 2. Kích hoạt bảo hành điện tử trong kho LocalStorage + Firestore
+      claimBagWarranty(serialId, {
+        fullName: bagItem.ownerName || "Khách Hàng NÉT",
+        phone: bagItem.ownerPhone || "",
+        email: user.email || undefined,
+        customerUid: user.uid,
+      });
+
+      // 3. Đánh dấu đơn hàng là đã định danh (isClaimed: true)
+      const claimedAt = new Date().toISOString();
+      try {
+        const orderRef = doc(db, "orders", order.orderId);
+        await updateDoc(orderRef, {
+          isClaimed: true,
+          claimedAt,
+          claimedByUserId: user.uid,
+          assignedBagSerialId: serialId,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (firestoreErr) {
+        console.warn("Firestore update order claim error:", firestoreErr);
+      }
+
+      // Cập nhật localStorage đơn hàng
+      updateOrderStatus(order.orderId, "delivered", {
+        isClaimed: true,
+        claimedAt,
+        claimedByUserId: user.uid,
+        assignedBagSerialId: serialId,
+      });
+
+      // 4. Bắn Confetti ăn mừng
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ["#0d9488", "#0284c7", "#f59e0b", "#10b981", "#6366f1"],
+      });
+
+      // 5. Cập nhật state đơn hàng và tải lại danh sách túi độc bản
+      setCustomerOrders((prev) =>
+        prev.map((o) =>
+          o.orderId === order.orderId
+            ? {
+                ...o,
+                isClaimed: true,
+                claimedAt,
+                claimedByUserId: user.uid,
+                assignedBagSerialId: serialId,
+              }
+            : o
+        )
+      );
+
+      const freshBags = await getCustomerBagsFromFirestore(user.uid);
+      setCustomerBags(freshBags);
+
+      showToast(
+        `🎉 Định danh thành công mã túi ${serialId}! Túi đã được bổ sung vào Bộ Sưu Tập và kích hoạt bảo hành điện tử 24 tháng.`,
+        "success"
+      );
+    } catch (err: any) {
+      console.error("Claim bag error:", err);
+      showToast(err.message || "Lỗi khi định danh túi vào tài khoản", "error");
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  /**
+   * Sao chép đường link định danh độc bản của túi
+   */
+  const handleCopyClaimLink = (order: Order) => {
+    if (typeof window === "undefined") return;
+    const serialId =
+      order.assignedBagSerialId ||
+      `NET-DN-${order.orderCode.replace(/[^0-9]/g, "").slice(-4) || "001"}`;
+    const batchId = order.assignedBatchId || "NET-VN-DN-2024-082";
+    const claimUrl = `${window.location.origin}/passport/${encodeURIComponent(batchId)}?itemId=${encodeURIComponent(serialId)}&claim=true&orderCode=${encodeURIComponent(order.orderCode)}`;
+    navigator.clipboard.writeText(claimUrl);
+    setCopiedOrderId(order.orderId);
+    showToast("Đã sao chép đường link định danh độc bản của túi!", "info");
+    setTimeout(() => setCopiedOrderId(null), 2500);
   };
 
   if (loading) {
@@ -929,19 +1118,153 @@ export default function CustomerProfilePage() {
                       </div>
                     </div>
 
-                    {/* Order Action: Passport Link */}
-                    {order.assignedBatchId && (
-                      <div className="flex items-center justify-between gap-3 pt-2 text-xs">
-                        <span className="text-slate-500 text-[11px]">
-                          Lô lưới chỉ định: <strong>{order.assignedBatchId}</strong>
-                        </span>
-                        <Link href={`/passport/${order.assignedBatchId}`}>
-                          <span className="text-teal-700 hover:text-teal-900 font-bold flex items-center gap-1 text-xs">
-                            <span>Xem Hải Đồ Mẻ Lưới Của Đơn ↗</span>
+                    {/* Order Action: Passport Link & Two-Way Confirmation & Digital Claim */}
+                    <div className="pt-3 border-t border-slate-200/80 space-y-3">
+                      {order.assignedBatchId && (
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className="text-slate-500 text-[11px]">
+                            Lô lưới chỉ định: <strong>{order.assignedBatchId}</strong>
+                            {order.assignedBagSerialId && (
+                              <span className="ml-2 font-mono text-teal-700 font-bold">
+                                • Serial Túi: {order.assignedBagSerialId}
+                              </span>
+                            )}
                           </span>
-                        </Link>
-                      </div>
-                    )}
+                          <Link href={`/passport/${order.assignedBagSerialId || order.assignedBatchId}`}>
+                            <span className="text-teal-700 hover:text-teal-900 font-bold flex items-center gap-1 text-xs">
+                              <span>Xem Hải Đồ Mẻ Lưới ↗</span>
+                            </span>
+                          </Link>
+                        </div>
+                      )}
+
+                      {/* ⭐️ QUY TRÌNH ĐỊNH DANH SỐ: XÁC NHẬN GIAO NHẬN 2 CHIỀU & LINK ĐỊNH DANH TÚI ⭐️ */}
+                      {order.isClaimed ? (
+                        /* Case 1: Đã định danh thành công vào tài khoản cá nhân */
+                        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
+                              ✓
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5 flex-wrap">
+                                <span>ĐÃ ĐỊNH DANH VÀO BỘ SƯU TẬP CỦA BẠN</span>
+                                <span className="text-[10px] bg-emerald-200/80 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">
+                                  {order.assignedBagSerialId || "ĐỘC BẢN"}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-emerald-800 mt-0.5">
+                                Kích hoạt bảo hành điện tử chính hãng 24 tháng • Đã ghi nhận dấu chân sinh thái
+                              </div>
+                            </div>
+                          </div>
+
+                          <Link href={`/passport/${order.assignedBagSerialId || order.assignedBatchId || "NET-VN-DN-2024-082"}`}>
+                            <GlassButton
+                              variant="primary"
+                              size="sm"
+                              className="w-full sm:w-auto font-bold text-xs"
+                              icon={<ExternalLink className="w-3.5 h-3.5" />}
+                            >
+                              Mở Story Passport Của Túi
+                            </GlassButton>
+                          </Link>
+                        </div>
+                      ) : (order.fulfillmentStatus === "delivered" || order.shopDeliveredConfirmed) &&
+                        order.customerReceivedConfirmed ? (
+                        /* Case 2: CẢ SHOP & KHÁCH ĐÃ XÁC NHẬN -> HIỆN LINK & NÚT ĐỊNH DANH TÚI */
+                        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-teal-50 via-sky-50 to-emerald-50 border-2 border-teal-500/50 shadow-md space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-700 text-white text-[10px] font-bold uppercase tracking-wider shadow-2xs">
+                                <Sparkles className="w-3 h-3 text-amber-300" />
+                                <span>Xác Nhận Giao Nhận 2 Chiều Thành Công — Sẵn Sàng Định Danh</span>
+                              </div>
+                              <h4 className="font-serif text-sm sm:text-base font-bold text-[#0b1e3b]">
+                                Định Danh Chiếc Túi Vào Tài Khoản & Kích Hoạt Bảo Hành
+                              </h4>
+                              <p className="text-xs text-slate-600 max-w-xl">
+                                Đơn hàng đã được Shop giao và bạn đã nhận xong. Hãy nhấn nút bên dưới để đưa tác phẩm độc bản vào Bộ Sưu Tập NÉT Story Passport của bạn, kích hoạt bảo hành điện tử 24 tháng và bảo chứng chỉ số môi trường.
+                              </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleClaimBagToAccount(order)}
+                                disabled={processingOrderId === order.orderId}
+                                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-sky-700 hover:from-teal-700 hover:to-sky-800 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                              >
+                                {processingOrderId === order.orderId ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Đang Định Danh...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-4 h-4 text-amber-300" />
+                                    <span>Định Danh Vào Tài Khoản</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCopyClaimLink(order)}
+                                className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                title="Sao chép liên kết định danh độc bản của túi"
+                              >
+                                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                                <span>{copiedOrderId === order.orderId ? "Đã Sao Chép!" : "Sao Chép Link"}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : order.fulfillmentStatus === "delivered" || order.shopDeliveredConfirmed ? (
+                        /* Case 3: Shop đã giao hàng xong, khách chưa xác nhận */
+                        <div className="p-4 rounded-xl bg-amber-50/90 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                          <div className="space-y-0.5">
+                            <div className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                              <Truck className="w-4 h-4 text-amber-600" />
+                              <span>Shop NÉT Đã Giao Hàng Xong</span>
+                            </div>
+                            <p className="text-[11px] text-amber-800">
+                              Vui lòng kiểm tra kiện hàng. Khi bạn đã nhận được túi thực tế, hãy nhấn xác nhận để mở link định danh số cho túi:
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmReceived(order)}
+                            disabled={processingOrderId === order.orderId}
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                          >
+                            {processingOrderId === order.orderId ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Đang xác nhận...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Tôi Đã Nhận Được Túi</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        /* Case 4: Đang xử lý hoặc giao hàng */
+                        <div className="p-3 rounded-xl bg-slate-100/70 border border-slate-200/80 flex items-center justify-between text-xs text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                            <span>
+                              Đơn hàng đang trong tiến trình{" "}
+                              <strong>{stages[currentStep]?.label || "Gia công chế tác"}</strong>. Sau khi shop giao và bạn bấm xác nhận đã nhận, liên kết định danh túi độc bản sẽ mở tự động.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

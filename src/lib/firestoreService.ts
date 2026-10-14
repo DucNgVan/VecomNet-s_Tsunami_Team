@@ -166,9 +166,24 @@ export async function getCustomerBagsFromFirestore(ownerUid?: string): Promise<D
     try {
       const q = query(collection(db, "bag_items"), where("ownerUid", "==", ownerUid));
       const snap = await getDocs(q);
-      if (!snap.empty) {
-        const result: DbBagItem[] = [];
-        snap.forEach((d) => result.push(d.data() as DbBagItem));
+      const result: DbBagItem[] = [];
+      snap.forEach((d) => result.push(d.data() as DbBagItem));
+
+      // Hỗ trợ thêm điều kiện claimedBy.customerUid để đảm bảo không sót dữ liệu định danh
+      try {
+        const qClaimed = query(collection(db, "bag_items"), where("claimedBy.customerUid", "==", ownerUid));
+        const snapClaimed = await getDocs(qClaimed);
+        snapClaimed.forEach((d) => {
+          const item = d.data() as DbBagItem;
+          if (!result.some((r) => r.itemId === item.itemId)) {
+            result.push(item);
+          }
+        });
+      } catch (e) {
+        // Ignored
+      }
+
+      if (result.length > 0) {
         return result;
       }
     } catch (e) {
@@ -465,6 +480,16 @@ export async function syncSingleItemToFirestore(item: any): Promise<boolean> {
         warrantyActivatedAt: item.warrantyActivatedAt || null,
         warrantyExpiresAt: item.warrantyExpiresAt || null,
         claimedBy: item.claimedBy || null,
+        ownerUid: item.ownerUid || item.claimedBy?.customerUid || null,
+        ownerName: item.ownerName || item.claimedBy?.fullName || null,
+        ownerPhone: item.ownerPhone || item.claimedBy?.phone || null,
+        plasticOffsetKg: item.plasticOffsetKg || item.plasticConsumedKg || 0.65,
+        coralProtectedSqM:
+          item.coralProtectedSqM ||
+          Number(((item.plasticOffsetKg || item.plasticConsumedKg || 0.65) * 1.5).toFixed(1)),
+        co2AvoidedKg:
+          item.co2AvoidedKg ||
+          Number(((item.plasticOffsetKg || item.plasticConsumedKg || 0.65) * 1.9).toFixed(1)),
         qrUrl:
           item.qrUrl ||
           `/passport/${encodeURIComponent(item.sourcePackId)}?itemId=${encodeURIComponent(item.serialId)}`,

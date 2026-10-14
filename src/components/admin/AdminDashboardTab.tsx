@@ -211,8 +211,8 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             {inStockItemsCount} <span className="text-sm font-semibold text-slate-400">túi có Serial</span>
           </div>
           <div className="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Kích hoạt bảo hành NFC 24 tháng</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+            <span>Bảo hành điện tử 24 tháng chính hãng</span>
           </div>
         </div>
       </div>

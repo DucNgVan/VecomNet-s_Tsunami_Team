@@ -332,6 +332,24 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                         <option value="delivering">3. Đang giao</option>
                         <option value="delivered">4. Đã giao xong</option>
                       </select>
+
+                      {order.fulfillmentStatus === "delivered" && (
+                        <div className="mt-1">
+                          {order.isClaimed ? (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                              👜 Đã định danh
+                            </span>
+                          ) : order.customerReceivedConfirmed ? (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              ✅ Khách đã nhận
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-medium text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              ⏳ Chờ khách nhận
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* Thao tác */}
@@ -460,6 +478,60 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                   </strong>
                 </div>
               </div>
+            </div>
+
+            {/* Delivery Confirmation & Identity Status */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
+              <div className="font-bold text-slate-800 flex items-center justify-between">
+                <span>Trạng Thái Xác Nhận Giao Hàng & Định Danh:</span>
+                {selectedOrder.isClaimed ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200">
+                    👜 Đã Định Danh Vào Tài Khoản
+                  </span>
+                ) : selectedOrder.customerReceivedConfirmed ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    ✅ Khách Đã Xác Nhận Nhận Hàng
+                  </span>
+                ) : selectedOrder.fulfillmentStatus === "delivered" ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    🚚 Shop Đã Giao - Chờ Khách Xác Nhận
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
+                    Đang Xử Lý Giao Hàng
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-1 border-t border-slate-200">
+                <div>
+                  <span className="text-slate-400 block">Xác nhận từ Shop:</span>
+                  <strong>{selectedOrder.fulfillmentStatus === "delivered" ? "✓ Đã giao hàng" : "Đang thực hiện"}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block">Khách nhận hàng:</span>
+                  <strong>{selectedOrder.customerReceivedConfirmed ? "✓ Đã nhận túi" : "Chưa xác nhận"}</strong>
+                </div>
+              </div>
+
+              {selectedOrder.fulfillmentStatus === "delivered" && selectedOrder.customerReceivedConfirmed && (
+                <div className="pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
+                  <div className="text-[11px] text-emerald-700 font-semibold truncate">
+                    Link định danh: <span className="font-mono text-slate-700">/passport/{selectedOrder.assignedBagSerialId || selectedOrder.assignedBatchId}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const link = `${window.location.origin}/passport/${selectedOrder.assignedBagSerialId || selectedOrder.assignedBatchId}?claim=true&orderCode=${selectedOrder.orderCode}`;
+                      navigator.clipboard.writeText(link);
+                      alert("Đã sao chép link định danh túi!");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-[10px] border border-teal-200 whitespace-nowrap cursor-pointer"
+                  >
+                    Sao Chép Link
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Financial Summary */}

@@ -5,10 +5,16 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { getAllBatches, getBatchById, getPassportStory } from "@/lib/netSourceStorage";
-import { getPassportDataFromFirestore, DbBagItem } from "@/lib/firestoreService";
+import {
+  getPassportDataFromFirestore,
+  mintBagItemToFirestore,
+  DbBagItem,
+} from "@/lib/firestoreService";
 import {
   getManufacturedItemBySerial,
   claimBagWarranty,
+  getAllOrders,
+  updateOrderStatus,
 } from "@/lib/supplyChainStorage";
 import { TraceBatch, ManufacturedBagItem } from "@/types";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
@@ -137,6 +143,59 @@ function StoryPassportContent() {
     });
 
     if (res.success) {
+      // Đúc túi vào Firestore nếu người dùng đã đăng nhập để hiện ngay trong Profile
+      if (userProfile?.uid) {
+        const plasticKg = mfgItem?.plasticConsumedKg || 0.65;
+        const bagItem: DbBagItem = {
+          itemId: targetSerial,
+          parentBatchId: selectedBatch?.batchId || "PACK-DN-2024-082",
+          itemIndex: 1,
+          bagName: mfgItem?.bagName || bagItemData?.bagName || "Túi Lưới Tái Chế NÉT",
+          colorName: mfgItem?.colorName || "Đại Dương Xanh",
+          ownerUid: userProfile.uid,
+          ownerName: claimName.trim(),
+          ownerPhone: claimPhone.trim(),
+          selectedCharms: [],
+          poeticDedication: `Kỷ vật bảo hành điện tử chính hãng đến ${res.item?.warrantyExpiresAt || "2028"}`,
+          plasticOffsetKg: plasticKg,
+          coralProtectedSqM: Number((plasticKg * 1.5).toFixed(1)),
+          co2AvoidedKg: Number((plasticKg * 1.9).toFixed(1)),
+          qrUrl: `/passport/${encodeURIComponent(selectedBatch?.batchId || "")}?itemId=${encodeURIComponent(targetSerial)}`,
+          createdAt: new Date().toISOString(),
+        };
+        mintBagItemToFirestore(bagItem).catch(() => {});
+      }
+
+      // Nếu có mã đơn hàng truyền qua link (orderCodeParam), tự động đánh dấu đơn đã định danh
+      const orderCodeParam = searchParams.get("orderCode");
+      if (orderCodeParam) {
+        try {
+          const orders = getAllOrders();
+          const ord = orders.find((o) => o.orderCode === orderCodeParam);
+          if (ord) {
+            updateOrderStatus(ord.orderId, "delivered", {
+              isClaimed: true,
+              claimedAt: new Date().toISOString(),
+              claimedByUserId: userProfile?.uid,
+              assignedBagSerialId: targetSerial,
+            });
+            import("firebase/firestore").then(({ doc, updateDoc, serverTimestamp }) => {
+              import("@/lib/firebase").then(({ db }) => {
+                updateDoc(doc(db, "orders", ord.orderId), {
+                  isClaimed: true,
+                  claimedAt: new Date().toISOString(),
+                  claimedByUserId: userProfile?.uid || null,
+                  assignedBagSerialId: targetSerial,
+                  updatedAt: serverTimestamp(),
+                }).catch(() => {});
+              });
+            });
+          }
+        } catch (e) {
+          // Ignored
+        }
+      }
+
       confetti({
         particleCount: 80,
         spread: 70,
@@ -154,7 +213,7 @@ function StoryPassportContent() {
   if (!selectedBatch) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-sky-50 text-slate-700 font-mono text-xs">
-        Đang nạp Hải Đồ & Chip NFC Story Passport...
+        Đang nạp Hải Đồ & Căn Cước Số NÉT Story Passport...
       </div>
     );
   }
@@ -181,13 +240,13 @@ function StoryPassportContent() {
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-1">
             <Radio className="w-3.5 h-3.5 text-teal-300 animate-pulse" />
-            <span>NFC CHÍNH HÃNG & CĂN CƯỚC SẢN PHẨM SỐ</span>
+            <span>CĂN CƯỚC SẢN PHẨM SỐ & DIGITAL PASSPORT</span>
           </div>
           <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight">
-            Xác Thực NFC & Kích Hoạt Bảo Hành
+            Xác Thực Căn Cước & Kích Hoạt Bảo Hành
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
-            Chạm nhẹ điện thoại vào chip NFC trên túi để kiểm tra nguồn gốc mẻ lưới, định danh quyền sở hữu và kích hoạt bảo hành điện tử 24 tháng.
+            Hệ thống định danh số độc bản: Kiểm tra nguồn gốc mẻ lưới Sơn Trà, xác thực quyền sở hữu và kích hoạt bảo hành điện tử 24 tháng chính hãng.
           </p>
 
           {/* Search by Batch ID or Item ID */}
@@ -325,7 +384,7 @@ function StoryPassportContent() {
                   <div>
                     <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/60 text-amber-300 text-[10px] font-bold uppercase tracking-widest">
                       <Clock className="w-3 h-3 text-amber-400" />
-                      <span>CHIP NFC XUẤT XƯỞNG — BẢO HÀNH ĐIỆN TỬ CHƯA KÍCH HOẠT</span>
+                      <span>CĂN CƯỚC SỐ ĐỘC BẢN — BẢO HÀNH ĐIỆN TỬ CHƯA KÍCH HOẠT</span>
                     </span>
                     <h2 className="font-serif text-xl sm:text-2xl font-bold text-white mt-1">
                       {bagTitle}
@@ -346,12 +405,12 @@ function StoryPassportContent() {
                   <div className="font-mono font-bold text-white mt-0.5">{barcodeValue}</div>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80">
-                  <div className="text-slate-400 text-[10px]">Mã Chip NFC:</div>
+                  <div className="text-slate-400 text-[10px]">Mã Căn Cước Số:</div>
                   <div className="font-mono font-bold text-teal-300 mt-0.5">{nfcUid}</div>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80">
                   <div className="text-slate-400 text-[10px]">Chính Sách Bảo Hành:</div>
-                  <div className="font-bold text-emerald-400 mt-0.5">24 Tháng Đường May</div>
+                  <div className="font-bold text-emerald-400 mt-0.5">24 Tháng Toàn Diện</div>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80">
                   <div className="text-slate-400 text-[10px]">Nguồn Lưới:</div>
@@ -368,7 +427,7 @@ function StoryPassportContent() {
                   </h3>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Nhập thông tin bên dưới để gắn chip NFC trên túi với tài khoản của bạn. Thông tin bảo hành sẽ được lưu trữ vĩnh viễn trên hệ thống.
+                  Nhập thông tin bên dưới để định danh chiếc túi vào tài khoản của bạn. Thông tin bảo hành sẽ được lưu trữ vĩnh viễn trên hệ thống và hiển thị trong Bộ Sưu Tập cá nhân.
                 </p>
 
                 {claimSuccessMsg && (
@@ -691,19 +750,19 @@ function StoryPassportContent() {
                 </div>
               </div>
 
-              {/* NFC Chip Indicator */}
+              {/* Digital Passport Spec */}
               <div className="p-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-left space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-[#0b1e3b] flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-teal-600" />
-                    <span>Chip NFC Cảm Ứng</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+                    <span>Căn Cước Số Độc Bản</span>
                   </span>
                   <span className="text-[10px] font-mono text-teal-700 font-bold bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                    UID: {nfcUid}
+                    ID: {serialCode}
                   </span>
                 </div>
                 <div className="text-[10px] text-slate-600">
-                  May ngầm tại logo da/quai túi, hỗ trợ chạm không dây 1-chạm mọi điện thoại iOS & Android.
+                  Mã định danh duy nhất liên kết với đơn hàng và tài khoản khách hàng, bảo chứng minh bạch qua hệ sinh thái NÉT.
                 </div>
               </div>
 
@@ -737,7 +796,7 @@ export default function StoryPassportDynamicPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-sky-50 text-slate-700 font-mono text-xs">
-          Đang nạp Hải Đồ & Chip NFC Story Passport...
+          Đang nạp Hải Đồ & Căn Cước NÉT Story Passport...
         </div>
       }
     >

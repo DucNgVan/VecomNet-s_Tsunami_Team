@@ -130,7 +130,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link href="/policies" className="hover:text-white transition-colors text-teal-300 font-semibold">
-                  Chính Sách Đổi Trả & Bảo Hành NFC
+                  Chính Sách Đổi Trả & Bảo Hành Điện Tử
                 </Link>
               </li>
               <li>

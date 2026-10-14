@@ -171,6 +171,13 @@ export type Order = {
   fulfillmentStatus: 'received' | 'crafting' | 'quality_check' | 'delivering' | 'delivered';
   userId?: string;
   assignedBagSerialId?: string;
+  shopDeliveredConfirmed?: boolean;
+  shopDeliveredAt?: string;
+  customerReceivedConfirmed?: boolean;
+  customerReceivedAt?: string;
+  isClaimed?: boolean;
+  claimedAt?: string;
+  claimedByUserId?: string;
 };
 
 export type NetPack = {
@@ -217,10 +224,10 @@ export type ManufacturedBagItem = {
   status: 'in_stock' | 'assigned_to_order' | 'delivered';
   assignedOrderCode?: string;
   qrUrl: string;
-  // Physical Garment Barcode & NFC Warranty Identity
+  // Physical Garment Barcode & Digital Passport Warranty Identity
   barcode: string; // 1D Barcode (Code 128 / EAN format: e.g. "893882082001")
-  nfcTagUid?: string; // NFC chip hardware UID (e.g. "04:5A:2B:1C:8D:9E")
-  isClaimed: boolean; // Has the customer scanned NFC & claimed ownership?
+  nfcTagUid?: string; // Digital Identity UID / Barcode tag
+  isClaimed: boolean; // Has the customer claimed ownership into their account?
   warrantyStatus: 'unactivated' | 'active' | 'expired';
   warrantyMonths: number; // e.g. 24 months
   warrantyActivatedAt?: string; // e.g. "2026-10-10 19:15"

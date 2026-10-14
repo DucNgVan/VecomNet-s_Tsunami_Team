@@ -214,7 +214,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
             <span>Chuỗi Cung Ứng & Lệnh Sản Xuất Xưởng</span>
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Quy trình tuần hoàn khép kín: Trục vớt kiện lưới ma ➔ Cắt may thành phẩm ➔ Cấp định danh Serial, QR & chip NFC.
+            Quy trình tuần hoàn khép kín: Trục vớt kiện lưới ma ➔ Cắt may thành phẩm ➔ Cấp định danh Serial, QR & thẻ căn cước số.
           </p>
         </div>
 
@@ -374,7 +374,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
             3
           </div>
           <div>
-            <div className="text-xs font-bold">3. Kho Thành Phẩm & NFC</div>
+            <div className="text-xs font-bold">3. Kho Thành Phẩm & Căn Cước Số</div>
             <div className={`text-[11px] ${subStep === "inventory" ? "text-slate-300" : "text-slate-500"}`}>
               {manufacturedItems.length} túi có Passport QR
             </div>
@@ -694,7 +694,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                     <th className="py-3 px-4">Tên Túi & Phối Màu</th>
                     <th className="py-3 px-4">Kiện Lưới Nguồn</th>
                     <th className="py-3 px-4">Trạng Thái Kho</th>
-                    <th className="py-3 px-4">Bảo Hành NFC 24T</th>
+                    <th className="py-3 px-4">Bảo Hành Điện Tử 24T</th>
                     <th className="py-3 px-4 text-right">Story Passport</th>
                   </tr>
                 </thead>
@@ -740,7 +740,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
 
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
-                          <Cpu className="w-3.5 h-3.5 text-indigo-500" />
+                          <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
                           <span
                             className={`text-[10px] font-bold ${
                               item.warrantyStatus === "active"
@@ -749,8 +749,8 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                             }`}
                           >
                             {item.warrantyStatus === "active"
-                              ? "Đã kích hoạt NFC"
-                              : "Chờ khách quét"}
+                              ? "Đã định danh"
+                              : "Chưa kích hoạt"}
                           </span>
                         </div>
                       </td>

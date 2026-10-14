@@ -4,7 +4,7 @@ import { TRACE_BATCHES } from "@/data/traceability";
 
 export class PassportService {
   /**
-   * Tra cứu thông tin hộ chiếu số từ chip NFC hoặc mã Serial
+   * Tra cứu thông tin hộ chiếu số từ mã Serial hoặc liên kết định danh số
    */
   static async getPassportData(passportId: string): Promise<{
     type: "item" | "batch";
@@ -25,7 +25,7 @@ export class PassportService {
   }
 
   /**
-   * Kích hoạt bảo hành điện tử 24 tháng chuẩn Sypik qua chip NFC
+   * Kích hoạt bảo hành điện tử 24 tháng qua hệ thống định danh số
    */
   static async claimWarranty(
     serialId: string,

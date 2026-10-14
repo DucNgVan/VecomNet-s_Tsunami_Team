@@ -38,14 +38,14 @@ export default function PoliciesPage() {
             Chính Sách & Điều Khoản Hoạt Động
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
-            Hệ thống quy chuẩn vận hành, bảo hành điện tử NFC và cam kết bảo vệ quyền lợi người tiêu dùng theo quy định của Bộ Công Thương Việt Nam.
+            Hệ thống quy chuẩn vận hành, bảo hành điện tử chính hãng và cam kết bảo vệ quyền lợi người tiêu dùng theo quy định của Bộ Công Thương Việt Nam.
           </p>
         </div>
 
         {/* Tab Navigation */}
         <div className="flex flex-wrap items-center justify-center gap-2 p-1.5 rounded-2xl bg-slate-900/90 border border-sky-800/60 max-w-4xl mx-auto">
           {[
-            { id: "warranty", label: "Bảo Hành NFC & Đổi Trả", icon: RefreshCw },
+            { id: "warranty", label: "Bảo Hành Điện Tử & Đổi Trả", icon: RefreshCw },
             { id: "shipping", label: "Kiểm Hàng & Vận Chuyển", icon: Truck },
             { id: "privacy", label: "Bảo Mật Thông Tin", icon: Lock },
             { id: "terms", label: "Điều Khoản Dịch Vụ", icon: FileText },
@@ -78,7 +78,7 @@ export default function PoliciesPage() {
               <div className="border-b border-slate-800 pb-4">
                 <h2 className="font-serif text-2xl font-bold text-white flex items-center gap-2.5">
                   <RefreshCw className="w-6 h-6 text-teal-400" />
-                  <span>Chính Sách Bảo Hành Điện Tử NFC & Đổi Trả Hàng</span>
+                  <span>Chính Sách Bảo Hành Điện Tử & Đổi Trả Hàng</span>
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
                   Áp dụng cho toàn bộ sản phẩm túi may từ lưới ma và charm trang sức độc bản của NÉT.
@@ -89,10 +89,10 @@ export default function PoliciesPage() {
                 <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
                   <h3 className="text-sm font-bold text-teal-300 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>1. Bảo hành điện tử 24 tháng qua Chip NFC</span>
+                    <span>1. Bảo hành điện tử 24 tháng qua Hệ thống Định danh số</span>
                   </h3>
                   <p>
-                    Mỗi chiếc túi xuất xưởng được tích hợp vi chip NFC chống nước bên trong mép quai hoặc thân túi. Khách hàng chỉ cần chạm smartphone có hỗ trợ NFC để kích hoạt và lưu trữ bảo hành chính hãng.
+                    Mỗi chiếc túi xuất xưởng được cấp một mã căn cước số duy nhất (Serial ID) liên kết trực tiếp với dữ liệu mẻ lưới trục vớt. Khi nhận hàng và xác nhận giao nhận 2 chiều trên trang Cá Nhân, khách hàng sẽ kích hoạt bảo hành điện tử 24 tháng chính hãng được lưu trữ vĩnh viễn trên hệ thống.
                   </p>
                   <ul className="list-disc pl-4 space-y-1 text-slate-400">
                     <li>Miễn phí sửa chữa các lỗi bung chỉ đan, đứt quai, rách mắt lưới tự nhiên do lỗi chế tác.</li>
@@ -151,7 +151,7 @@ export default function PoliciesPage() {
                 <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
                   <h3 className="text-sm font-bold text-sky-300">Quyền Đồng Kiểm Khi Nhận</h3>
                   <p>
-                    Quý khách được quyền mở hộp kiểm tra ngoại quan sản phẩm, kiểm tra số lượng charm và quét thử chip NFC trước khi thanh toán cho nhân viên giao hàng (Shipper).
+                    Quý khách được quyền mở hộp kiểm tra ngoại quan sản phẩm, kiểm tra số lượng charm và kiểm tra tem căn cước số trước khi thanh toán cho nhân viên giao hàng (Shipper).
                   </p>
                   <p className="text-slate-400">
                     Nếu phát hiện lỗi hoặc không đúng như thiết kế 3D, quý khách có quyền từ chối nhận hàng mà không mất bất kỳ khoản phí nào.
@@ -211,7 +211,7 @@ export default function PoliciesPage() {
                 <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
                   <h3 className="text-sm font-bold text-white">1. Mục đích thu thập dữ liệu</h3>
                   <p>
-                    NÉT chỉ thu thập Họ tên, Số điện thoại, Địa chỉ giao hàng và Email nhằm mục đích: Xác nhận đơn hàng, giao nhận vận chuyển, kích hoạt chứng chỉ bảo hành điện tử NFC và gửi thông báo tác động sinh thái cứu hộ rác biển.
+                    NÉT chỉ thu thập Họ tên, Số điện thoại, Địa chỉ giao hàng và Email nhằm mục đích: Xác nhận đơn hàng, giao nhận vận chuyển, kích hoạt chứng chỉ bảo hành điện tử chính hãng và gửi thông báo tác động sinh thái cứu hộ rác biển.
                   </p>
                 </div>
 
@@ -250,7 +250,7 @@ export default function PoliciesPage() {
                   Mọi thiết kế mô hình 3D túi xách, kiểu dáng đan lưới may thủ công, charm biểu tượng văn hóa biển và hệ thống mã hóa định danh độc bản trên nền tảng NÉT thuộc quyền sở hữu trí tuệ độc quyền của Công ty TNHH Sáng Tạo Sinh Thái NÉT.
                 </p>
                 <p>
-                  Khách hàng khi đặt túi có quyền sở hữu vật lý và chứng chỉ tác động số đi kèm. Nghiêm cấm mọi hành vi sao chép công nghệ định danh NFC hoặc làm giả tem dệt may Barcode 128 của thương hiệu.
+                  Khách hàng khi đặt túi có quyền sở hữu vật lý và chứng chỉ tác động số đi kèm. Nghiêm cấm mọi hành vi sao chép công nghệ định danh số hoặc làm giả tem dệt may Barcode 128 của thương hiệu.
                 </p>
               </div>
             </div>

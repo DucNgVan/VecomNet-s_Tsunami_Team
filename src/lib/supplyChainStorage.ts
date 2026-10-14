@@ -445,9 +445,28 @@ export function getAllOrders(): Order[] {
   }
 }
 
-export function updateOrderStatus(orderId: string, status: Order["fulfillmentStatus"]): Order[] {
+export function updateOrderStatus(
+  orderId: string,
+  status: Order["fulfillmentStatus"],
+  additionalFields?: Partial<Order>
+): Order[] {
   const orders = getAllOrders();
-  const updated = orders.map((o) => (o.orderId === orderId ? { ...o, fulfillmentStatus: status } : o));
+  const isDelivered = status === "delivered";
+  const updated = orders.map((o) =>
+    o.orderId === orderId
+      ? {
+          ...o,
+          fulfillmentStatus: status,
+          ...(isDelivered
+            ? {
+                shopDeliveredConfirmed: true,
+                shopDeliveredAt: o.shopDeliveredAt || new Date().toISOString(),
+              }
+            : {}),
+          ...additionalFields,
+        }
+      : o
+  );
   if (typeof window !== "undefined") {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updated));
   }

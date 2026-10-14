@@ -129,17 +129,17 @@ export function generateOrderReceiptHTML(order: Order): string {
 
           <hr style="border: none; border-top: 1px dashed #cbd5e1; margin: 12px 0;" />
 
-          <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">🏷️ ĐỊNH DANH & BẢO HÀNH ĐIỆN TỬ NFC:</div>
+          <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">🏷️ ĐỊNH DANH SỐ & BẢO HÀNH ĐIỆN TỬ:</div>
           <div style="color: #334155;"><strong>Mã Kiện Lưới Gán:</strong> ${order.assignedBatchId}</div>
-          ${order.assignedBagSerialId ? `<div style="color: #0369a1; font-weight: 700;"><strong>Mã Serial Độc Bản:</strong> ${order.assignedBagSerialId} (May lót trong túi)</div>` : ""}
+          ${order.assignedBagSerialId ? `<div style="color: #0369a1; font-weight: 700;"><strong>Mã Serial Độc Bản:</strong> ${order.assignedBagSerialId} (Thẻ căn cước may lót)</div>` : ""}
           <div style="color: #166534; margin-top: 4px;">
-            ✦ Khi nhận túi, chạm smartphone có NFC vào mép túi để kích hoạt thẻ bảo hành chính hãng 24 tháng và chứng chỉ sở hữu độc bản.
+            ✦ Sau khi nhận túi thực tế, bạn chỉ cần bấm xác nhận nhận hàng tại trang Hồ Sơ để mở liên kết định danh túi trực tiếp vào tài khoản và kích hoạt bảo hành điện tử 24 tháng chính hãng.
           </div>
         </div>
 
         <div style="text-align: center; margin-top: 28px;">
           <a href="https://net.eco/passport/${encodeURIComponent(order.assignedBatchId)}" style="display: inline-block; background-color: #071326; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em;">
-            TRA CỨU HẢI ĐỒ NGUỒN GỐC & BẢO HÀNH NFC
+            TRA CỨU HẢI ĐỒ NGUỒN GỐC & CĂN CƯỚC SỐ
           </a>
         </div>
       </td>

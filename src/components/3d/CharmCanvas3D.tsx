@@ -205,6 +205,9 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
       instance.position.y = -center.y;
       instance.position.z = -center.z;
 
+      // Orient charm upright
+      instance.rotation.x = Math.PI;
+
       const charmWrapper = new THREE.Group();
       charmWrapper.add(instance);
 

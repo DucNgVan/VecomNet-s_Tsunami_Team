@@ -439,6 +439,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             charmInstance.position.y = -center.y;
             charmInstance.position.z = -center.z;
 
+            // Orient charm upright: flip 180° around X axis so dragon head faces up and outward (not upside down)
+            charmInstance.rotation.x = Math.PI;
+
             const wrapper = new THREE.Group();
             wrapper.add(charmInstance);
 

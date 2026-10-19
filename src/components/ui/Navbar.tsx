@@ -36,13 +36,6 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Top Banner Notice */}
-      <div className="w-full bg-[#EFE9DF] text-[#7A6F68] text-[11px] sm:text-xs py-1.5 px-3 text-center border-b border-[#E8E2D8] font-medium tracking-tight">
-        <span>
-          BẢN THỬ NGHIỆM BDC 2026 · Giá và dữ liệu mẫu dùng để kiểm chứng · Chưa nhận thanh toán
-        </span>
-      </div>
-
       {/* Main Navbar */}
       <header className="sticky top-0 z-40 w-full bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between">

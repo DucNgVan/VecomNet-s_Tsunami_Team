@@ -532,12 +532,12 @@ function NetStudioContent() {
             <div className="lg:col-span-5 flex flex-col items-center">
               {is3DMode ? (
                 <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 shadow-sm relative border border-[#E8E2D8] overflow-hidden">
-                  <div className="absolute top-4 right-4 z-30">
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
                     <button
                       onClick={() => setIs3DMode(false)}
-                      className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#E8E2D8] text-xs font-semibold text-[#42342B] hover:text-[#B85D43]"
+                      className="px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-sm flex items-center gap-1.5"
                     >
-                      ← Trở về bản phối 2D
+                      <span>← Trở về bản phối 2D</span>
                     </button>
                   </div>
                   <BagCanvas3D

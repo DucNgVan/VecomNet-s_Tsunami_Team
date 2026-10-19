@@ -45,9 +45,12 @@ export interface DbBagItem {
   selectedCharms: {
     charmId: string;
     vietnameseName: string;
-    material: string;
+    material?: string;
     symbol: string;
     anchorId: string;
+    color?: string;
+    price?: number;
+    plasticOffsetGrams?: number;
   }[];
   quizIntention?: {
     vibe: string;

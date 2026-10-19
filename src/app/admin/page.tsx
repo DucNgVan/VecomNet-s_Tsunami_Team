@@ -587,7 +587,7 @@ function AdminPortalContent() {
             onTogglePaymentStatus={handleTogglePaymentStatus}
             onDeleteOrder={handleDeleteOrder}
             onCreateManualOrder={handleCreateManualOrder}
-            initialTypeFilter={searchParams.get("tab") === "design-requests" ? "studio" : "all"}
+            initialTypeFilter={searchParams.get("tab") === "design-requests" ? "custom" : "all"}
           />
         )}
 

@@ -283,6 +283,7 @@ function NetStudioContent() {
 
   // Tab 2: Sáng Tạo Charm Riêng Cùng AI (3 Bước: 1. Chat & Upload -> 2. Sketch 2D lên túi -> 3. Nộp duyệt & Báo giá)
   const [aiCustomStep, setAiCustomStep] = useState<1 | 2 | 3>(1);
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<
     Array<{
       id: string;
@@ -291,6 +292,14 @@ function NetStudioContent() {
       time: string;
       attachmentName?: string;
       attachmentUrl?: string;
+      masterPrompt?: string;
+      features?: {
+        haircut?: string;
+        eyewear?: string;
+        pose?: string;
+        outfit?: string;
+        accessories?: string;
+      };
       analysis?: {
         motif: string;
         material: string;
@@ -302,7 +311,7 @@ function NetStudioContent() {
     {
       id: "ai-welcome",
       sender: "ai",
-      text: "Chào bạn! Tôi là Nét AI Stylist. Bạn muốn thiết kế dấu ấn charm mang cảm hứng nào từ chuyến đi Đà Nẵng hay kỷ niệm riêng của mình? Hãy nhập ý tưởng hoặc tải lên bản phác thảo tay / tài liệu tham khảo nhé!",
+      text: "Chào bạn! Tôi là Nét AI Stylist. Bạn muốn thiết kế dấu ấn charm mang cảm hứng nào từ chuyến đi Đà Nẵng hay kỷ niệm riêng của mình? Hãy nhập ý tưởng hoặc tải lên bản phác thảo tay / ảnh chân dung nhé!",
       time: "Vừa xong",
     },
   ]);
@@ -558,6 +567,8 @@ function NetStudioContent() {
               hour: "2-digit",
               minute: "2-digit",
             }),
+            masterPrompt: d.masterPrompt,
+            features: d.featuresExtracted,
             analysis: {
               motif,
               material: "Nhựa lưới đại dương tái sinh men gốm nghệ nhân / Ngàm chốt cài mắt lưới",
@@ -573,6 +584,17 @@ function NetStudioContent() {
       setIsAiThinking(false);
       console.warn("AI Chat API fallback:", err);
 
+      const fallbackMasterPrompt = `Style: A 2D chibi cartoon character, designed specifically as a 3D-printable bag charm keychain, isolated on a solid, flat white background. 
+
+Transform the subject in the photo into a cute, chibi-style illustration with an oversized head, large expressive anime-style eyes, and a small, compact body. Keep the iconic features such as the haircut (short undercut on the sides, voluminous on top), black-framed glasses, and the pose: left hand raised slightly in a friendly wave and the right hand casually tucked into the pocket of the pants, showing a silver wrist watch, inspired by the reference image. The outfit consists of a dark polo shirt and light-colored trousers.
+
+Key 3D printing & charm specs:
+- Design a thick, continuous, solid dark outline (border) around the entire character to ensure all parts are structurally connected. No disconnected or floating elements.
+- A functional, sturdy round hanging eyelet/loop with a hole (minimum thickness 2.5mm) must be seamlessly integrated on top of the character's head for bag attachment.
+- The entire charm is a single, unified flat outer shape with 2.5D layered emboss/deboss effect, avoiding any thin, fragile, or overly intricate lines that could easily break during 3D printing.
+- Bold color blocks, flat shading, sticker/rubber-toy aesthetic, no gradient shadows, no complex patterns.
+- Shot from a direct, straight-on front view. Completely transparent or solid white background, with no shadows on the ground.`;
+
       // Graceful fallback logic with pure DIE-CUT SVG vector graphics (no bounding box)
       const lower = (message + " " + (uploadedDocName || "")).toLowerCase();
       const isChibi =
@@ -583,7 +605,8 @@ function NetStudioContent() {
         lower.includes("người") ||
         lower.includes("selfie") ||
         lower.includes("hoạt hình") ||
-        lower.includes("khuôn mặt");
+        lower.includes("khuôn mặt") ||
+        Boolean(customImageFile || uploadedDocName);
       const isOcean = lower.includes("biển") || lower.includes("sóng") || lower.includes("mỹ khê") || lower.includes("rùa");
       const isSonTra = lower.includes("sơn trà") || lower.includes("voọc");
       const isDragon = lower.includes("rồng") || lower.includes("cầu");
@@ -596,39 +619,86 @@ function NetStudioContent() {
 
       if (isChibi) {
         shape = "freeform";
-        color = "#2563EB";
-        motif = "Chibi Cá Nhân Hoá Men Gốm Viền Vàng";
-        laserText = customText || "NÉT ME";
-        fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        color = "#242424";
+        motif = "Chibi Chàng Trai Áo Polo Vẫy Chào";
+        laserText = customText || "NÉT 3D";
+        fallbackSvg = `<svg viewBox="0 0 100 135" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="skinFb" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFDAB9"/>
-      <stop offset="100%" stop-color="#F8C29D"/>
-    </linearGradient>
-    <linearGradient id="hairFb" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2D2D2D"/>
-      <stop offset="100%" stop-color="#0F0F0F"/>
-    </linearGradient>
-    <linearGradient id="shirtFb" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2563EB"/>
-      <stop offset="100%" stop-color="#1D4ED8"/>
-    </linearGradient>
+    <filter id="charmShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>
   </defs>
-  <!-- Die-cut Chibi (No bounding frame) -->
-  <path d="M25 40 C15 25, 30 15, 50 15 S85 25, 75 40 C75 40, 65 45, 50 45 S25 40, 25 40 Z" fill="url(#hairFb)" stroke="#D4AF37" stroke-width="1.8"/>
-  <path d="M30 38 Q20 54, 25 68 C30 82, 70 82, 75 68 Q80 54, 70 38 C70 38, 50 44, 30 38 Z" fill="url(#skinFb)" stroke="#D4AF37" stroke-width="1.8"/>
-  <path d="M26 38 C32 28, 42 32, 50 26 C58 32, 68 28, 74 38 C68 36, 58 40, 50 36 C42 40, 32 36, 26 38 Z" fill="url(#hairFb)" stroke="#D4AF37" stroke-width="1.2"/>
-  <ellipse cx="40" cy="52" rx="6" ry="7.5" fill="#111827" stroke="#D4AF37" stroke-width="0.5"/>
-  <circle cx="42" cy="50" r="2.2" fill="#FFFFFF"/>
-  <circle cx="39" cy="55" r="1.1" fill="#FFFFFF"/>
-  <ellipse cx="60" cy="52" rx="6" ry="7.5" fill="#111827" stroke="#D4AF37" stroke-width="0.5"/>
-  <circle cx="62" cy="50" r="2.2" fill="#FFFFFF"/>
-  <circle cx="59" cy="55" r="1.1" fill="#FFFFFF"/>
-  <ellipse cx="33" cy="62" rx="4.5" ry="2.5" fill="#FFB6C1" opacity="0.85"/>
-  <ellipse cx="67" cy="62" rx="4.5" ry="2.5" fill="#FFB6C1" opacity="0.85"/>
-  <path d="M44 64 Q50 71, 56 64" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round"/>
-  <path d="M28 72 C20 80, 24 94, 50 94 C76 94, 80 80, 72 72 L66 68 L34 68 Z" fill="url(#shirtFb)" stroke="#D4AF37" stroke-width="1.8"/>
-  <path d="M42 68 L50 76 L58 68" fill="none" stroke="#D4AF37" stroke-width="1.2"/>
+
+  <g id="chibiKeychainCharm" filter="url(#charmShadow)">
+    <!-- 1. Sturdy Top Hanging Loop (integrated eyelet with hole) -->
+    <path d="M43 14 C43 6, 57 6, 57 14 C57 17.5, 54 18.5, 50 18.5 C46 18.5, 43 17.5, 43 14 Z" fill="#281D17" stroke="#281D17" stroke-width="2.5"/>
+    <circle cx="50" cy="12" r="3.2" fill="#FFFFFF" stroke="#281D17" stroke-width="1.8"/>
+
+    <!-- 2. Hair Undercut Side Fade -->
+    <path d="M23 46 C21 37, 25 29, 31 26 C34 32, 35 42, 37 48 Z" fill="#654A3C" stroke="#281D17" stroke-width="2"/>
+
+    <!-- 3. Head & Face Skin Base -->
+    <path d="M28 42 C26 58, 32 72, 49 72 C66 72, 72 58, 70 42 C64 36, 36 36, 28 42 Z" fill="#FCD5B5" stroke="#281D17" stroke-width="2.5"/>
+
+    <!-- 4. Left Ear -->
+    <path d="M27 48 C22 47, 23 58, 28 58 Z" fill="#FCD5B5" stroke="#281D17" stroke-width="2"/>
+    <path d="M26 51 C24 51, 24 55, 27 55" fill="none" stroke="#D79E7E" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- 5. Voluminous Top Hair with anime tufts -->
+    <path d="M25 43 C22 34, 25 24, 34 20 C42 16, 54 17, 62 21 C68 25, 75 32, 73 40 C72 44, 69 46, 68 44 C67 38, 62 33, 56 31 C59 34, 59 37, 56 37 C52 33, 46 31, 40 33 C42 36, 42 39, 39 39 C34 36, 30 38, 28 44 Z" fill="#2D231E" stroke="#281D17" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M48 20 C52 24, 56 26, 58 31" fill="none" stroke="#4A3B34" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- 6. Eyebrows -->
+    <path d="M37 42 Q43 39, 48 43" fill="none" stroke="#281D17" stroke-width="2" stroke-linecap="round"/>
+    <path d="M59 42 Q65 39, 70 43" fill="none" stroke="#281D17" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- 7. Black-Framed Glasses -->
+    <rect x="32" y="44" width="17" height="13" rx="3.5" fill="none" stroke="#1D1D1D" stroke-width="2.4"/>
+    <rect x="55" y="44" width="17" height="13" rx="3.5" fill="none" stroke="#1D1D1D" stroke-width="2.4"/>
+    <path d="M49 49 L55 49" stroke="#1D1D1D" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M29 48 L32 48" stroke="#1D1D1D" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M72 48 L75 48" stroke="#1D1D1D" stroke-width="2.4" stroke-linecap="round"/>
+
+    <!-- 8. Large Expressive Anime Eyes with Highlights -->
+    <ellipse cx="40.5" cy="50.5" rx="4.5" ry="5" fill="#2E2018"/>
+    <ellipse cx="40.5" cy="51.5" rx="3.5" ry="3.8" fill="#523A2C"/>
+    <circle cx="42" cy="48.5" r="1.8" fill="#FFFFFF"/>
+    <circle cx="39" cy="52.5" r="0.9" fill="#FFFFFF"/>
+
+    <ellipse cx="63.5" cy="50.5" rx="4.5" ry="5" fill="#2E2018"/>
+    <ellipse cx="63.5" cy="51.5" rx="3.5" ry="3.8" fill="#523A2C"/>
+    <circle cx="65" cy="48.5" r="1.8" fill="#FFFFFF"/>
+    <circle cx="62" cy="52.5" r="0.9" fill="#FFFFFF"/>
+
+    <!-- 9. Nose & Friendly Smile -->
+    <path d="M51 53 L51.5 54.5" stroke="#D79E7E" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M46 59 Q51 63, 56 59" fill="none" stroke="#281D17" stroke-width="1.8" stroke-linecap="round"/>
+
+    <!-- 10. Neck -->
+    <path d="M45 70 L45 74 L55 74 L55 70 Z" fill="#FCD5B5" stroke="#281D17" stroke-width="1.5"/>
+
+    <!-- 11. Dark Polo Shirt with Collar & Placket -->
+    <path d="M33 74 L67 74 L65 100 L34 100 Z" fill="#242424" stroke="#281D17" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M43 74 L50 82 L47 74 Z" fill="#181818" stroke="#281D17" stroke-width="1.5"/>
+    <path d="M57 74 L50 82 L53 74 Z" fill="#181818" stroke="#281D17" stroke-width="1.5"/>
+    <path d="M50 82 L50 90" stroke="#181818" stroke-width="1.8"/>
+
+    <!-- 12. Right Arm tucked in Pocket with Silver Watch -->
+    <path d="M33 75 C29 78, 27 88, 32 99 C35 103, 39 103, 40 98 L37 84" fill="#242424" stroke="#281D17" stroke-width="2.2" stroke-linejoin="round"/>
+    <rect x="33" y="93" width="5" height="4" rx="1.5" fill="#CBD5E1" stroke="#281D17" stroke-width="1.2"/>
+
+    <!-- 13. Left Arm Raised in Friendly Waving Gesture -->
+    <path d="M66 75 C70 78, 77 82, 77 75 C77 67, 72 63, 71 58 C68 57, 65 62, 67 68 C68 73, 64 74, 61 74" fill="#FCD5B5" stroke="#281D17" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M72 58 C74 55, 77 57, 76 60 C78 58, 80 61, 78 64" fill="#FCD5B5" stroke="#281D17" stroke-width="1.5"/>
+
+    <!-- 14. Trousers (Light Cream / Beige Chinos) -->
+    <path d="M35 100 L65 100 L64 124 L52 124 L50 106 L48 124 L36 124 Z" fill="#F4EED7" stroke="#281D17" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M36 100 Q40 105, 41 109" fill="none" stroke="#281D17" stroke-width="1.8"/>
+
+    <!-- 15. Shoes (Dark Loafers) -->
+    <path d="M34 124 C34 122, 47 122, 47 125 C47 129, 34 129, 34 127 Z" fill="#241E1B" stroke="#281D17" stroke-width="2"/>
+    <path d="M53 125 C53 122, 66 122, 66 124 C66 127, 53 129, 53 127 Z" fill="#241E1B" stroke="#281D17" stroke-width="2"/>
+  </g>
 </svg>`;
       } else if (isOcean) {
         shape = "freeform";
@@ -707,11 +777,19 @@ function NetStudioContent() {
         {
           id: `ai-${Date.now()}`,
           sender: "ai",
-          text: `Nét AI Stylist đã hoàn thiện bản phác thảo charm die-cut "${motif}" độc bản cho bạn! Nét vẽ hoạt hình gốm sứ mạ vàng kim đã được chuẩn hoá với ngàm chốt cài mắt lưới túi Nét.`,
+          text: `Nét AI Stylist đã áp dụng Master Prompt 3D Keychain để tạo bản phác thảo Chibi độc bản cho bạn! Nhân vật sở hữu mái tóc undercut vuốt bồng bềnh, mắt anime biểu cảm, kính gọng đen, cử chỉ vẫy tay thân thiện và khoen xỏ chắc chắn trên đầu sẵn sàng kết nối túi Nét.`,
           time: new Date().toLocaleTimeString("vi-VN", {
             hour: "2-digit",
             minute: "2-digit",
           }),
+          masterPrompt: fallbackMasterPrompt,
+          features: {
+            haircut: "Short undercut on the sides, voluminous on top",
+            eyewear: "Black-framed glasses",
+            pose: "Left hand raised in a friendly wave, right hand in pocket",
+            outfit: "Dark polo shirt & light-colored trousers",
+            accessories: "Silver wrist watch",
+          },
           analysis: {
             motif,
             material: "Nhựa lưới biển tái sinh men gốm nghệ nhân / Ngàm chốt cài mắt lưới",
@@ -1633,6 +1711,70 @@ function NetStudioContent() {
                                       </div>
                                     </div>
                                   )}
+
+                                  {/* Extracted 3D Charm Features */}
+                                  {msg.features && (
+                                    <div className="mt-2.5 pt-2 border-t border-[#E8E2D8] space-y-1 text-[11px]">
+                                      <div className="font-semibold text-[#B85D43] flex items-center gap-1 text-[10px] uppercase">
+                                        <Sliders className="w-3 h-3" />
+                                        <span>Đặc điểm nhận diện AI:</span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10.5px] bg-[#FAF7F2] p-2 rounded-xl border border-[#E8E2D8]">
+                                        {msg.features.haircut && (
+                                          <div><span className="text-[#8C7A70]">💇 Tóc:</span> <span className="text-[#241B16] font-medium">{msg.features.haircut}</span></div>
+                                        )}
+                                        {msg.features.eyewear && (
+                                          <div><span className="text-[#8C7A70]">👓 Kính:</span> <span className="text-[#241B16] font-medium">{msg.features.eyewear}</span></div>
+                                        )}
+                                        {msg.features.pose && (
+                                          <div><span className="text-[#8C7A70]">🧍 Dáng:</span> <span className="text-[#241B16] font-medium">{msg.features.pose}</span></div>
+                                        )}
+                                        {msg.features.outfit && (
+                                          <div><span className="text-[#8C7A70]">👕 Đồ:</span> <span className="text-[#241B16] font-medium">{msg.features.outfit}</span></div>
+                                        )}
+                                        {msg.features.accessories && (
+                                          <div className="col-span-1 sm:col-span-2"><span className="text-[#8C7A70]">⌚ Phụ kiện:</span> <span className="text-[#241B16] font-medium">{msg.features.accessories}</span></div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Master Prompt Chuẩn 3D Keychain với 1-Click Copy */}
+                                  {msg.masterPrompt && (
+                                    <div className="mt-2.5 p-2.5 rounded-xl bg-[#FFFDF5] border border-[#D4AF37]/50 space-y-2">
+                                      <div className="flex items-center justify-between gap-1">
+                                        <div className="flex items-center gap-1 text-[10px] font-bold text-[#8B6E32] uppercase">
+                                          <Sparkles className="w-3 h-3 text-[#B8860B]" />
+                                          <span>Master Prompt 3D Keychain</span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(msg.masterPrompt!);
+                                            setCopiedPromptId(msg.id);
+                                            setTimeout(() => setCopiedPromptId(null), 2500);
+                                          }}
+                                          className="px-2 py-0.5 rounded bg-[#241B16] hover:bg-[#3D2E24] text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                                          title="Sao chép prompt để dùng trên Gemini Web hoặc Imagen"
+                                        >
+                                          {copiedPromptId === msg.id ? (
+                                            <>
+                                              <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                              <span>Đã chép!</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Copy className="w-2.5 h-2.5" />
+                                              <span>Sao chép Prompt</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+                                      <p className="text-[10px] text-[#4A3B32] font-mono leading-relaxed line-clamp-3 bg-white p-2 rounded-md border border-[#E8E2D8]">
+                                        {msg.masterPrompt}
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                                 <span className="text-[10px] text-[#A89F91] mt-0.5 px-1">
                                   {msg.time}
@@ -1849,7 +1991,7 @@ function NetStudioContent() {
                                         onClick={() => {
                                           const svgToUse =
                                             generatedSvgCode ||
-                                            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="skinStl" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFDAB9"/><stop offset="100%" stop-color="#F8C29D"/></linearGradient></defs><path d="M25 40 C15 25, 30 15, 50 15 S85 25, 75 40 C75 40, 65 45, 50 45 S25 40, 25 40 Z" fill="#2D2D2D" stroke="#D4AF37" stroke-width="1.8"/><path d="M30 38 Q20 54, 25 68 C30 82, 70 82, 75 68 Q80 54, 70 38 C70 38, 50 44, 30 38 Z" fill="url(#skinStl)" stroke="#D4AF37" stroke-width="1.8"/><ellipse cx="40" cy="52" rx="6" ry="7.5" fill="#111827"/><circle cx="42" cy="50" r="2.2" fill="#FFFFFF"/><ellipse cx="60" cy="52" rx="6" ry="7.5" fill="#111827"/><circle cx="62" cy="50" r="2.2" fill="#FFFFFF"/><path d="M44 64 Q50 71, 56 64" fill="none" stroke="#B91C1C" stroke-width="2"/><path d="M28 72 C20 80, 24 94, 50 94 C76 94, 80 80, 72 72 L66 68 L34 68 Z" fill="#2563EB" stroke="#D4AF37" stroke-width="1.8"/></svg>`;
+                                            `<svg viewBox="0 0 100 135" xmlns="http://www.w3.org/2000/svg"><path d="M43 14 C43 6, 57 6, 57 14 C57 17.5, 54 18.5, 50 18.5 C46 18.5, 43 17.5, 43 14 Z" fill="#281D17" stroke="#281D17" stroke-width="2.5"/><circle cx="50" cy="12" r="3.2" fill="#FFFFFF" stroke="#281D17" stroke-width="1.8"/><path d="M25 43 C22 34, 25 24, 34 20 C42 16, 54 17, 62 21 C68 25, 75 32, 73 40 Z" fill="#2D231E" stroke="#281D17" stroke-width="2.5"/><path d="M28 42 C26 58, 32 72, 49 72 C66 72, 72 58, 70 42 Z" fill="#FCD5B5" stroke="#281D17" stroke-width="2.5"/><rect x="32" y="44" width="17" height="13" rx="3.5" fill="none" stroke="#1D1D1D" stroke-width="2.4"/><rect x="55" y="44" width="17" height="13" rx="3.5" fill="none" stroke="#1D1D1D" stroke-width="2.4"/><circle cx="42" cy="50" r="2.2" fill="#FFFFFF"/><circle cx="62" cy="50" r="2.2" fill="#FFFFFF"/><path d="M33 74 L67 74 L65 100 L34 100 Z" fill="#242424" stroke="#281D17" stroke-width="2.4"/><path d="M35 100 L65 100 L64 124 L52 124 L50 106 L48 124 L36 124 Z" fill="#F4EED7" stroke="#281D17" stroke-width="2.4"/></svg>`;
                                           try {
                                             const res = generateCharmSTLFromSVG(svgToUse, { depthMm: 3.0 });
                                             setGeneratedStlData(res.stlString);

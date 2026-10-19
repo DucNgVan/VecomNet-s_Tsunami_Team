@@ -257,18 +257,35 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                     style={{
                       backgroundColor: placed.charm.color || "#38bdf8",
                     }}
-                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex flex-col items-center justify-center text-white shadow-md border-2 border-white/80 relative transition-all ${
+                    className={`w-11 h-11 sm:w-12 sm:h-12 ${
+                      isCustom && customCharmVisual?.shape === "circle"
+                        ? "rounded-full"
+                        : isCustom && customCharmVisual?.shape === "teardrop"
+                        ? "rounded-t-full rounded-b-md"
+                        : isCustom && customCharmVisual?.shape === "heart"
+                        ? "rounded-2xl"
+                        : isCustom && customCharmVisual?.shape === "freeform"
+                        ? "rounded-[16px_4px_16px_4px]"
+                        : "rounded-xl"
+                    } flex flex-col items-center justify-center text-white shadow-md border-2 border-white/80 relative transition-all overflow-hidden ${
                       isSelected ? "ring-2 ring-[#B85D43] ring-offset-2" : ""
                     }`}
                   >
-                    {/* Charm Icon / Glyph */}
-                    <span className="text-lg sm:text-xl font-bold leading-none select-none drop-shadow-xs">
-                      {placed.charm.symbol || "✨"}
-                    </span>
+                    {isCustom && customCharmVisual?.referenceImageUrl ? (
+                      <img
+                        src={customCharmVisual.referenceImageUrl}
+                        alt="Custom Sketch"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-lg sm:text-xl font-bold leading-none select-none drop-shadow-xs">
+                        {placed.charm.symbol || "✨"}
+                      </span>
+                    )}
 
                     {/* Engraved text if custom */}
                     {customCharmVisual?.engravedText && isCustom && (
-                      <span className="text-[8px] font-mono tracking-tight text-white/95 mt-0.5 truncate max-w-[36px]">
+                      <span className="text-[7.5px] font-mono tracking-tight text-white/95 mt-0.5 truncate max-w-[36px] bg-black/40 px-1 rounded">
                         {customCharmVisual.engravedText}
                       </span>
                     )}

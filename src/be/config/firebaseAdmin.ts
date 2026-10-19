@@ -1,10 +1,9 @@
 import { getApps, initializeApp, cert, App } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
-import { getAuth, Auth } from "firebase-admin/auth";
 
 let app: App | undefined;
 let adminDbInstance: Firestore | null = null;
-let adminAuthInstance: Auth | null = null;
+let adminAuthInstance: any = null;
 
 function parseServiceAccountKey(raw: string | undefined): any | null {
   if (!raw || typeof raw !== "string") return null;
@@ -60,7 +59,7 @@ try {
 
     if (app) {
       adminDbInstance = getFirestore(app);
-      adminAuthInstance = getAuth(app);
+      adminAuthInstance = null;
     }
   } else {
     if (serviceAccountKey && serviceAccountKey.trim().length > 0) {

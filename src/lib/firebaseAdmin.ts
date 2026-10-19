@@ -1,6 +1,5 @@
 import { getApps, getApp, initializeApp, cert, App } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
-import { getAuth, Auth } from "firebase-admin/auth";
 import { getStorage, Storage } from "firebase-admin/storage";
 
 function parseServiceAccountKey(raw: string | undefined): any | null {
@@ -77,6 +76,6 @@ function initAdminApp(): App | null {
 const adminApp = initAdminApp();
 
 export const adminDb: Firestore | null = adminApp ? getFirestore(adminApp) : null;
-export const adminAuth: Auth | null = adminApp ? getAuth(adminApp) : null;
+export const adminAuth = null;
 export const adminStorage: Storage | null = adminApp ? getStorage(adminApp) : null;
 export { adminApp };

@@ -23,6 +23,13 @@ import {
   RotateCw,
   Copy,
   CheckCircle2,
+  Send,
+  Paperclip,
+  FileText,
+  Wand2,
+  MessageSquare,
+  Sliders,
+  Eye,
 } from "lucide-react";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
@@ -163,8 +170,9 @@ function NetStudioContent() {
   const searchParams = useSearchParams();
   const partnerQuery = searchParams.get("partner") || "";
 
-  // Studio Mode Tabs: "ready" | "story" | "custom"
-  const [activeTab, setActiveTab] = useState<"ready" | "story" | "custom">("ready");
+  // Studio Mode Tabs: "ready" (Charm có sẵn & Chuyến đi Đà Nẵng) | "ai_custom" (Sáng tạo charm riêng cùng AI)
+  const [activeTab, setActiveTab] = useState<"ready" | "ai_custom">("ready");
+  const [readySubTab, setReadySubTab] = useState<"single_charms" | "journey_presets">("single_charms");
 
   // Flow Step: "design" | "review" | "success"
   const [flowStep, setFlowStep] = useState<"design" | "review" | "success">("design");
@@ -200,7 +208,7 @@ function NetStudioContent() {
     "placed-wave-default"
   );
 
-  // Tab 2: Story Quiz State
+  // Tab 1 Sub-feature: Story Quiz State (Chuyến đi Đà Nẵng)
   const [storyAnswers, setStoryAnswers] = useState({
     companion: "family",
     location: "sontra",
@@ -210,8 +218,36 @@ function NetStudioContent() {
     STORY_PRESETS[0]
   );
 
-  // Tab 3: Custom Charm State
-  const [customStep, setCustomStep] = useState<1 | 2 | 3>(1);
+  // Tab 2: Sáng Tạo Charm Riêng Cùng AI (3 Bước: 1. Chat & Upload -> 2. Sketch 2D lên túi -> 3. Nộp duyệt & Báo giá)
+  const [aiCustomStep, setAiCustomStep] = useState<1 | 2 | 3>(1);
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      id: string;
+      sender: "ai" | "user";
+      text: string;
+      time: string;
+      attachmentName?: string;
+      attachmentUrl?: string;
+      analysis?: {
+        motif: string;
+        material: string;
+        colors: string;
+        laserIdea: string;
+      };
+    }>
+  >([
+    {
+      id: "ai-welcome",
+      sender: "ai",
+      text: "Chào bạn! Tôi là Nét AI Stylist. Bạn muốn thiết kế dấu ấn charm mang cảm hứng nào từ chuyến đi Đà Nẵng hay kỷ niệm riêng của mình? Hãy nhập ý tưởng hoặc tải lên bản phác thảo tay / tài liệu tham khảo nhé!",
+      time: "Vừa xong",
+    },
+  ]);
+  const [chatInputText, setChatInputText] = useState("");
+  const [isAiThinking, setIsAiThinking] = useState(false);
+  const [uploadedDocName, setUploadedDocName] = useState<string | null>(null);
+  const [isAiSketching, setIsAiSketching] = useState(false);
+
   const [customIdea, setCustomIdea] = useState("");
   const [customImageFile, setCustomImageFile] = useState<string | null>(null);
   const [customShape, setCustomShape] = useState<"circle" | "square" | "teardrop" | "heart" | "freeform">("square");
@@ -311,40 +347,145 @@ function NetStudioContent() {
     setActiveTab("ready");
   };
 
-  // Custom Charm Image upload
+  // Handle Chat Message submission to Nét AI Stylist
+  const handleSendChatMessage = (textToSend?: string) => {
+    const message = (textToSend !== undefined ? textToSend : chatInputText).trim();
+    if (!message && !customImageFile && !uploadedDocName) return;
+
+    const userMsgId = `user-${Date.now()}`;
+    const userMsgText = message || (uploadedDocName ? `Đã đính kèm tài liệu: ${uploadedDocName}` : "Đã gửi ý tưởng thiết kế");
+    const currentTime = new Date().toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        id: userMsgId,
+        sender: "user",
+        text: userMsgText,
+        time: currentTime,
+        attachmentName: uploadedDocName || undefined,
+        attachmentUrl: customImageFile || undefined,
+      },
+    ]);
+
+    setCustomIdea(message || customIdea || "Bản phác thảo charm độc bản");
+    setChatInputText("");
+    setIsAiThinking(true);
+
+    setTimeout(() => {
+      setIsAiThinking(false);
+      const lower = (message + " " + (uploadedDocName || "")).toLowerCase();
+      const isOcean = lower.includes("biển") || lower.includes("sóng") || lower.includes("ốc") || lower.includes("sò") || lower.includes("mỹ khê");
+      const isSonTra = lower.includes("sơn trà") || lower.includes("voọc") || lower.includes("rừng") || lower.includes("lá");
+      const isDragon = lower.includes("rồng") || lower.includes("cầu") || lower.includes("lửa") || lower.includes("vàng");
+
+      let shape: "circle" | "square" | "teardrop" | "heart" | "freeform" = "square";
+      let color = "#C2674F";
+      let motif = "Dấu ấn duyên hải Đà Nẵng kết hợp ký ức cá nhân";
+      let material = "Phôi nhựa lưới tái sinh ép nhiệt nung men mờ, viền đồng thau xước";
+      let laserText = customText || "NÉT ĐN";
+
+      if (isOcean) {
+        shape = "teardrop";
+        color = "#2563EB";
+        motif = "Vạt sóng biển Mỹ Khê kết hợp vỏ ốc men gốm và vệt nắng mai duyên hải";
+        material = "Nhựa lưới đánh cá ép men lam bóng chống trầy xước, khuyên đồng thau";
+        laserText = customText || "MỸ KHÊ";
+      } else if (isSonTra) {
+        shape = "circle";
+        color = "#234B3E";
+        motif = "Tán rừng nguyên sinh bán đảo Sơn Trà và linh trưởng bình yên";
+        material = "Hợp kim kẽm tái chế tráng men xanh rêu nung nhiệt độ cao";
+        laserText = customText || "SƠN TRÀ";
+      } else if (isDragon) {
+        shape = "freeform";
+        color = "#D97706";
+        motif = "Vảy rồng vươn mình ra biển lớn bên nhịp cầu sông Hàn rực rỡ";
+        material = "Đồng thau nguyên bản kết hợp vụn xà cừ rác biển nung khảm";
+        laserText = customText || "CẦU RỒNG";
+      } else if (lower.includes("yêu") || lower.includes("tình") || lower.includes("nhau")) {
+        shape = "heart";
+        color = "#BE185D";
+        motif = "Kỷ niệm tình yêu ngọt ngào ghi dấu giữa hai tâm hồn bên biển Đà Nẵng";
+        material = "Đồng nung men gốm hồng kết hợp hạt vi nhựa tái sinh tạo vân đá tự nhiên";
+        laserText = customText || "LOVE";
+      }
+
+      setCustomShape(shape);
+      setCustomColor(color);
+      if (!customText) setCustomText(laserText);
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          sender: "ai",
+          text: `Ý tưởng rất độc đáo và giàu cảm xúc! Nét AI đã phân tích cấu hình phác thảo cho charm của bạn:`,
+          time: new Date().toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          analysis: {
+            motif,
+            material,
+            colors: color === "#2563EB" ? "Xanh biển sâu (#2563EB)" : color === "#234B3E" ? "Xanh ngọc lưới (#234B3E)" : color === "#D97706" ? "Vàng đồng thau (#D97706)" : color === "#BE185D" ? "Men gốm hồng (#BE185D)" : "Đất nung ấm áp (#C2674F)",
+            laserIdea: laserText,
+          },
+        },
+      ]);
+    }, 600);
+  };
+
+  // Custom Charm Image / Doc upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      alert("Dung lượng ảnh tối đa là 4MB!");
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Dung lượng tệp tối đa là 8MB!");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setCustomImageFile(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    setUploadedDocName(file.name);
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCustomImageFile(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setCustomImageFile(null);
+    }
   };
 
   // Place custom charm draft on the bag
-  const handlePlaceCustomOnBag = () => {
+  const handlePlaceCustomOnBag = (
+    overrideShape?: "circle" | "square" | "teardrop" | "heart" | "freeform",
+    overrideColor?: string,
+    overrideText?: string
+  ) => {
+    const shapeToUse = overrideShape || customShape;
+    const colorToUse = overrideColor || customColor;
+    const textToUse = overrideText !== undefined ? overrideText : customText;
+
     const customCharmObj: Charm = {
-      id: `custom-charm-${Date.now()}`,
-      name: "Charm riêng theo yêu cầu",
-      vietnameseName: customText ? `Charm "${customText}"` : "Charm riêng",
+      id: "custom-charm-ai",
+      name: "Charm AI độc bản",
+      vietnameseName: textToUse ? `Charm "${textToUse}"` : "Charm AI độc bản",
       category: "special",
       price: 0,
       plasticOffsetGrams: 200,
-      material: "Đồng tái sinh / Men đất nung",
-      description: customIdea || "Charm độc bản thiết kế riêng theo câu chuyện của bạn.",
-      color: customColor,
-      glowColor: "rgba(194, 103, 79, 0.4)",
-      symbol: customText ? customText.slice(0, 2).toUpperCase() : "★",
+      material: "Nhựa lưới biển tái sinh ép nhiệt / Viền đồng thau chống gỉ",
+      description: customIdea || "Charm độc bản phác thảo bởi AI theo câu chuyện Đà Nẵng của bạn.",
+      color: colorToUse,
+      glowColor: "rgba(184, 93, 67, 0.4)",
+      symbol: textToUse ? textToUse.slice(0, 2).toUpperCase() : "★",
       iconName: "sparkles",
     };
 
     const newPlaced: PlacedCharm = {
-      instanceId: `custom-instance-${Date.now()}`,
+      instanceId: "custom-instance-ai",
       charmId: customCharmObj.id,
       anchorId: `a-custom`,
       x: 50,
@@ -359,6 +500,16 @@ function NetStudioContent() {
     ]);
     setSelectedCharmInstanceId(newPlaced.instanceId);
     setHasAppliedCustomToBag(true);
+  };
+
+  // Move directly to Step 2 with AI Sketching
+  const handleProceedToStep2Sketch = () => {
+    setIsAiSketching(true);
+    setAiCustomStep(2);
+    handlePlaceCustomOnBag();
+    setTimeout(() => {
+      setIsAiSketching(false);
+    }, 500);
   };
 
   // Submit Design Request
@@ -398,7 +549,7 @@ function NetStudioContent() {
       bagColor: selectedColor,
       placedCharms,
       charmsTotal: standardCharmsTotal,
-      hasCustomCharm: hasAppliedCustomToBag || customStep === 3 || Boolean(customIdea.trim()),
+      hasCustomCharm: hasAppliedCustomToBag || aiCustomStep === 3 || Boolean(customIdea.trim()),
       customCharm: (hasAppliedCustomToBag || customIdea.trim())
         ? {
             idea: customIdea.trim() || "Charm theo phác thảo",
@@ -574,17 +725,18 @@ function NetStudioContent() {
             <div className="lg:col-span-7">
               {flowStep === "design" ? (
                 <div className="space-y-6">
-                  {/* Top 3 Tabs Navigation (Exact wording from requirement) */}
-                  <div className="flex border-b border-[#E8E2D8] gap-8 pb-3">
+                  {/* Top 2 Tabs Navigation */}
+                  <div className="flex border-b border-[#E8E2D8] gap-6 sm:gap-8 pb-3">
                     <button
                       onClick={() => setActiveTab("ready")}
-                      className={`text-sm font-medium transition-all pb-3 -mb-3 relative ${
+                      className={`text-xs sm:text-sm font-medium transition-all pb-3 -mb-3 relative flex items-center gap-2 ${
                         activeTab === "ready"
                           ? "text-[#241B16] font-semibold"
                           : "text-[#7A6F68] hover:text-[#241B16]"
                       }`}
                     >
-                      Phối charm sẵn
+                      <Sparkles className="w-4 h-4 text-[#B85D43]" />
+                      <span>Charm Có Sẵn & Chuyến Đi Đà Nẵng</span>
                       {activeTab === "ready" && (
                         <motion.div
                           layoutId="studioActiveTab"
@@ -594,32 +746,19 @@ function NetStudioContent() {
                     </button>
 
                     <button
-                      onClick={() => setActiveTab("story")}
-                      className={`text-sm font-medium transition-all pb-3 -mb-3 relative ${
-                        activeTab === "story"
+                      onClick={() => setActiveTab("ai_custom")}
+                      className={`text-xs sm:text-sm font-medium transition-all pb-3 -mb-3 relative flex items-center gap-2 ${
+                        activeTab === "ai_custom"
                           ? "text-[#241B16] font-semibold"
                           : "text-[#7A6F68] hover:text-[#241B16]"
                       }`}
                     >
-                      Kể câu chuyện
-                      {activeTab === "story" && (
-                        <motion.div
-                          layoutId="studioActiveTab"
-                          className="absolute bottom-0 inset-x-0 h-0.5 bg-[#241B16]"
-                        />
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => setActiveTab("custom")}
-                      className={`text-sm font-medium transition-all pb-3 -mb-3 relative ${
-                        activeTab === "custom"
-                          ? "text-[#241B16] font-semibold"
-                          : "text-[#7A6F68] hover:text-[#241B16]"
-                      }`}
-                    >
-                      Tạo charm riêng
-                      {activeTab === "custom" && (
+                      <Wand2 className="w-4 h-4 text-[#B85D43]" />
+                      <span>Sáng Tạo Charm Riêng Cùng AI</span>
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-[#B85D43]/10 text-[#B85D43]">
+                        AI 2D
+                      </span>
+                      {activeTab === "ai_custom" && (
                         <motion.div
                           layoutId="studioActiveTab"
                           className="absolute bottom-0 inset-x-0 h-0.5 bg-[#241B16]"
@@ -628,57 +767,247 @@ function NetStudioContent() {
                     </button>
                   </div>
 
-                  {/* TAB 1: PHỐI CHARM SẴN (Mockup: b82aa15e-8a20-4ccb-b108-373dbfce72b7.jpeg) */}
+                  {/* TAB 1: PHỐI CHARM CÓ SẴN HOẶC THEO CHUYẾN ĐI ĐÀ NẴNG */}
                   {activeTab === "ready" && (
                     <div className="bg-white rounded-3xl border border-[#E8E2D8] p-6 sm:p-8 space-y-6 shadow-xs">
-                      <div className="flex items-center justify-between">
-                        <h2 className="font-serif text-xl sm:text-2xl text-[#241B16]">
-                          Chọn dấu ấn của bạn
-                        </h2>
-                        <span className="px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E8E2D8] text-xs font-semibold text-[#7A6F68]">
-                          {placedCharms.length} charm
-                        </span>
+                      {/* Sub-tab switcher */}
+                      <div className="p-1 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] grid grid-cols-2 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setReadySubTab("single_charms")}
+                          className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                            readySubTab === "single_charms"
+                              ? "bg-white text-[#241B16] shadow-xs"
+                              : "text-[#7A6F68] hover:text-[#241B16]"
+                          }`}
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>Tự chọn charm sẵn có</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReadySubTab("journey_presets")}
+                          className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                            readySubTab === "journey_presets"
+                              ? "bg-white text-[#241B16] shadow-xs"
+                              : "text-[#7A6F68] hover:text-[#241B16]"
+                          }`}
+                        >
+                          <Compass className="w-3.5 h-3.5 text-[#B85D43]" />
+                          <span>Gợi ý theo chuyến đi Đà Nẵng</span>
+                        </button>
                       </div>
 
-                      {/* Ready Charms Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {READY_CHARMS.map((charm) => {
-                          const isAlreadyOnBag = placedCharms.some(
-                            (c) => c.charm.id === charm.id
-                          );
-                          return (
-                            <div
-                              key={charm.id}
-                              className="p-3.5 rounded-2xl border border-[#E8E2D8] hover:border-[#D6CDBF] bg-[#FAF7F2]/60 flex items-center justify-between transition-all"
-                            >
-                              <div className="flex items-center gap-3">
+                      {readySubTab === "single_charms" ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h2 className="font-serif text-xl sm:text-2xl text-[#241B16]">
+                                Chọn dấu ấn Đà Nẵng của bạn
+                              </h2>
+                              <p className="text-xs text-[#7A6F68] mt-0.5">
+                                Các charm đúc từ nhựa lưới biển tái chế & đồng thau
+                              </p>
+                            </div>
+                            <span className="px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E8E2D8] text-xs font-semibold text-[#7A6F68]">
+                              {placedCharms.length} charm
+                            </span>
+                          </div>
+
+                          {/* Ready Charms Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {READY_CHARMS.map((charm) => {
+                              const isAlreadyOnBag = placedCharms.some(
+                                (c) => c.charm.id === charm.id
+                              );
+                              return (
                                 <div
-                                  style={{ backgroundColor: charm.color }}
-                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-xs border border-white/60"
+                                  key={charm.id}
+                                  className="p-3.5 rounded-2xl border border-[#E8E2D8] hover:border-[#D6CDBF] bg-[#FAF7F2]/60 flex items-center justify-between transition-all"
                                 >
-                                  <span>{charm.symbol}</span>
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      style={{ backgroundColor: charm.color }}
+                                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-xs border border-white/60"
+                                    >
+                                      <span>{charm.symbol}</span>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs sm:text-sm font-semibold text-[#241B16]">
+                                        {charm.vietnameseName}
+                                      </div>
+                                      <div className="text-[11px] text-[#7A6F68]">
+                                        +{charm.price.toLocaleString("vi-VN")} đ
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    onClick={() => handleAddReadyCharm(charm)}
+                                    className="w-8 h-8 rounded-full border border-[#D6CDBF] bg-white hover:bg-[#B85D43] hover:border-[#B85D43] hover:text-white text-[#5E4D43] flex items-center justify-center transition-all cursor-pointer"
+                                    title="Gắn charm lên túi"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
                                 </div>
-                                <div>
-                                  <div className="text-xs sm:text-sm font-semibold text-[#241B16]">
-                                    {charm.vietnameseName}
-                                  </div>
-                                  <div className="text-[11px] text-[#7A6F68]">
-                                    +{charm.price.toLocaleString("vi-VN")} đ
-                                  </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        /* JOURNEY PRESETS & QUIZ */
+                        <div className="space-y-5">
+                          <div>
+                            <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
+                              HÀNH TRÌNH ĐÀ NẴNG
+                            </span>
+                            <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-0.5">
+                              Bộ phối mang dấu ấn chuyến đi
+                            </h2>
+                            <p className="text-xs text-[#7A6F68] mt-0.5">
+                              Chọn bộ phối nhanh có sẵn hoặc làm trắc nghiệm ngắn 3 câu để Nét gợi ý.
+                            </p>
+                          </div>
+
+                          {/* 3 Signature Presets */}
+                          <div className="space-y-3">
+                            {STORY_PRESETS.map((preset) => (
+                              <div
+                                key={preset.id}
+                                className={`p-4 rounded-2xl border transition-all ${
+                                  storyPresetResult?.id === preset.id
+                                    ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/30"
+                                    : "bg-white border-[#E8E2D8] hover:border-[#D6CDBF]"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <h3 className="text-xs sm:text-sm font-semibold text-[#241B16]">
+                                    {preset.title}
+                                  </h3>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStoryPresetResult(preset);
+                                      const selected = READY_CHARMS.filter((c) =>
+                                        preset.charmIds.includes(c.id)
+                                      );
+                                      const xPositions = [35, 65, 50];
+                                      const yPositions = [45, 55, 65];
+                                      const newPlaced: PlacedCharm[] = selected.map((charm, i) => ({
+                                        instanceId: `story-${charm.id}-${Date.now()}-${i}`,
+                                        charmId: charm.id,
+                                        anchorId: `a-${i}`,
+                                        x: xPositions[i] || 50,
+                                        y: yPositions[i] || 50,
+                                        rotation: 0,
+                                        charm,
+                                      }));
+                                      setPlacedCharms(newPlaced);
+                                      setSelectedCharmInstanceId(newPlaced[0]?.instanceId || null);
+                                    }}
+                                    className="px-3 py-1 rounded-lg bg-[#B85D43] text-white text-[11px] font-semibold hover:bg-[#A24E36] transition-colors cursor-pointer"
+                                  >
+                                    Dùng bản phối này
+                                  </button>
+                                </div>
+                                <p className="text-xs text-[#7A6F68] leading-relaxed mb-2.5">
+                                  {preset.story}
+                                </p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {READY_CHARMS.filter((c) =>
+                                    preset.charmIds.includes(c.id)
+                                  ).map((c) => (
+                                    <span
+                                      key={c.id}
+                                      className="px-2 py-0.5 rounded-md bg-[#FAF7F2] border border-[#E8E2D8] text-[10px] text-[#5E4D43] flex items-center gap-1"
+                                    >
+                                      <span
+                                        className="w-2 h-2 rounded-full"
+                                        style={{ backgroundColor: c.color }}
+                                      />
+                                      {c.vietnameseName}
+                                    </span>
+                                  ))}
                                 </div>
                               </div>
+                            ))}
+                          </div>
 
-                              <button
-                                onClick={() => handleAddReadyCharm(charm)}
-                                className="w-8 h-8 rounded-full border border-[#D6CDBF] bg-white hover:bg-[#B85D43] hover:border-[#B85D43] hover:text-white text-[#5E4D43] flex items-center justify-center transition-all cursor-pointer"
-                                title="Gắn charm lên túi"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
+                          {/* Quick 3-step Story Quiz for customization */}
+                          <div className="pt-2 border-t border-[#E8E2D8] space-y-3">
+                            <div className="text-xs font-semibold text-[#241B16]">
+                              Hoặc tìm bộ phối phù hợp theo cảm xúc:
                             </div>
-                          );
-                        })}
-                      </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                              <div>
+                                <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
+                                  1. Đi cùng ai?
+                                </label>
+                                <select
+                                  value={storyAnswers.companion}
+                                  onChange={(e) =>
+                                    setStoryAnswers((prev) => ({
+                                      ...prev,
+                                      companion: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full p-2 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs"
+                                >
+                                  <option value="family">Gia đình</option>
+                                  <option value="couple">Người thương</option>
+                                  <option value="friends">Bạn bè</option>
+                                  <option value="solo">Một mình</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
+                                  2. Điểm đến thích nhất?
+                                </label>
+                                <select
+                                  value={storyAnswers.location}
+                                  onChange={(e) =>
+                                    setStoryAnswers((prev) => ({
+                                      ...prev,
+                                      location: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full p-2 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs"
+                                >
+                                  <option value="sontra">Bán đảo Sơn Trà</option>
+                                  <option value="mykhe">Bãi biển Mỹ Khê</option>
+                                  <option value="dragon_bridge">Cầu Rồng Sông Hàn</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
+                                  3. Kỷ niệm muốn giữ?
+                                </label>
+                                <select
+                                  value={storyAnswers.memory}
+                                  onChange={(e) =>
+                                    setStoryAnswers((prev) => ({
+                                      ...prev,
+                                      memory: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full p-2 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs"
+                                >
+                                  <option value="peace">Bình yên thư thái</option>
+                                  <option value="bonding">Gắn kết ấm áp</option>
+                                  <option value="adventure">Khám phá năng động</option>
+                                </select>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleRecommendStorySet}
+                              className="w-full py-2 rounded-xl bg-[#241B16] text-white text-xs font-medium hover:bg-[#42342B] transition-colors cursor-pointer"
+                            >
+                              Gợi ý bộ phối ngay →
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Active Charms Fine-tuning List */}
                       {placedCharms.length > 0 && (
@@ -801,7 +1130,7 @@ function NetStudioContent() {
 
                         <button
                           onClick={() => setFlowStep("review")}
-                          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-medium shadow-xs transition-all flex items-center justify-center gap-2"
+                          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-medium shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <span>Thêm charm → Gửi yêu cầu</span>
                           <ArrowRight className="w-4 h-4" />
@@ -810,522 +1139,572 @@ function NetStudioContent() {
                     </div>
                   )}
 
-                  {/* TAB 2: KỂ CÂU CHUYỆN (Story Quiz) */}
-                  {activeTab === "story" && (
+                  {/* TAB 2: SÁNG TẠO CHARM RIÊNG CÙNG AI (3 BƯỚC: 1. Chat & Upload -> 2. AI Sketch & 2D lên túi -> 3. Nộp duyệt & Báo giá) */}
+                  {activeTab === "ai_custom" && (
                     <div className="bg-white rounded-3xl border border-[#E8E2D8] p-6 sm:p-8 space-y-6 shadow-xs">
                       <div>
-                        <span className="text-xs tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
-                          BỘ PHỐI THEO KỶ NIỆM
-                        </span>
-                        <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-1">
-                          Kể câu chuyện của bạn
-                        </h2>
-                        <p className="text-xs sm:text-sm text-[#7A6F68] mt-1">
-                          Trả lời 3 câu hỏi nhanh để nhận gợi ý bộ charm mang đậm dấu ấn chuyến đi.
-                        </p>
-                      </div>
-
-                      {/* 3 Questions */}
-                      <div className="space-y-4">
-                        {/* Q1: Bạn đi cùng ai? */}
-                        <div>
-                          <label className="block text-xs font-semibold text-[#241B16] mb-2">
-                            1. Bạn đi cùng ai?
-                          </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {[
-                              { id: "family", label: "Gia đình" },
-                              { id: "couple", label: "Người thương" },
-                              { id: "friends", label: "Bạn bè" },
-                              { id: "solo", label: "Một mình" },
-                            ].map((opt) => (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() =>
-                                  setStoryAnswers((prev) => ({
-                                    ...prev,
-                                    companion: opt.id,
-                                  }))
-                                }
-                                className={`p-2.5 rounded-xl border text-xs font-medium text-center transition-all ${
-                                  storyAnswers.companion === opt.id
-                                    ? "bg-[#B85D43] text-white border-[#B85D43]"
-                                    : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                }`}
-                              >
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Q2: Bạn thích địa điểm nào nhất? */}
-                        <div>
-                          <label className="block text-xs font-semibold text-[#241B16] mb-2">
-                            2. Bạn thích địa điểm nào nhất?
-                          </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {[
-                              { id: "sontra", label: "Bán đảo Sơn Trà" },
-                              { id: "mykhe", label: "Bãi biển Mỹ Khê" },
-                              { id: "dragon_bridge", label: "Cầu Rồng & Sông Hàn" },
-                            ].map((opt) => (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() =>
-                                  setStoryAnswers((prev) => ({
-                                    ...prev,
-                                    location: opt.id,
-                                  }))
-                                }
-                                className={`p-2.5 rounded-xl border text-xs font-medium text-center transition-all ${
-                                  storyAnswers.location === opt.id
-                                    ? "bg-[#B85D43] text-white border-[#B85D43]"
-                                    : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                }`}
-                              >
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Q3: Bạn muốn giữ kỷ niệm gì? */}
-                        <div>
-                          <label className="block text-xs font-semibold text-[#241B16] mb-2">
-                            3. Bạn muốn giữ kỷ niệm gì từ chuyến đi?
-                          </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {[
-                              { id: "peace", label: "Bình yên & thư thái" },
-                              { id: "bonding", label: "Tình cảm gắn kết ấm áp" },
-                              { id: "adventure", label: "Khám phá & năng lượng mới" },
-                              { id: "heritage", label: "Ký ức văn hóa địa phương" },
-                            ].map((opt) => (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() =>
-                                  setStoryAnswers((prev) => ({
-                                    ...prev,
-                                    memory: opt.id,
-                                  }))
-                                }
-                                className={`p-2.5 rounded-xl border text-xs font-medium text-center transition-all ${
-                                  storyAnswers.memory === opt.id
-                                    ? "bg-[#B85D43] text-white border-[#B85D43]"
-                                    : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                }`}
-                              >
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Recommend Action */}
-                      <button
-                        onClick={handleRecommendStorySet}
-                        className="w-full py-2.5 rounded-xl bg-[#241B16] text-white text-xs font-medium hover:bg-[#42342B] transition-colors"
-                      >
-                        Gợi ý bộ charm →
-                      </button>
-
-                      {/* Preset Result Card */}
-                      {storyPresetResult && (
-                        <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-serif uppercase tracking-wider text-[#B85D43] font-semibold">
-                              GỢI Ý DÀNH CHO BẠN
-                            </span>
-                            <span className="text-xs font-bold text-[#241B16]">
-                              {storyPresetResult.title}
-                            </span>
-                          </div>
-                          <p className="text-xs text-[#5E4D43] leading-relaxed">
-                            {storyPresetResult.story}
-                          </p>
-
-                          <div className="flex items-center gap-2 pt-1">
-                            {READY_CHARMS.filter((c) =>
-                              storyPresetResult.charmIds.includes(c.id)
-                            ).map((c) => (
-                              <div
-                                key={c.id}
-                                className="px-2.5 py-1 rounded-lg bg-white border border-[#E8E2D8] text-[11px] font-medium text-[#241B16] flex items-center gap-1.5"
-                              >
-                                <span>{c.symbol}</span>
-                                <span>{c.vietnameseName}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="pt-2">
-                            <button
-                              onClick={handleApplyStoryPresetToBag}
-                              className="w-full py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs font-medium shadow-xs transition-all flex items-center justify-center gap-2"
-                            >
-                              <span>Dùng bản phối này</span>
-                              <ArrowRight className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* TAB 3: TẠO CHARM RIÊNG (Mockup: 059d9ab9-14e0-4c71-9620-6613313f85fb.jpeg) */}
-                  {activeTab === "custom" && (
-                    <div className="bg-white rounded-3xl border border-[#E8E2D8] p-6 sm:p-8 space-y-6 shadow-xs">
-                      <div>
-                        <div className="text-[11px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
-                          CHARM RIÊNG / MADE FOR YOUR STORY
+                        <div className="text-[11px] tracking-[0.2em] uppercase text-[#B85D43] font-semibold flex items-center gap-1.5">
+                          <Wand2 className="w-3.5 h-3.5" />
+                          <span>NÉT AI STYLIST / CHARM ĐỘC BẢN</span>
                         </div>
                         <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-1">
-                          Từ ý tưởng thành dấu ấn riêng.
+                          Sáng tạo charm riêng cá nhân hoá cùng AI
                         </h2>
                         <p className="text-xs sm:text-sm text-[#7A6F68] mt-1 leading-relaxed">
-                          Tạo bản phác thảo cấu hình. Nhóm thiết kế sẽ kiểm tra và gửi concept để bạn duyệt.
+                          AI hỗ trợ lên ý tưởng, phác thảo kỹ thuật 2D gắn trực tiếp lên túi, và gửi xưởng chế tác thủ công.
                         </p>
                       </div>
 
-                      {/* 3 Step Indicator (1 Ý tưởng, 2 Đặc điểm, 3 Xem thử) */}
-                      <div className="flex items-center gap-4 text-xs font-medium">
-                        <button
-                          onClick={() => setCustomStep(1)}
-                          className="flex items-center gap-1.5 text-left"
-                        >
-                          <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                              customStep === 1
-                                ? "bg-[#B85D43] text-white font-bold"
-                                : "bg-[#FAF7F2] text-[#7A6F68] border border-[#E8E2D8]"
+                      {/* 3 Steps Progress Bar */}
+                      <div className="grid grid-cols-3 gap-2 pb-2 border-b border-[#E8E2D8]">
+                        {[
+                          { step: 1, label: "1. Chat & Upload", desc: "Ý tưởng & tài liệu" },
+                          { step: 2, label: "2. AI Sketch 2D", desc: "Xem trực tiếp trên túi" },
+                          { step: 3, label: "3. Nộp & Báo giá", desc: "Xưởng thẩm định" },
+                        ].map((s) => (
+                          <button
+                            key={s.step}
+                            type="button"
+                            onClick={() => {
+                              if (s.step === 2 && !customIdea.trim() && !customImageFile) {
+                                alert("Vui lòng nhập ý tưởng hoặc tải tài liệu ở Bước 1 trước!");
+                                return;
+                              }
+                              setAiCustomStep(s.step as any);
+                              if (s.step === 2) handlePlaceCustomOnBag();
+                            }}
+                            className={`p-2.5 rounded-xl text-left transition-all border cursor-pointer ${
+                              aiCustomStep === s.step
+                                ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/20"
+                                : "bg-transparent border-transparent hover:bg-[#FAF7F2]/60"
                             }`}
                           >
-                            1
-                          </span>
-                          <span
-                            className={
-                              customStep === 1
-                                ? "text-[#241B16] font-semibold"
-                                : "text-[#7A6F68]"
-                            }
-                          >
-                            Ý tưởng
-                          </span>
-                        </button>
-
-                        <div className="w-6 h-px bg-[#E8E2D8]" />
-
-                        <button
-                          onClick={() => setCustomStep(2)}
-                          className="flex items-center gap-1.5 text-left"
-                        >
-                          <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                              customStep === 2
-                                ? "bg-[#B85D43] text-white font-bold"
-                                : "bg-[#FAF7F2] text-[#7A6F68] border border-[#E8E2D8]"
-                            }`}
-                          >
-                            2
-                          </span>
-                          <span
-                            className={
-                              customStep === 2
-                                ? "text-[#241B16] font-semibold"
-                                : "text-[#7A6F68]"
-                            }
-                          >
-                            Đặc điểm
-                          </span>
-                        </button>
-
-                        <div className="w-6 h-px bg-[#E8E2D8]" />
-
-                        <button
-                          onClick={() => setCustomStep(3)}
-                          className="flex items-center gap-1.5 text-left"
-                        >
-                          <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                              customStep === 3
-                                ? "bg-[#B85D43] text-white font-bold"
-                                : "bg-[#FAF7F2] text-[#7A6F68] border border-[#E8E2D8]"
-                            }`}
-                          >
-                            3
-                          </span>
-                          <span
-                            className={
-                              customStep === 3
-                                ? "text-[#241B16] font-semibold"
-                                : "text-[#7A6F68]"
-                            }
-                          >
-                            Xem thử
-                          </span>
-                        </button>
-                      </div>
-
-                      {/* Step 1: Ý tưởng */}
-                      {customStep === 1 && (
-                        <div className="space-y-4 pt-2">
-                          <div>
-                            <label className="block text-xs font-semibold text-[#241B16] mb-1.5">
-                              Bạn muốn charm trông như thế nào? *
-                            </label>
-                            <textarea
-                              rows={3}
-                              value={customIdea}
-                              onChange={(e) => setCustomIdea(e.target.value)}
-                              placeholder="Ví dụ: charm hình sóng, có ngày kỷ niệm 20.10 và chữ N..."
-                              className="w-full p-3.5 rounded-2xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-semibold text-[#241B16] mb-1.5">
-                              Ảnh tham khảo (không bắt buộc)
-                            </label>
-                            <div className="p-4 rounded-2xl border border-dashed border-[#D6CDBF] bg-[#FAF7F2] flex flex-col items-center justify-center text-center">
-                              {customImageFile ? (
-                                <div className="space-y-2">
-                                  <img
-                                    src={customImageFile}
-                                    alt="Tham khảo"
-                                    className="w-20 h-20 object-cover rounded-xl mx-auto border"
-                                  />
-                                  <button
-                                    onClick={() => setCustomImageFile(null)}
-                                    className="text-[11px] text-rose-600 hover:underline"
-                                  >
-                                    Đổi ảnh khác
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="cursor-pointer">
-                                  <Upload className="w-5 h-5 text-[#7A6F68] mx-auto mb-1" />
-                                  <span className="text-xs font-medium text-[#B85D43]">
-                                    Chọn tệp từ máy
-                                  </span>
-                                  <input
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                  />
-                                </label>
-                              )}
-                              <p className="text-[10px] text-[#7A6F68] mt-1">
-                                JPG, PNG hoặc WebP · Tối đa 4 MB · Chỉ tải ảnh bạn có quyền sử dụng.
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="pt-2">
-                            <button
-                              onClick={() => {
-                                if (!customIdea.trim()) {
-                                  alert("Vui lòng mô tả ý tưởng charm bạn muốn tạo!");
-                                  return;
-                                }
-                                setCustomStep(2);
-                              }}
-                              className="w-full py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs font-medium shadow-xs transition-all flex items-center justify-center gap-1.5"
-                            >
-                              <span>Chọn đặc điểm →</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 2: Đặc điểm (Shape, Color, Size, Text) */}
-                      {customStep === 2 && (
-                        <div className="space-y-4 pt-2">
-                          {/* Shape */}
-                          <div>
-                            <label className="block text-xs font-semibold text-[#241B16] mb-1.5">
-                              Hình dáng charm
-                            </label>
-                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                              {[
-                                { id: "square", label: "Vuông bo" },
-                                { id: "circle", label: "Tròn" },
-                                { id: "teardrop", label: "Giọt nước" },
-                                { id: "heart", label: "Trái tim" },
-                                { id: "freeform", label: "Tự do" },
-                              ].map((s) => (
-                                <button
-                                  key={s.id}
-                                  type="button"
-                                  onClick={() => setCustomShape(s.id as any)}
-                                  className={`p-2 rounded-xl text-xs font-medium text-center border transition-all ${
-                                    customShape === s.id
-                                      ? "bg-[#B85D43] text-white border-[#B85D43]"
-                                      : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8]"
-                                  }`}
-                                >
-                                  {s.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Color */}
-                          <div>
-                            <label className="block text-xs font-semibold text-[#241B16] mb-1.5">
-                              Màu sắc chủ đạo
-                            </label>
-                            <div className="flex flex-wrap gap-2.5">
-                              {[
-                                { hex: "#C2674F", name: "Đất nung" },
-                                { hex: "#234B3E", name: "Xanh lưới" },
-                                { hex: "#2563EB", name: "Xanh biển" },
-                                { hex: "#D97706", name: "Vàng đồng" },
-                                { hex: "#BE185D", name: "Hồng gốm" },
-                              ].map((col) => (
-                                <button
-                                  key={col.hex}
-                                  type="button"
-                                  onClick={() => setCustomColor(col.hex)}
-                                  className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1.5 ${
-                                    customColor === col.hex
-                                      ? "ring-2 ring-[#B85D43] border-white"
-                                      : "border-[#E8E2D8] bg-[#FAF7F2]"
-                                  }`}
-                                >
-                                  <span
-                                    className="w-3 h-3 rounded-full border border-black/10"
-                                    style={{ backgroundColor: col.hex }}
-                                  />
-                                  <span>{col.name}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Size */}
-                          <div>
-                            <label className="block text-xs font-semibold text-[#241B16] mb-1.5">
-                              Kích thước
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {[
-                                { id: "small", label: "Nhỏ (2.5 cm)" },
-                                { id: "medium", label: "Vừa (3.5 cm)" },
-                                { id: "large", label: "Lớn (4.5 cm)" },
-                              ].map((sz) => (
-                                <button
-                                  key={sz.id}
-                                  type="button"
-                                  onClick={() => setCustomSize(sz.id as any)}
-                                  className={`p-2 rounded-xl text-xs font-medium text-center border transition-all ${
-                                    customSize === sz.id
-                                      ? "bg-[#B85D43] text-white border-[#B85D43]"
-                                      : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8]"
-                                  }`}
-                                >
-                                  {sz.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Engraved text */}
-                          <div>
-                            <label className="block text-xs font-semibold text-[#241B16] mb-1.5">
-                              Chữ hoặc số khắc laser (tối đa 12 ký tự)
-                            </label>
-                            <input
-                              type="text"
-                              maxLength={12}
-                              value={customText}
-                              onChange={(e) => setCustomText(e.target.value)}
-                              placeholder="Ví dụ: N & T 2026"
-                              className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                            />
-                          </div>
-
-                          <div className="flex items-center gap-3 pt-2">
-                            <button
-                              onClick={() => setCustomStep(1)}
-                              className="py-3 px-4 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43]"
-                            >
-                              ← Quay lại
-                            </button>
-                            <button
-                              onClick={() => setCustomStep(3)}
-                              className="flex-1 py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs font-medium shadow-xs transition-all text-center"
-                            >
-                              Xem phác thảo →
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 3: Xem thử phác thảo & Đặt lên túi */}
-                      {customStep === 3 && (
-                        <div className="space-y-4 pt-2">
-                          <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] text-center space-y-3">
-                            <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
-                              BẢN PHÁC THẢO CẤU HÌNH
-                            </span>
-
-                            {/* Render Custom Charm Mockup */}
-                            <div className="w-20 h-20 mx-auto rounded-2xl shadow-md border-2 border-white flex flex-col items-center justify-center text-white relative"
-                              style={{ backgroundColor: customColor }}
-                            >
-                              <span className="text-xl font-bold font-serif">
-                                {customText ? customText.slice(0, 2).toUpperCase() : "★"}
-                              </span>
-                              {customText && (
-                                <span className="text-[9px] font-mono tracking-tight text-white/90 truncate max-w-[64px]">
-                                  {customText}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="text-xs text-[#241B16] font-medium">
-                              "{customIdea}"
-                            </div>
-
-                            <div className="inline-block px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-800">
-                              Giá: Chờ kiểm tra và báo giá
-                            </div>
-
-                            <p className="text-[11px] text-[#7A6F68] max-w-sm mx-auto leading-relaxed">
-                              Lưu ý: Đây là phác thảo tham số bạn cấu hình. Nhóm thiết kế và nghệ nhân xưởng sẽ dựng concept thực tế gửi bạn duyệt trước khi chế tác.
-                            </p>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                            <button
-                              onClick={handlePlaceCustomOnBag}
-                              className={`py-3 px-4 rounded-xl border text-xs font-medium transition-all ${
-                                hasAppliedCustomToBag
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                  : "bg-white text-[#241B16] border-[#D6CDBF] hover:bg-[#FAF7F2]"
+                            <div
+                              className={`text-xs font-bold ${
+                                aiCustomStep === s.step
+                                  ? "text-[#B85D43]"
+                                  : "text-[#7A6F68]"
                               }`}
                             >
-                              {hasAppliedCustomToBag ? "✓ Đã đặt lên túi" : "Đặt lên túi"}
-                            </button>
+                              {s.label}
+                            </div>
+                            <div className="text-[10px] text-[#A89F91] truncate hidden sm:block">
+                              {s.desc}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* BƯỚC 1: KHUNG CHAT AI & UPLOAD TÀI LIỆU */}
+                      {aiCustomStep === 1 && (
+                        <div className="space-y-4">
+                          {/* Chat Box Conversation */}
+                          <div className="h-64 sm:h-72 overflow-y-auto p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-3">
+                            {chatMessages.map((msg) => (
+                              <div
+                                key={msg.id}
+                                className={`flex flex-col ${
+                                  msg.sender === "user" ? "items-end" : "items-start"
+                                }`}
+                              >
+                                <div
+                                  className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
+                                    msg.sender === "user"
+                                      ? "bg-[#241B16] text-white rounded-br-xs"
+                                      : "bg-white text-[#241B16] border border-[#E8E2D8] rounded-bl-xs shadow-2xs"
+                                  }`}
+                                >
+                                  {msg.sender === "ai" && (
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#B85D43] uppercase mb-1">
+                                      <Wand2 className="w-3 h-3" />
+                                      <span>Nét AI Stylist</span>
+                                    </div>
+                                  )}
+                                  <p>{msg.text}</p>
+
+                                  {/* Attachment Preview in Chat */}
+                                  {msg.attachmentName && (
+                                    <div className="mt-2 p-2 rounded-xl bg-black/10 flex items-center gap-2 text-[11px]">
+                                      <FileText className="w-3.5 h-3.5" />
+                                      <span className="truncate">{msg.attachmentName}</span>
+                                    </div>
+                                  )}
+                                  {msg.attachmentUrl && (
+                                    <img
+                                      src={msg.attachmentUrl}
+                                      alt="Attachment"
+                                      className="mt-2 w-24 h-24 object-cover rounded-lg border border-white/20"
+                                    />
+                                  )}
+
+                                  {/* AI Structured Analysis Result */}
+                                  {msg.analysis && (
+                                    <div className="mt-2.5 pt-2 border-t border-[#E8E2D8] space-y-1.5 text-[11px] text-[#5E4D43]">
+                                      <div>
+                                        <strong className="text-[#241B16]">Mô-típ:</strong>{" "}
+                                        {msg.analysis.motif}
+                                      </div>
+                                      <div>
+                                        <strong className="text-[#241B16]">Chất liệu đề xuất:</strong>{" "}
+                                        {msg.analysis.material}
+                                      </div>
+                                      <div>
+                                        <strong className="text-[#241B16]">Tone màu:</strong>{" "}
+                                        {msg.analysis.colors}
+                                      </div>
+                                      <div>
+                                        <strong className="text-[#241B16]">Khắc laser:</strong>{" "}
+                                        "{msg.analysis.laserIdea}"
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-[#A89F91] mt-0.5 px-1">
+                                  {msg.time}
+                                </span>
+                              </div>
+                            ))}
+
+                            {isAiThinking && (
+                              <div className="flex items-center gap-2 p-3 rounded-2xl bg-white border border-[#E8E2D8] max-w-[200px] text-xs text-[#7A6F68]">
+                                <Wand2 className="w-3.5 h-3.5 animate-spin text-[#B85D43]" />
+                                <span>AI đang phân tích ý tưởng...</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Quick Prompt Suggestions */}
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-medium text-[#7A6F68]">
+                              Gợi ý ý tưởng nhanh từ Đà Nẵng:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                "🌊 Hoa muống biển Mỹ Khê & khắc tên",
+                                "🐒 Voọc Sơn Trà men xanh rêu",
+                                "🌉 Cầu Rồng phun lửa đồng thau",
+                                "🐚 Vỏ ốc men rác biển nung thủ công",
+                              ].map((promptText) => (
+                                <button
+                                  key={promptText}
+                                  type="button"
+                                  onClick={() => handleSendChatMessage(promptText)}
+                                  className="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#F3ECE1] border border-[#E8E2D8] text-[11px] text-[#5E4D43] transition-colors cursor-pointer"
+                                >
+                                  {promptText}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Uploaded File Badge */}
+                          {uploadedDocName && (
+                            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-900">
+                              <div className="flex items-center gap-2 truncate">
+                                <FileText className="w-4 h-4 shrink-0 text-amber-700" />
+                                <span className="truncate font-medium">{uploadedDocName}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setUploadedDocName(null);
+                                  setCustomImageFile(null);
+                                }}
+                                className="text-amber-700 hover:text-amber-900 ml-2 cursor-pointer"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Chat Input & File Upload Bar */}
+                          <div className="flex items-center gap-2">
+                            {/* File Upload trigger */}
+                            <label
+                              className="p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] hover:bg-[#F3ECE1] text-[#7A6F68] hover:text-[#241B16] cursor-pointer transition-colors"
+                              title="Tải lên tài liệu hoặc ảnh phác thảo (JPG, PNG, PDF)"
+                            >
+                              <Paperclip className="w-4 h-4" />
+                              <input
+                                type="file"
+                                accept="image/*,.pdf,.doc,.docx"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                              />
+                            </label>
+
+                            <input
+                              type="text"
+                              value={chatInputText}
+                              onChange={(e) => setChatInputText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleSendChatMessage();
+                                }
+                              }}
+                              placeholder="Nhập ý tưởng charm bạn muốn tạo cùng AI..."
+                              className="flex-1 p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                            />
 
                             <button
-                              onClick={() => {
-                                if (!hasAppliedCustomToBag) {
-                                  handlePlaceCustomOnBag();
-                                }
-                                setFlowStep("review");
-                              }}
-                              className="py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs font-medium shadow-xs transition-all text-center"
+                              type="button"
+                              onClick={() => handleSendChatMessage()}
+                              className="p-3 rounded-xl bg-[#241B16] hover:bg-[#42342B] text-white transition-colors cursor-pointer"
+                              title="Gửi cho AI"
                             >
-                              Gửi kiểm tra & báo giá →
+                              <Send className="w-4 h-4" />
                             </button>
                           </div>
+
+                          {/* Proceed to Step 2 Button */}
+                          <div className="pt-2">
+                            <button
+                              type="button"
+                              onClick={handleProceedToStep2Sketch}
+                              className="w-full py-3.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <Wand2 className="w-4 h-4" />
+                              <span>AI Phác Thảo 2D & Gắn Trực Tiếp Lên Túi (Bước 2) →</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* BƯỚC 2: AI SKETCH 2D & GẮN TRỰC TIẾP LÊN TÚI */}
+                      {aiCustomStep === 2 && (
+                        <div className="space-y-5">
+                          {isAiSketching ? (
+                            <div className="p-8 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] text-center space-y-3">
+                              <Wand2 className="w-8 h-8 animate-spin text-[#B85D43] mx-auto" />
+                              <h3 className="font-serif text-lg text-[#241B16]">
+                                AI đang render bản phác thảo 2D...
+                              </h3>
+                              <p className="text-xs text-[#7A6F68]">
+                                Tự động tính toán toạ độ và gắn lên túi Nét bên trái.
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Blueprint Technical Sketch Card */}
+                              <div className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-4">
+                                <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
+                                  <div>
+                                    <span className="text-[10px] tracking-[0.2em] uppercase text-[#B85D43] font-semibold">
+                                      BẢN VẼ KỸ THUẬT 2D XƯỞNG THỦ CÔNG
+                                    </span>
+                                    <h3 className="font-serif text-base text-[#241B16] mt-0.5">
+                                      {customIdea ? `Charm "${customIdea}"` : "Charm Độc Bản AI"}
+                                    </h3>
+                                  </div>
+                                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                                    <Check className="w-3 h-3" />
+                                    <span>Đã gắn lên túi</span>
+                                  </span>
+                                </div>
+
+                                {/* Visual Charm Representation in Sketch */}
+                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                                  <div className="sm:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-[#E8E2D8] shadow-2xs">
+                                    <div
+                                      style={{ backgroundColor: customColor }}
+                                      className={`w-20 h-20 ${
+                                        customShape === "circle"
+                                          ? "rounded-full"
+                                          : customShape === "teardrop"
+                                          ? "rounded-t-full rounded-b-lg"
+                                          : customShape === "heart"
+                                          ? "rounded-2xl"
+                                          : customShape === "freeform"
+                                          ? "rounded-[24px_6px_24px_6px]"
+                                          : "rounded-2xl"
+                                      } flex flex-col items-center justify-center text-white shadow-md border-2 border-white relative overflow-hidden transition-all`}
+                                    >
+                                      {customImageFile ? (
+                                        <img
+                                          src={customImageFile}
+                                          alt="Custom Reference"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="text-2xl font-bold font-serif">
+                                          {customText ? customText.slice(0, 2).toUpperCase() : "★"}
+                                        </span>
+                                      )}
+                                      {customText && (
+                                        <span className="text-[9px] font-mono tracking-tight text-white/95 mt-1 truncate max-w-[64px] bg-black/40 px-1.5 rounded">
+                                          {customText}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-[#7A6F68] mt-2 font-mono">
+                                      Quy chuẩn: 3.5cm x 3.5cm
+                                    </span>
+                                  </div>
+
+                                  <div className="sm:col-span-7 space-y-1.5 text-xs text-[#5E4D43]">
+                                    <div>
+                                      <strong className="text-[#241B16]">Vật liệu:</strong>{" "}
+                                      Nhựa lưới biển tái sinh ép nhiệt nung men mờ
+                                    </div>
+                                    <div>
+                                      <strong className="text-[#241B16]">Độ dày:</strong> 3.5 mm (chuẩn móc khuyên túi)
+                                    </div>
+                                    <div>
+                                      <strong className="text-[#241B16]">Khuyên treo:</strong> Đồng thau uốn nhiệt chống gỉ
+                                    </div>
+                                    <div>
+                                      <strong className="text-[#241B16]">Khắc laser:</strong>{" "}
+                                      {customText ? `"${customText}"` : "Theo thông điệp riêng"}
+                                    </div>
+                                    <div className="text-[11px] text-[#A89F91] pt-1">
+                                      * Bạn có thể kéo charm trên chiếc túi bên trái để đổi vị trí trực tiếp!
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Live Quick Fine-tuning controls (Shape, Color, Text, Position) */}
+                              <div className="space-y-3.5 pt-1">
+                                <div className="text-xs font-semibold text-[#241B16] flex items-center gap-1.5">
+                                  <Sliders className="w-3.5 h-3.5 text-[#B85D43]" />
+                                  <span>Tinh chỉnh nhanh đặc điểm 2D:</span>
+                                </div>
+
+                                {/* Shape selector */}
+                                <div>
+                                  <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
+                                    Hình khối charm:
+                                  </label>
+                                  <div className="grid grid-cols-5 gap-1.5">
+                                    {[
+                                      { id: "square", label: "Vuông bo" },
+                                      { id: "circle", label: "Tròn" },
+                                      { id: "teardrop", label: "Giọt nước" },
+                                      { id: "heart", label: "Trái tim" },
+                                      { id: "freeform", label: "Tự do" },
+                                    ].map((s) => (
+                                      <button
+                                        key={s.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setCustomShape(s.id as any);
+                                          handlePlaceCustomOnBag(s.id as any, customColor, customText);
+                                        }}
+                                        className={`py-1.5 px-2 rounded-xl text-xs font-medium text-center border transition-all cursor-pointer ${
+                                          customShape === s.id
+                                            ? "bg-[#B85D43] text-white border-[#B85D43]"
+                                            : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
+                                        }`}
+                                      >
+                                        {s.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Color selector */}
+                                <div>
+                                  <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
+                                    Màu men nung chủ đạo:
+                                  </label>
+                                  <div className="flex flex-wrap gap-2">
+                                    {[
+                                      { hex: "#C2674F", name: "Đất nung" },
+                                      { hex: "#234B3E", name: "Xanh lưới" },
+                                      { hex: "#2563EB", name: "Xanh biển" },
+                                      { hex: "#D97706", name: "Vàng đồng" },
+                                      { hex: "#BE185D", name: "Hồng gốm" },
+                                    ].map((col) => (
+                                      <button
+                                        key={col.hex}
+                                        type="button"
+                                        onClick={() => {
+                                          setCustomColor(col.hex);
+                                          handlePlaceCustomOnBag(customShape, col.hex, customText);
+                                        }}
+                                        className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5 cursor-pointer ${
+                                          customColor === col.hex
+                                            ? "ring-2 ring-[#B85D43] border-white font-semibold"
+                                            : "border-[#E8E2D8] bg-[#FAF7F2]"
+                                        }`}
+                                      >
+                                        <span
+                                          className="w-2.5 h-2.5 rounded-full"
+                                          style={{ backgroundColor: col.hex }}
+                                        />
+                                        <span>{col.name}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Laser Engraving input */}
+                                <div>
+                                  <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
+                                    Chữ hoặc số khắc laser (tối đa 12 ký tự):
+                                  </label>
+                                  <input
+                                    type="text"
+                                    maxLength={12}
+                                    value={customText}
+                                    onChange={(e) => {
+                                      setCustomText(e.target.value);
+                                      handlePlaceCustomOnBag(customShape, customColor, e.target.value);
+                                    }}
+                                    placeholder="Ví dụ: ĐÀ NẴNG 2026"
+                                    className="w-full p-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Navigation Buttons */}
+                              <div className="flex items-center gap-3 pt-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setAiCustomStep(1)}
+                                  className="py-3 px-4 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
+                                >
+                                  ← Chat thêm với AI
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setAiCustomStep(3)}
+                                  className="flex-1 py-3 px-5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                  <span>Nộp Đợi Duyệt & Báo Giá (Bước 3) →</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* BƯỚC 3: NỘP ĐỢI DUYỆT & BÁO GIÁ */}
+                      {aiCustomStep === 3 && (
+                        <div className="space-y-5">
+                          {/* Summary Card */}
+                          <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
+                            <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
+                              TỔNG HỢP YÊU CẦU THIẾT KẾ
+                            </span>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-[#5E4D43]">Túi Nét Original (Phôi chuẩn):</span>
+                              <span className="font-semibold text-[#241B16]">299.000 đ</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-[#5E4D43]">Charm độc bản AI:</span>
+                              <span className="font-semibold text-[#B85D43] bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                Chờ xưởng báo giá
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-[#7A6F68] pt-1 border-t border-[#E8E2D8]">
+                              Ý tưởng: "{customIdea || "Charm độc bản"}" · Màu {customColor} · Khắc "{customText || "Theo yêu cầu"}"
+                            </div>
+                          </div>
+
+                          {/* Direct Submit Form */}
+                          <form onSubmit={handleSubmitDesignRequest} className="space-y-3.5">
+                            <div>
+                              <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                Họ và tên của bạn *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                placeholder="Ví dụ: Nguyễn Văn A"
+                                className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                Số điện thoại / Zalo nhận báo giá *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={customerContact}
+                                onChange={(e) => setCustomerContact(e.target.value)}
+                                placeholder="Để nghệ nhân gửi bản concept 3D và bảng giá..."
+                                className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                Cách nhận hàng dự kiến
+                              </label>
+                              <select
+                                value={deliveryMethod}
+                                onChange={(e) => setDeliveryMethod(e.target.value as any)}
+                                className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                              >
+                                <option value="partner_pickup">
+                                  Nhận tại đối tác Đà Nẵng (Khách sạn / Resort)
+                                </option>
+                                <option value="home_delivery">
+                                  Giao tận nơi toàn quốc
+                                </option>
+                                <option value="workshop_pickup">
+                                  Nhận trực tiếp tại xưởng Nét (Đà Nẵng)
+                                </option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                Ghi chú thêm cho nghệ nhân (không bắt buộc)
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={customCharmExtraNote}
+                                onChange={(e) => setCustomCharmExtraNote(e.target.value)}
+                                placeholder="Yêu cầu chi tiết về hoa văn men, độ bóng mờ, câu chuyện kỷ niệm..."
+                                className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                              />
+                            </div>
+
+                            {/* Terms Checkbox */}
+                            <label className="flex items-start gap-2.5 cursor-pointer text-xs text-[#5E4D43] pt-1">
+                              <input
+                                type="checkbox"
+                                checked={agreeTerms}
+                                onChange={(e) => setAgreeTerms(e.target.checked)}
+                                className="mt-0.5 rounded text-[#B85D43] focus:ring-0"
+                              />
+                              <span>
+                                Tôi đồng ý để xưởng Nét liên hệ gửi bản vẽ concept hoàn chỉnh và báo giá chi tiết trong vòng 24h.
+                              </span>
+                            </label>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-3 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => setAiCustomStep(2)}
+                                className="py-3 px-4 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
+                              >
+                                ← Chỉnh bản phác thảo
+                              </button>
+
+                              <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="flex-1 py-3.5 px-6 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                              >
+                                {isSubmitting ? (
+                                  <span>Đang gửi yêu cầu...</span>
+                                ) : (
+                                  <>
+                                    <span>🚀 Nộp Yêu Cầu Chờ Duyệt & Báo Giá</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </form>
                         </div>
                       )}
                     </div>

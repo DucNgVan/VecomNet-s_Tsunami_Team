@@ -44,6 +44,10 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
     const [isGlbActive, setIsGlbActive] = useState<boolean>(false);
     const [hasWebGlError, setHasWebGlError] = useState<boolean>(false);
 
+    // Rotation state refs to allow imperative reset and smooth dampening
+    const targetRotYRef = useRef<number>(0);
+    const targetRotXRef = useRef<number>(0);
+
     // Expose imperative methods to parent
     useImperativeHandle(ref, () => ({
       captureSnapshot: () => {
@@ -55,6 +59,8 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         }
       },
       resetView: () => {
+        targetRotYRef.current = 0;
+        targetRotXRef.current = 0;
         if (bagGroupRef.current) {
           bagGroupRef.current.rotation.set(0, 0, 0);
         }
@@ -241,9 +247,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             const scale = maxDim > 0 ? targetSize / maxDim : 1;
             glbWrapper.scale.setScalar(scale);
 
-            // Rotate 90 degrees if depth is larger than width so front faces camera
+            // Rotate -90 degrees around Y axis so the front face (normal +X in raw scan) faces directly towards camera (+Z)
             if (size.z > size.x) {
-              glbWrapper.rotation.y = Math.PI / 2;
+              glbWrapper.rotation.y = -Math.PI / 2;
             }
 
             // Material enhancements
@@ -282,8 +288,6 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       let isDragging = false;
       let prevMouseX = 0;
       let prevMouseY = 0;
-      let targetRotY = 0;
-      let targetRotX = 0;
 
       const onMouseDown = (e: MouseEvent) => {
         if (!isInteractive) return;
@@ -299,12 +303,18 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         prevMouseX = e.clientX;
         prevMouseY = e.clientY;
 
-        targetRotY += deltaX * 0.008;
-        targetRotX = Math.max(-0.45, Math.min(0.45, targetRotX + deltaY * 0.005));
+        targetRotYRef.current += deltaX * 0.008;
+        targetRotXRef.current = Math.max(-0.45, Math.min(0.45, targetRotXRef.current + deltaY * 0.005));
       };
 
       const onMouseUp = () => {
         isDragging = false;
+      };
+
+      // Double-click to snap back to direct front view
+      const onDoubleClick = () => {
+        targetRotYRef.current = 0;
+        targetRotXRef.current = 0;
       };
 
       // Touch interactions for mobile
@@ -322,14 +332,15 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         prevMouseX = e.touches[0].clientX;
         prevMouseY = e.touches[0].clientY;
 
-        targetRotY += deltaX * 0.01;
-        targetRotX = Math.max(-0.45, Math.min(0.45, targetRotX + deltaY * 0.007));
+        targetRotYRef.current += deltaX * 0.01;
+        targetRotXRef.current = Math.max(-0.45, Math.min(0.45, targetRotXRef.current + deltaY * 0.007));
       };
 
       const dom = renderer.domElement;
       dom.addEventListener("mousedown", onMouseDown);
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
+      dom.addEventListener("dblclick", onDoubleClick);
 
       dom.addEventListener("touchstart", onTouchStart, { passive: true });
       window.addEventListener("touchmove", onTouchMove, { passive: true });
@@ -346,7 +357,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       };
       window.addEventListener("resize", handleResize);
 
-      // 7. Animation Loop with Gentle Drift and Slerp Dampening
+      // 7. Animation Loop with Front-Facing Ambient Breathing (No infinite spinning)
       let animId: number;
       let clock = new THREE.Clock();
 
@@ -356,17 +367,16 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         const elapsedTime = clock.getElapsedTime();
 
         if (bagRoot) {
-          if (!isDragging) {
-            // Gentle ambient breathing rotation
-            targetRotY += 0.0018;
-          }
+          // Subtle ambient breathing sway around front view (keeps front face facing user)
+          const ambientSwayY = isDragging ? 0 : Math.sin(elapsedTime * 0.8) * 0.04;
+          const ambientSwayX = isDragging ? 0 : Math.cos(elapsedTime * 0.6) * 0.02;
 
-          // Smooth interpolation towards target rotation
-          bagRoot.rotation.y += (targetRotY - bagRoot.rotation.y) * 0.08;
-          bagRoot.rotation.x += (targetRotX - bagRoot.rotation.x) * 0.08;
+          // Smooth interpolation towards target rotation + ambient sway
+          bagRoot.rotation.y += (targetRotYRef.current + ambientSwayY - bagRoot.rotation.y) * 0.08;
+          bagRoot.rotation.x += (targetRotXRef.current + ambientSwayX - bagRoot.rotation.x) * 0.08;
 
           // Subtle floating levitation
-          bagRoot.position.y = Math.sin(elapsedTime * 1.5) * 0.06;
+          bagRoot.position.y = Math.sin(elapsedTime * 1.5) * 0.05;
         }
 
         renderer.render(scene, camera);
@@ -379,6 +389,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         dom.removeEventListener("mousedown", onMouseDown);
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
+        dom.removeEventListener("dblclick", onDoubleClick);
         dom.removeEventListener("touchstart", onTouchStart);
         window.removeEventListener("touchmove", onTouchMove);
         window.removeEventListener("touchend", onMouseUp);
@@ -459,7 +470,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             // Map 2D percentage coordinates to 3D surface space
             const posX = ((placed.x - 50) / 50) * 1.15;
             const posY = -((placed.y - 50) / 50) * 1.25 - 0.15;
-            const posZ = 0.82; // Front surface of tote
+            const posZ = 0.72; // Front surface of tote facing camera
 
             wrapper.position.set(posX, posY, posZ);
             wrapper.rotation.z = (placed.rotation || 0) * (Math.PI / 180) + ((idx % 2 === 0 ? 1 : -1) * 0.05);
@@ -509,11 +520,25 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         {/* Floating 3D Badge & Status */}
         {isInteractive && !isLoadingModel && (
           <div className="absolute bottom-3 inset-x-0 flex items-center justify-center pointer-events-none px-4">
-            <div className="px-4 py-1.5 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 text-white text-xs flex items-center gap-2 shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className=" text-[11px]">
-                {isGlbActive ? "Túi Mẫu 3D Tiêu Chuẩn" : "Túi 3D Mẫu"} • Xoay 360°
+            <div className="px-3.5 py-1.5 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 text-white text-xs flex items-center gap-2 shadow-lg pointer-events-auto">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-medium">
+                {isGlbActive ? "Mặt Trước Túi Mẫu" : "Túi 3D"} • Xoay 360°
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  targetRotYRef.current = 0;
+                  targetRotXRef.current = 0;
+                  if (bagGroupRef.current) {
+                    bagGroupRef.current.rotation.set(0, 0, 0);
+                  }
+                }}
+                className="ml-1 text-[10px] text-sky-300 hover:text-white underline cursor-pointer"
+                title="Căn thẳng mặt trước túi"
+              >
+                Căn thẳng
+              </button>
             </div>
           </div>
         )}

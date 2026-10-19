@@ -256,7 +256,10 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   {/* Charm Badge */}
                   <div
                     style={{
-                      backgroundColor: placed.charm.color || "#38bdf8",
+                      backgroundColor:
+                        isCustom && customCharmVisual?.svgCode
+                          ? "#FFFDF9"
+                          : placed.charm.color || "#38bdf8",
                     }}
                     className={`w-11 h-11 sm:w-12 sm:h-12 ${
                       isCustom && customCharmVisual?.shape === "circle"
@@ -268,13 +271,15 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                         : isCustom && customCharmVisual?.shape === "freeform"
                         ? "rounded-[16px_4px_16px_4px]"
                         : "rounded-xl"
-                    } flex flex-col items-center justify-center text-white shadow-md border-2 border-white/80 relative transition-all overflow-hidden ${
+                    } flex flex-col items-center justify-center text-white shadow-md border-2 ${
+                      isCustom ? "border-[#D4AF37] shadow-amber-900/20" : "border-white/80"
+                    } relative transition-all overflow-hidden ${
                       isSelected ? "ring-2 ring-[#B85D43] ring-offset-2" : ""
                     }`}
                   >
                     {isCustom && customCharmVisual?.svgCode ? (
                       <div
-                        className="w-full h-full p-1.5 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                        className="w-full h-full p-0.5 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-xs"
                         dangerouslySetInnerHTML={{ __html: customCharmVisual.svgCode }}
                       />
                     ) : isCustom && customCharmVisual?.referenceImageUrl ? (

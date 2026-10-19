@@ -569,45 +569,128 @@ function NetStudioContent() {
       setIsAiThinking(false);
       console.warn("AI Chat API fallback:", err);
 
-      // Graceful fallback logic
+      // Graceful fallback logic with rich SVG vector graphics
       const lower = (message + " " + (uploadedDocName || "")).toLowerCase();
-      const isOcean = lower.includes("biển") || lower.includes("sóng") || lower.includes("mỹ khê");
+      const isChibi =
+        lower.includes("chibi") ||
+        lower.includes("cartoon") ||
+        lower.includes("cá nhân") ||
+        lower.includes("tôi") ||
+        lower.includes("người") ||
+        lower.includes("selfie") ||
+        lower.includes("hoạt hình") ||
+        lower.includes("khuôn mặt");
+      const isOcean = lower.includes("biển") || lower.includes("sóng") || lower.includes("mỹ khê") || lower.includes("rùa");
       const isSonTra = lower.includes("sơn trà") || lower.includes("voọc");
       const isDragon = lower.includes("rồng") || lower.includes("cầu");
 
-      let shape: "circle" | "square" | "teardrop" | "heart" | "freeform" = "square";
-      let color = "#C2674F";
-      let motif = "Dấu ấn duyên hải Đà Nẵng kết hợp ký ức cá nhân";
-      let laserText = customText || "NÉT ĐN";
+      let shape: "circle" | "square" | "teardrop" | "heart" | "freeform" = "circle";
+      let color = "#2563EB";
+      let motif = "Chibi Cá Nhân Hoá Nét Enamel";
+      let laserText = customText || "NÉT ME";
+      let fallbackSvg = "";
 
-      if (isOcean) {
+      if (isChibi) {
+        shape = "circle";
+        color = "#2563EB";
+        motif = "Chibi Cá Nhân Hoá Nét Enamel";
+        laserText = customText || "NÉT ME";
+        fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="48" fill="#DAA520" stroke="#B48818" stroke-width="2"/>
+  <circle cx="50" cy="50" r="45" fill="#FFFDF9"/>
+  <path d="M30 65 C25 75 35 88 50 88 C65 88 75 75 70 65 Z" fill="#2563EB" stroke="#1A1A1A" stroke-width="1.5"/>
+  <path d="M50 28 C30 30 28 60 30 70 C40 78 60 78 70 70 C72 60 70 30 50 28 Z" fill="#FFDDC1" stroke="#1A1A1A" stroke-width="1.5"/>
+  <path d="M50 20 C25 25 20 50 25 58 Q35 68 50 68 Q65 68 75 58 C80 50 75 25 50 20 Z" fill="#3D2314" stroke="#1A1A1A" stroke-width="1.5"/>
+  <path d="M35 30 Q45 25 50 30 Q55 25 65 30 C60 35 40 35 35 30 Z" fill="#3D2314" stroke="#1A1A1A" stroke-width="1"/>
+  <circle cx="38" cy="62" r="5" fill="#FFB6C1" opacity="0.8"/>
+  <circle cx="62" cy="62" r="5" fill="#FFB6C1" opacity="0.8"/>
+  <circle cx="40" cy="46" r="8" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="0.5"/>
+  <circle cx="40" cy="46" r="5" fill="#1E293B"/>
+  <circle cx="38" cy="44" r="1.8" fill="#FFFFFF"/>
+  <circle cx="60" cy="46" r="8" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="0.5"/>
+  <circle cx="60" cy="46" r="5" fill="#1E293B"/>
+  <circle cx="58" cy="44" r="1.8" fill="#FFFFFF"/>
+  <path d="M45 66 Q50 70 55 66" stroke="#991B1B" stroke-width="1.8" fill="none"/>
+</svg>`;
+      } else if (isOcean) {
         shape = "teardrop";
         color = "#2563EB";
-        motif = "Vạt sóng biển Mỹ Khê & vỏ ốc men gốm";
+        motif = "Vạt sóng biển Mỹ Khê & Vỏ ốc men gốm";
         laserText = customText || "MỸ KHÊ";
+        fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="48" fill="#D4AF37" stroke="#B48818" stroke-width="2"/>
+  <circle cx="50" cy="50" r="45" fill="#EBF5FB"/>
+  <ellipse cx="50" cy="52" rx="22" ry="26" fill="#0D9488" stroke="#115E59" stroke-width="2"/>
+  <circle cx="50" cy="24" r="9" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
+  <circle cx="47" cy="23" r="1.5" fill="#111827"/>
+  <circle cx="53" cy="23" r="1.5" fill="#111827"/>
+  <path d="M30 38 Q18 30 22 45 Q28 46 32 44 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
+  <path d="M70 38 Q82 30 78 45 Q72 46 68 44 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
+  <path d="M32 64 Q22 72 26 78 Q33 74 36 68 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
+  <path d="M68 64 Q78 72 74 78 Q67 74 64 68 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
+  <polygon points="50,38 60,45 60,57 50,64 40,57 40,45" fill="#F0FDFA" stroke="#115E59" stroke-width="1.5"/>
+</svg>`;
       } else if (isSonTra) {
         shape = "circle";
         color = "#234B3E";
-        motif = "Tán rừng nguyên sinh Sơn Trà & linh trưởng bình yên";
+        motif = "Voọc Chà Vá Chân Nâu Sơn Trà";
         laserText = customText || "SƠN TRÀ";
+        fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="48" fill="#D4AF37" stroke="#B48818" stroke-width="2"/>
+  <circle cx="50" cy="50" r="45" fill="#F4FBF7"/>
+  <circle cx="50" cy="50" r="32" fill="#4B5563"/>
+  <circle cx="50" cy="52" r="24" fill="#FBBF24"/>
+  <ellipse cx="42" cy="48" rx="5" ry="7" fill="#111827"/>
+  <ellipse cx="58" cy="48" rx="5" ry="7" fill="#111827"/>
+  <circle cx="40" cy="46" r="1.5" fill="#FFFFFF"/>
+  <circle cx="56" cy="46" r="1.5" fill="#FFFFFF"/>
+  <path d="M44 58 Q50 62 56 58" stroke="#1F2937" stroke-width="2" fill="none"/>
+  <path d="M22 62 C26 76 38 84 50 84 C62 84 74 76 78 62" stroke="#FFFFFF" stroke-width="6" fill="none"/>
+</svg>`;
       } else if (isDragon) {
         shape = "freeform";
         color = "#D97706";
-        motif = "Vảy rồng vươn mình sông Hàn rực rỡ";
+        motif = "Cầu Rồng Sông Hàn Vươn Mình";
         laserText = customText || "CẦU RỒNG";
+        fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="48" fill="#D4AF37" stroke="#B48818" stroke-width="2"/>
+  <circle cx="50" cy="50" r="45" fill="#FFFBEB"/>
+  <path d="M20 70 Q35 45 50 70 T80 70" stroke="#2563EB" stroke-width="5" fill="none"/>
+  <path d="M25 60 C35 30 55 25 75 35 C80 40 85 45 75 55 C65 45 50 50 40 60 Z" fill="#D97706" stroke="#92400E" stroke-width="2"/>
+  <circle cx="70" cy="38" r="3" fill="#DC2626"/>
+  <circle cx="69" cy="37" r="1" fill="#FFFFFF"/>
+  <path d="M78 40 Q88 35 90 42 Q85 46 80 44" fill="#EF4444"/>
+</svg>`;
+      } else {
+        fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="48" fill="#DAA520" stroke="#B48818" stroke-width="2"/>
+  <circle cx="50" cy="50" r="45" fill="#FFFDF9"/>
+  <circle cx="50" cy="50" r="30" fill="${color}" opacity="0.9"/>
+  <path d="M50 26 L56 42 L73 42 L59 52 L64 69 L50 59 L36 69 L41 52 L27 42 L44 42 Z" fill="#FFD700" stroke="#B48818" stroke-width="1.2"/>
+</svg>`;
       }
 
       setCustomShape(shape);
       setCustomColor(color);
       if (!customText) setCustomText(laserText);
       setMotifName(motif);
+      setGeneratedSvgCode(fallbackSvg);
+
+      if (typeof window !== "undefined") {
+        try {
+          const stlRes = generateCharmSTLFromSVG(fallbackSvg, { depthMm: 3.0 });
+          setGeneratedStlData(stlRes.stlString);
+        } catch (stlErr) {
+          console.warn("Fallback STL failed:", stlErr);
+        }
+      }
 
       setChatMessages((prev) => [
         ...prev,
         {
           id: `ai-${Date.now()}`,
           sender: "ai",
-          text: `Ý tưởng "${message || "Charm độc bản"}" rất giàu cảm xúc! Nét AI Stylist đã cấu hình bản phác thảo chuẩn in 3D với ngàm chốt cài mắt lưới túi xách cho bạn.`,
+          text: `Nét AI Stylist đã hoàn thiện bản phác thảo charm 2D "${motif}" độc bản cho bạn! Nét vẽ chibi và đường nét vector đã được chuẩn hoá với ngàm chốt cài mắt lưới túi Nét sẵn sàng chế tác.`,
           time: new Date().toLocaleTimeString("vi-VN", {
             hour: "2-digit",
             minute: "2-digit",
@@ -623,19 +706,45 @@ function NetStudioContent() {
     }
   };
 
-  // Custom Charm Image / Doc upload
+  // Custom Charm Image / Doc upload with client-side downscaling
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      alert("Dung lượng tệp tối đa là 8MB!");
-      return;
-    }
     setUploadedDocName(file.name);
+
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = () => {
-        setCustomImageFile(reader.result as string);
+      reader.onload = (ev) => {
+        const rawData = ev.target?.result as string;
+        // Tự động nén ảnh xuống tối đa 720px để gửi Gemini AI siêu tốc (~2 giây)
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 720;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, w, h);
+            const optimizedBase64 = canvas.toDataURL("image/jpeg", 0.82);
+            setCustomImageFile(optimizedBase64);
+          } else {
+            setCustomImageFile(rawData);
+          }
+        };
+        img.onerror = () => setCustomImageFile(rawData);
+        img.src = rawData;
       };
       reader.readAsDataURL(file);
     } else {
@@ -687,13 +796,26 @@ function NetStudioContent() {
   };
 
   // Move directly to Step 2 with AI Sketching
-  const handleProceedToStep2Sketch = () => {
-    setIsAiSketching(true);
-    setAiCustomStep(2);
-    handlePlaceCustomOnBag();
-    setTimeout(() => {
+  const handleProceedToStep2Sketch = async () => {
+    // Nếu chưa có SVG từ AI, tự động gọi AI tạo phác thảo vector ngay lập tức
+    if (!generatedSvgCode) {
+      const promptToUse =
+        chatInputText.trim() ||
+        customIdea.trim() ||
+        (uploadedDocName ? `Tạo charm chibi hoạt hình độc bản từ ảnh ${uploadedDocName}` : "Tạo charm chibi độc bản");
+      setIsAiSketching(true);
+      await handleSendChatMessage(promptToUse);
       setIsAiSketching(false);
-    }, 500);
+      setAiCustomStep(2);
+      handlePlaceCustomOnBag();
+    } else {
+      setIsAiSketching(true);
+      setAiCustomStep(2);
+      handlePlaceCustomOnBag();
+      setTimeout(() => {
+        setIsAiSketching(false);
+      }, 300);
+    }
   };
 
   // Submit Design Request / Đặt hàng bộ phối
@@ -1643,39 +1765,38 @@ function NetStudioContent() {
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
                                   <div className="sm:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-[#E8E2D8] shadow-2xs">
                                     <div
-                                      style={{ backgroundColor: customColor }}
-                                      className={`w-24 h-24 ${
+                                      className={`w-28 h-28 ${
                                         customShape === "circle"
                                           ? "rounded-full"
                                           : customShape === "teardrop"
-                                          ? "rounded-t-full rounded-b-lg"
+                                          ? "rounded-t-full rounded-b-xl"
                                           : customShape === "heart"
-                                          ? "rounded-2xl"
+                                          ? "rounded-3xl"
                                           : customShape === "freeform"
-                                          ? "rounded-[24px_6px_24px_6px]"
+                                          ? "rounded-[32px_8px_32px_8px]"
                                           : "rounded-2xl"
-                                      } flex flex-col items-center justify-center text-white shadow-md border-2 border-white relative overflow-hidden transition-all`}
+                                      } flex flex-col items-center justify-center bg-gradient-to-br from-[#FFFDF9] via-white to-[#FAF6EE] shadow-md border-3 border-[#D4AF37] ring-2 ring-[#B85D43]/20 relative overflow-hidden transition-all p-1.5`}
                                     >
                                       {generatedSvgCode ? (
                                         <div
-                                          className="w-full h-full p-2 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                                          className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-xs"
                                           dangerouslySetInnerHTML={{ __html: generatedSvgCode }}
                                         />
                                       ) : customImageFile ? (
-                                        <img
-                                          src={customImageFile}
-                                          alt="Custom Reference"
-                                          className="w-full h-full object-cover"
-                                        />
+                                        <div className="w-full h-full relative rounded-xl overflow-hidden flex items-center justify-center bg-slate-100">
+                                          <img
+                                            src={customImageFile}
+                                            alt="Custom Reference"
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
                                       ) : (
-                                        <span className="text-2xl font-bold font-serif">
-                                          {customText ? customText.slice(0, 2).toUpperCase() : "★"}
-                                        </span>
-                                      )}
-                                      {customText && !generatedSvgCode && (
-                                        <span className="text-[9px] font-mono tracking-tight text-white/95 mt-1 truncate max-w-[64px] bg-black/40 px-1.5 rounded">
-                                          {customText}
-                                        </span>
+                                        <div
+                                          style={{ backgroundColor: customColor }}
+                                          className="w-full h-full rounded-xl flex items-center justify-center text-white font-serif font-bold text-xl"
+                                        >
+                                          {customText ? customText.slice(0, 3).toUpperCase() : "NÉT"}
+                                        </div>
                                       )}
                                     </div>
                                     <span className="text-[10px] text-[#7A6F68] mt-2 font-mono">
@@ -1710,7 +1831,9 @@ function NetStudioContent() {
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const svgToUse = generatedSvgCode || `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="15" width="70" height="70" rx="16" fill="${customColor}"/><text x="50" y="58" font-size="28" font-family="serif" font-weight="bold" fill="#ffffff" text-anchor="middle">${customText ? customText.slice(0, 4) : "NÉT"}</text></svg>`;
+                                          const svgToUse =
+                                            generatedSvgCode ||
+                                            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="#DAA520" stroke="#B48818" stroke-width="2"/><circle cx="50" cy="50" r="45" fill="#FFFDF9"/><path d="M30 65 C25 75 35 88 50 88 C65 88 75 75 70 65 Z" fill="#2563EB" stroke="#1A1A1A" stroke-width="1.5"/><path d="M50 28 C30 30 28 60 30 70 C40 78 60 78 70 70 C72 60 70 30 50 28 Z" fill="#FFDDC1" stroke="#1A1A1A" stroke-width="1.5"/><path d="M50 20 C25 25 20 50 25 58 Q35 68 50 68 Q65 68 75 58 C80 50 75 25 50 20 Z" fill="#3D2314" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="46" r="8" fill="#FFFFFF"/><circle cx="40" cy="46" r="5" fill="#1E293B"/><circle cx="60" cy="46" r="8" fill="#FFFFFF"/><circle cx="60" cy="46" r="5" fill="#1E293B"/><path d="M45 66 Q50 70 55 66" stroke="#991B1B" stroke-width="1.8" fill="none"/></svg>`;
                                           try {
                                             const res = generateCharmSTLFromSVG(svgToUse, { depthMm: 3.0 });
                                             setGeneratedStlData(res.stlString);

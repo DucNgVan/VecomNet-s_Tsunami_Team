@@ -39,6 +39,7 @@ export interface DesignRequest {
   customerDob?: string;       // Ngày sinh khách hàng
   contact: string;            // SĐT hoặc email
   customerPhone?: string;     // Số điện thoại nhận hàng
+  customerEmail?: string;     // Email khách hàng
   customerAddress?: string;   // Địa chỉ giao nhận chi tiết
   customerCity?: string;
   deliveryMethod: DeliveryMethod;

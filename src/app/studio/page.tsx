@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -40,6 +41,7 @@ import {
   generateRequestId,
   DesignRequest,
 } from "@/lib/designRequestStorage";
+import { useAuth } from "@/context/AuthContext";
 
 // 6 Đà Nẵng signature charms
 const READY_CHARMS: Charm[] = [
@@ -135,33 +137,95 @@ const READY_CHARMS: Charm[] = [
   },
 ];
 
-const STORY_PRESETS = [
+// Các địa điểm đặc trưng tại Đà Nẵng (Hỗ trợ người dùng chọn nhiều)
+const DANANG_LOCATIONS = [
   {
-    id: "preset-sontra",
-    companion: "family",
-    location: "sontra",
-    memory: "peace",
-    title: "Một ngày ở Sơn Trà",
-    story: "Cùng gia đình khám phá nơi rừng gặp biển, ngắm bình minh trên bãi đá và lưu giữ sự an yên.",
-    charmIds: ["charm-wave", "charm-sun", "charm-sontra"],
+    id: "mykhe",
+    name: "Biển Mỹ Khê",
+    tagline: "Sóng êm & bãi cát trắng mịn sớm mai",
+    charmIds: ["charm-wave"],
+    icon: "🌊",
   },
   {
-    id: "preset-mykhe",
-    companion: "couple",
-    location: "mykhe",
-    memory: "bonding",
-    title: "Bình minh biển Mỹ Khê",
-    story: "Nắm tay người thương dạo bước trên cát mịn, đón ánh nắng sớm chan hòa và sóng êm.",
-    charmIds: ["charm-wave", "charm-heart", "charm-sun"],
+    id: "sontra",
+    name: "Bán đảo Sơn Trà",
+    tagline: "Rừng nguyên sinh & Voọc chà vá",
+    charmIds: ["charm-sontra", "charm-vooc"],
+    icon: "🐒",
   },
   {
-    id: "preset-dragon",
-    companion: "friends",
-    location: "dragon_bridge",
-    memory: "adventure",
-    title: "Đêm sông Hàn lung linh",
-    story: "Cùng hội bạn thân ngắm cầu Rồng phun lửa, rực rỡ và tràn đầy nhiệt huyết tuổi trẻ.",
-    charmIds: ["charm-dragon", "charm-vooc", "charm-sun"],
+    id: "dragon_bridge",
+    name: "Cầu Rồng Sông Hàn",
+    tagline: "Rồng vàng vươn mình & đêm phun lửa",
+    charmIds: ["charm-dragon"],
+    icon: "🌉",
+  },
+  {
+    id: "haivan",
+    name: "Đèo Hải Vân & Nam Ô",
+    tagline: "Hùng quan đệ nhất & rạn rêu xanh",
+    charmIds: ["charm-wave", "charm-sun"],
+    icon: "🌅",
+  },
+  {
+    id: "ngu_hanh_son",
+    name: "Ngũ Hành Sơn",
+    tagline: "Non nước kỳ vĩ & men gốm di sản",
+    charmIds: ["charm-sontra", "charm-sun"],
+    icon: "⛰️",
+  },
+  {
+    id: "tho_quang",
+    name: "Làng chài Thọ Quang",
+    tagline: "Thuyền thúng rạng đông & nhịp sống duyên hải",
+    charmIds: ["charm-wave", "charm-heart"],
+    icon: "⛵",
+  },
+];
+
+// Các kỷ niệm & cảm xúc (Hỗ trợ người dùng chọn nhiều)
+const JOURNEY_EMOTIONS = [
+  {
+    id: "peace",
+    label: "Bình yên & thư thái",
+    desc: "An yên ngắm sóng biển sớm mai",
+    charmIds: ["charm-wave", "charm-sontra"],
+    icon: "🌿",
+  },
+  {
+    id: "love",
+    label: "Tình cảm gắn kết",
+    desc: "Kỷ niệm bên người thương & gia đình",
+    charmIds: ["charm-heart"],
+    icon: "❤️",
+  },
+  {
+    id: "adventure",
+    label: "Khám phá & năng lượng",
+    desc: "Nhiệt huyết tuổi trẻ & trải nghiệm mới",
+    charmIds: ["charm-dragon"],
+    icon: "🏄",
+  },
+  {
+    id: "nature",
+    label: "Bảo vệ thiên nhiên",
+    desc: "Yêu biển sạch & nữ hoàng linh trưởng",
+    charmIds: ["charm-vooc"],
+    icon: "🕊️",
+  },
+  {
+    id: "sunrise",
+    label: "Bình minh & hy vọng",
+    desc: "Khởi đầu tươi sáng bên bờ đại dương",
+    charmIds: ["charm-sun"],
+    icon: "☼",
+  },
+  {
+    id: "heritage",
+    label: "Ký ức văn hóa",
+    desc: "Di sản làng nghề & ký ức xứ Quảng",
+    charmIds: ["charm-dragon", "charm-sontra"],
+    icon: "🏛️",
   },
 ];
 
@@ -208,15 +272,12 @@ function NetStudioContent() {
     "placed-wave-default"
   );
 
-  // Tab 1 Sub-feature: Story Quiz State (Chuyến đi Đà Nẵng)
-  const [storyAnswers, setStoryAnswers] = useState({
-    companion: "family",
-    location: "sontra",
-    memory: "peace",
-  });
-  const [storyPresetResult, setStoryPresetResult] = useState<typeof STORY_PRESETS[0] | null>(
-    STORY_PRESETS[0]
-  );
+  // User Profile from Authentication
+  const { user, userProfile } = useAuth();
+
+  // Tab 1 Sub-feature: Chuyến đi Đà Nẵng (Địa điểm & Cảm xúc/Kỷ niệm chọn nhiều)
+  const [selectedLocations, setSelectedLocations] = useState<string[]>(["mykhe"]);
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>(["peace", "sunrise"]);
 
   // Tab 2: Sáng Tạo Charm Riêng Cùng AI (3 Bước: 1. Chat & Upload -> 2. Sketch 2D lên túi -> 3. Nộp duyệt & Báo giá)
   const [aiCustomStep, setAiCustomStep] = useState<1 | 2 | 3>(1);
@@ -256,9 +317,33 @@ function NetStudioContent() {
   const [customText, setCustomText] = useState("");
   const [hasAppliedCustomToBag, setHasAppliedCustomToBag] = useState(false);
 
-  // Checkout Review Form State
+  // Customer Form State - Tự động điền từ thông tin tài khoản người dùng
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [customerContact, setCustomerContact] = useState("");
+  const [customerDob, setCustomerDob] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+
+  // Đồng bộ thông tin người dùng từ AuthContext khi người dùng đã đăng nhập
+  useEffect(() => {
+    if (user || userProfile) {
+      const name = userProfile?.displayName || user?.displayName || "";
+      const phone = userProfile?.phone || user?.phoneNumber || "";
+      const email = userProfile?.email || user?.email || "";
+      const address = userProfile?.address || "";
+      const dob = userProfile?.dob || "";
+      const contact = phone || email;
+
+      if (name) setCustomerName(name);
+      if (phone) setCustomerPhone(phone);
+      if (email) setCustomerEmail(email);
+      if (contact) setCustomerContact(contact);
+      if (address) setCustomerAddress(address);
+      if (dob) setCustomerDob(dob);
+    }
+  }, [user, userProfile]);
+
   const [deliveryMethod, setDeliveryMethod] = useState<"partner_pickup" | "home_delivery" | "workshop_pickup">(
     partnerQuery ? "partner_pickup" : "partner_pickup"
   );
@@ -315,36 +400,75 @@ function NetStudioContent() {
     );
   };
 
-  // Story Tab: Recommend Set
-  const handleRecommendStorySet = () => {
-    const matched =
-      STORY_PRESETS.find(
-        (p) =>
-          p.companion === storyAnswers.companion &&
-          p.location === storyAnswers.location
-      ) || STORY_PRESETS[0];
-    setStoryPresetResult(matched);
-  };
+  // Dynamic charm application based on selected locations and emotions (multi-select)
+  const applyJournalSelectionsToBag = (
+    locations: string[],
+    emotions: string[]
+  ) => {
+    const matchedCharmIdSet = new Set<string>();
 
-  const handleApplyStoryPresetToBag = () => {
-    if (!storyPresetResult) return;
-    const selected = READY_CHARMS.filter((c) =>
-      storyPresetResult.charmIds.includes(c.id)
-    );
-    const xPositions = [35, 65, 50];
-    const yPositions = [45, 55, 65];
-    const newPlaced: PlacedCharm[] = selected.map((charm, i) => ({
-      instanceId: `story-${charm.id}-${Date.now()}-${i}`,
+    locations.forEach((locId) => {
+      const loc = DANANG_LOCATIONS.find((l) => l.id === locId);
+      loc?.charmIds.forEach((id) => matchedCharmIdSet.add(id));
+    });
+
+    emotions.forEach((emoId) => {
+      const emo = JOURNEY_EMOTIONS.find((e) => e.id === emoId);
+      emo?.charmIds.forEach((id) => matchedCharmIdSet.add(id));
+    });
+
+    // Default to at least wave + sun if empty
+    if (matchedCharmIdSet.size === 0) {
+      matchedCharmIdSet.add("charm-wave");
+      matchedCharmIdSet.add("charm-sun");
+    }
+
+    const matchedCharms = READY_CHARMS.filter((c) =>
+      matchedCharmIdSet.has(c.id)
+    ).slice(0, 5); // Max 5 charms for aesthetic balance
+
+    const coordsMap: Record<number, Array<{ x: number; y: number }>> = {
+      1: [{ x: 50, y: 52 }],
+      2: [{ x: 38, y: 46 }, { x: 62, y: 56 }],
+      3: [{ x: 35, y: 45 }, { x: 65, y: 48 }, { x: 50, y: 62 }],
+      4: [{ x: 35, y: 42 }, { x: 65, y: 45 }, { x: 38, y: 62 }, { x: 62, y: 65 }],
+      5: [{ x: 35, y: 40 }, { x: 65, y: 42 }, { x: 50, y: 52 }, { x: 36, y: 65 }, { x: 64, y: 66 }],
+    };
+
+    const coords = coordsMap[matchedCharms.length] || coordsMap[3];
+
+    const newPlaced: PlacedCharm[] = matchedCharms.map((charm, i) => ({
+      instanceId: `journey-${charm.id}-${Date.now()}-${i}`,
       charmId: charm.id,
-      anchorId: `a-${i}`,
-      x: xPositions[i] || 50,
-      y: yPositions[i] || 50,
+      anchorId: `a-journey-${i}`,
+      x: coords[i]?.x || 50,
+      y: coords[i]?.y || 50,
       rotation: 0,
       charm,
     }));
+
     setPlacedCharms(newPlaced);
     setSelectedCharmInstanceId(newPlaced[0]?.instanceId || null);
-    setActiveTab("ready");
+  };
+
+  const handleToggleLocation = (locId: string) => {
+    setSelectedLocations((prev) => {
+      const next = prev.includes(locId)
+        ? prev.length > 1 ? prev.filter((id) => id !== locId) : prev
+        : [...prev, locId];
+      applyJournalSelectionsToBag(next, selectedEmotions);
+      return next;
+    });
+  };
+
+  const handleToggleEmotion = (emoId: string) => {
+    setSelectedEmotions((prev) => {
+      const next = prev.includes(emoId)
+        ? prev.length > 1 ? prev.filter((id) => id !== emoId) : prev
+        : [...prev, emoId];
+      applyJournalSelectionsToBag(selectedLocations, next);
+      return next;
+    });
   };
 
   // Handle Chat Message submission to Nét AI Stylist
@@ -512,15 +636,20 @@ function NetStudioContent() {
     }, 500);
   };
 
-  // Submit Design Request
+  // Submit Design Request / Đặt hàng bộ phối
   const handleSubmitDesignRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !customerContact.trim()) {
-      alert("Vui lòng nhập Tên và Email/Số điện thoại để xưởng liên hệ gửi concept!");
+    const finalPhone = (customerPhone || customerContact).trim();
+    if (!customerName.trim() || !finalPhone) {
+      alert("Vui lòng điền Họ tên và Số điện thoại liên hệ nhận hàng!");
+      return;
+    }
+    if (!customerAddress.trim()) {
+      alert("Vui lòng điền Địa chỉ nhận hàng!");
       return;
     }
     if (!agreeTerms) {
-      alert("Vui lòng đồng ý lưu thông tin để tiếp nhận yêu cầu!");
+      alert("Vui lòng đồng ý xác nhận thông tin đơn đặt hàng!");
       return;
     }
 
@@ -537,7 +666,11 @@ function NetStudioContent() {
       id: newReqId,
       createdAt: new Date().toISOString().replace("T", " ").slice(0, 16),
       customerName: customerName.trim(),
-      contact: customerContact.trim(),
+      customerDob: customerDob.trim() || undefined,
+      contact: finalPhone,
+      customerPhone: finalPhone,
+      customerEmail: customerEmail.trim() || undefined,
+      customerAddress: customerAddress.trim() || undefined,
       deliveryMethod,
       deliveryMethodLabel: deliveryLabels[deliveryMethod] || "Nhận tại đối tác",
       partnerCode: partnerCode.trim() || undefined,
@@ -794,7 +927,7 @@ function NetStudioContent() {
                           }`}
                         >
                           <Compass className="w-3.5 h-3.5 text-[#B85D43]" />
-                          <span>Gợi ý theo chuyến đi Đà Nẵng</span>
+                          <span>Phối theo chuyến đi Đà Nẵng</span>
                         </button>
                       </div>
 
@@ -855,155 +988,188 @@ function NetStudioContent() {
                           </div>
                         </>
                       ) : (
-                        /* JOURNEY PRESETS & QUIZ */
-                        <div className="space-y-5">
+                        /* JOURNEY BASED CUSTOMIZATION - CÂU HỎI & CHỌN ĐỊA ĐIỂM + CẢM XÚC (CHỌN NHIỀU) */
+                        <div className="space-y-6">
                           <div>
-                            <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
-                              HÀNH TRÌNH ĐÀ NẴNG
-                            </span>
-                            <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-0.5">
-                              Bộ phối mang dấu ấn chuyến đi
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] tracking-[0.2em] uppercase text-[#B85D43] font-semibold flex items-center gap-1.5">
+                                <Compass className="w-3.5 h-3.5" />
+                                <span>HÀNH TRÌNH ĐÀ NẴNG</span>
+                              </span>
+                              <span className="text-[11px] text-[#7A6F68] font-medium">
+                                {placedCharms.length}/6 charm trên túi
+                              </span>
+                            </div>
+                            <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-1">
+                              Phối charm theo chuyến đi của bạn
                             </h2>
-                            <p className="text-xs text-[#7A6F68] mt-0.5">
-                              Chọn bộ phối nhanh có sẵn hoặc làm trắc nghiệm ngắn 3 câu để Nét gợi ý.
+                            <p className="text-xs text-[#7A6F68] mt-1 leading-relaxed">
+                              Chọn địa điểm bạn yêu thích và những kỷ niệm hoặc cảm xúc muốn lưu giữ. Các charm tương ứng sẽ tự động gắn lên chiếc túi Nét của bạn.
                             </p>
                           </div>
 
-                          {/* 3 Signature Presets */}
+                          {/* CÂU HỎI 1: ĐỊA ĐIỂM YÊU THÍCH TẠI ĐÀ NẴNG */}
                           <div className="space-y-3">
-                            {STORY_PRESETS.map((preset) => (
-                              <div
-                                key={preset.id}
-                                className={`p-4 rounded-2xl border transition-all ${
-                                  storyPresetResult?.id === preset.id
-                                    ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/30"
-                                    : "bg-white border-[#E8E2D8] hover:border-[#D6CDBF]"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <h3 className="text-xs sm:text-sm font-semibold text-[#241B16]">
-                                    {preset.title}
-                                  </h3>
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs sm:text-sm font-semibold text-[#241B16] flex items-center gap-1.5">
+                                <span className="w-5 h-5 rounded-full bg-[#B85D43] text-white text-[11px] font-bold flex items-center justify-center">
+                                  1
+                                </span>
+                                <span>Địa điểm bạn ấn tượng & yêu thích nhất ở Đà Nẵng:</span>
+                              </label>
+                              <span className="text-[11px] text-[#7A6F68]">
+                                (Có thể chọn nhiều)
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              {DANANG_LOCATIONS.map((loc) => {
+                                const isSelected = selectedLocations.includes(loc.id);
+                                return (
                                   <button
+                                    key={loc.id}
                                     type="button"
-                                    onClick={() => {
-                                      setStoryPresetResult(preset);
-                                      const selected = READY_CHARMS.filter((c) =>
-                                        preset.charmIds.includes(c.id)
-                                      );
-                                      const xPositions = [35, 65, 50];
-                                      const yPositions = [45, 55, 65];
-                                      const newPlaced: PlacedCharm[] = selected.map((charm, i) => ({
-                                        instanceId: `story-${charm.id}-${Date.now()}-${i}`,
-                                        charmId: charm.id,
-                                        anchorId: `a-${i}`,
-                                        x: xPositions[i] || 50,
-                                        y: yPositions[i] || 50,
-                                        rotation: 0,
-                                        charm,
-                                      }));
-                                      setPlacedCharms(newPlaced);
-                                      setSelectedCharmInstanceId(newPlaced[0]?.instanceId || null);
-                                    }}
-                                    className="px-3 py-1 rounded-lg bg-[#B85D43] text-white text-[11px] font-semibold hover:bg-[#A24E36] transition-colors cursor-pointer"
+                                    onClick={() => handleToggleLocation(loc.id)}
+                                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 relative ${
+                                      isSelected
+                                        ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/30 shadow-xs"
+                                        : "bg-white border-[#E8E2D8] hover:border-[#D6CDBF] hover:bg-[#FAF7F2]/50"
+                                    }`}
                                   >
-                                    Dùng bản phối này
-                                  </button>
-                                </div>
-                                <p className="text-xs text-[#7A6F68] leading-relaxed mb-2.5">
-                                  {preset.story}
-                                </p>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {READY_CHARMS.filter((c) =>
-                                    preset.charmIds.includes(c.id)
-                                  ).map((c) => (
-                                    <span
-                                      key={c.id}
-                                      className="px-2 py-0.5 rounded-md bg-[#FAF7F2] border border-[#E8E2D8] text-[10px] text-[#5E4D43] flex items-center gap-1"
-                                    >
-                                      <span
-                                        className="w-2 h-2 rounded-full"
-                                        style={{ backgroundColor: c.color }}
-                                      />
-                                      {c.vietnameseName}
+                                    <span className="text-2xl shrink-0 p-1.5 rounded-xl bg-white border border-[#E8E2D8]">
+                                      {loc.icon}
                                     </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
+                                    <div className="flex-1 min-w-0 pr-4">
+                                      <div className="text-xs font-semibold text-[#241B16] truncate">
+                                        {loc.name}
+                                      </div>
+                                      <div className="text-[11px] text-[#7A6F68] line-clamp-1 mt-0.5">
+                                        {loc.tagline}
+                                      </div>
+                                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                        {READY_CHARMS.filter((c) =>
+                                          loc.charmIds.includes(c.id)
+                                        ).map((c) => (
+                                          <span
+                                            key={c.id}
+                                            className="px-1.5 py-0.5 rounded text-[10px] bg-white border border-[#E8E2D8] text-[#5E4D43] flex items-center gap-1"
+                                          >
+                                            <span
+                                              className="w-1.5 h-1.5 rounded-full"
+                                              style={{ backgroundColor: c.color }}
+                                            />
+                                            {c.vietnameseName}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Selection Check Indicator */}
+                                    <div
+                                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+                                        isSelected
+                                          ? "bg-[#B85D43] border-[#B85D43] text-white"
+                                          : "border-[#D6CDBF] bg-white text-transparent"
+                                      }`}
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
 
-                          {/* Quick 3-step Story Quiz for customization */}
-                          <div className="pt-2 border-t border-[#E8E2D8] space-y-3">
-                            <div className="text-xs font-semibold text-[#241B16]">
-                              Hoặc tìm bộ phối phù hợp theo cảm xúc:
+                          {/* CÂU HỎI 2: KỶ NIỆM HOẶC CẢM XÚC MUỐN LƯU GIỮ (CHỌN NHIỀU) */}
+                          <div className="space-y-3 pt-3 border-t border-[#E8E2D8]">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs sm:text-sm font-semibold text-[#241B16] flex items-center gap-1.5">
+                                <span className="w-5 h-5 rounded-full bg-[#B85D43] text-white text-[11px] font-bold flex items-center justify-center">
+                                  2
+                                </span>
+                                <span>Kỷ niệm hoặc cảm xúc bạn muốn lưu giữ:</span>
+                              </label>
+                              <span className="text-[11px] font-semibold text-[#B85D43] bg-[#B85D43]/10 px-2 py-0.5 rounded-full">
+                                ✓ Chọn được nhiều
+                              </span>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                              <div>
-                                <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
-                                  1. Đi cùng ai?
-                                </label>
-                                <select
-                                  value={storyAnswers.companion}
-                                  onChange={(e) =>
-                                    setStoryAnswers((prev) => ({
-                                      ...prev,
-                                      companion: e.target.value,
-                                    }))
-                                  }
-                                  className="w-full p-2 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs"
-                                >
-                                  <option value="family">Gia đình</option>
-                                  <option value="couple">Người thương</option>
-                                  <option value="friends">Bạn bè</option>
-                                  <option value="solo">Một mình</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
-                                  2. Điểm đến thích nhất?
-                                </label>
-                                <select
-                                  value={storyAnswers.location}
-                                  onChange={(e) =>
-                                    setStoryAnswers((prev) => ({
-                                      ...prev,
-                                      location: e.target.value,
-                                    }))
-                                  }
-                                  className="w-full p-2 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs"
-                                >
-                                  <option value="sontra">Bán đảo Sơn Trà</option>
-                                  <option value="mykhe">Bãi biển Mỹ Khê</option>
-                                  <option value="dragon_bridge">Cầu Rồng Sông Hàn</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
-                                  3. Kỷ niệm muốn giữ?
-                                </label>
-                                <select
-                                  value={storyAnswers.memory}
-                                  onChange={(e) =>
-                                    setStoryAnswers((prev) => ({
-                                      ...prev,
-                                      memory: e.target.value,
-                                    }))
-                                  }
-                                  className="w-full p-2 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs"
-                                >
-                                  <option value="peace">Bình yên thư thái</option>
-                                  <option value="bonding">Gắn kết ấm áp</option>
-                                  <option value="adventure">Khám phá năng động</option>
-                                </select>
-                              </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              {JOURNEY_EMOTIONS.map((emo) => {
+                                const isSelected = selectedEmotions.includes(emo.id);
+                                return (
+                                  <button
+                                    key={emo.id}
+                                    type="button"
+                                    onClick={() => handleToggleEmotion(emo.id)}
+                                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 relative ${
+                                      isSelected
+                                        ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/30 shadow-xs"
+                                        : "bg-white border-[#E8E2D8] hover:border-[#D6CDBF] hover:bg-[#FAF7F2]/50"
+                                    }`}
+                                  >
+                                    <span className="text-2xl shrink-0 p-1.5 rounded-xl bg-white border border-[#E8E2D8]">
+                                      {emo.icon}
+                                    </span>
+                                    <div className="flex-1 min-w-0 pr-4">
+                                      <div className="text-xs font-semibold text-[#241B16]">
+                                        {emo.label}
+                                      </div>
+                                      <div className="text-[11px] text-[#7A6F68] line-clamp-1 mt-0.5">
+                                        {emo.desc}
+                                      </div>
+                                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                        {READY_CHARMS.filter((c) =>
+                                          emo.charmIds.includes(c.id)
+                                        ).map((c) => (
+                                          <span
+                                            key={c.id}
+                                            className="px-1.5 py-0.5 rounded text-[10px] bg-white border border-[#E8E2D8] text-[#5E4D43] flex items-center gap-1"
+                                          >
+                                            <span
+                                              className="w-1.5 h-1.5 rounded-full"
+                                              style={{ backgroundColor: c.color }}
+                                            />
+                                            {c.vietnameseName}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Multi-select Checkbox */}
+                                    <div
+                                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+                                        isSelected
+                                          ? "bg-[#B85D43] border-[#B85D43] text-white"
+                                          : "border-[#D6CDBF] bg-white text-transparent"
+                                      }`}
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Dynamic bag sync feedback banner */}
+                          <div className="p-3.5 rounded-2xl bg-[#F0EDE6] border border-[#E8E2D8] flex items-center justify-between text-xs text-[#5E4D43]">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base">✨</span>
+                              <span>
+                                Đã gắn <strong>{placedCharms.length} charm</strong> lên túi tương ứng với địa điểm & cảm xúc bạn chọn.
+                              </span>
                             </div>
                             <button
                               type="button"
-                              onClick={handleRecommendStorySet}
-                              className="w-full py-2 rounded-xl bg-[#241B16] text-white text-xs font-medium hover:bg-[#42342B] transition-colors cursor-pointer"
+                              onClick={() => {
+                                setSelectedLocations(["mykhe"]);
+                                setSelectedEmotions(["peace"]);
+                                applyJournalSelectionsToBag(["mykhe"], ["peace"]);
+                              }}
+                              className="text-[11px] text-[#B85D43] hover:underline font-medium cursor-pointer"
                             >
-                              Gợi ý bộ phối ngay →
+                              Đặt lại mặc định
                             </button>
                           </div>
                         </div>
@@ -1130,9 +1296,9 @@ function NetStudioContent() {
 
                         <button
                           onClick={() => setFlowStep("review")}
-                          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-medium shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                         >
-                          <span>Thêm charm → Gửi yêu cầu</span>
+                          <span>Đặt hàng bộ phối</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -1605,6 +1771,25 @@ function NetStudioContent() {
 
                           {/* Direct Submit Form */}
                           <form onSubmit={handleSubmitDesignRequest} className="space-y-3.5">
+                            {/* Auto-fill Account status badge */}
+                            {user ? (
+                              <div className="p-3 rounded-xl bg-[#E8F3EE] border border-[#C5E1D4] flex items-center justify-between text-xs text-[#1D5E43]">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-4 h-4 rounded-full bg-[#234B3E] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+                                  <span>
+                                    Đã tự động lấy thông tin từ tài khoản: <strong>{userProfile?.displayName || user.displayName || user.email}</strong>
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-3 rounded-xl bg-[#FFF9F2] border border-[#F0DFCF] flex items-center justify-between text-xs text-[#8A532B]">
+                                <span>💡 Đăng nhập để tự động điền thông tin và tích điểm môi trường.</span>
+                                <Link href="/login" className="text-[#B85D43] font-semibold underline text-[11px]">
+                                  Đăng nhập
+                                </Link>
+                              </div>
+                            )}
+
                             <div>
                               <label className="block text-xs font-semibold text-[#241B16] mb-1">
                                 Họ và tên của bạn *
@@ -1619,39 +1804,83 @@ function NetStudioContent() {
                               />
                             </div>
 
-                            <div>
-                              <label className="block text-xs font-semibold text-[#241B16] mb-1">
-                                Số điện thoại / Zalo nhận báo giá *
-                              </label>
-                              <input
-                                type="text"
-                                required
-                                value={customerContact}
-                                onChange={(e) => setCustomerContact(e.target.value)}
-                                placeholder="Để nghệ nhân gửi bản concept 3D và bảng giá..."
-                                className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                              />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                  Số điện thoại nhận báo giá *
+                                </label>
+                                <input
+                                  type="tel"
+                                  required
+                                  value={customerPhone}
+                                  onChange={(e) => {
+                                    setCustomerPhone(e.target.value);
+                                    setCustomerContact(e.target.value);
+                                  }}
+                                  placeholder="0912345678"
+                                  className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                  Email nhận phản hồi
+                                </label>
+                                <input
+                                  type="email"
+                                  value={customerEmail}
+                                  onChange={(e) => setCustomerEmail(e.target.value)}
+                                  placeholder="email@example.com"
+                                  className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                  Ngày sinh
+                                </label>
+                                <input
+                                  type="date"
+                                  value={customerDob}
+                                  onChange={(e) => setCustomerDob(e.target.value)}
+                                  className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                                  Cách nhận hàng dự kiến
+                                </label>
+                                <select
+                                  value={deliveryMethod}
+                                  onChange={(e) => setDeliveryMethod(e.target.value as any)}
+                                  className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                                >
+                                  <option value="partner_pickup">
+                                    Nhận tại đối tác Đà Nẵng (Khách sạn / Resort)
+                                  </option>
+                                  <option value="home_delivery">
+                                    Giao tận nơi toàn quốc
+                                  </option>
+                                  <option value="workshop_pickup">
+                                    Nhận trực tiếp tại xưởng Nét (Đà Nẵng)
+                                  </option>
+                                </select>
+                              </div>
                             </div>
 
                             <div>
                               <label className="block text-xs font-semibold text-[#241B16] mb-1">
-                                Cách nhận hàng dự kiến
+                                Địa chỉ giao nhận chi tiết *
                               </label>
-                              <select
-                                value={deliveryMethod}
-                                onChange={(e) => setDeliveryMethod(e.target.value as any)}
+                              <input
+                                type="text"
+                                required
+                                value={customerAddress}
+                                onChange={(e) => setCustomerAddress(e.target.value)}
+                                placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
                                 className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                              >
-                                <option value="partner_pickup">
-                                  Nhận tại đối tác Đà Nẵng (Khách sạn / Resort)
-                                </option>
-                                <option value="home_delivery">
-                                  Giao tận nơi toàn quốc
-                                </option>
-                                <option value="workshop_pickup">
-                                  Nhận trực tiếp tại xưởng Nét (Đà Nẵng)
-                                </option>
-                              </select>
+                              />
                             </div>
 
                             <div>
@@ -1715,11 +1944,12 @@ function NetStudioContent() {
                 <div className="bg-white rounded-3xl border border-[#E8E2D8] p-6 sm:p-8 space-y-6 shadow-xs">
                   <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-4">
                     <div>
-                      <span className="text-xs tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
-                        XEM LẠI & GỬI YÊU CẦU
+                      <span className="text-xs tracking-[0.2em] uppercase text-[#B85D43] font-semibold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>XÁC NHẬN & ĐẶT HÀNG BỘ PHỐI</span>
                       </span>
                       <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-0.5">
-                        Tổng phối mẫu
+                        Đặt hàng bộ phối
                       </h2>
                     </div>
 
@@ -1736,14 +1966,39 @@ function NetStudioContent() {
                   </div>
 
                   <p className="text-xs text-[#7A6F68]">
-                    Chưa gồm giao hàng. Charm riêng được báo giá sau khi kiểm tra.
+                    Chưa gồm phí giao hàng. Charm riêng sẽ được xưởng phản hồi báo giá sau khi kiểm tra.
                   </p>
+
+                  {/* Auto-fill Account status badge */}
+                  {user ? (
+                    <div className="p-3.5 rounded-2xl bg-[#E8F3EE] border border-[#C5E1D4] flex items-center justify-between text-xs text-[#1D5E43]">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#234B3E] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+                        <span>
+                          Đã tự động lấy thông tin từ tài khoản: <strong>{userProfile?.displayName || user.displayName || user.email}</strong>
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[#234B3E]/80 hidden sm:inline">Có thể chỉnh sửa bên dưới</span>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-[#FFF9F2] border border-[#F0DFCF] flex items-center justify-between text-xs text-[#8A532B]">
+                      <div className="flex items-center gap-2">
+                        <span>💡</span>
+                        <span>
+                          Bạn có thể đăng nhập để tự động điền thông tin và tích điểm bảo vệ môi trường.
+                        </span>
+                      </div>
+                      <Link href="/login" className="text-[#B85D43] font-semibold underline text-[11px]">
+                        Đăng nhập
+                      </Link>
+                    </div>
+                  )}
 
                   {/* Form */}
                   <form onSubmit={handleSubmitDesignRequest} className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-[#241B16] mb-1">
-                        Tên của bạn *
+                        Họ và tên của bạn *
                       </label>
                       <input
                         type="text"
@@ -1755,39 +2010,83 @@ function NetStudioContent() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-[#241B16] mb-1">
-                        Email hoặc số điện thoại *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={customerContact}
-                        onChange={(e) => setCustomerContact(e.target.value)}
-                        placeholder="Để nhóm thiết kế gửi concept và báo giá..."
-                        className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                          Số điện thoại nhận hàng *
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          value={customerPhone}
+                          onChange={(e) => {
+                            setCustomerPhone(e.target.value);
+                            setCustomerContact(e.target.value);
+                          }}
+                          placeholder="Ví dụ: 0912345678"
+                          className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                          Email nhận xác nhận
+                        </label>
+                        <input
+                          type="email"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          placeholder="email@example.com"
+                          className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                          Ngày sinh
+                        </label>
+                        <input
+                          type="date"
+                          value={customerDob}
+                          onChange={(e) => setCustomerDob(e.target.value)}
+                          className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#241B16] mb-1">
+                          Cách nhận hàng
+                        </label>
+                        <select
+                          value={deliveryMethod}
+                          onChange={(e) => setDeliveryMethod(e.target.value as any)}
+                          className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                        >
+                          <option value="partner_pickup">
+                            Nhận tại đối tác – cần xác nhận lịch
+                          </option>
+                          <option value="home_delivery">
+                            Giao tận nơi toàn quốc
+                          </option>
+                          <option value="workshop_pickup">
+                            Nhận trực tiếp tại xưởng Đà Nẵng
+                          </option>
+                        </select>
+                      </div>
                     </div>
 
                     <div>
                       <label className="block text-xs font-semibold text-[#241B16] mb-1">
-                        Cách nhận hàng
+                        Địa chỉ nhận hàng chi tiết *
                       </label>
-                      <select
-                        value={deliveryMethod}
-                        onChange={(e) => setDeliveryMethod(e.target.value as any)}
+                      <input
+                        type="text"
+                        required
+                        value={customerAddress}
+                        onChange={(e) => setCustomerAddress(e.target.value)}
+                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
                         className="w-full p-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                      >
-                        <option value="partner_pickup">
-                          Nhận tại đối tác – cần xác nhận lịch
-                        </option>
-                        <option value="home_delivery">
-                          Giao tận nơi toàn quốc
-                        </option>
-                        <option value="workshop_pickup">
-                          Nhận trực tiếp tại xưởng Đà Nẵng
-                        </option>
-                      </select>
+                      />
                     </div>
 
                     {/* Partner Code if available */}
@@ -1827,7 +2126,7 @@ function NetStudioContent() {
                           className="mt-0.5 rounded text-[#B85D43] focus:ring-0"
                         />
                         <span>
-                          Tôi đồng ý lưu thông tin để nhóm xử lý yêu cầu này.
+                          Tôi đồng ý xác nhận thông tin đơn đặt hàng này để xưởng tiếp nhận sản xuất.
                         </span>
                       </label>
 
@@ -1839,7 +2138,7 @@ function NetStudioContent() {
                           className="mt-0.5 rounded text-[#B85D43] focus:ring-0"
                         />
                         <span>
-                          Cho phép hiển thị câu chuyện của tôi trên Passport.
+                          Cho phép hiển thị câu chuyện của tôi trên Story Passport.
                         </span>
                       </label>
                     </div>
@@ -1849,7 +2148,7 @@ function NetStudioContent() {
                       <button
                         type="button"
                         onClick={() => setFlowStep("design")}
-                        className="py-3.5 px-5 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2]"
+                        className="py-3.5 px-5 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
                       >
                         ← Chỉnh sửa lại
                       </button>
@@ -1857,14 +2156,14 @@ function NetStudioContent() {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="flex-1 py-3.5 px-6 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-medium shadow-xs transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-3.5 px-6 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {isSubmitting ? (
-                          <span>Đang lưu yêu cầu...</span>
+                          <span>Đang lưu đơn hàng...</span>
                         ) : (
                           <>
-                            <span>Gửi yêu cầu thiết kế</span>
-                            <ArrowUpRight className="w-4 h-4" />
+                            <span>Xác nhận đặt hàng bộ phối</span>
+                            <ArrowRight className="w-4 h-4" />
                           </>
                         )}
                       </button>

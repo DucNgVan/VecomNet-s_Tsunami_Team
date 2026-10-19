@@ -10,6 +10,7 @@ interface CustomCharmVisual {
   color: string;
   engravedText?: string;
   referenceImageUrl?: string;
+  svgCode?: string;
 }
 
 interface NetBag2DCanvasProps {
@@ -271,7 +272,12 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                       isSelected ? "ring-2 ring-[#B85D43] ring-offset-2" : ""
                     }`}
                   >
-                    {isCustom && customCharmVisual?.referenceImageUrl ? (
+                    {isCustom && customCharmVisual?.svgCode ? (
+                      <div
+                        className="w-full h-full p-1.5 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                        dangerouslySetInnerHTML={{ __html: customCharmVisual.svgCode }}
+                      />
+                    ) : isCustom && customCharmVisual?.referenceImageUrl ? (
                       <img
                         src={customCharmVisual.referenceImageUrl}
                         alt="Custom Sketch"

@@ -10,6 +10,7 @@ import {
   TrackingEvent,
 } from "@/lib/designRequestStorage";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
+import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
 // (Icon-free layout as requested)
 
 export const AdminDesignRequestsTab: React.FC = () => {
@@ -358,18 +359,80 @@ export const AdminDesignRequestsTab: React.FC = () => {
                   </div>
 
                   {selectedReq.hasCustomCharm && selectedReq.customCharm && (
-                    <div className="p-2.5 rounded-lg bg-purple-950/40 border border-purple-800/60 space-y-1">
-                      <span className="text-purple-300 font-semibold block">
-                        Yêu cầu charm riêng từ khách:
-                      </span>
-                      <p className="text-white italic">
+                    <div className="p-3 rounded-lg bg-purple-950/40 border border-purple-800/60 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-purple-300 font-semibold block text-xs">
+                          Yêu cầu charm AI riêng từ khách:
+                        </span>
+                        {selectedReq.customCharm.motifName && (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-900 text-purple-200 border border-purple-700 font-medium">
+                            {selectedReq.customCharm.motifName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-white italic text-xs">
                         "{selectedReq.customCharm.idea}"
                       </p>
+                      {selectedReq.customCharm.story && (
+                        <p className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded border border-purple-900/50">
+                          {selectedReq.customCharm.story}
+                        </p>
+                      )}
                       <div className="text-[10px] text-purple-200 flex flex-wrap gap-2 pt-1">
                         <span>Hình dáng: {selectedReq.customCharm.shape}</span>
                         <span>Khắc: {selectedReq.customCharm.engravedText || "Không"}</span>
                         <span>Cỡ: {selectedReq.customCharm.size}</span>
+                        {selectedReq.customCharm.pinSpecs && (
+                          <span className="text-amber-300">
+                            Ngàm chốt: Ø{selectedReq.customCharm.pinSpecs.diameterMm}mm × {selectedReq.customCharm.pinSpecs.heightMm}mm ({selectedReq.customCharm.pinSpecs.type})
+                          </span>
+                        )}
                       </div>
+
+                      {/* AI SVG Graphic Preview & 3D STL Download */}
+                      {selectedReq.customCharm.svgCode && (
+                        <div className="pt-2 border-t border-purple-800/40">
+                          <span className="text-[10px] text-slate-400 block mb-1">
+                            Bản vẽ Vector 2D (Gemini AI sinh ra):
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-16 h-16 bg-white rounded-lg p-1.5 shadow flex items-center justify-center border border-purple-400 shrink-0"
+                              dangerouslySetInnerHTML={{ __html: selectedReq.customCharm.svgCode }}
+                            />
+                            <div className="space-y-1.5 flex-1">
+                              <p className="text-[10px] text-slate-300 leading-tight">
+                                Đã tích hợp sẵn ngàm chốt cài bấm mặt sau chuẩn mắt lưới túi Nét (Ø4.5mm).
+                              </p>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    if (selectedReq.customCharm?.stlData) {
+                                      triggerSTLDownload(
+                                        selectedReq.customCharm.stlData,
+                                        `charm-${selectedReq.customCharm.motifName || selectedReq.id}.stl`
+                                      );
+                                    } else if (selectedReq.customCharm?.svgCode) {
+                                      const stl = generateCharmSTLFromSVG(selectedReq.customCharm.svgCode);
+                                      triggerSTLDownload(
+                                        stl.stlString,
+                                        `charm-${selectedReq.customCharm.motifName || selectedReq.id}.stl`
+                                      );
+                                    }
+                                  } catch (err) {
+                                    alert("Lỗi xuất file STL: " + (err instanceof Error ? err.message : String(err)));
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow transition-colors"
+                              >
+                                <span>📥 Tải file in 3D (.STL) cho Slicer</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {selectedReq.customCharm.referenceImageUrl && (
                         <div className="pt-2">
                           <span className="text-[10px] text-slate-400 block mb-1">Ảnh khách tải lên:</span>

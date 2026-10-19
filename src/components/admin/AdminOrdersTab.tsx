@@ -13,6 +13,7 @@ import {
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { formatVND } from "@/lib/utils";
 import { deductInventoryForCustomOrder } from "@/lib/inventoryStorage";
+import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
 
 interface AdminOrdersTabProps {
   orders: Order[];
@@ -1486,18 +1487,83 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
 
                 {/* Custom Charm Spec (If Tab 3 was used) */}
                 {selectedStudioReq.hasCustomCharm && selectedStudioReq.customCharm && (
-                  <div className="p-3.5 rounded-2xl bg-[#FCF9F6] border border-[#E4D1C3] space-y-2">
-                    <div className="text-[#B85D43] font-semibold">
-                      Yêu Cầu Chế Tác Charm Riêng:
+                  <div className="p-4 rounded-2xl bg-[#FCF9F6] border border-[#E4D1C3] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[#B85D43] font-semibold text-xs">
+                        Yêu Cầu Chế Tác Charm Riêng (Gemini AI):
+                      </div>
+                      {selectedStudioReq.customCharm.motifName && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#B85D43]/10 text-[#B85D43] border border-[#B85D43]/30 font-medium">
+                          {selectedStudioReq.customCharm.motifName}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-[#241B16] italic text-xs bg-white p-2 rounded-xl border border-[#E8E2D8]">
+
+                    <p className="text-[#241B16] italic text-xs bg-white p-2.5 rounded-xl border border-[#E8E2D8]">
                       "{selectedStudioReq.customCharm.idea}"
                     </p>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] text-[#5E4D43]">
+
+                    {selectedStudioReq.customCharm.story && (
+                      <p className="text-[11px] text-[#5E4D43] bg-white/70 p-2 rounded-xl border border-[#E8E2D8]/60">
+                        {selectedStudioReq.customCharm.story}
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-[#5E4D43]">
                       <div>Hình dáng: <strong>{selectedStudioReq.customCharm.shape}</strong></div>
                       <div>Khắc laser: <strong>{selectedStudioReq.customCharm.engravedText || "Không"}</strong></div>
                       <div>Kích cỡ: <strong>{selectedStudioReq.customCharm.size}</strong></div>
+                      {selectedStudioReq.customCharm.pinSpecs && (
+                        <div className="col-span-2 text-[#B85D43]">
+                          Ngàm chốt: <strong>Ø{selectedStudioReq.customCharm.pinSpecs.diameterMm}mm × {selectedStudioReq.customCharm.pinSpecs.heightMm}mm ({selectedStudioReq.customCharm.pinSpecs.type})</strong>
+                        </div>
+                      )}
                     </div>
+
+                    {/* AI SVG Graphic & 3D STL Download */}
+                    {selectedStudioReq.customCharm.svgCode && (
+                      <div className="pt-2 border-t border-[#E4D1C3]">
+                        <span className="text-[11px] font-medium text-[#241B16] block mb-1.5">
+                          Bản vẽ Vector 2D & File In 3D:
+                        </span>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-16 h-16 bg-white rounded-xl p-1.5 shadow-sm flex items-center justify-center border border-[#E8E2D8] shrink-0"
+                            dangerouslySetInnerHTML={{ __html: selectedStudioReq.customCharm.svgCode }}
+                          />
+                          <div className="space-y-1.5 flex-1">
+                            <p className="text-[10px] text-[#5E4D43] leading-tight">
+                              Đã tích hợp sẵn ngàm chốt cài bấm mặt sau chuẩn mắt lưới túi Nét (Ø4.5mm).
+                            </p>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  if (selectedStudioReq.customCharm?.stlData) {
+                                    triggerSTLDownload(
+                                      selectedStudioReq.customCharm.stlData,
+                                      `charm-${selectedStudioReq.customCharm.motifName || selectedStudioReq.id}.stl`
+                                    );
+                                  } else if (selectedStudioReq.customCharm?.svgCode) {
+                                    const stl = generateCharmSTLFromSVG(selectedStudioReq.customCharm.svgCode);
+                                    triggerSTLDownload(
+                                      stl.stlString,
+                                      `charm-${selectedStudioReq.customCharm.motifName || selectedStudioReq.id}.stl`
+                                    );
+                                  }
+                                } catch (err) {
+                                  alert("Lỗi xuất file STL: " + (err instanceof Error ? err.message : String(err)));
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2D5A27] hover:bg-[#23471F] text-white text-[11px] font-bold shadow-sm transition-colors"
+                            >
+                              <span>📥 Tải file in 3D (.STL)</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {selectedStudioReq.customCharm.referenceImageUrl && (
                       <div className="pt-2">
                         <span className="text-[10px] text-[#8F8177] block mb-1">Ảnh khách tải lên:</span>

@@ -31,6 +31,7 @@ import {
   MessageSquare,
   Sliders,
   Eye,
+  Download,
 } from "lucide-react";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
@@ -42,6 +43,7 @@ import {
   DesignRequest,
 } from "@/lib/designRequestStorage";
 import { useAuth } from "@/context/AuthContext";
+import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
 
 // 6 Đà Nẵng signature charms
 const READY_CHARMS: Charm[] = [
@@ -316,6 +318,10 @@ function NetStudioContent() {
   const [customSize, setCustomSize] = useState<"small" | "medium" | "large">("medium");
   const [customText, setCustomText] = useState("");
   const [hasAppliedCustomToBag, setHasAppliedCustomToBag] = useState(false);
+  const [generatedSvgCode, setGeneratedSvgCode] = useState<string | null>(null);
+  const [generatedStlData, setGeneratedStlData] = useState<string | null>(null);
+  const [motifName, setMotifName] = useState<string | null>(null);
+  const [motifStory, setMotifStory] = useState<string | null>(null);
 
   // Customer Form State - Tự động điền từ thông tin tài khoản người dùng
   const [customerName, setCustomerName] = useState("");
@@ -471,8 +477,8 @@ function NetStudioContent() {
     });
   };
 
-  // Handle Chat Message submission to Nét AI Stylist
-  const handleSendChatMessage = (textToSend?: string) => {
+  // Handle Chat Message submission to Nét AI Stylist (Google Gemini 2.5 API)
+  const handleSendChatMessage = async (textToSend?: string) => {
     const message = (textToSend !== undefined ? textToSend : chatInputText).trim();
     if (!message && !customImageFile && !uploadedDocName) return;
 
@@ -495,72 +501,126 @@ function NetStudioContent() {
       },
     ]);
 
-    setCustomIdea(message || customIdea || "Bản phác thảo charm độc bản");
+    setCustomIdea(message || customIdea || "Charm độc bản");
     setChatInputText("");
     setIsAiThinking(true);
 
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/ai/charm-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: message || customIdea,
+          imageBase64: customImageFile || undefined,
+          history: chatMessages.slice(-4),
+          customText: customText || undefined,
+        }),
+      });
+
+      const resData = await response.json();
       setIsAiThinking(false);
+
+      if (resData.success && resData.data) {
+        const d = resData.data;
+        const color = d.recommendedColor || "#234B3E";
+        const svg = d.svgCode || null;
+        const motif = d.motifName || "Charm Độc Bản";
+        const story = d.story || "";
+        const laser = d.laserEngravingText || customText;
+
+        setCustomColor(color);
+        setCustomText(laser);
+        setGeneratedSvgCode(svg);
+        setMotifName(motif);
+        setMotifStory(story);
+
+        // Pre-generate STL if SVG is available in browser
+        if (svg && typeof window !== "undefined") {
+          try {
+            const stlRes = generateCharmSTLFromSVG(svg, { depthMm: 3.0 });
+            setGeneratedStlData(stlRes.stlString);
+          } catch (stlErr) {
+            console.warn("Could not pre-generate STL:", stlErr);
+          }
+        }
+
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            sender: "ai",
+            text: d.replyText,
+            time: new Date().toLocaleTimeString("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            analysis: {
+              motif,
+              material: "Nhựa lưới đại dương tái sinh ép nhiệt / Ngàm chốt cài mắt lưới túi Nét",
+              colors: color,
+              laserIdea: laser,
+            },
+          },
+        ]);
+      } else {
+        throw new Error(resData.error || "Không nhận được phản hồi từ AI");
+      }
+    } catch (err: any) {
+      setIsAiThinking(false);
+      console.warn("AI Chat API fallback:", err);
+
+      // Graceful fallback logic
       const lower = (message + " " + (uploadedDocName || "")).toLowerCase();
-      const isOcean = lower.includes("biển") || lower.includes("sóng") || lower.includes("ốc") || lower.includes("sò") || lower.includes("mỹ khê");
-      const isSonTra = lower.includes("sơn trà") || lower.includes("voọc") || lower.includes("rừng") || lower.includes("lá");
-      const isDragon = lower.includes("rồng") || lower.includes("cầu") || lower.includes("lửa") || lower.includes("vàng");
+      const isOcean = lower.includes("biển") || lower.includes("sóng") || lower.includes("mỹ khê");
+      const isSonTra = lower.includes("sơn trà") || lower.includes("voọc");
+      const isDragon = lower.includes("rồng") || lower.includes("cầu");
 
       let shape: "circle" | "square" | "teardrop" | "heart" | "freeform" = "square";
       let color = "#C2674F";
       let motif = "Dấu ấn duyên hải Đà Nẵng kết hợp ký ức cá nhân";
-      let material = "Phôi nhựa lưới tái sinh ép nhiệt nung men mờ, viền đồng thau xước";
       let laserText = customText || "NÉT ĐN";
 
       if (isOcean) {
         shape = "teardrop";
         color = "#2563EB";
-        motif = "Vạt sóng biển Mỹ Khê kết hợp vỏ ốc men gốm và vệt nắng mai duyên hải";
-        material = "Nhựa lưới đánh cá ép men lam bóng chống trầy xước, khuyên đồng thau";
+        motif = "Vạt sóng biển Mỹ Khê & vỏ ốc men gốm";
         laserText = customText || "MỸ KHÊ";
       } else if (isSonTra) {
         shape = "circle";
         color = "#234B3E";
-        motif = "Tán rừng nguyên sinh bán đảo Sơn Trà và linh trưởng bình yên";
-        material = "Hợp kim kẽm tái chế tráng men xanh rêu nung nhiệt độ cao";
+        motif = "Tán rừng nguyên sinh Sơn Trà & linh trưởng bình yên";
         laserText = customText || "SƠN TRÀ";
       } else if (isDragon) {
         shape = "freeform";
         color = "#D97706";
-        motif = "Vảy rồng vươn mình ra biển lớn bên nhịp cầu sông Hàn rực rỡ";
-        material = "Đồng thau nguyên bản kết hợp vụn xà cừ rác biển nung khảm";
+        motif = "Vảy rồng vươn mình sông Hàn rực rỡ";
         laserText = customText || "CẦU RỒNG";
-      } else if (lower.includes("yêu") || lower.includes("tình") || lower.includes("nhau")) {
-        shape = "heart";
-        color = "#BE185D";
-        motif = "Kỷ niệm tình yêu ngọt ngào ghi dấu giữa hai tâm hồn bên biển Đà Nẵng";
-        material = "Đồng nung men gốm hồng kết hợp hạt vi nhựa tái sinh tạo vân đá tự nhiên";
-        laserText = customText || "LOVE";
       }
 
       setCustomShape(shape);
       setCustomColor(color);
       if (!customText) setCustomText(laserText);
+      setMotifName(motif);
 
       setChatMessages((prev) => [
         ...prev,
         {
           id: `ai-${Date.now()}`,
           sender: "ai",
-          text: `Ý tưởng rất độc đáo và giàu cảm xúc! Nét AI đã phân tích cấu hình phác thảo cho charm của bạn:`,
+          text: `Ý tưởng "${message || "Charm độc bản"}" rất giàu cảm xúc! Nét AI Stylist đã cấu hình bản phác thảo chuẩn in 3D với ngàm chốt cài mắt lưới túi xách cho bạn.`,
           time: new Date().toLocaleTimeString("vi-VN", {
             hour: "2-digit",
             minute: "2-digit",
           }),
           analysis: {
             motif,
-            material,
-            colors: color === "#2563EB" ? "Xanh biển sâu (#2563EB)" : color === "#234B3E" ? "Xanh ngọc lưới (#234B3E)" : color === "#D97706" ? "Vàng đồng thau (#D97706)" : color === "#BE185D" ? "Men gốm hồng (#BE185D)" : "Đất nung ấm áp (#C2674F)",
+            material: "Nhựa lưới biển tái sinh ép nhiệt / Ngàm chốt cài mắt lưới túi Nét",
+            colors: color,
             laserIdea: laserText,
           },
         },
       ]);
-    }, 600);
+    }
   };
 
   // Custom Charm Image / Doc upload
@@ -691,6 +751,15 @@ function NetStudioContent() {
             size: customSize,
             engravedText: customText.trim() || undefined,
             referenceImageUrl: customImageFile || undefined,
+            svgCode: generatedSvgCode || undefined,
+            stlData: generatedStlData || undefined,
+            motifName: motifName || undefined,
+            story: motifStory || undefined,
+            pinSpecs: {
+              diameterMm: 4.5,
+              heightMm: 4.0,
+              type: "snap_mount_grid",
+            },
           }
         : undefined,
       baseTotal: totalPriceNumber,
@@ -847,6 +916,7 @@ function NetStudioContent() {
                           color: customColor,
                           engravedText: customText,
                           referenceImageUrl: customImageFile || undefined,
+                          svgCode: generatedSvgCode || undefined,
                         }
                       : null
                   }
@@ -1574,7 +1644,7 @@ function NetStudioContent() {
                                   <div className="sm:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-[#E8E2D8] shadow-2xs">
                                     <div
                                       style={{ backgroundColor: customColor }}
-                                      className={`w-20 h-20 ${
+                                      className={`w-24 h-24 ${
                                         customShape === "circle"
                                           ? "rounded-full"
                                           : customShape === "teardrop"
@@ -1586,7 +1656,12 @@ function NetStudioContent() {
                                           : "rounded-2xl"
                                       } flex flex-col items-center justify-center text-white shadow-md border-2 border-white relative overflow-hidden transition-all`}
                                     >
-                                      {customImageFile ? (
+                                      {generatedSvgCode ? (
+                                        <div
+                                          className="w-full h-full p-2 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                                          dangerouslySetInnerHTML={{ __html: generatedSvgCode }}
+                                        />
+                                      ) : customImageFile ? (
                                         <img
                                           src={customImageFile}
                                           alt="Custom Reference"
@@ -1597,34 +1672,58 @@ function NetStudioContent() {
                                           {customText ? customText.slice(0, 2).toUpperCase() : "★"}
                                         </span>
                                       )}
-                                      {customText && (
+                                      {customText && !generatedSvgCode && (
                                         <span className="text-[9px] font-mono tracking-tight text-white/95 mt-1 truncate max-w-[64px] bg-black/40 px-1.5 rounded">
                                           {customText}
                                         </span>
                                       )}
                                     </div>
                                     <span className="text-[10px] text-[#7A6F68] mt-2 font-mono">
-                                      Quy chuẩn: 3.5cm x 3.5cm
+                                      Quy chuẩn: 4.5cm x 4.5cm
                                     </span>
                                   </div>
 
                                   <div className="sm:col-span-7 space-y-1.5 text-xs text-[#5E4D43]">
                                     <div>
+                                      <strong className="text-[#241B16]">Biểu tượng:</strong>{" "}
+                                      {motifName || (customIdea ? `"${customIdea}"` : "Charm độc bản")}
+                                    </div>
+                                    <div>
                                       <strong className="text-[#241B16]">Vật liệu:</strong>{" "}
                                       Nhựa lưới biển tái sinh ép nhiệt nung men mờ
                                     </div>
                                     <div>
-                                      <strong className="text-[#241B16]">Độ dày:</strong> 3.5 mm (chuẩn móc khuyên túi)
+                                      <strong className="text-[#241B16]">Độ dày:</strong> 3.0 mm (chuẩn in 3D FDM/Resin)
                                     </div>
                                     <div>
-                                      <strong className="text-[#241B16]">Khuyên treo:</strong> Đồng thau uốn nhiệt chống gỉ
+                                      <strong className="text-[#241B16]">Cơ cấu cài túi:</strong>{" "}
+                                      <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                        Ngàm chốt cài mắt lưới (D=4.5mm, H=4.0mm)
+                                      </span>
                                     </div>
                                     <div>
                                       <strong className="text-[#241B16]">Khắc laser:</strong>{" "}
-                                      {customText ? `"${customText}"` : "Theo thông điệp riêng"}
+                                      {customText ? `"${customText}"` : "Theo yêu cầu"}
                                     </div>
-                                    <div className="text-[11px] text-[#A89F91] pt-1">
-                                      * Bạn có thể kéo charm trên chiếc túi bên trái để đổi vị trí trực tiếp!
+
+                                    <div className="pt-2 flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const svgToUse = generatedSvgCode || `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="15" width="70" height="70" rx="16" fill="${customColor}"/><text x="50" y="58" font-size="28" font-family="serif" font-weight="bold" fill="#ffffff" text-anchor="middle">${customText ? customText.slice(0, 4) : "NÉT"}</text></svg>`;
+                                          try {
+                                            const res = generateCharmSTLFromSVG(svgToUse, { depthMm: 3.0 });
+                                            setGeneratedStlData(res.stlString);
+                                            triggerSTLDownload(res.stlString, `charm-${(motifName || "net-bag-charm").toLowerCase().replace(/\s+/g, "-")}.stl`);
+                                          } catch (e: any) {
+                                            alert("Lỗi khi tạo file in 3D: " + e.message);
+                                          }
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl bg-[#241B16] hover:bg-[#42342B] text-white text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                        <span>Tải file in 3D (.STL)</span>
+                                      </button>
                                     </div>
                                   </div>
                                 </div>

@@ -30,6 +30,15 @@ export interface CustomCharmSpec {
   color: string;
   size: "small" | "medium" | "large";
   engravedText?: string;
+  svgCode?: string;          // Mã vector SVG từ Gemini AI
+  stlData?: string;          // Chuỗi dữ liệu file 3D (.STL)
+  motifName?: string;        // Tên biểu tượng (Ví dụ: Rùa Biển Sơn Trà)
+  story?: string;            // Ý nghĩa câu chuyện văn hóa / đại dương
+  pinSpecs?: {
+    diameterMm: number;
+    heightMm: number;
+    type: string;
+  };
 }
 
 export interface DesignRequest {

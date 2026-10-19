@@ -1,41 +1,26 @@
 "use client";
 
-import React, { useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { getAllBatches } from "@/lib/netSourceStorage";
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { StoryPassportView } from "@/components/passport/StoryPassportView";
 
-function PassportIndexContent() {
-  const router = useRouter();
+function PassportContent() {
   const searchParams = useSearchParams();
-  const batchParam = searchParams.get("batch");
+  const codeParam = searchParams.get("code") || searchParams.get("batch") || "DEMO-DN-001";
 
-  useEffect(() => {
-    if (batchParam) {
-      router.replace(`/passport/${encodeURIComponent(batchParam)}`);
-    } else {
-      const batches = getAllBatches();
-      const defaultId = batches[0]?.batchId || "NET-VN-DN-2024-082";
-      router.replace(`/passport/${encodeURIComponent(defaultId)}`);
-    }
-  }, [batchParam, router]);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-50 to-slate-50 text-slate-700">
-      Đang chuyển tiếp tới NÉT Story Passport...
-    </div>
-  );
+  return <StoryPassportView passportCode={codeParam} />;
 }
 
-export default function PassportIndexPage() {
+export default function PassportPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-50 to-slate-50 text-slate-700">
-          Đang nạp Thẻ Căn Cước NÉT...
+        <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] text-[#7A6F68]">
+          Đang nạp Story Passport...
         </div>
       }
     >
-      <PassportIndexContent />
+      <PassportContent />
     </Suspense>
   );
 }

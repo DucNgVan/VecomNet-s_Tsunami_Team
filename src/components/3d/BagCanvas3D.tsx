@@ -25,6 +25,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
     {
       bagBase,
       selectedColor,
+      placedCharms,
       className = "",
       isInteractive = true,
       modelUrl = "/assets/models/tuixach.glb",
@@ -36,16 +37,22 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
     const sceneRef = useRef<THREE.Scene | null>(null);
     const bagGroupRef = useRef<THREE.Group | null>(null);
     const modelContainerRef = useRef<THREE.Group | null>(null);
+    const charmsContainerRef = useRef<THREE.Group | null>(null);
     const underGlowRef = useRef<THREE.PointLight | null>(null);
 
     const [isLoadingModel, setIsLoadingModel] = useState<boolean>(true);
     const [isGlbActive, setIsGlbActive] = useState<boolean>(false);
+    const [hasWebGlError, setHasWebGlError] = useState<boolean>(false);
 
     // Expose imperative methods to parent
     useImperativeHandle(ref, () => ({
       captureSnapshot: () => {
         if (!rendererRef.current || !sceneRef.current) return null;
-        return rendererRef.current.domElement.toDataURL("image/png");
+        try {
+          return rendererRef.current.domElement.toDataURL("image/png");
+        } catch {
+          return null;
+        }
       },
       resetView: () => {
         if (bagGroupRef.current) {
@@ -62,6 +69,21 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       const width = container.clientWidth || 500;
       const height = container.clientHeight || 500;
 
+      // Check WebGL availability safely
+      let renderer: THREE.WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          preserveDrawingBuffer: true,
+        });
+      } catch (err) {
+        console.warn("WebGL not supported or failed to initialize:", err);
+        setHasWebGlError(true);
+        setIsLoadingModel(false);
+        return;
+      }
+
       // 1. Scene & Camera setup
       const scene = new THREE.Scene();
       sceneRef.current = scene;
@@ -69,12 +91,6 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
       camera.position.set(0, 0.2, 7.2);
 
-      // 2. High-Performance WebGL Renderer with Alpha & ACES Tone Mapping
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true,
-        preserveDrawingBuffer: true,
-      });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -122,6 +138,10 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       const modelContainer = new THREE.Group();
       modelContainerRef.current = modelContainer;
       bagRoot.add(modelContainer);
+
+      const charmsContainer = new THREE.Group();
+      charmsContainerRef.current = charmsContainer;
+      bagRoot.add(charmsContainer);
 
       // Helper: Build procedural fallback mesh for bag
       const buildProceduralFallback = () => {
@@ -379,16 +399,109 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       }
     }, [selectedColor]);
 
+    // Dynamic 3D Charms Placement on Bag
+    useEffect(() => {
+      const container = charmsContainerRef.current;
+      if (!container) return;
+      container.clear();
+
+      if (!placedCharms || placedCharms.length === 0) return;
+
+      let isCurrent = true;
+      const loader = new GLTFLoader();
+      const charmUrl = "/assets/models/caurongcharm.glb";
+
+      loader.load(
+        charmUrl,
+        (gltf) => {
+          if (!isCurrent) return;
+          container.clear();
+          const baseScene = gltf.scene;
+
+          placedCharms.forEach((placed, idx) => {
+            const charmInstance = baseScene.clone(true);
+            const box = new THREE.Box3().setFromObject(charmInstance);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            charmInstance.position.x = -center.x;
+            charmInstance.position.y = -center.y;
+            charmInstance.position.z = -center.z;
+
+            const wrapper = new THREE.Group();
+            wrapper.add(charmInstance);
+
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const targetDim = 0.52;
+            const scale = maxDim > 0 ? targetDim / maxDim : 1;
+            wrapper.scale.setScalar(scale);
+
+            // Enhance charm materials with metalness and color
+            charmInstance.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) {
+                const m = child as THREE.Mesh;
+                m.castShadow = true;
+                if (m.material) {
+                  const origMat = m.material as THREE.MeshStandardMaterial;
+                  const clonedMat = origMat.clone();
+                  if (placed.charm.color) {
+                    try {
+                      clonedMat.color = new THREE.Color(placed.charm.color);
+                      clonedMat.metalness = 0.8;
+                      clonedMat.roughness = 0.25;
+                    } catch {}
+                  }
+                  m.material = clonedMat;
+                }
+              }
+            });
+
+            // Map 2D percentage coordinates to 3D surface space
+            const posX = ((placed.x - 50) / 50) * 1.15;
+            const posY = -((placed.y - 50) / 50) * 1.25 - 0.15;
+            const posZ = 0.82; // Front surface of tote
+
+            wrapper.position.set(posX, posY, posZ);
+            wrapper.rotation.z = (placed.rotation || 0) * (Math.PI / 180) + ((idx % 2 === 0 ? 1 : -1) * 0.05);
+            container.add(wrapper);
+          });
+        },
+        undefined,
+        (err) => {
+          console.warn("Failed to load 3D charm for bag:", err);
+        }
+      );
+
+      return () => {
+        isCurrent = false;
+      };
+    }, [placedCharms]);
+
     return (
       <div className={`relative w-full h-full min-h-[420px] select-none ${className}`}>
         <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
+        {/* WebGL Fallback Message */}
+        {hasWebGlError && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center bg-[#FAF7F2]/90 backdrop-blur-sm">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
+              <span className="text-xl">🎨</span>
+            </div>
+            <p className="text-sm font-semibold text-[#2D231E]">
+              Chế độ phối 2D tiêu chuẩn đang kích hoạt
+            </p>
+            <p className="text-xs text-[#7A6F68] mt-1 max-w-xs">
+              Trình duyệt của bạn đang dùng bản vẽ 2D trực quan. Bạn vẫn có thể chọn charm, kéo vị trí và gửi yêu cầu thiết kế bình thường.
+            </p>
+          </div>
+        )}
+
         {/* Loading Spinner */}
-        {isLoadingModel && (
+        {isLoadingModel && !hasWebGlError && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm pointer-events-none transition-opacity duration-300">
-            <Loader2 className="w-7 h-7 text-sky-600 animate-spin mb-2" />
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Đang Tải Túi Mẫu 3D...
+            <Loader2 className="w-7 h-7 text-[#B85D43] animate-spin mb-2" />
+            <span className="text-xs font-bold text-[#5E4D43] uppercase tracking-wider">
+              Đang Nạp Mô Hình 3D...
             </span>
           </div>
         )}

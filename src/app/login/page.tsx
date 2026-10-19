@@ -6,8 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/ToastNotification";
-import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassBadge } from "@/components/ui/GlassBadge";
 import {
   Mail,
   Lock,
@@ -24,10 +22,11 @@ import {
   ArrowRight,
   Hash,
   Sparkles,
+  ArrowLeft,
+  X,
 } from "lucide-react";
-import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
-import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 import { UserAvatar } from "@/components/common/UserAvatar";
+import { UnifiedMemberProfile } from "@/components/profile/UnifiedMemberProfile";
 
 function LoginContent() {
   const router = useRouter();
@@ -109,13 +108,11 @@ function LoginContent() {
       return;
     }
 
-    // Generate 6-digit OTP code
     const generated = Math.floor(100000 + Math.random() * 900000).toString();
     setOtpCode(generated);
     setOtpSent(true);
     setCountdown(60);
 
-    // Simulate SMS notification
     showToast("[MÃ XÁC THỰC OTP]", `Mã OTP của bạn là ${generated} (hiệu lực 5 phút)`, "info", 8000);
   };
 
@@ -284,273 +281,42 @@ function LoginContent() {
     }
   };
 
-  // Logged-in Member Dashboard
+  // -----------------------------------------------------------------
+  // VIEW 1: Logged-in Member Portal (Unified Experience)
+  // -----------------------------------------------------------------
   if (user) {
-    const isProfileIncomplete = !userProfile?.phoneVerified || !userProfile?.address;
-
-    return (
-      <div className="relative min-h-screen overflow-hidden">
-        <OceanBackdrop bubbleCount={24} causticsOpacity={0.35} />
-        <div className="min-h-[85vh] flex items-center justify-center px-4 py-24 sm:py-28 relative z-10">
-          <OceanFloatingCard duration={7} distance={5}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] space-y-6"
-            >
-          {/* Header Card */}
-          <div className="text-center space-y-3">
-            <div className="relative inline-block">
-              <UserAvatar
-                src={userProfile?.photoURL || user.photoURL}
-                name={userProfile?.displayName || user.displayName}
-                size={80}
-                className="mx-auto border-2 border-sky-400 shadow-md"
-              />
-              <span className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white shadow">
-                ✓
-              </span>
-            </div>
-
-            <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-sm mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-                <span>TÀI KHOẢN THÀNH VIÊN NÉT</span>
-              </div>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b]">
-                {userProfile?.displayName || user.displayName || "Thành viên Nét"}
-              </h2>
-              <p className="text-xs text-slate-500">{user.email}</p>
-            </div>
-          </div>
-
-          {/* Missing info prompt for Google login users */}
-          {isProfileIncomplete ? (
-            <div className="p-5 rounded-2xl bg-amber-50/90 border border-amber-200 space-y-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
-                    Cần Bổ Sung Thông Tin Giao Hàng & SĐT
-                  </h4>
-                  <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                    Để có thể tiến hành đặt mua hàng và giao nhận sản phẩm, bạn vui lòng hoàn tất ngày sinh, địa chỉ, postcode và xác thực số điện thoại.
-                  </p>
-                </div>
-              </div>
-
-              <form onSubmit={handleUpdateMissingInfo} className="space-y-3 pt-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Ngày Sinh
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Mã Bưu Điện (Postcode)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={postcode}
-                      onChange={(e) => setPostcode(e.target.value)}
-                      placeholder="700000"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Địa Chỉ Giao Nhận Chi Tiết
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Số Điện Thoại
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      required
-                      disabled={phoneVerified}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0912345678"
-                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white outline-none focus:border-sky-500 disabled:bg-slate-100"
-                    />
-                    {!phoneVerified && (
-                      <button
-                        type="button"
-                        onClick={handleSendOTP}
-                        disabled={countdown > 0}
-                        className="px-3 py-2 rounded-xl bg-[#0b1e3b] text-white text-xs font-bold whitespace-nowrap cursor-pointer hover:bg-sky-950 disabled:opacity-50"
-                      >
-                        {countdown > 0 ? `${countdown}s` : "Gửi OTP"}
-                      </button>
-                    )}
-                  </div>
-
-                  {otpSent && !phoneVerified && (
-                    <div className="mt-2 p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-2">
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={enteredOtp}
-                        onChange={(e) => setEnteredOtp(e.target.value)}
-                        placeholder="Nhập mã OTP 6 số"
-                        className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold tracking-widest outline-none text-center"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleVerifyOTP}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 cursor-pointer"
-                      >
-                        Xác Nhận OTP
-                      </button>
-                    </div>
-                  )}
-
-                  {phoneVerified && (
-                    <div className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Đã xác thực số điện thoại</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-2">
-                  <GlassButton
-                    variant="primary"
-                    size="md"
-                    type="submit"
-                    disabled={isUpdatingExtra}
-                    className="w-full justify-center text-xs shadow-md"
-                  >
-                    {isUpdatingExtra ? "Đang lưu..." : "Lưu Thông Tin Để Mua Hàng"}
-                  </GlassButton>
-                </div>
-              </form>
-            </div>
-          ) : (
-            /* Verified Customer Overview */
-            <div className="space-y-3">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200/80 flex items-center justify-between text-left">
-                <div>
-                  <div className="text-[11px] uppercase tracking-wider text-emerald-800 font-bold">
-                    Hồ Sơ Mua Hàng
-                  </div>
-                  <div className="text-xs text-slate-600 mt-0.5">
-                    SĐT: <strong>{userProfile?.phone}</strong> • Đã xác thực
-                  </div>
-                  <div className="text-[11px] text-slate-500 truncate max-w-xs mt-0.5">
-                    Địa chỉ: {userProfile?.address}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs font-bold text-emerald-700">
-                    {userProfile?.ecoImpactKg || 0} kg
-                  </div>
-                  <div className="text-[10px] text-slate-400">Rác biển thu gom</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Action Links */}
-          <div className="space-y-2.5 pt-2">
-            <Link href="/profile" className="block">
-              <GlassButton
-                variant="primary"
-                size="md"
-                className="w-full justify-center text-sm shadow-md bg-gradient-to-r from-[#0b1e3b] to-teal-800 text-white font-bold"
-                icon={<Sparkles className="w-4 h-4 text-teal-300" />}
-              >
-                Vào Hồ Sơ & Thẻ Đóng Góp Môi Trường Cá Nhân
-              </GlassButton>
-            </Link>
-
-            <Link href={redirectUrl} className="block">
-              <GlassButton
-                variant="secondary"
-                size="md"
-                className="w-full justify-center text-sm shadow-sm"
-                icon={<ShoppingBag className="w-4 h-4" />}
-              >
-                Tiếp Tục Mua Sắm & Thiết Kế Túi
-              </GlassButton>
-            </Link>
-
-
-            <button
-              onClick={async () => {
-                await logout();
-                showToast("Đã đăng xuất tài khoản an toàn.", "info");
-              }}
-              className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-rose-600 hover:bg-rose-50/50 hover:border-rose-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Đăng Xuất</span>
-            </button>
-          </div>
-        </motion.div>
-          </OceanFloatingCard>
-        </div>
-      </div>
-    );
+    return <UnifiedMemberProfile />;
   }
 
-  // Guest: Login / Register Form
+  // -----------------------------------------------------------------
+  // VIEW 2: Guest Login / Register Form
+  // -----------------------------------------------------------------
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <OceanBackdrop bubbleCount={24} causticsOpacity={0.35} />
-      <div className="min-h-[90vh] flex items-center justify-center px-4 py-20 sm:py-28 relative z-10">
-        <OceanFloatingCard duration={8} distance={5}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-xl w-full bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,30,59,0.08)] relative overflow-hidden"
-          >
-        {/* Subtle Decorative Ocean Top Light */}
-        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
-
+    <div className="min-h-screen bg-[#FAF7F2] text-[#241B16] py-16 sm:py-24 px-4 flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="max-w-xl w-full bg-white border border-[#E8E2D8] rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden"
+      >
         {/* Brand Header */}
         <div className="text-center space-y-2 mb-6">
           <Link href="/" className="inline-flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-[#0b1e3b] text-white flex items-center justify-center font-black text-lg tracking-tight shadow-sm">
-              N
-            </div>
+            <span className="font-serif text-3xl font-semibold tracking-tight text-[#241B16] group-hover:text-[#B85D43] transition-colors">
+              nét
+            </span>
           </Link>
-          <div className="pt-1">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-sm mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-              <span>NÉT MEMBER PORTAL</span>
+          <div className="pt-0.5">
+            <div className="inline-block px-3 py-1 rounded-full bg-[#FAF7F2] text-[#B85D43] text-[10px] font-semibold uppercase tracking-widest border border-[#E8E2D8] mb-1">
+              CỔNG THÀNH VIÊN
             </div>
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] tracking-tight">
-            {mode === "login" ? "Chào Mừng Đến NÉT" : "Đăng Ký Thành Viên Mua Hàng"}
+          <h1 className="font-serif text-2xl sm:text-3xl font-normal text-[#241B16] tracking-tight">
+            {mode === "login" ? "Chào Mừng Đến NÉT" : "Đăng Ký Thành Viên"}
           </h1>
-          <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+          <p className="text-xs text-[#5E4D43] leading-relaxed max-w-sm mx-auto">
             {mode === "login"
-              ? "Đăng nhập để đặt hàng, quản lý đơn và nhận chứng nhận số giải cứu thềm san hô."
+              ? "Đăng nhập để theo dõi yêu cầu thiết kế, lưu bản phối và quản lý Story Passport."
               : "Hoàn tất thông tin cá nhân và xác thực số điện thoại để mua hàng & giao nhận độc bản."}
           </p>
         </div>
@@ -559,7 +325,7 @@ function LoginContent() {
         <button
           onClick={handleGoogleLogin}
           disabled={isSubmitting}
-          className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 shadow-sm hover:shadow text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-50"
+          className="w-full py-3 px-4 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#E8E2D8] shadow-xs text-[#42342B] text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -583,24 +349,24 @@ function LoginContent() {
         </button>
 
         {/* Divider */}
-        <div className="relative my-6 text-center">
+        <div className="relative my-5 text-center">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
+            <div className="w-full border-t border-[#E8E2D8]" />
           </div>
-          <span className="relative bg-white px-3 text-[11px] text-slate-400 uppercase">
+          <span className="relative bg-white px-3 text-[11px] text-[#9E9289] uppercase tracking-wider">
             hoặc email
           </span>
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 mb-5 text-xs font-bold">
+        <div className="grid grid-cols-2 p-1 rounded-2xl bg-[#F3ECE1] mb-5 text-xs font-medium">
           <button
             type="button"
             onClick={() => setMode("login")}
             className={`py-2 rounded-xl transition-all cursor-pointer ${
               mode === "login"
-                ? "bg-white text-[#0b1e3b] shadow-sm"
-                : "text-slate-500 hover:text-slate-900"
+                ? "bg-white text-[#241B16] font-semibold shadow-xs"
+                : "text-[#7A6F68] hover:text-[#241B16]"
             }`}
           >
             Đăng Nhập
@@ -610,289 +376,258 @@ function LoginContent() {
             onClick={() => setMode("register")}
             className={`py-2 rounded-xl transition-all cursor-pointer ${
               mode === "register"
-                ? "bg-white text-[#0b1e3b] shadow-sm"
-                : "text-slate-500 hover:text-slate-900"
+                ? "bg-white text-[#241B16] font-semibold shadow-xs"
+                : "text-[#7A6F68] hover:text-[#241B16]"
             }`}
           >
             Đăng Ký Mua Hàng
           </button>
         </div>
 
-        {/* Form Container */}
+        {/* Main Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Registration Extra Fields */}
           {mode === "register" && (
-            <div className="space-y-3.5 p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-              <div className="text-xs font-bold text-[#0b1e3b] flex items-center gap-1.5 pb-1 border-b border-slate-200">
-                <User className="w-3.5 h-3.5 text-sky-700" />
-                <span>Thông Tin Thành Viên Nhận Hàng</span>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="space-y-4"
+            >
+              {/* Full Name */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-[#7A6F68]" />
+                  <span>Họ Và Tên Khách Hàng *</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Nguyễn Văn A"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E2D8] text-xs sm:text-sm text-[#241B16] placeholder-[#9E9289] outline-none focus:border-[#B85D43] focus:ring-2 focus:ring-[#B85D43]/15 transition-all"
+                />
               </div>
 
-              {/* Full Name & DOB */}
+              {/* DOB & Postcode */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Họ & Tên *
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-[#7A6F68]" />
+                    <span>Ngày Sinh *</span>
                   </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Nguyễn Văn A"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500"
-                    />
-                  </div>
+                  <input
+                    type="date"
+                    required
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E8E2D8] text-xs text-[#241B16] outline-none focus:border-[#B85D43]"
+                  />
                 </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Ngày Sinh *
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 text-[#7A6F68]" />
+                    <span>Mã Bưu Điện *</span>
                   </label>
-                  <div className="relative">
-                    <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="date"
-                      required
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500 text-slate-800"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={postcode}
+                    onChange={(e) => setPostcode(e.target.value)}
+                    placeholder="550000 (Đà Nẵng)"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E8E2D8] text-xs text-[#241B16] placeholder-[#9E9289] outline-none focus:border-[#B85D43]"
+                  />
                 </div>
               </div>
 
-              {/* Phone Number & OTP Verification */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Số Điện Thoại (Cần xác thực OTP) *
+              {/* Address */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#7A6F68]" />
+                  <span>Địa Chỉ Giao Hàng Chi Tiết *</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E2D8] text-xs sm:text-sm text-[#241B16] placeholder-[#9E9289] outline-none focus:border-[#B85D43] focus:ring-2 focus:ring-[#B85D43]/15 transition-all"
+                />
+              </div>
+
+              {/* Phone & OTP */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-[#7A6F68]" />
+                  <span>Số Điện Thoại (Cần xác thực OTP) *</span>
                 </label>
                 <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="tel"
-                      required
-                      disabled={phoneVerified}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0912345678"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500 disabled:bg-slate-100"
-                    />
-                  </div>
-                  {!phoneVerified && (
-                    <button
-                      type="button"
-                      onClick={handleSendOTP}
-                      disabled={countdown > 0}
-                      className="px-3.5 py-2 rounded-xl bg-[#0b1e3b] text-white text-xs font-bold whitespace-nowrap cursor-pointer hover:bg-sky-950 disabled:opacity-50 transition-colors"
-                    >
-                      {countdown > 0 ? `${countdown}s` : "Gửi OTP"}
-                    </button>
-                  )}
-                </div>
-
-                {/* OTP Input Field */}
-                {otpSent && !phoneVerified && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-2 p-2.5 rounded-xl bg-white border border-sky-200 flex items-center gap-2 shadow-sm"
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      setPhoneVerified(false);
+                    }}
+                    placeholder="0905 xxx xxx"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E2D8] text-xs sm:text-sm text-[#241B16] placeholder-[#9E9289] outline-none focus:border-[#B85D43]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendOTP}
+                    disabled={countdown > 0}
+                    className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] hover:bg-[#F3ECE1] border border-[#E8E2D8] text-xs text-[#5E4D43] font-medium disabled:opacity-50 whitespace-nowrap"
                   >
+                    {countdown > 0 ? `${countdown}s` : otpSent ? "Gửi lại" : "Nhận mã OTP"}
+                  </button>
+                </div>
+              </div>
+
+              {otpSent && !phoneVerified && (
+                <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
+                  <div className="flex gap-2">
                     <input
                       type="text"
                       maxLength={6}
                       value={enteredOtp}
                       onChange={(e) => setEnteredOtp(e.target.value)}
-                      placeholder="Nhập 6 số OTP"
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold tracking-widest outline-none text-center"
+                      placeholder="Nhập 6 chữ số OTP"
+                      className="flex-1 px-3 py-2 rounded-lg border border-[#E8E2D8] text-xs text-[#241B16] tracking-widest text-center"
                     />
                     <button
                       type="button"
                       onClick={handleVerifyOTP}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 cursor-pointer transition-colors"
+                      className="px-3 py-2 rounded-lg bg-[#2D5E4E] text-white text-xs font-medium"
                     >
-                      Xác Nhận OTP
+                      Xác Nhận
                     </button>
-                  </motion.div>
-                )}
-
-                {/* Phone Verified Green Badge */}
-                {phoneVerified && (
-                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Đã xác thực số điện thoại</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Address & Postcode */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Địa Chỉ Nhận Hàng *
-                  </label>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Số nhà, tên đường, quận/huyện..."
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500"
-                    />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Mã Bưu Điện *
-                  </label>
-                  <div className="relative">
-                    <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      value={postcode}
-                      onChange={(e) => setPostcode(e.target.value)}
-                      placeholder="700000"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white outline-none focus:border-sky-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+              )}
+            </motion.div>
           )}
 
-          {/* Email field */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Địa Chỉ Email *
+          {/* Email */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-[#7A6F68]" />
+              <span>Email Tài Khoản *</span>
             </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tenban@example.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none text-xs sm:text-sm text-slate-900 transition-all bg-white"
-              />
-            </div>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tenban@example.com"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E2D8] text-xs sm:text-sm text-[#241B16] placeholder-[#9E9289] outline-none focus:border-[#B85D43] focus:ring-2 focus:ring-[#B85D43]/15 transition-all"
+            />
           </div>
 
-          {/* Password field */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                Mật Khẩu *
+          {/* Password */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#7A6F68]" />
+                <span>Mật Khẩu *</span>
               </label>
               {mode === "login" && (
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(true)}
-                  className="text-[11px] text-sky-600 hover:text-sky-800 font-semibold cursor-pointer"
+                  className="text-[11px] text-[#B85D43] hover:text-[#A24E36] font-medium"
                 >
                   Quên mật khẩu?
                 </button>
               )}
             </div>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Tối thiểu 6 ký tự"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E2D8] text-xs sm:text-sm text-[#241B16] placeholder-[#9E9289] outline-none focus:border-[#B85D43] focus:ring-2 focus:ring-[#B85D43]/15 transition-all"
+            />
+          </div>
+
+          {/* Confirm Password (Register mode) */}
+          {mode === "register" && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-[#42342B] flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#7A6F68]" />
+                <span>Xác Nhận Mật Khẩu *</span>
+              </label>
               <input
                 type="password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none text-xs sm:text-sm text-slate-900 transition-all bg-white"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Nhập lại mật khẩu phía trên"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E2D8] text-xs sm:text-sm text-[#241B16] placeholder-[#9E9289] outline-none focus:border-[#B85D43] focus:ring-2 focus:ring-[#B85D43]/15 transition-all"
               />
-            </div>
-          </div>
-
-          {/* Confirm Password in Register mode */}
-          {mode === "register" && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Xác Nhận Mật Khẩu *
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Nhập lại mật khẩu"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none text-xs sm:text-sm text-slate-900 transition-all bg-white"
-                />
-              </div>
             </div>
           )}
 
           {/* Submit Button */}
-          <div className="pt-2">
-            <GlassButton
-              variant="primary"
-              size="md"
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full justify-center text-xs sm:text-sm shadow-md cursor-pointer py-3"
-              icon={<ArrowRight className="w-4 h-4" />}
-            >
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-medium shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 pt-2"
+          >
+            <span>
               {isSubmitting
                 ? "Đang xử lý..."
                 : mode === "login"
                 ? "Đăng Nhập Ngay"
                 : "Hoàn Tất Đăng Ký Mua Hàng"}
-            </GlassButton>
-          </div>
+            </span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </form>
 
-        {/* Security Note & Admin Gateway Link */}
-        <div className="mt-5 pt-4 border-t border-slate-100 space-y-2 text-center text-[11px] text-slate-400">
-          <div className="flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Bảo mật an toàn 100% với Firebase & SSL 256-bit</span>
-          </div>
+        {/* Footer info */}
+        <div className="pt-6 mt-6 border-t border-[#E8E2D8] flex items-center justify-between text-xs text-[#7A6F68]">
+          <Link href="/" className="hover:text-[#241B16] flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Về Trang Chủ</span>
+          </Link>
 
-          <div className="pt-2 border-t border-slate-100">
-            <Link
-              href="/admin/login"
-              className="text-slate-500 hover:text-[#0b1e3b] font-medium transition-colors inline-flex items-center gap-1"
-            >
-              <span>Quản trị viên & Kỹ thuật viên xưởng? Đăng nhập Admin tại đây →</span>
-            </Link>
-          </div>
+          <Link
+            href="/admin/login"
+            className="text-[#7A6F68] hover:text-[#B85D43] transition-colors"
+          >
+            Dành cho Quản trị viên ↗
+          </Link>
         </div>
       </motion.div>
-
-    </OceanFloatingCard>
-  </div>
 
       {/* Forgot Password Modal */}
       <AnimatePresence>
         {showForgotModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4"
+              className="w-full max-w-md bg-white border border-[#E8E2D8] rounded-3xl p-6 shadow-xl space-y-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center mx-auto">
-                <Mail className="w-6 h-6" />
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-lg font-semibold text-[#241B16]">
+                  Khôi Phục Mật Khẩu
+                </h3>
+                <button
+                  onClick={() => setShowForgotModal(false)}
+                  className="p-1 rounded-lg text-[#7A6F68] hover:bg-[#FAF7F2]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="text-center space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">Quên Mật Khẩu?</h3>
-                <p className="text-xs text-slate-500">
-                  Nhập email đăng ký của bạn để nhận liên kết đặt lại mật khẩu.
-                </p>
-              </div>
+              <p className="text-xs text-[#5E4D43] leading-relaxed">
+                Nhập email tài khoản của bạn để nhận liên kết đặt lại mật khẩu an toàn.
+              </p>
 
               <form onSubmit={handleResetPassword} className="space-y-3">
                 <input
@@ -901,27 +636,15 @@ function LoginContent() {
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="tenban@example.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm outline-none focus:border-sky-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] text-xs text-[#241B16] outline-none focus:border-[#B85D43]"
                 />
-
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotModal(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold"
-                  >
-                    Hủy
-                  </button>
-                  <GlassButton
-                    variant="primary"
-                    size="sm"
-                    type="submit"
-                    disabled={isSendingReset}
-                    className="flex-1 justify-center text-xs"
-                  >
-                    {isSendingReset ? "Đang gửi..." : "Gửi Email"}
-                  </GlassButton>
-                </div>
+                <button
+                  type="submit"
+                  disabled={isSendingReset}
+                  className="w-full py-2.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs font-medium shadow-xs disabled:opacity-50"
+                >
+                  {isSendingReset ? "Đang gửi..." : "Gửi Email Đặt Lại Mật Khẩu"}
+                </button>
               </form>
             </motion.div>
           </div>
@@ -933,7 +656,13 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Đang tải...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center text-xs text-[#7A6F68]">
+          Đang tải cổng đăng nhập...
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );

@@ -164,6 +164,7 @@ export type Order = {
     phone: string;
     address: string;
     city: string;
+    dob?: string;
     note?: string;
   };
   items: CartItem[];
@@ -174,7 +175,7 @@ export type Order = {
   assignedBatchId: string;
   paymentMethod: 'cod' | 'vnpay' | 'momo' | 'bank_transfer';
   paymentStatus: 'pending' | 'paid';
-  fulfillmentStatus: 'received' | 'crafting' | 'quality_check' | 'delivering' | 'delivered';
+  fulfillmentStatus: 'received' | 'crafting' | 'quality_check' | 'delivering' | 'delivered' | 'cancelled';
   userId?: string;
   assignedBagSerialId?: string;
   assignedSerialIds?: string[];

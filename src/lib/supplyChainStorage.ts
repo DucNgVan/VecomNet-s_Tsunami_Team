@@ -487,7 +487,9 @@ export function getAllOrders(): Order[] {
     }
     const parsed: Order[] = JSON.parse(raw);
     const cleaned = parsed.filter(
-      (o) => !["NET-ORD-8821", "NET-ORD-8822", "NET-ORD-8823"].includes(o.orderCode)
+      (o) =>
+        !["NET-ORD-8821", "NET-ORD-8822", "NET-ORD-8823"].includes(o.orderCode) &&
+        !o.items?.some((it) => it.title?.toLowerCase().includes("sample test"))
     );
     if (cleaned.length !== parsed.length) {
       localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(cleaned));

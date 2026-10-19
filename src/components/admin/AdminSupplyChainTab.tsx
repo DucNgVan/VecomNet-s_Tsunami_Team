@@ -4,27 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { NetPack, ManufacturedBagItem } from "@/types";
 import { BAG_COLORS } from "@/data/products";
 import { formatKg, formatVND } from "@/lib/utils";
-import {
-  Anchor,
-  Hammer,
-  Boxes,
-  Plus,
-  RefreshCw,
-  QrCode,
-  ShieldCheck,
-  MapPin,
-  CheckCircle2,
-  AlertCircle,
-  FileSpreadsheet,
-  Cpu,
-  Layers,
-  Sparkles,
-  ArrowRight,
-  ChevronRight,
-  ExternalLink,
-  Trash2,
-  RotateCcw,
-} from "lucide-react";
+// (Icon-free layout as requested)
 import Link from "next/link";
 
 interface AdminSupplyChainTabProps {
@@ -206,90 +186,14 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
-      {/* 1. Header with Cloud Sync */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Anchor className="w-6 h-6 text-teal-600" />
-            <span>Chuỗi Cung Ứng & Lệnh Sản Xuất Xưởng</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Quy trình tuần hoàn khép kín: Trục vớt kiện lưới ma ➔ Cắt may thành phẩm ➔ Cấp định danh Serial, QR & thẻ căn cước số.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {onResetClaimedBags && (
-            <button
-              type="button"
-              onClick={async () => {
-                if (
-                  confirm(
-                    "⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ TÚI ĐÃ ĐỊNH DANH CỦA KHÁCH HÀNG?\n\nToàn bộ dữ liệu hộ chiếu số (Digital Passport) đã kích hoạt trên Cloud Firestore và máy khách sẽ bị xóa hoàn toàn."
-                  )
-                ) {
-                  await onResetClaimedBags();
-                }
-              }}
-              className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Xóa toàn bộ túi đã định danh của khách hàng"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-amber-600" />
-              <span>Xoá Túi Đã Định Danh</span>
-            </button>
-          )}
-
-          {onResetMembersImpact && (
-            <button
-              type="button"
-              onClick={async () => {
-                if (
-                  confirm(
-                    "⚠️ BẠN CÓ CHẮC CHẮN MUỐN RESET TÁC ĐỘNG MÔI TRƯỜNG & DẤU CHÂN CARBON CỦA TẤT CẢ THÀNH VIÊN?\n\nToàn bộ chỉ số kg lưới ma, m² san hô, kg CO2e của mọi tài khoản sẽ được đặt về 0 và chỉ tính lại dựa trên sản phẩm thực tế họ mua."
-                  )
-                ) {
-                  await onResetMembersImpact();
-                }
-              }}
-              className="px-3.5 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-xs border border-teal-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Reset toàn bộ dấu chân sinh thái của thành viên về 0"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-teal-600" />
-              <span>Reset Tác Động Thành Viên</span>
-            </button>
-          )}
-
-          {onResetSupplyChain && (
-            <button
-              type="button"
-              onClick={async () => {
-                if (
-                  confirm(
-                    "⚠️ BẠN CÓ CHẮC CHẮN MUỐN RESET KHO & LƯỚI THU GOM?\n\nToàn bộ kiện lưới (batches) và túi kho (bag_items) sẽ được làm sạch trên Cloud Firestore và bộ nhớ để dùng 100% dữ liệu thực từ đầu."
-                  )
-                ) {
-                  await onResetSupplyChain();
-                }
-              }}
-              className="px-3.5 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Reset sạch kho & lưới mẫu để dùng database thực"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>Reset Kho & Lưới Mẫu</span>
-            </button>
-          )}
-
-          <button
-            onClick={onSyncFirestore}
-            disabled={isSyncing}
-            className={`px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition-all flex items-center gap-2 cursor-pointer ${
-              isSyncing ? "opacity-60 cursor-not-allowed" : ""
-            }`}
-          >
-            <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
-            <span>{isSyncing ? "Đang đẩy lên Firestore..." : "Đồng Bộ Kho Lên Cloud"}</span>
-          </button>
-        </div>
+      {/* 1. Header */}
+      <div className="bg-white p-6 sm:p-7 rounded-3xl border border-[#E8E2D8] shadow-sm">
+        <h2 className="font-serif text-xl sm:text-2xl font-normal text-[#241B16] tracking-tight">
+          Chuỗi Cung Ứng & Lệnh Sản Xuất Xưởng
+        </h2>
+        <p className="text-xs text-[#5E4D43] mt-1 max-w-2xl">
+          Quy trình tuần hoàn khép kín: Trục vớt kiện lưới ma ➔ Cắt may thành phẩm ➔ Cấp định danh Serial, QR & thẻ căn cước số.
+        </p>
       </div>
 
       {/* Sync Feedback Alert */}
@@ -301,11 +205,9 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
               : "bg-rose-50 text-rose-800 border-rose-200"
           }`}
         >
-          {syncFeedback.success ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          ) : (
-            <AlertCircle className="w-4 h-4 text-rose-600" />
-          )}
+          <span className="font-mono uppercase text-[10px] font-bold">
+            {syncFeedback.success ? "[THÀNH CÔNG]" : "[LỖI]"}
+          </span>
           <span>{syncFeedback.message}</span>
         </div>
       )}
@@ -316,20 +218,20 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
           onClick={() => setSubStep("inbound")}
           className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
             subStep === "inbound"
-              ? "bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-teal-500/20"
-              : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
+              ? "bg-[#241B16] text-white border-[#241B16] shadow-sm"
+              : "bg-white hover:bg-[#FAF7F2] border-[#E8E2D8] text-[#241B16]"
           }`}
         >
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-              subStep === "inbound" ? "bg-teal-500 text-slate-950" : "bg-slate-100 text-slate-600"
+              subStep === "inbound" ? "bg-[#B85D43] text-white" : "bg-[#F3ECE1] text-[#5E4D43]"
             }`}
           >
             1
           </div>
           <div>
             <div className="text-xs font-bold">1. Nhập Kiện Lưới Ma</div>
-            <div className={`text-[11px] ${subStep === "inbound" ? "text-slate-300" : "text-slate-500"}`}>
+            <div className={`text-[11px] ${subStep === "inbound" ? "text-[#C4B9B0]" : "text-[#8F8177]"}`}>
               {netPacks.length} kiện nguồn trục vớt
             </div>
           </div>
@@ -339,20 +241,20 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
           onClick={() => setSubStep("production")}
           className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
             subStep === "production"
-              ? "bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-teal-500/20"
-              : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
+              ? "bg-[#241B16] text-white border-[#241B16] shadow-sm"
+              : "bg-white hover:bg-[#FAF7F2] border-[#E8E2D8] text-[#241B16]"
           }`}
         >
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-              subStep === "production" ? "bg-teal-500 text-slate-950" : "bg-slate-100 text-slate-600"
+              subStep === "production" ? "bg-[#B85D43] text-white" : "bg-[#F3ECE1] text-[#5E4D43]"
             }`}
           >
             2
           </div>
           <div>
             <div className="text-xs font-bold">2. Lệnh Sản Xuất Xưởng</div>
-            <div className={`text-[11px] ${subStep === "production" ? "text-slate-300" : "text-slate-500"}`}>
+            <div className={`text-[11px] ${subStep === "production" ? "text-[#C4B9B0]" : "text-[#8F8177]"}`}>
               Cắt may & cấp dải Serial
             </div>
           </div>
@@ -362,20 +264,20 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
           onClick={() => setSubStep("inventory")}
           className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
             subStep === "inventory"
-              ? "bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-teal-500/20"
-              : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
+              ? "bg-[#241B16] text-white border-[#241B16] shadow-sm"
+              : "bg-white hover:bg-[#FAF7F2] border-[#E8E2D8] text-[#241B16]"
           }`}
         >
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-              subStep === "inventory" ? "bg-teal-500 text-slate-950" : "bg-slate-100 text-slate-600"
+              subStep === "inventory" ? "bg-[#B85D43] text-white" : "bg-[#F3ECE1] text-[#5E4D43]"
             }`}
           >
             3
           </div>
           <div>
             <div className="text-xs font-bold">3. Kho Thành Phẩm & Căn Cước Số</div>
-            <div className={`text-[11px] ${subStep === "inventory" ? "text-slate-300" : "text-slate-500"}`}>
+            <div className={`text-[11px] ${subStep === "inventory" ? "text-[#C4B9B0]" : "text-[#8F8177]"}`}>
               {manufacturedItems.length} túi có Passport QR
             </div>
           </div>
@@ -392,10 +294,9 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
             </div>
             <button
               onClick={() => setShowInboundModal(true)}
-              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              <span>Nhập Kiện Mới</span>
+              <span>+ Nhập Kiện Mới</span>
             </button>
           </div>
 
@@ -427,8 +328,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                 </div>
 
                 <div>
-                  <div className="text-xs font-bold text-slate-900 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-teal-600" />
+                  <div className="text-xs font-bold text-slate-900">
                     <span>{pack.seaRegion}</span>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">{pack.locationDetails}</div>
@@ -580,10 +480,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                 }`}
               >
                 <div className="font-bold flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-teal-600" />
-                    <span>Cân Đối Nguyên Liệu Lưới Ma Tuần Hoàn</span>
-                  </span>
+                  <span>Cân Đối Nguyên Liệu Lưới Ma Tuần Hoàn</span>
                   <span
                     className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
                       isEnoughNet
@@ -627,7 +524,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
 
               {productionMessage && (
                 <div className="p-3.5 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-teal-600" />
+                  <span className="font-mono text-[10px]">[OK]</span>
                   <span>{productionMessage}</span>
                 </div>
               )}
@@ -636,13 +533,12 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                 <button
                   type="submit"
                   disabled={!isEnoughNet || netPacks.length === 0 || availableBagModels.length === 0}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-xs shadow-md flex items-center gap-1.5 transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-bold text-xs shadow-md flex items-center transition-all ${
                     isEnoughNet && netPacks.length > 0 && availableBagModels.length > 0
                       ? "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-600/20 cursor-pointer"
                       : "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
                   }`}
                 >
-                  <Hammer className="w-4 h-4" />
                   <span>Phát Lệnh Sản Xuất & Tăng Tồn Kho Bộ Sưu Tập</span>
                 </button>
               </div>
@@ -739,30 +635,26 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
                       </td>
 
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-                          <span
-                            className={`text-[10px] font-bold ${
-                              item.warrantyStatus === "active"
-                                ? "text-emerald-700"
-                                : "text-slate-500"
-                            }`}
-                          >
-                            {item.warrantyStatus === "active"
-                              ? "Đã định danh"
-                              : "Chưa kích hoạt"}
-                          </span>
-                        </div>
+                        <span
+                          className={`text-[10px] font-bold ${
+                            item.warrantyStatus === "active"
+                              ? "text-emerald-700"
+                              : "text-slate-500"
+                          }`}
+                        >
+                          {item.warrantyStatus === "active"
+                            ? "Đã định danh"
+                            : "Chưa kích hoạt"}
+                        </span>
                       </td>
 
                       <td className="py-3 px-4 text-right">
                         <Link
                           href={item.qrUrl || `/passport/${item.sourcePackId}?itemId=${item.serialId}`}
                           target="_blank"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 text-[11px] font-bold transition-colors"
+                          className="inline-flex items-center px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 text-[11px] font-bold transition-colors"
                         >
-                          <QrCode className="w-3 h-3" />
-                          <span>Mở Passport</span>
+                          <span>Mở Passport →</span>
                         </Link>
                       </td>
                     </tr>

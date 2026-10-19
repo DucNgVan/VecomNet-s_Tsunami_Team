@@ -4,25 +4,7 @@ import React, { useState, useMemo } from "react";
 import { Article, PostCategory } from "@/types";
 import { formatVND } from "@/lib/utils";
 import { uploadProductFile } from "@/lib/storageService";
-import {
-  ShoppingBag,
-  BookOpen,
-  Plus,
-  Edit2,
-  Trash2,
-  Upload,
-  Box,
-  Image as ImageIcon,
-  CheckCircle2,
-  Sparkles,
-  ExternalLink,
-  Tag,
-  Star,
-  Eye,
-  FileText,
-  X,
-  AlertCircle,
-} from "lucide-react";
+// (Icon-free layout as requested)
 import Link from "next/link";
 import { BagCard3D } from "@/components/3d/BagCard3D";
 import { uploadToCloudinary } from "@/lib/cloudinaryClient";
@@ -280,39 +262,36 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       {/* 1. Header with Mode Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#E8E2D8] shadow-sm">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-teal-600" />
-            <span>Quản Lý Bộ Sưu Tập, Sản Phẩm & Bài Đăng Website</span>
+          <h2 className="font-serif text-xl sm:text-2xl font-normal text-[#241B16] tracking-tight">
+            Quản Lý Bộ Sưu Tập, Sản Phẩm & Bài Đăng
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#5E4D43] mt-1">
             Chủ động cập nhật danh mục sản phẩm, tải file 3D .glb, quản lý tồn kho và đăng tải các bài viết câu chuyện thương hiệu.
           </p>
         </div>
 
         {/* Section Switcher Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+        <div className="flex items-center gap-1.5 p-1 bg-[#F6F2EB] rounded-2xl border border-[#E8E2D8]">
           <button
             onClick={() => setSection("products")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               section === "products"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white text-[#241B16] font-semibold shadow-xs"
+                : "text-[#5E4D43] hover:text-[#241B16]"
             }`}
           >
-            <ShoppingBag className="w-3.5 h-3.5 text-teal-600" />
             <span>Sản Phẩm & 3D ({products.length})</span>
           </button>
           <button
             onClick={() => setSection("articles")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               section === "articles"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white text-[#241B16] font-semibold shadow-xs"
+                : "text-[#5E4D43] hover:text-[#241B16]"
             }`}
           >
-            <FileText className="w-3.5 h-3.5 text-sky-600" />
             <span>Bài Đăng & Tin Tức ({articles.length})</span>
           </button>
         </div>
@@ -323,9 +302,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
         <div className="space-y-4 animate-fadeIn">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Danh Mục Túi & Phụ Kiện Charm</h3>
-              <p className="text-xs text-slate-500">
-                Sản phẩm được lưu trữ trên Cloud Firestore và hiển thị ra trang /shop, /customizer
+              <h3 className="font-serif text-lg text-[#241B16] font-normal">Danh Mục Túi & Phụ Kiện Charm</h3>
+              <p className="text-xs text-[#5E4D43]">
+                Sản phẩm được lưu trữ trên Cloud Firestore và hiển thị ra trang Bộ Sưu Tập, Nét Studio
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -341,27 +320,25 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                       await onClearAllProducts();
                     }
                   }}
-                  className="px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-red-200 transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-medium cursor-pointer border border-rose-200 transition-colors"
                   title="Xóa danh mục để ID sản phẩm bắt đầu lại từ 1"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
                   <span>Reset ID Về 1</span>
                 </button>
               )}
               <button
                 onClick={handleOpenAddProduct}
-                className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/20"
+                className="px-4 py-2 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs font-medium cursor-pointer shadow-xs transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                <span>Đăng Mẫu Mã Mới (Mã ID: {getNextProductId(products)})</span>
+                <span>+ Đăng Mẫu Mã Mới (Mã ID: {getNextProductId(products)})</span>
               </button>
             </div>
           </div>
 
           {products.length === 0 ? (
             <div className="p-10 rounded-3xl bg-slate-50 border border-dashed border-slate-300 text-center space-y-4 shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center mx-auto border border-teal-100">
-                <Box className="w-7 h-7" />
+              <div className="inline-block px-3 py-1 rounded-full bg-teal-50 text-teal-700 text-xs font-mono font-bold border border-teal-100 mx-auto">
+                BỘ SƯU TẬP 3D TRỐNG
               </div>
               <div className="space-y-1">
                 <h3 className="font-bold text-slate-800 text-sm sm:text-base">Chưa có mẫu mã nào trong Bộ Sưu Tập</h3>
@@ -372,10 +349,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               <button
                 type="button"
                 onClick={handleOpenAddProduct}
-                className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs inline-flex items-center shadow-sm transition-colors cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
-                <span>Đăng Mẫu Mã Đầu Tiên</span>
+                <span>+ Đăng Mẫu Mã Đầu Tiên</span>
               </button>
             </div>
           ) : (
@@ -412,7 +388,6 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                           className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-900/80 hover:bg-slate-900 text-teal-300 backdrop-blur-sm border border-teal-500/30 flex items-center gap-1 cursor-pointer transition-transform hover:scale-105"
                           title="Bấm để xem trước mô hình 3D xoay 360 độ"
                         >
-                          <Box className="w-2.5 h-2.5" />
                           3D Live
                         </button>
                       )}
@@ -446,20 +421,18 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleOpenEditProduct(prod)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center cursor-pointer"
                       >
-                        <Edit2 className="w-3 h-3" />
                         <span>Sửa</span>
                       </button>
                       {onNavigateTab && (
                         <button
                           type="button"
                           onClick={() => onNavigateTab("supply-chain")}
-                          className="px-2 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-[10px] flex items-center gap-1 cursor-pointer border border-teal-200"
+                          className="px-2 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-[10px] flex items-center cursor-pointer border border-teal-200"
                           title="Lập lệnh sản xuất may mẫu này từ Kiện Lưới"
                         >
-                          <Plus className="w-3 h-3" />
-                          <span>May Xưởng</span>
+                          <span>+ May Xưởng</span>
                         </button>
                       )}
                       {prod.model3dUrl && (
@@ -470,20 +443,19 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                               url: prod.model3dUrl,
                             })
                           }
-                          className="px-2 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                          className="px-2 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center cursor-pointer"
                           title="Xem mô hình 3D"
                         >
-                          <Box className="w-3 h-3 text-indigo-600" />
                           <span>3D</span>
                         </button>
                       )}
                     </div>
                     <button
                       onClick={() => onDeleteProduct(prod.id)}
-                      className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
+                      className="px-2 py-1.5 rounded-xl text-rose-600 hover:bg-rose-50 text-[11px] font-medium transition-colors cursor-pointer"
                       title="Xóa sản phẩm"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Xóa</span>
                     </button>
                   </div>
                 </div>
@@ -506,10 +478,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
             </div>
             <button
               onClick={handleOpenAddArticle}
-              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-sky-600/20"
+              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center cursor-pointer shadow-md shadow-sky-600/20"
             >
-              <Plus className="w-4 h-4" />
-              <span>Đăng Bài Mới</span>
+              <span>+ Đăng Bài Mới</span>
             </button>
           </div>
 
@@ -529,8 +500,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                       className="w-full h-full object-cover"
                     />
                     {art.featured && (
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500 text-white flex items-center gap-1 shadow">
-                        <Star className="w-2.5 h-2.5 fill-white" />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500 text-white shadow">
                         Nổi bật
                       </span>
                     )}
@@ -565,16 +535,15 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenEditArticle(art)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center cursor-pointer"
                     >
-                      <Edit2 className="w-3 h-3" />
                       <span>Sửa</span>
                     </button>
                     <button
                       onClick={() => onDeleteArticle(art.id)}
-                      className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
+                      className="px-2 py-1 rounded-lg text-rose-500 hover:bg-rose-50 text-[11px] font-medium transition-colors cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Xóa</span>
                     </button>
                   </div>
                 </div>
@@ -603,15 +572,15 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               <button
                 type="button"
                 onClick={() => setShowProductModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer text-sm font-bold"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
             </div>
 
             {/* Circular Economy Guidance Alert */}
             <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-start gap-2.5">
-              <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
+              <span className="text-[10px] font-mono uppercase bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-bold shrink-0 mt-0.5">LƯU Ý</span>
               <div className="leading-relaxed">
                 <strong>Quy trình kinh tế tuần hoàn:</strong> Mục này thuần túy để định nghĩa <strong>Mẫu Mã Thiết Kế</strong> (tên mẫu, phân loại dáng, định mức cước lưới, giá bán, mô hình 3D). Mẫu mã sau khi lưu sẽ xuất hiện trên <strong>Bộ Sưu Tập</strong> và <strong>NÉT Studio</strong>. <strong>Không hề có trường nhập số lượng tại đây</strong> — số lượng hàng có sẵn để bán sẽ được quyết định tự động khi xưởng nhập lưới và sản xuất theo mẫu này trong mục Chuỗi Cung Ứng.
               </div>
@@ -726,10 +695,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               {/* Upload Ảnh */}
               <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                 <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-teal-600" />
-                    Hình Ảnh Sản Phẩm (Cloudinary CDN Tối Ưu)
-                  </span>
+                  <span>Hình Ảnh Sản Phẩm (Cloudinary CDN Tối Ưu)</span>
                   {isUploadingImage && (
                     <span className="text-teal-600 font-mono text-[10px]">
                       {imageProgress}% Đang tải...
@@ -766,10 +732,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               {/* Upload 3D Model */}
               <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                 <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <Box className="w-3.5 h-3.5 text-indigo-600" />
-                    Mô Hình 3D (.glb / .gltf - Cloudinary CDN Tối Ưu)
-                  </span>
+                  <span>Mô Hình 3D (.glb / .gltf - Cloudinary CDN Tối Ưu)</span>
                   {isUploadingModel && (
                     <span className="text-indigo-600 font-mono text-[10px]">
                       {modelProgress}% Đang tải...
@@ -792,7 +755,6 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 {productForm.model3dUrl && (
                   <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/60 border border-indigo-100">
                     <div className="flex items-center gap-2 truncate">
-                      <Box className="w-4 h-4 text-indigo-600 shrink-0" />
                       <span className="text-[10px] text-indigo-800 font-mono truncate max-w-[200px]">
                         {productForm.model3dUrl}
                       </span>
@@ -847,9 +809,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               <button
                 type="button"
                 onClick={() => setShowArticleModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 text-sm font-bold"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
             </div>
 
@@ -908,10 +870,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               {/* Upload Ảnh Bìa */}
               <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                 <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-sky-600" />
-                    Ảnh Bìa Bài Viết (Cloudinary CDN Tối Ưu)
-                  </span>
+                  <span>Ảnh Bìa Bài Viết (Cloudinary CDN Tối Ưu)</span>
                   {isUploadingArticleCover && (
                     <span className="text-sky-600 font-mono text-[10px]">
                       {articleCoverProgress}% Đang tải...
@@ -997,7 +956,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
           <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-white space-y-4 shadow-2xl relative animate-scaleUp">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Box className="w-5 h-5 text-teal-400" />
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-teal-900/60 text-teal-300 border border-teal-500/30">
+                  3D
+                </span>
                 <h4 className="font-bold text-sm truncate max-w-[260px]">
                   {preview3dModel.name}
                 </h4>
@@ -1005,9 +966,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
               <button
                 type="button"
                 onClick={() => setPreview3dModel(null)}
-                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer text-sm font-bold"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 

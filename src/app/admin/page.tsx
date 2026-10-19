@@ -45,28 +45,35 @@ import { AdminDashboardTab } from "@/components/admin/AdminDashboardTab";
 import { AdminOrdersTab } from "@/components/admin/AdminOrdersTab";
 import { AdminSupplyChainTab } from "@/components/admin/AdminSupplyChainTab";
 import { AdminCatalogTab } from "@/components/admin/AdminCatalogTab";
-import { Lock, KeyRound, ExternalLink, ShieldAlert } from "lucide-react";
+import { AdminDesignRequestsTab } from "@/components/admin/AdminDesignRequestsTab";
+import { AdminSupportTab } from "@/components/admin/AdminSupportTab";
+// (Icon-free layout as requested)
 
 function AdminPortalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tab State: 'dashboard' | 'orders' | 'supply-chain' | 'catalog'
+  // Tab State: 'dashboard' (Mặc định lên đầu) | 'orders' | 'supply-chain' | 'catalog' | 'support'
   const [activeTab, setActiveTab] = useState<string>("dashboard");
 
   // Sync tab with URL query parameter (with backward compatibility)
   useEffect(() => {
     const rawTab = searchParams.get("tab");
-    if (!rawTab) return;
+    if (!rawTab) {
+      setActiveTab("dashboard");
+      return;
+    }
     if (rawTab === "analytics") {
       setActiveTab("dashboard");
-    } else if (rawTab === "orders") {
+    } else if (rawTab === "orders" || rawTab === "design-requests") {
       setActiveTab("orders");
     } else if (["net-packs", "manufacturing", "inventory", "supply-chain"].includes(rawTab)) {
       setActiveTab("supply-chain");
     } else if (["products", "catalog", "articles"].includes(rawTab)) {
       setActiveTab("catalog");
-    } else if (["dashboard", "orders", "supply-chain", "catalog"].includes(rawTab)) {
+    } else if (["support", "ticket", "tickets"].includes(rawTab)) {
+      setActiveTab("support");
+    } else if (["dashboard", "orders", "supply-chain", "catalog", "support"].includes(rawTab)) {
       setActiveTab(rawTab);
     }
   }, [searchParams]);
@@ -538,23 +545,22 @@ function AdminPortalContent() {
   // -------------------------------------------------------------
   if (isAdminAuthenticated === false) {
     return (
-      <div className="min-h-screen bg-[#071326] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl">
-          <div className="w-16 h-16 rounded-3xl bg-teal-500/10 border border-teal-500/30 text-teal-400 flex items-center justify-center mx-auto">
-            <Lock className="w-8 h-8" />
+      <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4 text-[#241B16]">
+        <div className="max-w-md w-full bg-white border border-[#E8E2D8] rounded-3xl p-8 text-center space-y-6 shadow-sm">
+          <div className="inline-block px-4 py-1.5 rounded-full bg-[#F3ECE1] border border-[#E8E2D8] text-[#B85D43] text-[11px] font-mono uppercase tracking-wider mx-auto">
+            BẢO MẬT HỆ THỐNG
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl font-black text-white">Yêu Cầu Xác Thực Quản Trị</h2>
-            <p className="text-xs text-slate-400">
-              Khu vực quản trị nội bộ NÉT WORKSHOP OS dành riêng cho nhân sự quản lý chuỗi cung ứng và vận đơn.
+            <h2 className="font-serif text-2xl font-normal text-[#241B16]">Yêu Cầu Xác Thực Quản Trị</h2>
+            <p className="text-xs text-[#5E4D43] leading-relaxed">
+              Khu vực quản trị nội bộ NÉT WORKSHOP OS dành riêng cho nhân sự quản lý chuỗi cung ứng, xưởng may và duyệt yêu cầu thiết kế.
             </p>
           </div>
           <Link
             href="/admin/login"
-            className="w-full py-3 px-4 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white font-medium text-xs shadow-xs transition-all flex items-center justify-center cursor-pointer"
           >
-            <KeyRound className="w-4 h-4" />
-            <span>Đăng Nhập Quản Trị</span>
+            <span>Đăng Nhập Quản Trị Viên</span>
           </Link>
         </div>
       </div>
@@ -562,7 +568,7 @@ function AdminPortalContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800">
+    <div className="min-h-screen bg-[#FAF7F2] text-[#241B16]">
       {/* 1. Global Admin Navigation Bar */}
       <AdminNavbar
         activeTab={activeTab}
@@ -573,6 +579,18 @@ function AdminPortalContent() {
 
       {/* 2. Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {(activeTab === "orders" || activeTab === "design-requests") && (
+          <AdminOrdersTab
+            orders={orders}
+            backendProducts={backendProducts}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            onTogglePaymentStatus={handleTogglePaymentStatus}
+            onDeleteOrder={handleDeleteOrder}
+            onCreateManualOrder={handleCreateManualOrder}
+            initialTypeFilter={searchParams.get("tab") === "design-requests" ? "studio" : "all"}
+          />
+        )}
+
         {activeTab === "dashboard" && (
           <AdminDashboardTab
             orders={orders}
@@ -581,17 +599,6 @@ function AdminPortalContent() {
             backendProducts={backendProducts}
             stats={stats}
             onNavigateTab={handleSelectTab}
-          />
-        )}
-
-        {activeTab === "orders" && (
-          <AdminOrdersTab
-            orders={orders}
-            backendProducts={backendProducts}
-            onUpdateOrderStatus={handleUpdateOrderStatus}
-            onTogglePaymentStatus={handleTogglePaymentStatus}
-            onDeleteOrder={handleDeleteOrder}
-            onCreateManualOrder={handleCreateManualOrder}
           />
         )}
 
@@ -623,6 +630,10 @@ function AdminPortalContent() {
             onDeleteArticle={handleDeleteArticle}
             onClearAllProducts={handleClearAllProducts}
           />
+        )}
+
+        {activeTab === "support" && (
+          <AdminSupportTab />
         )}
       </main>
     </div>

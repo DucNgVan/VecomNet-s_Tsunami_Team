@@ -297,11 +297,8 @@ export default function ShopPage() {
   ];
 
   return (
-    <div className="relative min-h-screen">
-      {/* Living Ocean Ambient Background */}
-      <OceanBackdrop bubbleCount={24} causticsOpacity={0.35} />
-
-      <div className="pt-20 sm:pt-28 pb-24 sm:pb-20 px-3 sm:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10 relative z-10">
+    <div className="relative min-h-screen bg-[#FAF7F2] text-[#2D231E]">
+      <div className="pt-10 sm:pt-14 pb-24 sm:pb-20 px-3 sm:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10 relative z-10">
         {/* Shop Header */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
@@ -309,19 +306,28 @@ export default function ShopPage() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="text-center max-w-4xl mx-auto space-y-3 px-4 flex flex-col items-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0b1e3b] text-sky-200 text-xs font-bold uppercase tracking-[0.2em] shadow-md mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-            <span>CỬA HÀNG BỀN VỮNG NÉT</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#EFE9DF] text-[#7A6F68] text-xs font-bold uppercase tracking-[0.2em] border border-[#E8E2D8] mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+            <span>BỘ SƯU TẬP NÉT</span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#0b1e3b] tracking-tight leading-tight max-w-2xl mx-auto">
-            Bộ Sưu Tập Túi Lưới & Charm Biển Sâu
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#241B16] tracking-tight leading-tight max-w-2xl mx-auto">
+            Bộ Sưu Tập Túi Lưới & Charm Đà Nẵng
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            Khám phá những thiết kế được hoàn thiện thủ công từ lưới ma tái sinh hoặc đưa vào NÉT Studio để gắn charm thủy tinh phong thủy độc bản.
+          <p className="text-sm sm:text-base text-[#5E4D43] leading-relaxed max-w-2xl mx-auto">
+            Khám phá những thiết kế được hoàn thiện thủ công từ lưới ma tái sinh hoặc đưa vào Nét Studio để gắn charm độc bản theo ký ức của riêng bạn.
           </p>
+
+          <div className="pt-2">
+            <Link
+              href="/studio"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs"
+            >
+              <span>Tự thiết kế túi theo ý bạn tại Nét Studio →</span>
+            </Link>
+          </div>
         </motion.div>
 
-        {/* Filter Tabs Bar with living oceanic active state */}
+        {/* Filter Tabs Bar */}
         <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {filterTabs.map((tab) => {
             const isActive = filterCategory === tab.id;
@@ -329,10 +335,10 @@ export default function ShopPage() {
               <button
                 key={tab.id}
                 onClick={() => setFilterCategory(tab.id as any)}
-                className={`relative px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 whitespace-nowrap cursor-pointer ${
+                className={`relative px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? "text-white bg-[#0b1e3b] shadow-[0_4px_20px_rgba(56,189,248,0.35)] scale-105"
-                    : "bg-white/90 hover:bg-white text-slate-700 border border-slate-200/80 shadow-xs hover:border-sky-300"
+                    ? "text-white bg-[#B85D43] shadow-xs scale-105"
+                    : "bg-white hover:bg-[#FAF7F2] text-[#5E4D43] border border-[#E8E2D8] shadow-xs"
                 }`}
               >
                 <span className="relative z-10 flex items-center gap-2">

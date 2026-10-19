@@ -50,6 +50,7 @@ export const BAG_BASES: BagBase[] = [
     maxCharms: 10,
     modelType: "tote",
     image: "/assets/products/tote-blue.png",
+    model3dUrl: "/assets/models/tuixach.glb",
     anchorPoints: [
       { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
       { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
@@ -77,6 +78,7 @@ export const BAG_BASES: BagBase[] = [
     maxCharms: 7,
     modelType: "hobo",
     image: "/assets/products/hobo-emerald.png",
+    model3dUrl: "/assets/models/tuixach.glb",
     anchorPoints: [
       { id: "h1", x: 28, y: 40, label: "Cung trái" },
       { id: "h2", x: 50, y: 38, label: "Cung đỉnh" },
@@ -101,6 +103,7 @@ export const BAG_BASES: BagBase[] = [
     maxCharms: 8,
     modelType: "bucket",
     image: "/assets/products/bucket-sand.png",
+    model3dUrl: "/assets/models/tuixach.glb",
     anchorPoints: [
       { id: "b1", x: 30, y: 30, label: "Cổ túi trái" },
       { id: "b2", x: 70, y: 30, label: "Cổ túi phải" },
@@ -126,6 +129,7 @@ export const BAG_BASES: BagBase[] = [
     maxCharms: 5,
     modelType: "mini",
     image: "/assets/products/mini-pearl.png",
+    model3dUrl: "/assets/models/tuixach.glb",
     anchorPoints: [
       { id: "m1", x: 32, y: 35, label: "Góc trên trái" },
       { id: "m2", x: 68, y: 35, label: "Góc trên phải" },

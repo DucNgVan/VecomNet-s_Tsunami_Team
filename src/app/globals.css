@@ -30,13 +30,9 @@ textarea {
 }
 
 body {
-  background-color: #f8fafc;
-  color: #0b1e3b;
+  background-color: #FAF7F2;
+  color: #2D231E;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(at 15% 5%, rgba(224, 242, 254, 0.7) 0px, transparent 50%),
-    radial-gradient(at 85% 15%, rgba(209, 250, 229, 0.5) 0px, transparent 50%),
-    radial-gradient(at 50% 90%, rgba(241, 245, 249, 0.8) 0px, transparent 60%);
   background-attachment: fixed;
 }
 

@@ -3,18 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  BarChart3,
-  Package,
-  Layers,
-  Sparkles,
-  LogOut,
-  ExternalLink,
-  RefreshCw,
-  Anchor,
-  ShieldCheck,
-  BookOpen,
-} from "lucide-react";
 
 interface AdminNavbarProps {
   activeTab?: string;
@@ -51,81 +39,75 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
 
   const isLoginPage = pathname === "/admin/login";
 
-  // 4 Core Strategic Modules
+  // Core Business Stages & Management Tabs (Tổng Quan & Doanh Nghiệp lên đầu)
   const navModules = [
     {
       id: "dashboard",
-      label: "Tổng Quan & KPI",
-      subLabel: "Data Analytics",
-      icon: BarChart3,
-      badge: "Live",
+      label: "Tổng Quan & Doanh Nghiệp",
+      subLabel: "Data Analytics & B2B ESG",
     },
     {
       id: "orders",
       label: "Quản Lý Đơn Hàng",
-      subLabel: "Order Center",
-      icon: Package,
-      badge: "Realtime",
+      subLabel: "Đơn Custom, Có Sẵn & B2B",
     },
     {
       id: "supply-chain",
-      label: "Nhập Lưới & Sản Xuất",
-      subLabel: "Supply Chain ERP",
-      icon: Anchor,
-      badge: "Khép kín",
+      label: "Chuỗi Cung Ứng & Lô Lưới",
+      subLabel: "Lô Lưới & Cấp Mã Serial",
     },
     {
       id: "catalog",
-      label: "Bộ Sưu Tập & Bài Đăng",
-      subLabel: "3D & Brand CMS",
-      icon: BookOpen,
-      badge: "CMS 3D",
+      label: "Bộ Sưu Tập & 3D",
+      subLabel: "3D Models & Brand CMS",
+    },
+    {
+      id: "support",
+      label: "Hỗ Trợ Khách Hàng",
+      subLabel: "Ticket Desk & CSKH",
     },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-[#071326]/95 backdrop-blur-xl text-white border-b border-sky-900/40 shadow-xl">
+    <header className="sticky top-0 z-50 bg-[#241B16] text-[#FAF7F2] border-b border-[#3A2E27] shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
         {/* Left: Brand & Status */}
         <div className="flex items-center gap-3">
           <Link href="/admin?tab=dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400/20 to-sky-500/20 border border-teal-400/40 text-teal-300 flex items-center justify-center font-bold text-sm shadow-inner group-hover:scale-105 transition-all">
-              <Anchor className="w-5 h-5 text-teal-400" />
+            <div className="w-9 h-9 rounded-xl bg-[#352720] border border-[#4A3B32] text-[#B85D43] flex items-center justify-center font-serif font-bold text-sm shadow-inner group-hover:scale-105 transition-all">
+              NÉT
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-sm tracking-wide text-white group-hover:text-teal-300 transition-colors">
+                <span className="font-serif font-semibold text-sm tracking-wide text-white group-hover:text-[#EFE9DF] transition-colors">
                   NÉT WORKSHOP OS
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-teal-400/20 text-teal-300 border border-teal-400/30 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Cloud Live
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                  Live
                 </span>
               </div>
-              <div className="text-[10px] text-slate-400 -mt-0.5 hidden sm:block">
-                Hệ điều hành quản trị chuỗi thời trang tuần hoàn & thương mại số
+              <div className="text-[10px] text-[#A89C93] -mt-0.5 hidden sm:block">
+                Hệ điều hành quản trị thời trang tuần hoàn & thương mại số
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Center: 4 Modular Tabs */}
+        {/* Center: 4 Modular Business Stage Tabs (Pure Typography) */}
         {!isLoginPage && isAdminAuthenticated && (
-          <nav className="hidden lg:flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-2xl border border-slate-700/70 shadow-inner">
+          <nav className="hidden lg:flex items-center gap-1 bg-[#1A130F] p-1 rounded-2xl border border-white/10 shadow-inner">
             {navModules.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = activeTab === item.id || (item.id === "orders" && activeTab === "design-requests");
               return (
                 <button
                   key={item.id}
                   onClick={() => onSelectTab(item.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
-                      ? "bg-gradient-to-r from-teal-600 to-sky-600 text-white shadow-md font-bold scale-[1.02]"
-                      : "text-slate-300 hover:text-white hover:bg-slate-800/80"
+                      ? "bg-[#B85D43] text-white shadow-xs font-semibold"
+                      : "text-[#C4B9B0] hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-teal-200" : "text-slate-400"}`} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -140,31 +122,29 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
               onClick={onRefreshAll}
               disabled={isRefreshing}
               title="Tải lại toàn bộ dữ liệu từ Cloud Firestore"
-              className={`p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-teal-300 hover:border-teal-500/40 transition-all ${
+              className={`px-2.5 py-1.5 rounded-xl bg-[#352720] border border-[#4A3B32] text-xs font-medium text-[#C4B9B0] hover:text-white transition-all ${
                 isRefreshing ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
               }`}
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-teal-400" : ""}`} />
+              <span>{isRefreshing ? "Đang tải..." : "Làm mới"}</span>
             </button>
           )}
 
           <Link
             href="/"
             target="_blank"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
+            className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xl bg-[#352720] border border-[#4A3B32] text-xs font-medium text-[#C4B9B0] hover:text-white transition-all"
           >
             <span>Website</span>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
           </Link>
 
           {!isLoginPage && isAdminAuthenticated && (
             <button
               onClick={handleAdminLogout}
-              className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 transition-all flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-medium text-rose-300 hover:bg-rose-500/20 transition-all cursor-pointer"
               title="Đăng xuất quản trị"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Thoát</span>
+              <span>Đăng xuất</span>
             </button>
           )}
         </div>
@@ -172,21 +152,19 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
 
       {/* Mobile Tab Bar */}
       {!isLoginPage && isAdminAuthenticated && (
-        <div className="lg:hidden flex items-center gap-1 px-3 py-2 bg-slate-900/95 border-t border-slate-800 overflow-x-auto">
+        <div className="lg:hidden flex items-center gap-1 px-3 py-2 bg-[#1A130F] border-t border-white/10 overflow-x-auto">
           {navModules.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const isActive = activeTab === item.id || (item.id === "orders" && activeTab === "design-requests");
             return (
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium ${
                   isActive
-                    ? "bg-teal-600 text-white shadow-sm font-bold"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[#B85D43] text-white shadow-xs font-semibold"
+                    : "text-[#C4B9B0] hover:text-white"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
                 <span>{item.label}</span>
               </button>
             );

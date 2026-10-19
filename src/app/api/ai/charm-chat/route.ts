@@ -7,6 +7,10 @@ interface ChatRequestPayload {
   imageBase64?: string; // Optional user uploaded sketch or photo
   history?: Array<{ sender: "ai" | "user"; text: string }>;
   customText?: string;
+  selectedColor?: string;
+  customShape?: string;
+  bagColor?: string;
+  bagColorName?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -26,6 +30,8 @@ export async function POST(req: NextRequest) {
     const userPrompt = (body.prompt || "").trim();
     const imageBase64 = body.imageBase64;
     const customText = (body.customText || "").trim();
+    const bagColorName = body.bagColorName || "Túi Lưới Biển Xanh";
+    const selectedColorHex = body.selectedColor || "#2563EB";
 
     if (!userPrompt && !imageBase64) {
       return NextResponse.json(
@@ -37,32 +43,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const systemInstruction = `Bạn là Nét AI Stylist — chuyên gia thiết kế charm thủ công nghệ thuật cao cấp gắn túi xách đại dương Nét (Đà Nẵng).
-Túi xách Nét được đan từ lưới đại dương tái sinh, trên thân túi có các mắt lưới chuẩn.
-Charm được gắn vừa khít vào mắt lưới túi thông qua NGÀM CHỐT CÀI Ở MẶT SAU (snap-mount pin: đường kính 4.5mm, chiều dài 4.0mm).
+    const systemInstruction = `Bạn là Giám đốc Sáng tạo & Nghệ nhân Điêu khắc Trưởng của Nét Studio — xưởng chế tác thủ công túi lưới đại dương & charm độc bản tại Đà Nẵng.
 
-NHIỆM VỤ CỦA BẠN:
-1. Trò chuyện thân thiện, tinh tế và giàu cảm xúc văn hóa Đà Nẵng, biển Mỹ Khê, Sơn Trà và thời trang tái sinh bền vững.
-2. Phân tích yêu cầu và hình ảnh khách gửi (ảnh cá nhân, thú cưng, ảnh kỷ niệm, hoa văn, hoặc chữ khắc).
-3. ĐẶC BIỆT KHI KHÁCH YÊU CẦU TẠO CHARM CHIBI / HOẠT HÌNH / CHÂN DUNG / CÁ NHÂN HOÁ:
-   - Hãy chuyển hoá thành một mẫu huy hiệu charm CHIBI / CARTOON CỰC KỲ DỄ THƯƠNG, NGHỆ THUẬT VÀ ĐẦY ĐỦ CHI TIẾT.
-   - Luôn tạo mã SVG 2D (viewBox="0 0 100 100") dạng Huy hiệu Charm Enamel Pin cao cấp:
-     + Khung viền huy hiệu kim loại/vàng đồng sang trọng bao quanh: <circle cx="50" cy="50" r="49" fill="#DAA520"/> hoặc <rect ... rx="16" fill="#DAA520"/>
-     + Nền trong sáng màu tôn nổi nhân vật: ví dụ <circle cx="50" cy="50" r="46" fill="#FFFDF9"/>
-     + Nhân vật chibi có mái tóc rõ lọn/nếp, khuôn mặt tròn đáng yêu với màu da tự nhiên (#FFDDC1 hoặc #FCD3B2), đôi mắt to tròn long lanh có đốm sáng (#000000 với highlight trắng), đôi má ửng hồng dễ thương (#FFB6C1), nụ cười tươi tắn (#8B0000 hoặc #E11D48), và trang phục có màu sắc tương phản nổi bật.
-   - TUYỆT ĐỐI KHÔNG vẽ một hình khối đơn điệu, không vẽ khối vuông trơn hay bóng mờ một màu! Mỗi bộ phận (tóc, mặt, mắt, má, áo, viền) phải là một thẻ path/circle/rect riêng với màu sắc sống động!
-4. KHI KHÁCH YÊU CẦU BIỂU TƯỢNG ĐÀ NẴNG / ĐẠI DƯƠNG (Rùa biển, Voọc Sơn Trà, Cầu Rồng, Vỏ ốc, Sóng biển):
-   - Tạo hình vector đa tầng sắc nét, có hoạ tiết nổi (vân mai rùa, vảy rồng, đường xoắn ốc...) nổi bật trên nền huy hiệu.
+NGUYÊN TẮC THIẾT KẾ CHARM NÉT (BẮT BUỘC TUÂN THỦ 100%):
+1. CHARM DIE-CUT TỰ DO — KHÔNG CÓ VIỀN NGOÀI:
+   - TUYỆT ĐỐI KHÔNG vẽ khung tròn, KHÔNG vẽ khung vuông, KHÔNG có viền hộp bao quanh chủ thể!
+   - Nền SVG hoàn toàn trong suốt (transparent).
+   - Đường bao của chiếc charm chính là đường cong tự nhiên ôm sát cơ thể nhân vật Chibi, hoặc đường lượn xoắn của sóng biển, hoặc nan quạt của vỏ sò, hoặc đôi cánh của chim hải âu.
+   - Giống như những chiếc charm gốm thủ công mạ vàng đính trên túi lưới: Mỗi charm là một hình thể điêu khắc độc lập, không bị bó buộc trong bất kỳ khuôn hình học nào.
 
-BẮT BUỘC:
-Luôn trả về kết quả dưới định dạng JSON hợp lệ:
+2. CHẤT LIỆU MEN GỐM THỦ CÔNG & ÁNH KIM ĐỒNG THAU (HANDCRAFTED CERAMIC ENAMEL & GOLD ACCENTS):
+   - Bề mặt charm có độ bóng bẩy của men nung (glossy enamel glaze), sử dụng <linearGradient> và <radialGradient> tạo chiều sâu, chuyển sắc tinh tế.
+   - Các đường viền chính của chi tiết được nhấn bằng nét chỉ vàng kim nghệ nhân (stroke="#D4AF37" hoặc stroke="#B8860B" hoặc stroke="#C59B27") tạo cảm giác kim loại đồng thau đúc viền men sứ.
+   - Màu sắc hài hòa, rạng rỡ, sang trọng, phối hợp ăn ý với màu túi lưới (${bagColorName}).
+
+3. CHUYÊN BIỆT KHI KHÁCH YÊU CẦU TẠO CHARM CHIBI / HOẠT HÌNH CÁ NHÂN TỪ ẢNH HOẶC MÔ TẢ:
+   - TÁCH BỎ HOÀN TOÀN PHÔNG NỀN (Remove background).
+   - Chuyển thể nhân vật thành PHONG CÁCH CHIBI CARTOON / ANIME CỰC KỲ DỄ THƯƠNG, NGHỆ THUẬT VÀ ĐẸP MẮT:
+     + Mái tóc bồng bềnh, bóng mượt theo ảnh/yêu cầu của khách (ví dụ tóc đen ngắn tự nhiên).
+     + Khuôn mặt Chibi tròn trịa, màu da hồng hào tự nhiên, đôi má ửng hồng phớt nhẹ.
+     + Đôi mắt Chibi to tròn đen láy, long lanh có đốm sáng phản chiếu tạo thần thái sống động, vui tươi.
+     + Khuôn miệng cười tươi tắn duyên dáng.
+     + Thân người và trang phục (áo thun đen, sơ mi, áo khoác...) thể hiện đúng phong cách của khách trong ảnh, viền vàng đồng nhẹ.
+     + Cắt die-cut sát theo toàn bộ dáng đầu và thân nhân vật.
+
+4. KHI KHÁCH YÊU CẦU BIỂU TƯỢNG ĐÀ NẴNG / ĐẠI DƯƠNG:
+   - Vạt sóng biển: Uốn lượn hình xoắn ốc men ngọc viền vàng, rỗng theo nếp sóng tự do.
+   - Vỏ sò biển: Dáng nan quạt men sứ trắng ngọc trai, các đường rãnh sò chạm vàng lấp lánh.
+   - Voọc Chà Vá Chân Nâu: Khuôn mặt nâu cam rực rỡ, mắt tròn đen lay láy, tai và thân die-cut theo dáng linh vật.
+   - Cầu Rồng / Thuyền buồm / Hải âu: Dáng lượn sóng tự do, không có khung nền bao quanh.
+
+BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {
-  "replyText": "Lời tư vấn phong cách ấm áp, giải thích ý nghĩa biểu tượng chibi/hoa văn và câu chuyện...",
-  "motifName": "Tên biểu tượng ngắn gọn (Ví dụ: Chibi Cá Nhân Áo Xanh)",
-  "story": "1-2 câu tóm tắt ý nghĩa phong cách và thông điệp cá nhân hoá...",
-  "svgCode": "<svg viewBox=\\"0 0 100 100\\" xmlns=\\"http://www.w3.org/2000/svg\\">...đa tầng chi tiết rõ nét...</svg>",
-  "recommendedColor": "#2563EB",
-  "laserEngravingText": "${customText || "NÉT ĐN"}",
+  "replyText": "Lời tư vấn phong cách ấm áp, giải thích ý tưởng tạo hình Chibi/biểu tượng die-cut và câu chuyện văn hóa kết nối với túi Nét...",
+  "motifName": "Tên tác phẩm charm ngắn gọn (Ví dụ: Chibi Chàng Trai Đà Nẵng / Sóng Biển Men Ngọc)",
+  "story": "Ý nghĩa tác phẩm, thông điệp cá nhân hoá kết hợp tình yêu biển...",
+  "svgCode": "<svg viewBox=\\"0 0 100 100\\" xmlns=\\"http://www.w3.org/2000/svg\\">...chỉ chứa hình nhân vật/chủ thể die-cut không có hình nền tròn/vuông bao ngoài...</svg>",
+  "recommendedColor": "${selectedColorHex}",
   "pinSpecs": {
     "diameterMm": 4.5,
     "heightMm": 4.0,
@@ -83,15 +100,14 @@ Luôn trả về kết quả dưới định dạng JSON hợp lệ:
       });
     }
 
-    // Phần nội dung gửi lần này
+    // Phần nội dung gửi lần này - Gom toàn bộ context từ người dùng
     const currentParts: any[] = [];
-    if (userPrompt) {
-      currentParts.push({
-        text: `Khách hàng yêu cầu: "${userPrompt}". ${
-          customText ? `Chữ muốn khắc: "${customText}".` : ""
-        } Hãy tạo mẫu charm vector SVG 2D đa tầng chi tiết, thẩm mỹ cao (nếu là chibi/cartoon thì vẽ khuôn mặt, mắt to long lanh, tóc, áo và viền huy hiệu vàng đồng) chuẩn gắn mắt lưới túi Nét.`,
-      });
-    }
+    let promptFull = `YÊU CẦU CỦA KHÁCH HÀNG: "${userPrompt}".\n`;
+    promptFull += `- Màu túi lưới đang phối: ${bagColorName}.\n`;
+    if (customText) promptFull += `- Chữ/ký tự muốn khắc: "${customText}".\n`;
+    promptFull += `- Yêu cầu cốt lõi: Tạo mẫu charm DIE-CUT TỰ DO KHÔNG CÓ VIỀN TRÒN/VUÔNG BAO NGOÀI, nền trong suốt, phong cách men gốm nghệ nhân mạ vàng đồng bóng bẩy đẹp nhất có thể, chuẩn ngàm chốt cài mắt lưới túi Nét.`;
+
+    currentParts.push({ text: promptFull });
 
     // Nếu khách có tải lên ảnh (Base64)
     if (imageBase64) {
@@ -113,7 +129,7 @@ Luôn trả về kết quả dưới định dạng JSON hợp lệ:
         },
       });
       currentParts.push({
-        text: "Hãy phân tích hình ảnh này và chuyển hóa các đường nét đặc trưng của người/vật thể trong ảnh thành mẫu charm chibi cartoon 2D vector nhiều chi tiết (mặt, mắt, tóc, nụ cười, trang phục) trên huy hiệu viền vàng đồng.",
+        text: "HÃY PHÂN TÍCH KỸ HÌNH ẢNH NÀY: Tách nền 100%, lấy các đặc trưng của người/chủ thể trong ảnh (kiểu tóc, khuôn mặt, biểu cảm cười, trang phục) và chuyển hoá thành nhân vật Chibi hoạt hình die-cut cực kỳ dễ thương, tinh tế, men gốm sứ viền vàng kim, KHÔNG CÓ KHUNG NỀN BAO NGOÀI.",
       });
     }
 
@@ -136,7 +152,7 @@ Luôn trả về kết quả dưới định dạng JSON hợp lệ:
         contents,
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.6,
+          temperature: 0.65,
           maxOutputTokens: 2500,
           thinkingConfig: {
             thinkingBudget: 0,

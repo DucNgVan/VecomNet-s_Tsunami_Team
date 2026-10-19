@@ -251,61 +251,74 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   title={`${placed.charm.vietnameseName} - Kéo để đổi vị trí`}
                 >
                   {/* Metal Hang Ring / Loop */}
-                  <div className="w-2.5 h-3.5 mx-auto rounded-t-full border-2 border-[#CBB588] bg-transparent -mb-1 shadow-xs" />
+                  <div className="w-2 h-2.5 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
 
-                  {/* Charm Badge */}
-                  <div
-                    style={{
-                      backgroundColor:
-                        isCustom && customCharmVisual?.svgCode
-                          ? "#FFFDF9"
-                          : placed.charm.color || "#38bdf8",
-                    }}
-                    className={`w-11 h-11 sm:w-12 sm:h-12 ${
-                      isCustom && customCharmVisual?.shape === "circle"
-                        ? "rounded-full"
-                        : isCustom && customCharmVisual?.shape === "teardrop"
-                        ? "rounded-t-full rounded-b-md"
-                        : isCustom && customCharmVisual?.shape === "heart"
-                        ? "rounded-2xl"
-                        : isCustom && customCharmVisual?.shape === "freeform"
-                        ? "rounded-[16px_4px_16px_4px]"
-                        : "rounded-xl"
-                    } flex flex-col items-center justify-center text-white shadow-md border-2 ${
-                      isCustom ? "border-[#D4AF37] shadow-amber-900/20" : "border-white/80"
-                    } relative transition-all overflow-hidden ${
-                      isSelected ? "ring-2 ring-[#B85D43] ring-offset-2" : ""
-                    }`}
-                  >
-                    {isCustom && customCharmVisual?.svgCode ? (
+                  {/* Freeform Die-Cut Charm (Không viền ngoài, cắt sát theo hình) */}
+                  {isCustom && customCharmVisual?.svgCode ? (
+                    <div
+                      className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center relative transition-transform ${
+                        isSelected ? "scale-110 drop-shadow-[0_0_10px_rgba(184,93,67,0.8)]" : "drop-shadow-md"
+                      }`}
+                    >
                       <div
-                        className="w-full h-full p-0.5 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-xs"
+                        className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow"
                         dangerouslySetInnerHTML={{ __html: customCharmVisual.svgCode }}
                       />
-                    ) : isCustom && customCharmVisual?.referenceImageUrl ? (
-                      <img
-                        src={customCharmVisual.referenceImageUrl}
-                        alt="Custom Sketch"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-lg sm:text-xl font-bold leading-none select-none drop-shadow-xs">
-                        {placed.charm.symbol || "✨"}
-                      </span>
-                    )}
-
-                    {/* Engraved text if custom */}
-                    {customCharmVisual?.engravedText && isCustom && (
-                      <span className="text-[7.5px] font-mono tracking-tight text-white/95 mt-0.5 truncate max-w-[36px] bg-black/40 px-1 rounded">
-                        {customCharmVisual.engravedText}
-                      </span>
-                    )}
-
-                    {/* Active Drag Indicator Icon */}
-                    <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
-                      <Move className="w-2.5 h-2.5" />
+                      {customCharmVisual?.engravedText && (
+                        <span className="absolute -bottom-1 text-[7px] font-mono tracking-tight text-white/95 truncate max-w-[44px] bg-black/70 px-1 py-0.5 rounded shadow">
+                          {customCharmVisual.engravedText}
+                        </span>
+                      )}
+                      {/* Active Drag Indicator Icon */}
+                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
+                        <Move className="w-2.5 h-2.5" />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    /* Standard / Fallback badge */
+                    <div
+                      style={{
+                        backgroundColor: placed.charm.color || "#38bdf8",
+                      }}
+                      className={`w-11 h-11 sm:w-12 sm:h-12 ${
+                        isCustom && customCharmVisual?.shape === "circle"
+                          ? "rounded-full"
+                          : isCustom && customCharmVisual?.shape === "teardrop"
+                          ? "rounded-t-full rounded-b-md"
+                          : isCustom && customCharmVisual?.shape === "heart"
+                          ? "rounded-2xl"
+                          : isCustom && customCharmVisual?.shape === "freeform"
+                          ? "rounded-[16px_4px_16px_4px]"
+                          : "rounded-xl"
+                      } flex flex-col items-center justify-center text-white shadow-md border-2 border-white/80 relative transition-all overflow-hidden ${
+                        isSelected ? "ring-2 ring-[#B85D43] ring-offset-2" : ""
+                      }`}
+                    >
+                      {isCustom && customCharmVisual?.referenceImageUrl ? (
+                        <img
+                          src={customCharmVisual.referenceImageUrl}
+                          alt="Custom Sketch"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-lg sm:text-xl font-bold leading-none select-none drop-shadow-xs">
+                          {placed.charm.symbol || "✨"}
+                        </span>
+                      )}
+
+                      {/* Engraved text if custom */}
+                      {customCharmVisual?.engravedText && isCustom && (
+                        <span className="text-[7.5px] font-mono tracking-tight text-white/95 mt-0.5 truncate max-w-[36px] bg-black/40 px-1 rounded">
+                          {customCharmVisual.engravedText}
+                        </span>
+                      )}
+
+                      {/* Active Drag Indicator Icon */}
+                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
+                        <Move className="w-2.5 h-2.5" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

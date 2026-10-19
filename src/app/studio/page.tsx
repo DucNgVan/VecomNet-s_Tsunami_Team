@@ -512,8 +512,12 @@ function NetStudioContent() {
         body: JSON.stringify({
           prompt: message || customIdea,
           imageBase64: customImageFile || undefined,
-          history: chatMessages.slice(-4),
+          history: chatMessages.slice(-6),
           customText: customText || undefined,
+          selectedColor: customColor,
+          customShape: customShape,
+          bagColor: selectedColor.hex,
+          bagColorName: selectedColor.name,
         }),
       });
 
@@ -556,7 +560,7 @@ function NetStudioContent() {
             }),
             analysis: {
               motif,
-              material: "Nhựa lưới đại dương tái sinh ép nhiệt / Ngàm chốt cài mắt lưới túi Nét",
+              material: "Nhựa lưới đại dương tái sinh men gốm nghệ nhân / Ngàm chốt cài mắt lưới",
               colors: color,
               laserIdea: laser,
             },
@@ -569,7 +573,7 @@ function NetStudioContent() {
       setIsAiThinking(false);
       console.warn("AI Chat API fallback:", err);
 
-      // Graceful fallback logic with rich SVG vector graphics
+      // Graceful fallback logic with pure DIE-CUT SVG vector graphics (no bounding box)
       const lower = (message + " " + (uploadedDocName || "")).toLowerCase();
       const isChibi =
         lower.includes("chibi") ||
@@ -584,68 +588,82 @@ function NetStudioContent() {
       const isSonTra = lower.includes("sơn trà") || lower.includes("voọc");
       const isDragon = lower.includes("rồng") || lower.includes("cầu");
 
-      let shape: "circle" | "square" | "teardrop" | "heart" | "freeform" = "circle";
+      let shape: "circle" | "square" | "teardrop" | "heart" | "freeform" = "freeform";
       let color = "#2563EB";
       let motif = "Chibi Cá Nhân Hoá Nét Enamel";
       let laserText = customText || "NÉT ME";
       let fallbackSvg = "";
 
       if (isChibi) {
-        shape = "circle";
+        shape = "freeform";
         color = "#2563EB";
-        motif = "Chibi Cá Nhân Hoá Nét Enamel";
+        motif = "Chibi Cá Nhân Hoá Men Gốm Viền Vàng";
         laserText = customText || "NÉT ME";
         fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="48" fill="#DAA520" stroke="#B48818" stroke-width="2"/>
-  <circle cx="50" cy="50" r="45" fill="#FFFDF9"/>
-  <path d="M30 65 C25 75 35 88 50 88 C65 88 75 75 70 65 Z" fill="#2563EB" stroke="#1A1A1A" stroke-width="1.5"/>
-  <path d="M50 28 C30 30 28 60 30 70 C40 78 60 78 70 70 C72 60 70 30 50 28 Z" fill="#FFDDC1" stroke="#1A1A1A" stroke-width="1.5"/>
-  <path d="M50 20 C25 25 20 50 25 58 Q35 68 50 68 Q65 68 75 58 C80 50 75 25 50 20 Z" fill="#3D2314" stroke="#1A1A1A" stroke-width="1.5"/>
-  <path d="M35 30 Q45 25 50 30 Q55 25 65 30 C60 35 40 35 35 30 Z" fill="#3D2314" stroke="#1A1A1A" stroke-width="1"/>
-  <circle cx="38" cy="62" r="5" fill="#FFB6C1" opacity="0.8"/>
-  <circle cx="62" cy="62" r="5" fill="#FFB6C1" opacity="0.8"/>
-  <circle cx="40" cy="46" r="8" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="0.5"/>
-  <circle cx="40" cy="46" r="5" fill="#1E293B"/>
-  <circle cx="38" cy="44" r="1.8" fill="#FFFFFF"/>
-  <circle cx="60" cy="46" r="8" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="0.5"/>
-  <circle cx="60" cy="46" r="5" fill="#1E293B"/>
-  <circle cx="58" cy="44" r="1.8" fill="#FFFFFF"/>
-  <path d="M45 66 Q50 70 55 66" stroke="#991B1B" stroke-width="1.8" fill="none"/>
+  <defs>
+    <linearGradient id="skinFb" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFDAB9"/>
+      <stop offset="100%" stop-color="#F8C29D"/>
+    </linearGradient>
+    <linearGradient id="hairFb" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2D2D2D"/>
+      <stop offset="100%" stop-color="#0F0F0F"/>
+    </linearGradient>
+    <linearGradient id="shirtFb" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <!-- Die-cut Chibi (No bounding frame) -->
+  <path d="M25 40 C15 25, 30 15, 50 15 S85 25, 75 40 C75 40, 65 45, 50 45 S25 40, 25 40 Z" fill="url(#hairFb)" stroke="#D4AF37" stroke-width="1.8"/>
+  <path d="M30 38 Q20 54, 25 68 C30 82, 70 82, 75 68 Q80 54, 70 38 C70 38, 50 44, 30 38 Z" fill="url(#skinFb)" stroke="#D4AF37" stroke-width="1.8"/>
+  <path d="M26 38 C32 28, 42 32, 50 26 C58 32, 68 28, 74 38 C68 36, 58 40, 50 36 C42 40, 32 36, 26 38 Z" fill="url(#hairFb)" stroke="#D4AF37" stroke-width="1.2"/>
+  <ellipse cx="40" cy="52" rx="6" ry="7.5" fill="#111827" stroke="#D4AF37" stroke-width="0.5"/>
+  <circle cx="42" cy="50" r="2.2" fill="#FFFFFF"/>
+  <circle cx="39" cy="55" r="1.1" fill="#FFFFFF"/>
+  <ellipse cx="60" cy="52" rx="6" ry="7.5" fill="#111827" stroke="#D4AF37" stroke-width="0.5"/>
+  <circle cx="62" cy="50" r="2.2" fill="#FFFFFF"/>
+  <circle cx="59" cy="55" r="1.1" fill="#FFFFFF"/>
+  <ellipse cx="33" cy="62" rx="4.5" ry="2.5" fill="#FFB6C1" opacity="0.85"/>
+  <ellipse cx="67" cy="62" rx="4.5" ry="2.5" fill="#FFB6C1" opacity="0.85"/>
+  <path d="M44 64 Q50 71, 56 64" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round"/>
+  <path d="M28 72 C20 80, 24 94, 50 94 C76 94, 80 80, 72 72 L66 68 L34 68 Z" fill="url(#shirtFb)" stroke="#D4AF37" stroke-width="1.8"/>
+  <path d="M42 68 L50 76 L58 68" fill="none" stroke="#D4AF37" stroke-width="1.2"/>
 </svg>`;
       } else if (isOcean) {
-        shape = "teardrop";
+        shape = "freeform";
         color = "#2563EB";
-        motif = "Vạt sóng biển Mỹ Khê & Vỏ ốc men gốm";
+        motif = "Vạt Sóng Biển Men Ngọc Cuộn Vàng";
         laserText = customText || "MỸ KHÊ";
         fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="48" fill="#D4AF37" stroke="#B48818" stroke-width="2"/>
-  <circle cx="50" cy="50" r="45" fill="#EBF5FB"/>
-  <ellipse cx="50" cy="52" rx="22" ry="26" fill="#0D9488" stroke="#115E59" stroke-width="2"/>
-  <circle cx="50" cy="24" r="9" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
-  <circle cx="47" cy="23" r="1.5" fill="#111827"/>
-  <circle cx="53" cy="23" r="1.5" fill="#111827"/>
-  <path d="M30 38 Q18 30 22 45 Q28 46 32 44 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
-  <path d="M70 38 Q82 30 78 45 Q72 46 68 44 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
-  <path d="M32 64 Q22 72 26 78 Q33 74 36 68 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
-  <path d="M68 64 Q78 72 74 78 Q67 74 64 68 Z" fill="#14B8A6" stroke="#115E59" stroke-width="1.5"/>
-  <polygon points="50,38 60,45 60,57 50,64 40,57 40,45" fill="#F0FDFA" stroke="#115E59" stroke-width="1.5"/>
+  <defs>
+    <linearGradient id="waveFb" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E40AF"/>
+      <stop offset="50%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+  <!-- Die-cut Ocean Wave Scroll (No bounding box) -->
+  <path d="M15 75 C10 60, 25 45, 45 48 C35 38, 45 22, 65 25 C82 28, 88 45, 80 62 C72 78, 50 82, 35 78 C25 75, 18 80, 15 75 Z" fill="url(#waveFb)" stroke="#D4AF37" stroke-width="2.2"/>
+  <path d="M30 65 C35 52, 50 48, 62 55 C70 60, 72 70, 65 74" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M45 42 C52 35, 65 38, 70 48" fill="none" stroke="#D4AF37" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="70" cy="50" r="2.5" fill="#FFFFFF"/>
 </svg>`;
       } else if (isSonTra) {
-        shape = "circle";
+        shape = "freeform";
         color = "#234B3E";
         motif = "Voọc Chà Vá Chân Nâu Sơn Trà";
         laserText = customText || "SƠN TRÀ";
         fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="48" fill="#D4AF37" stroke="#B48818" stroke-width="2"/>
-  <circle cx="50" cy="50" r="45" fill="#F4FBF7"/>
-  <circle cx="50" cy="50" r="32" fill="#4B5563"/>
-  <circle cx="50" cy="52" r="24" fill="#FBBF24"/>
-  <ellipse cx="42" cy="48" rx="5" ry="7" fill="#111827"/>
-  <ellipse cx="58" cy="48" rx="5" ry="7" fill="#111827"/>
-  <circle cx="40" cy="46" r="1.5" fill="#FFFFFF"/>
-  <circle cx="56" cy="46" r="1.5" fill="#FFFFFF"/>
-  <path d="M44 58 Q50 62 56 58" stroke="#1F2937" stroke-width="2" fill="none"/>
-  <path d="M22 62 C26 76 38 84 50 84 C62 84 74 76 78 62" stroke="#FFFFFF" stroke-width="6" fill="none"/>
+  <!-- Die-cut Douc Langur mascot (No bounding box) -->
+  <path d="M30 20 C18 20, 18 42, 28 48 C24 55, 26 72, 35 84 C42 92, 58 92, 65 84 C74 72, 76 55, 72 48 C82 42, 82 20, 70 20 C62 20, 56 26, 50 26 C44 26, 38 20, 30 20 Z" fill="#475569" stroke="#D4AF37" stroke-width="2"/>
+  <path d="M32 35 C32 45, 36 65, 50 65 C64 65, 68 45, 68 35 C68 25, 60 22, 50 22 C40 22, 32 25, 32 35 Z" fill="#F59E0B" stroke="#D4AF37" stroke-width="1.5"/>
+  <ellipse cx="42" cy="40" rx="4" ry="5.5" fill="#111827"/>
+  <circle cx="44" cy="38" r="1.5" fill="#FFFFFF"/>
+  <ellipse cx="58" cy="40" rx="4" ry="5.5" fill="#111827"/>
+  <circle cx="60" cy="38" r="1.5" fill="#FFFFFF"/>
+  <path d="M44 50 Q50 55, 56 50" fill="none" stroke="#1F2937" stroke-width="1.8"/>
+  <path d="M26 55 C32 68, 42 74, 50 74 C58 74, 68 68, 74 55" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" fill="none"/>
 </svg>`;
       } else if (isDragon) {
         shape = "freeform";
@@ -653,20 +671,19 @@ function NetStudioContent() {
         motif = "Cầu Rồng Sông Hàn Vươn Mình";
         laserText = customText || "CẦU RỒNG";
         fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="48" fill="#D4AF37" stroke="#B48818" stroke-width="2"/>
-  <circle cx="50" cy="50" r="45" fill="#FFFBEB"/>
-  <path d="M20 70 Q35 45 50 70 T80 70" stroke="#2563EB" stroke-width="5" fill="none"/>
-  <path d="M25 60 C35 30 55 25 75 35 C80 40 85 45 75 55 C65 45 50 50 40 60 Z" fill="#D97706" stroke="#92400E" stroke-width="2"/>
-  <circle cx="70" cy="38" r="3" fill="#DC2626"/>
-  <circle cx="69" cy="37" r="1" fill="#FFFFFF"/>
-  <path d="M78 40 Q88 35 90 42 Q85 46 80 44" fill="#EF4444"/>
+  <path d="M15 70 Q32 40, 50 68 T85 68" stroke="#0284C7" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M22 58 C32 28, 54 22, 74 32 C82 36, 86 42, 76 52 C65 42, 48 46, 36 58 Z" fill="#D97706" stroke="#D4AF37" stroke-width="2"/>
+  <circle cx="70" cy="36" r="3.2" fill="#DC2626"/>
+  <circle cx="69" cy="35" r="1" fill="#FFFFFF"/>
+  <path d="M76 38 Q88 32, 92 40 Q86 44, 80 42" fill="#EF4444" stroke="#D4AF37" stroke-width="1"/>
 </svg>`;
       } else {
         fallbackSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="48" fill="#DAA520" stroke="#B48818" stroke-width="2"/>
-  <circle cx="50" cy="50" r="45" fill="#FFFDF9"/>
-  <circle cx="50" cy="50" r="30" fill="${color}" opacity="0.9"/>
-  <path d="M50 26 L56 42 L73 42 L59 52 L64 69 L50 59 L36 69 L41 52 L27 42 L44 42 Z" fill="#FFD700" stroke="#B48818" stroke-width="1.2"/>
+  <path d="M50 15 C30 15, 15 35, 18 60 C20 74, 32 85, 50 85 C68 85, 80 74, 82 60 C85 35, 70 15, 50 15 Z" fill="#FFFDF9" stroke="#D4AF37" stroke-width="2.2"/>
+  <path d="M50 15 L50 85" stroke="#D4AF37" stroke-width="1.6"/>
+  <path d="M50 15 Q34 45, 32 78" stroke="#D4AF37" stroke-width="1.3" fill="none"/>
+  <path d="M50 15 Q66 45, 68 78" stroke="#D4AF37" stroke-width="1.3" fill="none"/>
+  <path d="M40 85 L38 92 L62 92 L60 85 Z" fill="#E8D5C4" stroke="#D4AF37" stroke-width="1.5"/>
 </svg>`;
       }
 
@@ -690,14 +707,14 @@ function NetStudioContent() {
         {
           id: `ai-${Date.now()}`,
           sender: "ai",
-          text: `Nét AI Stylist đã hoàn thiện bản phác thảo charm 2D "${motif}" độc bản cho bạn! Nét vẽ chibi và đường nét vector đã được chuẩn hoá với ngàm chốt cài mắt lưới túi Nét sẵn sàng chế tác.`,
+          text: `Nét AI Stylist đã hoàn thiện bản phác thảo charm die-cut "${motif}" độc bản cho bạn! Nét vẽ hoạt hình gốm sứ mạ vàng kim đã được chuẩn hoá với ngàm chốt cài mắt lưới túi Nét.`,
           time: new Date().toLocaleTimeString("vi-VN", {
             hour: "2-digit",
             minute: "2-digit",
           }),
           analysis: {
             motif,
-            material: "Nhựa lưới biển tái sinh ép nhiệt / Ngàm chốt cài mắt lưới túi Nét",
+            material: "Nhựa lưới biển tái sinh men gốm nghệ nhân / Ngàm chốt cài mắt lưới",
             colors: color,
             laserIdea: laserText,
           },
@@ -1763,45 +1780,44 @@ function NetStudioContent() {
 
                                 {/* Visual Charm Representation in Sketch */}
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-                                  <div className="sm:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-[#E8E2D8] shadow-2xs">
-                                    <div
-                                      className={`w-28 h-28 ${
-                                        customShape === "circle"
-                                          ? "rounded-full"
-                                          : customShape === "teardrop"
-                                          ? "rounded-t-full rounded-b-xl"
-                                          : customShape === "heart"
-                                          ? "rounded-3xl"
-                                          : customShape === "freeform"
-                                          ? "rounded-[32px_8px_32px_8px]"
-                                          : "rounded-2xl"
-                                      } flex flex-col items-center justify-center bg-gradient-to-br from-[#FFFDF9] via-white to-[#FAF6EE] shadow-md border-3 border-[#D4AF37] ring-2 ring-[#B85D43]/20 relative overflow-hidden transition-all p-1.5`}
-                                    >
+                                  <div className="sm:col-span-5 flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-[#FAF7F2] to-[#F3ECE1] border border-[#E8E2D8] shadow-inner relative">
+                                    <div className="absolute top-2.5 left-3 text-[9px] uppercase tracking-wider font-semibold text-[#B85D43] bg-white/80 px-2 py-0.5 rounded-full border border-[#E8E2D8]">
+                                      Tạo hình Die-Cut tự do
+                                    </div>
+
+                                    {/* Freestanding Die-Cut Charm Display (Không viền ngoài bao quanh) */}
+                                    <div className="w-32 h-32 flex items-center justify-center relative my-2">
                                       {generatedSvgCode ? (
                                         <div
-                                          className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-xs"
+                                          className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)]"
                                           dangerouslySetInnerHTML={{ __html: generatedSvgCode }}
                                         />
                                       ) : customImageFile ? (
-                                        <div className="w-full h-full relative rounded-xl overflow-hidden flex items-center justify-center bg-slate-100">
+                                        <div className="w-full h-full relative flex items-center justify-center">
                                           <img
                                             src={customImageFile}
                                             alt="Custom Reference"
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain drop-shadow-md"
                                           />
                                         </div>
                                       ) : (
                                         <div
                                           style={{ backgroundColor: customColor }}
-                                          className="w-full h-full rounded-xl flex items-center justify-center text-white font-serif font-bold text-xl"
+                                          className="w-24 h-24 rounded-2xl flex items-center justify-center text-white font-serif font-bold text-2xl drop-shadow-md"
                                         >
                                           {customText ? customText.slice(0, 3).toUpperCase() : "NÉT"}
                                         </div>
                                       )}
                                     </div>
-                                    <span className="text-[10px] text-[#7A6F68] mt-2 font-mono">
-                                      Quy chuẩn: 4.5cm x 4.5cm
-                                    </span>
+
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-[10px] text-[#7A6F68] font-mono bg-white px-2 py-0.5 rounded-md border border-[#E8E2D8]">
+                                        Quy chuẩn: ~4.5cm x 4.5cm
+                                      </span>
+                                      <span className="text-[10px] text-[#2D5A27] font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                        Không khung viền
+                                      </span>
+                                    </div>
                                   </div>
 
                                   <div className="sm:col-span-7 space-y-1.5 text-xs text-[#5E4D43]">
@@ -1833,7 +1849,7 @@ function NetStudioContent() {
                                         onClick={() => {
                                           const svgToUse =
                                             generatedSvgCode ||
-                                            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="#DAA520" stroke="#B48818" stroke-width="2"/><circle cx="50" cy="50" r="45" fill="#FFFDF9"/><path d="M30 65 C25 75 35 88 50 88 C65 88 75 75 70 65 Z" fill="#2563EB" stroke="#1A1A1A" stroke-width="1.5"/><path d="M50 28 C30 30 28 60 30 70 C40 78 60 78 70 70 C72 60 70 30 50 28 Z" fill="#FFDDC1" stroke="#1A1A1A" stroke-width="1.5"/><path d="M50 20 C25 25 20 50 25 58 Q35 68 50 68 Q65 68 75 58 C80 50 75 25 50 20 Z" fill="#3D2314" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="46" r="8" fill="#FFFFFF"/><circle cx="40" cy="46" r="5" fill="#1E293B"/><circle cx="60" cy="46" r="8" fill="#FFFFFF"/><circle cx="60" cy="46" r="5" fill="#1E293B"/><path d="M45 66 Q50 70 55 66" stroke="#991B1B" stroke-width="1.8" fill="none"/></svg>`;
+                                            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="skinStl" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFDAB9"/><stop offset="100%" stop-color="#F8C29D"/></linearGradient></defs><path d="M25 40 C15 25, 30 15, 50 15 S85 25, 75 40 C75 40, 65 45, 50 45 S25 40, 25 40 Z" fill="#2D2D2D" stroke="#D4AF37" stroke-width="1.8"/><path d="M30 38 Q20 54, 25 68 C30 82, 70 82, 75 68 Q80 54, 70 38 C70 38, 50 44, 30 38 Z" fill="url(#skinStl)" stroke="#D4AF37" stroke-width="1.8"/><ellipse cx="40" cy="52" rx="6" ry="7.5" fill="#111827"/><circle cx="42" cy="50" r="2.2" fill="#FFFFFF"/><ellipse cx="60" cy="52" rx="6" ry="7.5" fill="#111827"/><circle cx="62" cy="50" r="2.2" fill="#FFFFFF"/><path d="M44 64 Q50 71, 56 64" fill="none" stroke="#B91C1C" stroke-width="2"/><path d="M28 72 C20 80, 24 94, 50 94 C76 94, 80 80, 72 72 L66 68 L34 68 Z" fill="#2563EB" stroke="#D4AF37" stroke-width="1.8"/></svg>`;
                                           try {
                                             const res = generateCharmSTLFromSVG(svgToUse, { depthMm: 3.0 });
                                             setGeneratedStlData(res.stlString);

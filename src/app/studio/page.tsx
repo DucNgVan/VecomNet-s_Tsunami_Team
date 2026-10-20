@@ -44,6 +44,7 @@ import {
 } from "@/lib/designRequestStorage";
 import { useAuth } from "@/context/AuthContext";
 import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
+import { removeWhiteBackground } from "@/lib/charmImageProcessor";
 
 // 6 Đà Nẵng signature charms
 const READY_CHARMS: Charm[] = [
@@ -292,13 +293,19 @@ function NetStudioContent() {
       time: string;
       attachmentName?: string;
       attachmentUrl?: string;
+      imageUrl?: string;
+      imageProvider?: string;
+      subjectCategory?: string;
       masterPrompt?: string;
       features?: {
+        subject?: string;
         haircut?: string;
         eyewear?: string;
         pose?: string;
         outfit?: string;
         accessories?: string;
+        features?: string;
+        colors?: string;
       };
       analysis?: {
         motif: string;
@@ -311,7 +318,7 @@ function NetStudioContent() {
     {
       id: "ai-welcome",
       sender: "ai",
-      text: "Chào bạn! Tôi là Nét AI Stylist. Bạn muốn thiết kế dấu ấn charm mang cảm hứng nào từ chuyến đi Đà Nẵng hay kỷ niệm riêng của mình? Hãy nhập ý tưởng hoặc tải lên bản phác thảo tay / ảnh chân dung nhé!",
+      text: "Chào bạn! Tôi là Nét 3D Keychain Designer Agent. Dù bạn gửi ảnh chân dung, ảnh thú cưng, hoa sen/cành lá, địa danh Đà Nẵng, hay chỉ cần gõ vài chữ ý tưởng — tôi đều có thể kiến tạo chiếc móc khoá 3D cực đẹp và dễ thương cho chiếc túi Nét của bạn!",
       time: "Vừa xong",
     },
   ]);
@@ -322,12 +329,14 @@ function NetStudioContent() {
 
   const [customIdea, setCustomIdea] = useState("");
   const [customImageFile, setCustomImageFile] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("auto");
   const [customShape, setCustomShape] = useState<"circle" | "square" | "teardrop" | "heart" | "freeform">("square");
   const [customColor, setCustomColor] = useState("#C2674F");
   const [customSize, setCustomSize] = useState<"small" | "medium" | "large">("medium");
   const [customText, setCustomText] = useState("");
   const [hasAppliedCustomToBag, setHasAppliedCustomToBag] = useState(false);
   const [generatedSvgCode, setGeneratedSvgCode] = useState<string | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [generatedStlData, setGeneratedStlData] = useState<string | null>(null);
   const [motifName, setMotifName] = useState<string | null>(null);
   const [motifStory, setMotifStory] = useState<string | null>(null);
@@ -521,6 +530,7 @@ function NetStudioContent() {
         body: JSON.stringify({
           prompt: message || customIdea,
           imageBase64: customImageFile || undefined,
+          category: selectedCategory,
           history: chatMessages.slice(-6),
           customText: customText || undefined,
           selectedColor: customColor,
@@ -540,6 +550,7 @@ function NetStudioContent() {
         const motif = d.motifName || "Charm Độc Bản";
         const story = d.story || "";
         const laser = d.laserEngravingText || customText;
+        const imgUrl = d.imageUrl || null;
 
         setCustomColor(color);
         setCustomText(laser);
@@ -557,6 +568,17 @@ function NetStudioContent() {
           }
         }
 
+        // Tự động tách nền trắng thành PNG trong suốt cho móc khoá
+        let finalDisplayImg = imgUrl;
+        if (imgUrl && typeof window !== "undefined") {
+          try {
+            finalDisplayImg = await removeWhiteBackground(imgUrl);
+          } catch (bgErr) {
+            console.warn("Background removal notice:", bgErr);
+          }
+        }
+        setGeneratedImageUrl(finalDisplayImg);
+
         setChatMessages((prev) => [
           ...prev,
           {
@@ -567,6 +589,9 @@ function NetStudioContent() {
               hour: "2-digit",
               minute: "2-digit",
             }),
+            imageUrl: finalDisplayImg,
+            imageProvider: d.imageProvider,
+            subjectCategory: d.subjectCategory,
             masterPrompt: d.masterPrompt,
             features: d.featuresExtracted,
             analysis: {
@@ -968,6 +993,8 @@ Key 3D printing & charm specs:
             size: customSize,
             engravedText: customText.trim() || undefined,
             referenceImageUrl: customImageFile || undefined,
+            imageUrl: generatedImageUrl || undefined,
+            subjectCategory: selectedCategory !== "auto" ? selectedCategory : undefined,
             svgCode: generatedSvgCode || undefined,
             stlData: generatedStlData || undefined,
             motifName: motifName || undefined,
@@ -1134,6 +1161,7 @@ Key 3D printing & charm specs:
                           engravedText: customText,
                           referenceImageUrl: customImageFile || undefined,
                           svgCode: generatedSvgCode || undefined,
+                          imageUrl: generatedImageUrl || undefined,
                         }
                       : null
                   }
@@ -1739,6 +1767,36 @@ Key 3D printing & charm specs:
                                     </div>
                                   )}
 
+                                  {/* 3D Keychain Charm Image Preview */}
+                                  {msg.imageUrl && (
+                                    <div className="mt-2.5 p-3 rounded-2xl bg-gradient-to-b from-white to-[#F5EFE6] border border-[#E8E2D8] space-y-2 shadow-xs">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#B85D43] uppercase">
+                                          <Sparkles className="w-3.5 h-3.5" />
+                                          <span>Móc khoá 3D Render ({msg.imageProvider === "openai" ? "OpenAI Engine" : "3D Flux Engine"})</span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handlePlaceCustomOnBag(customShape, customColor, customText);
+                                            setAiCustomStep(2);
+                                          }}
+                                          className="px-2.5 py-1 rounded-lg bg-[#B85D43] hover:bg-[#A24E36] text-white text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-xs"
+                                        >
+                                          <Check className="w-3 h-3" />
+                                          <span>Gắn lên túi</span>
+                                        </button>
+                                      </div>
+                                      <div className="w-full aspect-square max-w-[200px] mx-auto rounded-xl p-2 bg-radial from-white via-white/80 to-[#ECE5D8] flex items-center justify-center relative overflow-hidden border border-[#E8E2D8]/60 shadow-inner">
+                                        <img
+                                          src={msg.imageUrl}
+                                          alt="3D Keychain Render"
+                                          className="w-full h-full object-contain filter drop-shadow-[0_10px_16px_rgba(0,0,0,0.2)] hover:scale-105 transition-transform"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+
                                   {/* Master Prompt Chuẩn 3D Keychain với 1-Click Copy */}
                                   {msg.masterPrompt && (
                                     <div className="mt-2.5 p-2.5 rounded-xl bg-[#FFFDF5] border border-[#D4AF37]/50 space-y-2">
@@ -1790,18 +1848,89 @@ Key 3D printing & charm specs:
                             )}
                           </div>
 
+                          {/* Category Selector Tabs */}
+                          <div className="space-y-1.5 bg-[#FAF7F2] p-2.5 rounded-2xl border border-[#E8E2D8]">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-[#5E4D43]">
+                              <span className="flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+                                <span>Chủ đề móc khoá muốn tạo:</span>
+                              </span>
+                              <span className="text-[10px] text-[#8C7A70] font-normal">
+                                (AI tối ưu tỷ lệ & nét vẽ riêng cho từng nhóm)
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                              {[
+                                { id: "auto", label: "✨ Tự nhận diện", hint: "Ảnh / Ý tưởng bất kỳ" },
+                                { id: "human", label: "👤 Chân dung Chibi", hint: "Người, bạn bè, cặp đôi" },
+                                { id: "animal", label: "🐾 Thú cưng cute", hint: "Chó mèo, thú bông 3D" },
+                                { id: "flora", label: "🌸 Hoa cỏ đại dương", hint: "Sen ngọc, san hô, lá" },
+                                { id: "landmark_object", label: "☕ Địa danh & Đồ vật", hint: "Cầu Rồng, cà phê, nón" },
+                              ].map((cat) => (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => setSelectedCategory(cat.id)}
+                                  className={`py-2 px-2.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                                    selectedCategory === cat.id
+                                      ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
+                                      : "bg-white text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
+                                  }`}
+                                >
+                                  <span className="text-xs font-semibold leading-tight">{cat.label}</span>
+                                  <span
+                                    className={`text-[9.5px] mt-0.5 truncate ${
+                                      selectedCategory === cat.id ? "text-white/75" : "text-[#8C7A70]"
+                                    }`}
+                                  >
+                                    {cat.hint}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           {/* Quick Prompt Suggestions */}
                           <div className="space-y-1.5">
                             <span className="text-[11px] font-medium text-[#7A6F68]">
-                              Gợi ý ý tưởng nhanh từ Đà Nẵng:
+                              Gợi ý ý tưởng {selectedCategory === "animal" ? "thú cưng" : selectedCategory === "flora" ? "hoa cỏ" : selectedCategory === "human" ? "chân dung" : selectedCategory === "landmark_object" ? "địa danh" : "độc đáo"}:
                             </span>
                             <div className="flex flex-wrap gap-1.5">
-                              {[
-                                "🌊 Hoa muống biển Mỹ Khê & khắc tên",
-                                "🐒 Voọc Sơn Trà men xanh rêu",
-                                "🌉 Cầu Rồng phun lửa đồng thau",
-                                "🐚 Vỏ ốc men rác biển nung thủ công",
-                              ].map((promptText) => (
+                              {(selectedCategory === "animal"
+                                ? [
+                                    "🐶 Chú cún Poodle nâu vàng đeo nơ đỏ cười tươi",
+                                    "🐱 Bé mèo cam mập ôm ly cà phê sữa đá",
+                                    "🐢 Chú rùa biển Sơn Trà mắt to tròn ngây thơ",
+                                    "🐒 Voọc Chà Vá Chân Nâu linh vật Đà Nẵng",
+                                  ]
+                                : selectedCategory === "flora"
+                                ? [
+                                    "🌸 Hoa sen hồng men ngọc viền đồng thau nở rộ",
+                                    "🌊 Hoa muống biển Mỹ Khê tím mộng mơ",
+                                    "🪸 Cành san hô ngọc bích điểm sao biển vàng",
+                                    "🌻 Hoa hướng dương chibi mặt cười rạng rỡ",
+                                  ]
+                                : selectedCategory === "human"
+                                ? [
+                                    "👦 Chibi chàng trai áo polo vẫy tay thân thiện",
+                                    "👧 Cô gái tóc ngắn đeo kính mặc váy hoa hướng dương",
+                                    "👫 Cặp đôi du lịch biển nụ cười hạnh phúc",
+                                    "👶 Em bé má phúng phính đội nón lá mini",
+                                  ]
+                                : selectedCategory === "landmark_object"
+                                ? [
+                                    "🌉 Cầu Rồng Đà Nẵng phun lửa mini kawaii",
+                                    "☕ Ly cà phê phin sữa đá tí hon men gốm",
+                                    "👒 Nón lá truyền thống vẽ hoa sen cách điệu",
+                                    "📷 Máy ảnh vintage mini du lịch biển",
+                                  ]
+                                : [
+                                    "🐱 Bé mèo cam ôm ly cà phê sữa đá",
+                                    "🌸 Hoa sen hồng men ngọc viền đồng thau",
+                                    "🌉 Cầu Rồng phun lửa mini kawaii",
+                                    "👧 Cô gái tóc ngắn đeo kính áo hoodie vàng",
+                                  ]
+                              ).map((promptText) => (
                                 <button
                                   key={promptText}
                                   type="button"
@@ -1927,9 +2056,17 @@ Key 3D printing & charm specs:
                                       Tạo hình Die-Cut tự do
                                     </div>
 
-                                    {/* Freestanding Die-Cut Charm Display (Không viền ngoài bao quanh) */}
+                                    {/* Freestanding Die-Cut Charm Display (Ưu tiên ảnh 3D thật hoặc SVG vector) */}
                                     <div className="w-32 h-32 flex items-center justify-center relative my-2">
-                                      {generatedSvgCode ? (
+                                      {generatedImageUrl ? (
+                                        <div className="w-full h-full relative flex items-center justify-center">
+                                          <img
+                                            src={generatedImageUrl}
+                                            alt={motifName || "Móc khoá 3D Nét"}
+                                            className="w-full h-full object-contain filter drop-shadow-[0_12px_22px_rgba(0,0,0,0.25)] select-none pointer-events-none"
+                                          />
+                                        </div>
+                                      ) : generatedSvgCode ? (
                                         <div
                                           className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)]"
                                           dangerouslySetInnerHTML={{ __html: generatedSvgCode }}
@@ -1957,7 +2094,7 @@ Key 3D printing & charm specs:
                                         Quy chuẩn: ~4.5cm x 4.5cm
                                       </span>
                                       <span className="text-[10px] text-[#2D5A27] font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                        Không khung viền
+                                        Die-cut 3D Móc khoá
                                       </span>
                                     </div>
                                   </div>
@@ -1969,7 +2106,7 @@ Key 3D printing & charm specs:
                                     </div>
                                     <div>
                                       <strong className="text-[#241B16]">Vật liệu:</strong>{" "}
-                                      Nhựa lưới biển tái sinh ép nhiệt nung men mờ
+                                      Nhựa lưới biển tái sinh men nung 3D / Kim loại đồng thau
                                     </div>
                                     <div>
                                       <strong className="text-[#241B16]">Độ dày:</strong> 3.0 mm (chuẩn in 3D FDM/Resin)
@@ -1977,7 +2114,7 @@ Key 3D printing & charm specs:
                                     <div>
                                       <strong className="text-[#241B16]">Cơ cấu cài túi:</strong>{" "}
                                       <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                        Ngàm chốt cài mắt lưới (D=4.5mm, H=4.0mm)
+                                        Ngàm chốt cài mắt lưới (D=4.5mm, H=4.0mm) + Khoen móc đỉnh
                                       </span>
                                     </div>
                                     <div>
@@ -1985,7 +2122,17 @@ Key 3D printing & charm specs:
                                       {customText ? `"${customText}"` : "Theo yêu cầu"}
                                     </div>
 
-                                    <div className="pt-2 flex items-center gap-2">
+                                    <div className="pt-2 flex flex-wrap items-center gap-2">
+                                      {generatedImageUrl && (
+                                        <a
+                                          href={generatedImageUrl}
+                                          download={`mockhoa-${(motifName || "net-charm").toLowerCase().replace(/\s+/g, "-")}.png`}
+                                          className="px-3 py-1.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                                        >
+                                          <Download className="w-3.5 h-3.5" />
+                                          <span>Tải ảnh HD (.PNG)</span>
+                                        </a>
+                                      )}
                                       <button
                                         type="button"
                                         onClick={() => {

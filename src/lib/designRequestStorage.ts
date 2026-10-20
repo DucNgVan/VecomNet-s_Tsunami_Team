@@ -26,6 +26,9 @@ export interface TrackingEvent {
 export interface CustomCharmSpec {
   idea: string;
   referenceImageUrl?: string;
+  imageUrl?: string;          // Ảnh render 3D chân thực của móc khoá
+  imageProvider?: string;     // openai | flux-3d
+  subjectCategory?: string;   // human | animal | flora | landmark_object | creative_abstract
   shape: "circle" | "square" | "teardrop" | "heart" | "freeform";
   color: string;
   size: "small" | "medium" | "large";

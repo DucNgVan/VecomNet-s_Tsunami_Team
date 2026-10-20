@@ -11,6 +11,7 @@ interface CustomCharmVisual {
   engravedText?: string;
   referenceImageUrl?: string;
   svgCode?: string;
+  imageUrl?: string;
 }
 
 interface NetBag2DCanvasProps {
@@ -253,8 +254,29 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   {/* Metal Hang Ring / Loop */}
                   <div className="w-2 h-2.5 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
 
-                  {/* Freeform Die-Cut Charm (Không viền ngoài, cắt sát theo hình) */}
-                  {isCustom && customCharmVisual?.svgCode ? (
+                  {/* Freeform Die-Cut Charm (Hiển thị ảnh 3D thật hoặc SVG vector) */}
+                  {isCustom && customCharmVisual?.imageUrl ? (
+                    <div
+                      className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center relative transition-transform ${
+                        isSelected ? "scale-115 drop-shadow-[0_0_12px_rgba(184,93,67,0.9)]" : "drop-shadow-lg"
+                      }`}
+                    >
+                      <img
+                        src={customCharmVisual.imageUrl}
+                        alt={customCharmVisual.engravedText || "Móc khoá 3D Nét"}
+                        className="w-full h-full object-contain filter select-none pointer-events-none drop-shadow-md"
+                      />
+                      {customCharmVisual?.engravedText && (
+                        <span className="absolute -bottom-1 text-[7px] font-mono tracking-tight text-white/95 truncate max-w-[48px] bg-black/75 px-1 py-0.5 rounded shadow">
+                          {customCharmVisual.engravedText}
+                        </span>
+                      )}
+                      {/* Active Drag Indicator Icon */}
+                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
+                        <Move className="w-2.5 h-2.5" />
+                      </div>
+                    </div>
+                  ) : isCustom && customCharmVisual?.svgCode ? (
                     <div
                       className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center relative transition-transform ${
                         isSelected ? "scale-110 drop-shadow-[0_0_10px_rgba(184,93,67,0.8)]" : "drop-shadow-md"

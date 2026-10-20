@@ -318,7 +318,7 @@ function NetStudioContent() {
     {
       id: "ai-welcome",
       sender: "ai",
-      text: "Chào bạn! Tôi là Nét 3D Keychain Designer Agent. Dù bạn gửi ảnh chân dung, ảnh thú cưng, hoa sen/cành lá, địa danh Đà Nẵng, hay chỉ cần gõ vài chữ ý tưởng — tôi đều có thể kiến tạo chiếc móc khoá 3D cực đẹp và dễ thương cho chiếc túi Nét của bạn!",
+      text: "Chào bạn! Tôi là Nét 2D Keychain Agent. Dù bạn gửi ảnh chân dung, ảnh thú cưng, hoa lá, đồ vật hay chỉ gõ vài dòng ý tưởng — tôi sẽ tạo bản vẽ phác thảo 2D độc bản với đường nét viền sắc gọn, mảng màu rõ ràng để các nghệ nhân xưởng Nét có thể đùn khối và in 3D thành chiếc móc khoá thực tế cho bạn!",
       time: "Vừa xong",
     },
   ]);
@@ -1767,13 +1767,13 @@ Key 3D printing & charm specs:
                                     </div>
                                   )}
 
-                                  {/* 3D Keychain Charm Image Preview */}
+                                  {/* 2D Keychain Charm Vector Image Preview */}
                                   {msg.imageUrl && (
                                     <div className="mt-2.5 p-3 rounded-2xl bg-gradient-to-b from-white to-[#F5EFE6] border border-[#E8E2D8] space-y-2 shadow-xs">
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#B85D43] uppercase">
                                           <Sparkles className="w-3.5 h-3.5" />
-                                          <span>Móc khoá 3D Render ({msg.imageProvider === "openai" ? "OpenAI Engine" : "3D Flux Engine"})</span>
+                                          <span>Phác Thảo 2D Chuẩn Xưởng In 3D (Free 2D Engine)</span>
                                         </div>
                                         <button
                                           type="button"
@@ -1790,20 +1790,20 @@ Key 3D printing & charm specs:
                                       <div className="w-full aspect-square max-w-[200px] mx-auto rounded-xl p-2 bg-radial from-white via-white/80 to-[#ECE5D8] flex items-center justify-center relative overflow-hidden border border-[#E8E2D8]/60 shadow-inner">
                                         <img
                                           src={msg.imageUrl}
-                                          alt="3D Keychain Render"
+                                          alt="2D Keychain Vector Render"
                                           className="w-full h-full object-contain filter drop-shadow-[0_10px_16px_rgba(0,0,0,0.2)] hover:scale-105 transition-transform"
                                         />
                                       </div>
                                     </div>
                                   )}
 
-                                  {/* Master Prompt Chuẩn 3D Keychain với 1-Click Copy */}
+                                  {/* Master Prompt Chuẩn 2D Vector với 1-Click Copy */}
                                   {msg.masterPrompt && (
                                     <div className="mt-2.5 p-2.5 rounded-xl bg-[#FFFDF5] border border-[#D4AF37]/50 space-y-2">
                                       <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-[10px] font-bold text-[#8B6E32] uppercase">
                                           <Sparkles className="w-3 h-3 text-[#B8860B]" />
-                                          <span>Master Prompt 3D Keychain</span>
+                                          <span>Master Prompt 2D Vector Chuẩn Xưởng</span>
                                         </div>
                                         <button
                                           type="button"
@@ -2094,7 +2094,7 @@ Key 3D printing & charm specs:
                                         Quy chuẩn: ~4.5cm x 4.5cm
                                       </span>
                                       <span className="text-[10px] text-[#2D5A27] font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                        Die-cut 3D Móc khoá
+                                        2D Vector đùn in 3D
                                       </span>
                                     </div>
                                   </div>
@@ -2105,11 +2105,11 @@ Key 3D printing & charm specs:
                                       {motifName || (customIdea ? `"${customIdea}"` : "Charm độc bản")}
                                     </div>
                                     <div>
-                                      <strong className="text-[#241B16]">Vật liệu:</strong>{" "}
-                                      Nhựa lưới biển tái sinh men nung 3D / Kim loại đồng thau
+                                      <strong className="text-[#241B16]">Dạng phác thảo:</strong>{" "}
+                                      Bản vẽ 2D Flat Vector / Viền dày chuẩn cho nghệ nhân đùn khối in 3D
                                     </div>
                                     <div>
-                                      <strong className="text-[#241B16]">Độ dày:</strong> 3.0 mm (chuẩn in 3D FDM/Resin)
+                                      <strong className="text-[#241B16]">Độ dày đùn khối:</strong> 3.0 mm (chuẩn in 3D FDM/Resin)
                                     </div>
                                     <div>
                                       <strong className="text-[#241B16]">Cơ cấu cài túi:</strong>{" "}
@@ -2126,11 +2126,11 @@ Key 3D printing & charm specs:
                                       {generatedImageUrl && (
                                         <a
                                           href={generatedImageUrl}
-                                          download={`mockhoa-${(motifName || "net-charm").toLowerCase().replace(/\s+/g, "-")}.png`}
+                                          download={`mockhoa-2d-${(motifName || "net-charm").toLowerCase().replace(/\s+/g, "-")}.png`}
                                           className="px-3 py-1.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                                         >
                                           <Download className="w-3.5 h-3.5" />
-                                          <span>Tải ảnh HD (.PNG)</span>
+                                          <span>Tải bản vẽ 2D (.PNG)</span>
                                         </a>
                                       )}
                                       <button
@@ -2150,7 +2150,7 @@ Key 3D printing & charm specs:
                                         className="px-3 py-1.5 rounded-xl bg-[#241B16] hover:bg-[#42342B] text-white text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                                       >
                                         <Download className="w-3.5 h-3.5" />
-                                        <span>Tải file in 3D (.STL)</span>
+                                        <span>Tải file phôi in 3D (.STL)</span>
                                       </button>
                                     </div>
                                   </div>

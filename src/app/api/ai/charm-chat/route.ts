@@ -15,59 +15,14 @@ interface ChatRequestPayload {
 }
 
 /**
- * Image Generation Engine with automatic fallback:
- * 1. Checks OpenAI API Key (gpt-image-1 / dall-e-3)
- * 2. Falls back seamlessly to High-Resolution 3D Flux Engine
+ * 100% FREE 2D Graphic Engine:
+ * Generates clean 2D flat vector die-cut illustrations with thick outlines
+ * optimized for artisans to extrude and 3D print in the workshop.
+ * Zero cost, no OpenAI credits required.
  */
-async function generateKeychainImage(
+async function generate2DKeychainImage(
   prompt: string
-): Promise<{ imageUrl: string; provider: "openai" | "flux-3d" } | null> {
-  const openaiKey = process.env.OPENAI_API_KEY;
-
-  // 1. Try OpenAI if configured
-  if (openaiKey && openaiKey.trim().startsWith("sk-")) {
-    try {
-      const oaiRes = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey.trim()}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-image-1",
-          prompt: prompt,
-          n: 1,
-          size: "1024x1024",
-        }),
-      });
-
-      if (oaiRes.ok) {
-        const oaiData = await oaiRes.json();
-        const oaiUrl = oaiData.data?.[0]?.url;
-        if (oaiUrl) {
-          // Fetch image buffer to avoid expired temporary URLs and CORS
-          const imgFetch = await fetch(oaiUrl);
-          if (imgFetch.ok) {
-            const buf = await imgFetch.arrayBuffer();
-            const base64 = Buffer.from(buf).toString("base64");
-            const mime = imgFetch.headers.get("content-type") || "image/png";
-            return {
-              imageUrl: `data:${mime};base64,${base64}`,
-              provider: "openai",
-            };
-          }
-          return { imageUrl: oaiUrl, provider: "openai" };
-        }
-      } else {
-        const errJson = await oaiRes.json().catch(() => ({}));
-        console.warn("[OpenAI Image Gen Quota/Status Notice]:", oaiRes.status, errJson?.error?.code || "");
-      }
-    } catch (oaiErr) {
-      console.warn("[OpenAI Image Gen Exception]:", oaiErr);
-    }
-  }
-
-  // 2. High-Resolution 3D Flux Engine (Pollinations Flux)
+): Promise<{ imageUrl: string; provider: "free-2d-flux" } | null> {
   try {
     const seed = Math.floor(Math.random() * 999999);
     const fluxUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
@@ -81,13 +36,13 @@ async function generateKeychainImage(
       const mime = fluxRes.headers.get("content-type") || "image/jpeg";
       return {
         imageUrl: `data:${mime};base64,${base64}`,
-        provider: "flux-3d",
+        provider: "free-2d-flux",
       };
     } else {
-      console.warn("[Flux Engine Status != 200]:", fluxRes.status);
+      console.warn("[Free 2D Engine Status != 200]:", fluxRes.status);
     }
   } catch (fluxErr) {
-    console.warn("[Flux Engine Exception]:", fluxErr);
+    console.warn("[Free 2D Engine Exception]:", fluxErr);
   }
 
   return null;
@@ -123,50 +78,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const systemInstruction = `Bạn là Giám đốc Sáng tạo & Kỹ sư Thiết kế Móc Khoá 3D Độc Bản (Lead 3D Keychain Agent) của Nét Studio — thương hiệu túi lưới tái chế đại dương và charm cá nhân hoá thủ công tại Đà Nẵng.
+    const systemInstruction = `Bạn là Nghệ nhân Thiết kế Đồ họa 2D & Giám đốc Sáng tạo của Nét Studio — thương hiệu túi lưới tái chế đại dương và móc khoá độc bản tại Đà Nẵng.
 
-NHIỆM VỤ CỦA BẠN:
-Tiếp nhận MỌI YÊU CẦU của khách hàng — dù là ảnh người, ảnh thú cưng, ảnh hoa cỏ, ảnh đồ vật, hay chỉ là vài dòng chữ miêu tả ý tưởng — để phân tích, tạo ra câu chuyện thương hiệu truyền cảm hứng và soạn thảo MASTER PROMPT 3D KEYCHAIN tiếng Anh hoàn mỹ cho cỗ máy sinh ảnh 3D.
+MỤC TIÊU CỐT LÕI (CỰC KỲ QUAN TRỌNG):
+Tạo ra BẢN VẼ PHẲNG 2D (2D FLAT VECTOR ILLUSTRATION / DIE-CUT STICKER) ĐỘC BẢN, DỄ THƯƠNG VÀ SẮC NÉT.
+Bản vẽ 2D này sẽ là bản thảo kỹ thuật trực tiếp để các NGHỆ NHÂN CỦA NÉT STUDIO lấy làm khuôn mẫu, dùng phần mềm CAD đùn khối (extrude) và in ra sản phẩm móc khoá thực tế bằng MÁY IN 3D.
+TUYỆT ĐỐI KHÔNG SINH HÌNH 3D RENDER ĐỔ BÓNG PHỨC TẠP! BẮT BUỘC PHẢI LÀ TRANH VẼ ĐỒ HOẠ 2D PHẲNG (FLAT 2D GRAPHIC).
 
-QUY TẮC PHÂN LOẠI & TẠO HÌNH NGHỆ THUẬT (BẮT BUỘC):
-1. NHÓM CON NGƯỜI (subjectCategory: "human"):
-   - Tỷ lệ Chibi 1:1 hoặc 1:1.2 cực kỳ đáng yêu, đầu to tròn trán bướng dễ thương, đôi mắt anime to tròn long lanh có ánh phản chiếu, đôi má ửng hồng.
-   - Giữ trọn đặc trưng nhận diện từ ảnh/mô tả: kiểu tóc (undercut, uốn xoăn, búi cao...), kính mắt, nụ cười, trang phục và phụ kiện (đồng hồ, nón, túi mini).
-   - Tư thế thân thiện: vẫy tay chào (friendly waving hand) hoặc tay đút túi cá tính.
+QUY CHUẨN ĐỒ HOẠ 2D CHUẨN XƯỞNG CHẾ TÁC:
+1. ĐƯỜNG NÉT & MẢNG MÀU:
+   - Nét viền ngoài (contour line art) màu đen/nâu sẫm RÕ NÉT, DÀY DẶN và LIỀN MẠCH để nghệ nhân dễ dàng bóc tách viền cắt laser hoặc đùn khối in 3D.
+   - Các mảng màu phẳng (flat color blocks) rõ ràng, màu sắc rực rỡ, phân định ranh giới dứt khoát.
+   - KHÔNG đổ bóng 3D phức tạp, KHÔNG bề mặt chất liệu đất sét nổi khối, KHÔNG góc phối cảnh 3D.
+   - Góc nhìn trực diện 100% thẳng góc (Direct flat front view).
 
-2. NHÓM CON VẬT & THÚ CƯNG (subjectCategory: "animal"):
-   - Phong cách thú bông vinyl / đất sét 3D múp míp (chubby body), lông mềm mịn, mắt to đen láy long lanh ngây thơ.
-   - Tạo dáng tinh nghịch: ngồi ngoan ngoãn, vẫy đuôi, hoặc hai tay ôm một món đồ nhỏ (ôm cá, gặm xương, cầm ly trà sữa, ôm quả cầu len).
+2. TÍCH HỢP KHOEN MÓC KHOÁ 2D TRÊN ĐỈNH:
+   - Luôn có một vòng khoen tròn 2D (hanging loop ring with a hole) được vẽ nối liền trên đỉnh đầu/thân của nhân vật để làm lỗ xỏ móc khoá.
 
-3. NHÓM HOA CỎ & THIÊN NHIÊN (subjectCategory: "flora"):
-   - Phong cách men sứ bóng bẩy (glossy ceramic enamel / polymer clay), cánh hoa bo tròn mềm mại múp míp dễ thương, viền kim loại vàng kim đồng thau sang trọng.
-   - Thêm giọt sương mai long lanh hoặc nhụy hoa cách điệu ánh vàng.
+3. PHÂN LOẠI CHỦ THỂ THÔNG MINH (Dù khách gửi ảnh hay chỉ gõ text):
+   - Con người: Chibi 2D hoạt hình đáng yêu (đầu to, mắt to tròn, má hồng, giữ đặc trưng tóc, kính, trang phục).
+   - Con vật / Thú cưng: Chibi thú cưng 2D múp míp, mắt to đen láy, biểu cảm ngộ nghĩnh (ôm ly cà phê, ôm cá, đeo nơ).
+   - Hoa cỏ & Thiên nhiên: Hoa sen, hoa muống biển, san hô cách điệu 2D men gốm viền đậm.
+   - Đồ vật & Địa danh: Cầu Rồng, ly cà phê phin, nón lá cách điệu 2D sticker kawaii.
+   - Ý tưởng chỉ có text: Tự động tưởng tượng và làm giàu chi tiết thành bản vẽ 2D hoàn chỉnh.
 
-4. NHÓM ĐỊA DANH, ĐỒ ĂN & ĐỒ VẬT (subjectCategory: "landmark_object"):
-   - Cầu Rồng, Cầu Vàng, ly cà phê phin, máy ảnh vintage, bánh mì, nón lá... được biến thể thành phiên bản đồ chơi mini chibi có biểu cảm gương mặt kawaii dễ thương.
+CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC TUÂN THỦ KHUÔN MẪU NÀY):
+"A cute 2D flat vector illustration of [SUBJECT], chibi cartoon bag charm keychain, die-cut sticker style with thick solid dark contour outline, flat bold color blocks, cel-shaded, clean 2D graphic design ready for 3D extrusion printing, with a functional 2D hanging loop ring on top with hole, direct flat front view, isolated on solid pure white background, crisp line art, no 3D rendering, no realistic shadows, high quality vector art"
 
-5. NẾU KHÁCH CHỈ GÕ VÀI CHỮ Ý TƯỞNG (Không có ảnh):
-   - Sử dụng trí tưởng tượng đỉnh cao để làm giàu ý tưởng (Prompt Enrichment), tạo nên hình tượng móc khoá sống động, rực rỡ và dễ thương nhất.
-
-QUY CHUẨN KỸ THUẬT SẢN XUẤT 3D KEYCHAIN TRONG MASTER PROMPT (BẮT BUỘC):
-- "A functional, sturdy metallic round hanging loop ring with a hole seamlessly integrated on top for keychain attachment".
-- "Thick solid continuous outline, all parts structurally connected, no floating or fragile parts".
-- "Shot from a direct straight-on front view, studio rim lighting, isolated on solid pure white background, 8k resolution, photorealistic cute render, collectible vinyl toy with smooth glossy polymer clay finish, no background shadows".
-
-BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
+BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {
   "subjectCategory": "human" | "animal" | "flora" | "landmark_object" | "creative_abstract",
-  "replyText": "Lời tư vấn phong cách ấm áp bằng tiếng Việt, phân tích các nét nhận diện và giải thích vẻ đẹp của chiếc móc khoá...",
-  "motifName": "Tên móc khoá tiếng Việt ngắn gọn, dễ thương (Ví dụ: Chibi Cún Poodle Nơ Đỏ / Bé Mèo Cam Ôm Cà Phê / Sen Hồng Men Ngọc)",
-  "story": "Ý nghĩa nhân văn 2-3 câu ngắn kết nối tình yêu đại dương và phong cách sống xanh...",
-  "masterPrompt": "Đoạn Master Prompt bằng tiếng Anh chi tiết, bắt đầu bằng 'A cute 3D chibi miniature keychain charm of [SUBJECT]...'",
+  "replyText": "Lời tư vấn phong cách ấm áp tiếng Việt, phân tích các nét nhận diện và giải thích bản vẽ phác thảo 2D sẵn sàng chuyển giao cho xưởng in 3D...",
+  "motifName": "Tên móc khoá tiếng Việt ngắn gọn, dễ thương (Ví dụ: Chibi Bé Mèo Cam 2D / Sen Hồng Men Lam 2D)",
+  "story": "Ý nghĩa nhân văn 2 câu ngắn kết nối tình yêu đại dương và dấu ấn chuyến đi...",
+  "masterPrompt": "Đoạn Master Prompt bằng tiếng Anh chuẩn 2D flat illustration theo đúng cấu trúc ở trên...",
   "featuresExtracted": {
-    "subject": "Tên chủ thể chính",
-    "features": "Chi tiết đặc trưng (tóc, mắt, dáng, cánh hoa, lông...)",
-    "colors": "Màu sắc chủ đạo",
-    "accessory": "Phụ kiện đi kèm nếu có"
+    "subject": "Tên chủ thể",
+    "features": "Chi tiết đặc trưng 2D (nét vẽ, biểu cảm, trang phục...)",
+    "colors": "Mảng màu chủ đạo",
+    "accessory": "Khoen xỏ móc khoá 2D trên đỉnh"
   },
-  "svgCode": "<svg viewBox=\\"0 0 100 135\\" xmlns=\\"http://www.w3.org/2000/svg\\">...vector silhouette chuẩn khoen xỏ trên đầu để làm phôi in 3D STL...</svg>",
+  "svgCode": "<svg viewBox=\\"0 0 100 135\\" xmlns=\\"http://www.w3.org/2000/svg\\">...vector 2D chuẩn đường nét liền khối để nghệ nhân nạp vào máy in 3D...</svg>",
   "recommendedColor": "${selectedColorHex}",
   "pinSpecs": {
     "diameterMm": 4.5,
@@ -190,13 +142,13 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
 
     // Phần nội dung gửi lần này
     const currentParts: any[] = [];
-    let promptFull = `YÊU CẦU THIẾT KẾ MÓC KHOÁ CỦA KHÁCH HÀNG: "${userPrompt}".\n`;
+    let promptFull = `YÊU CẦU PHÁC THẢO 2D MÓC KHOÁ CỦA KHÁCH HÀNG: "${userPrompt}".\n`;
     promptFull += `- Màu túi lưới phối cùng: ${bagColorName}.\n`;
     if (customText) promptFull += `- Chữ khắc kỷ niệm: "${customText}".\n`;
     if (body.category && body.category !== "auto") {
-      promptFull += `- Nhóm chủ đề người dùng chọn: ${body.category}.\n`;
+      promptFull += `- Nhóm chủ đề: ${body.category}.\n`;
     }
-    promptFull += `- Áp dụng Master Prompt 3D Keychain: đồ chơi Chibi 3D vinyl/clay dễ thương, có khoen xỏ kim loại trên đỉnh, khối liền chắc chắn, nền trắng tinh khiết.`;
+    promptFull += `- Yêu cầu kỹ thuật: Tranh vẽ 2D flat vector, nét viền đen dày rõ ràng, mảng màu phẳng để nghệ nhân xưởng đùn khối in 3D, có khoen xỏ 2D trên đỉnh, nền trắng sạch sẽ, KHÔNG làm 3D đổ bóng.`;
 
     currentParts.push({ text: promptFull });
 
@@ -220,7 +172,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
         },
       });
       currentParts.push({
-        text: "PHÂN TÍCH HÌNH ẢNH NÀY: Xác định chủ thể (người, thú cưng, hoa cỏ hay đồ vật), trích xuất đặc trưng nhận dạng rõ rệt nhất, và tạo Master Prompt 3D Keychain tuyệt đẹp chuẩn tỷ lệ đáng yêu.",
+        text: "PHÂN TÍCH ẢNH NÀY: Chuyển thể nhân vật/chủ thể thành bản vẽ 2D flat chibi sticker có nét viền đen dày, mảng màu phẳng và khoen móc 2D trên đỉnh để nghệ nhân xưởng đùn khối in 3D.",
       });
     }
 
@@ -246,7 +198,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
           contents,
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.7,
+            temperature: 0.65,
             maxOutputTokens: 2500,
             thinkingConfig: {
               thinkingBudget: 0,
@@ -277,7 +229,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
     if (!parsedData || !parsedData.masterPrompt) {
       const lower = userPrompt.toLowerCase();
       let detectedCat = "human";
-      let motif = "Chibi Bạn Trẻ Hiện Đại";
+      let motif = "Chibi 2D Bạn Trẻ Hiện Đại";
       let engSubject = "a friendly smiling young person with modern haircut and stylish outfit";
 
       if (
@@ -289,8 +241,8 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
         lower.includes("gấu")
       ) {
         detectedCat = "animal";
-        motif = "Bé Thú Cưng Đáng Yêu";
-        engSubject = "an adorable chubby cute pet animal with big glossy anime eyes wearing a tiny scarf";
+        motif = "Chibi 2D Bé Thú Cưng";
+        engSubject = "an adorable chubby cute pet animal with big glossy anime eyes wearing a tiny bow";
       } else if (
         lower.includes("hoa") ||
         lower.includes("sen") ||
@@ -299,8 +251,8 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
         lower.includes("cây")
       ) {
         detectedCat = "flora";
-        motif = "Hoa Ngọc Biển Xanh";
-        engSubject = "a blooming lotus flower with glossy ceramic enamel petals and delicate brass edges";
+        motif = "Hoa Ngọc 2D Biển Xanh";
+        engSubject = "a blooming lotus flower with clean graphic petals and delicate outlines";
       } else if (
         lower.includes("cầu") ||
         lower.includes("cà phê") ||
@@ -309,21 +261,21 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
         lower.includes("biển")
       ) {
         detectedCat = "landmark_object";
-        motif = "Biểu Tượng Kỷ Niệm Nét";
-        engSubject = "a cute kawaii mini landmark icon inspired by Da Nang Dragon Bridge and ocean waves";
+        motif = "Biểu Tượng 2D Kỷ Niệm Nét";
+        engSubject = "a cute kawaii mini landmark icon inspired by Da Nang Dragon Bridge";
       }
 
       parsedData = {
         subjectCategory: detectedCat,
-        replyText: `Nét Keychain Agent đã tiếp nhận ý tưởng "${userPrompt}" của bạn và thiết kế nên chiếc móc khoá 3D độc bản, giữ trọn nét dễ thương và tình yêu phong cách sống xanh!`,
+        replyText: `Nét 2D Keychain Agent đã tiếp nhận ý tưởng "${userPrompt}" của bạn và tạo bản phác thảo 2D vector sắc nét, sẵn sàng để nghệ nhân xưởng đùn khối in 3D!`,
         motifName: motif,
-        story: "Mỗi chiếc móc khoá là một câu chuyện riêng mang theo tinh thần đại dương và dấu ấn kỷ niệm đáng nhớ.",
-        masterPrompt: `A cute 3D chibi miniature keychain charm of ${engSubject}, collectible vinyl toy aesthetic with smooth glossy polymer clay finish, adorable chubby proportions, a functional metallic hanging loop ring with a hole seamlessly attached on top for keychain, direct front view, studio rim lighting, isolated on solid pure white background, 8k resolution, photorealistic cute render, no background noise`,
+        story: "Mỗi bản vẽ 2D là một tác phẩm khởi đầu độc bản, lưu giữ ký ức tươi đẹp và hành trình bảo vệ đại dương.",
+        masterPrompt: `A cute 2D flat vector illustration of ${engSubject}, chibi cartoon bag charm keychain, die-cut sticker style with thick solid dark contour outline, flat bold color blocks, cel-shaded, clean 2D graphic design ready for 3D extrusion printing, with a functional 2D hanging loop ring on top with hole, direct flat front view, isolated on solid pure white background, crisp line art, no 3D rendering, no realistic shadows, high quality vector art`,
         featuresExtracted: {
           subject: motif,
-          features: "3D Chibi tỷ lệ tròn xoe đáng yêu",
+          features: "Bản vẽ 2D flat vector nét viền đen đậm",
           colors: selectedColorHex,
-          accessory: "Khoen móc kim loại tích hợp trên đỉnh",
+          accessory: "Khoen xỏ 2D liền khối trên đỉnh",
         },
         recommendedColor: selectedColorHex,
         pinSpecs: {
@@ -335,24 +287,19 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
       };
     }
 
-    // BƯỚC 2: GỌI ĐỘNG CƠ SINH ẢNH 3D THỰC THỤ (OpenAI hoặc 3D Flux Engine)
-    console.log("[Keychain Agent]: Generating 3D Charm Image with prompt:", parsedData.masterPrompt.slice(0, 100) + "...");
-    const imageResult = await generateKeychainImage(parsedData.masterPrompt);
+    // BƯỚC 2: GỌI ĐỘNG CƠ SINH ẢNH 2D VECTOR MIỄN PHÍ 100% (FREE 2D FLUX ENGINE)
+    console.log("[Free 2D Keychain Agent]: Generating 2D Illustration with prompt:", parsedData.masterPrompt.slice(0, 100) + "...");
+    const imageResult = await generate2DKeychainImage(parsedData.masterPrompt);
 
     if (imageResult) {
       parsedData.imageUrl = imageResult.imageUrl;
       parsedData.imageProvider = imageResult.provider;
     }
 
-    // Đảm bảo luôn có svgCode dự phòng cho in 3D STL
+    // SVG silhouette dự phòng cho việc nạp trực tiếp vào máy in 3D
     if (!parsedData.svgCode) {
       parsedData.svgCode = `<svg viewBox="0 0 100 135" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="charmShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.18"/>
-    </filter>
-  </defs>
-  <g id="keychainCharm" filter="url(#charmShadow)">
+  <g id="keychainCharm2D">
     <path d="M43 14 C43 6, 57 6, 57 14 C57 17.5, 54 18.5, 50 18.5 C46 18.5, 43 17.5, 43 14 Z" fill="#281D17" stroke="#281D17" stroke-width="2.5"/>
     <circle cx="50" cy="12" r="3.2" fill="#FFFFFF" stroke="#281D17" stroke-width="1.8"/>
     <circle cx="50" cy="65" r="42" fill="${parsedData.recommendedColor || selectedColorHex}" stroke="#281D17" stroke-width="3"/>
@@ -372,11 +319,11 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ VỚI CẤU TRÚC SAU:
       data: parsedData,
     });
   } catch (error: any) {
-    console.error("[Keychain Agent Exception]:", error);
+    console.error("[Free 2D Keychain Agent Exception]:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Lỗi máy chủ nội bộ khi xử lý Keychain Agent.",
+        error: error.message || "Lỗi máy chủ nội bộ khi xử lý 2D Keychain Agent.",
       },
       { status: 500 }
     );

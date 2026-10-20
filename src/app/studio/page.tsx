@@ -831,6 +831,7 @@ Key 3D printing & charm specs:
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadedDocName(file.name);
+    setSelectedCategory("auto"); // Tự động reset về chế độ AI tự nhận diện ảnh thực tế
 
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();

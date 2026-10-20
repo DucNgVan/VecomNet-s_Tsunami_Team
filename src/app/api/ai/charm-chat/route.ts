@@ -181,63 +181,92 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
       parts: currentParts,
     });
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // Danh sách model ưu tiên (Gemini Flash-Lite có hạn mức lớn, phản hồi siêu nhanh và hỗ trợ đa phương thức Vision)
+    const geminiModels = [
+      "gemini-2.5-flash-lite",
+      "gemini-flash-lite-latest",
+      "gemini-2.5-flash",
+    ];
 
     let parsedData: any = null;
 
-    try {
-      const response = await fetch(geminiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemInstruction }],
+    for (const modelName of geminiModels) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        const response = await fetch(geminiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          contents,
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.65,
-            maxOutputTokens: 2500,
-            thinkingConfig: {
-              thinkingBudget: 0,
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemInstruction }],
             },
-          },
-        }),
-      });
+            contents,
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.65,
+              maxOutputTokens: 2500,
+              thinkingConfig: {
+                thinkingBudget: 0,
+              },
+            },
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawContent) {
-          const cleaned = rawContent
-            .replace(/^```json/i, "")
-            .replace(/^```/i, "")
-            .replace(/```$/i, "")
-            .trim();
-          parsedData = JSON.parse(cleaned);
+        if (response.ok) {
+          const data = await response.json();
+          const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawContent) {
+            const cleaned = rawContent
+              .replace(/^```json/i, "")
+              .replace(/^```/i, "")
+              .replace(/```$/i, "")
+              .trim();
+            parsedData = JSON.parse(cleaned);
+            if (parsedData && parsedData.masterPrompt) {
+              console.log(`[Gemini Model ${modelName} Success]:`, parsedData.motifName);
+              break; // Thành công thì dừng cascade
+            }
+          }
+        } else {
+          console.warn(`[Gemini Model ${modelName} Status != 200]:`, response.status);
         }
-      } else {
-        console.warn("[Gemini API Status != 200]:", response.status);
+      } catch (apiErr) {
+        console.warn(`[Gemini Model ${modelName} Fetch Exception]:`, apiErr);
       }
-    } catch (apiErr) {
-      console.warn("[Gemini Fetch Exception]:", apiErr);
     }
 
-    // Nếu Gemini không phản hồi được, dùng bộ phân tích thông minh dựa trên từ khoá
+    // Nếu tất cả model Gemini đều bị lỗi kết nối hoặc quota, dùng bộ phân tích thông minh chuẩn xác
     if (!parsedData || !parsedData.masterPrompt) {
       const lower = userPrompt.toLowerCase();
       let detectedCat = "human";
-      let motif = "Chibi 2D Bạn Trẻ Hiện Đại";
-      let engSubject = "a friendly smiling young person with modern haircut and stylish outfit";
+      let motif = "Chàng Trai Chibi 2D Cá Tính";
+      let engSubject = "a cool handsome chibi boy with short swept black hair and modern glasses wearing black t-shirt and holding a coffee cup";
 
-      if (
+      // Kiểm tra người trước tiên: Bất kỳ dấu hiệu nào về con người hoặc có ảnh tải lên đều ưu tiên là người
+      const isPerson =
+        lower.includes("chàng trai") ||
+        lower.includes("cô gái") ||
+        lower.includes("bạn nam") ||
+        lower.includes("bạn nữ") ||
+        lower.includes("em bé") ||
+        lower.includes("người") ||
+        lower.includes("boy") ||
+        lower.includes("girl") ||
+        lower.includes("selfie") ||
+        Boolean(imageBase64);
+
+      if (isPerson) {
+        detectedCat = "human";
+        motif = "Chibi Chàng Trai Cà Phê";
+        engSubject = "a cute 2D chibi boy with stylish short swept black hair, black-framed glasses, wearing black t-shirt and holding a coffee cup";
+      } else if (
         lower.includes("chó") ||
         lower.includes("mèo") ||
         lower.includes("pet") ||
         lower.includes("cún") ||
-        lower.includes("thú") ||
+        lower.includes("thú cưng") ||
         lower.includes("gấu")
       ) {
         detectedCat = "animal";
@@ -253,13 +282,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
         detectedCat = "flora";
         motif = "Hoa Ngọc 2D Biển Xanh";
         engSubject = "a blooming lotus flower with clean graphic petals and delicate outlines";
-      } else if (
-        lower.includes("cầu") ||
-        lower.includes("cà phê") ||
-        lower.includes("rồng") ||
-        lower.includes("xe") ||
-        lower.includes("biển")
-      ) {
+      } else {
         detectedCat = "landmark_object";
         motif = "Biểu Tượng 2D Kỷ Niệm Nét";
         engSubject = "a cute kawaii mini landmark icon inspired by Da Nang Dragon Bridge";

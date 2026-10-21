@@ -285,7 +285,7 @@ export function buildMaster2DKeychainPrompt(
       const style = f1 ? `styled with ${f1}` : "styled with clean graphic silhouettes and bold colors";
       const color = f2 ? `, in ${f2}` : ", with smooth retro enamel colors";
       const face = f3 ? `, featuring ${f3}` : ", with an adorable happy smiling kawaii face and blushing cheeks";
-      subjectDescription = `a cute kawaii chibi miniature collectible of ${item}, ${style}${color}${face}`;
+      subjectDescription = `a cute kawaii chibi coffee tumbler or accessory of ${item}, ${style}${color}${face}`;
       break;
     }
     case "freeform":
@@ -300,5 +300,5 @@ export function buildMaster2DKeychainPrompt(
   }
 
   // Khung sườn kỹ thuật 2D Keychain chuẩn in 3D (Bất biến và không thể phá vỡ)
-  return `A cute 2D flat vector illustration of ${subjectDescription}, chibi cartoon bag charm keychain, die-cut sticker style with thick solid dark contour outline, flat bold color blocks, cel-shaded, clean 2D graphic design ready for 3D extrusion printing, with a functional 2D hanging loop ring on top with hole, direct flat front view, isolated on solid pure white background, crisp line art, no 3D rendering, no realistic shadows, high quality vector art`;
+  return `A cute 2D flat die-cut acrylic keychain charm of ${subjectDescription}, flat vector art, thick bold clean black die-cut contour outline, vibrant flat color blocks, featuring an integrated round hanging loop hole with attached silver metal key ring on top, direct flat front view, 2D flat sticker illustration, isolated on pure solid white #FFFFFF background, clean vector lines, no 3D rendering, no realistic shadows, no metallic reflections, no background gradient, high quality vector art`;
 }

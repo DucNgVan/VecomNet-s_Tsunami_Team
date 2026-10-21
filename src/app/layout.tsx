@@ -46,13 +46,10 @@ export default function RootLayout({
                 <CartDrawer />
 
                 {/* Main Content Area */}
-                <main className="flex-1 relative w-full overflow-x-hidden pb-16 md:pb-0">{children}</main>
+                <main className="flex-1 relative w-full overflow-x-hidden">{children}</main>
 
                 {/* Global Footer */}
                 <Footer />
-
-                {/* Mobile Bottom Navigation Dock */}
-                <MobileBottomNav />
               </IntroProvider>
             </CartProvider>
           </AuthProvider>

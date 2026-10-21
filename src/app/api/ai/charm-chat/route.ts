@@ -30,25 +30,29 @@ async function generate2DKeychainImage(
   prompt: string
 ): Promise<{ imageUrl: string; provider: "free-2d-flux" }> {
   const seed = Math.floor(Math.random() * 999999);
-  const fluxUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+  // Sử dụng endpoint chuẩn tối ưu của Pollinations với nologo và seed ngẫu nhiên
+  const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
     prompt
-  )}?width=768&height=768&model=flux&nologo=true&seed=${seed}`;
+  )}?width=768&height=768&nologo=true&seed=${seed}`;
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-    const fluxRes = await fetch(fluxUrl, { signal: controller.signal });
+    const fluxRes = await fetch(pollUrl, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (fluxRes.ok) {
       const buf = await fluxRes.arrayBuffer();
       const base64 = Buffer.from(buf).toString("base64");
       const mime = fluxRes.headers.get("content-type") || "image/jpeg";
-      return {
-        imageUrl: `data:${mime};base64,${base64}`,
-        provider: "free-2d-flux",
-      };
+      // Đảm bảo không trả về file JSON lỗi dưới dạng base64
+      if (mime.includes("image")) {
+        return {
+          imageUrl: `data:${mime};base64,${base64}`,
+          provider: "free-2d-flux",
+        };
+      }
     } else {
       console.warn("[Free 2D Engine Status != 200]:", fluxRes.status);
     }
@@ -58,7 +62,7 @@ async function generate2DKeychainImage(
 
   // Fallback an toàn 100%: Trả về trực tiếp URL của Pollinations (hỗ trợ CORS cho Canvas)
   return {
-    imageUrl: fluxUrl,
+    imageUrl: pollUrl,
     provider: "free-2d-flux",
   };
 }
@@ -95,51 +99,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // NẾU NGƯỜI DÙNG ĐÃ ĐIỀN ĐỦ Ô TRỐNG TRỰC TIẾP (Direct Slot-Filling Mode)
-    // Ta có thể lắp ghép trực tiếp Master Template Prompt với độ chuẩn xác 100%
-    if (body.slots && body.slots.subject && !imageBase64) {
-      const generatedMasterPrompt = buildMaster2DKeychainPrompt(
-        requestedCategory,
-        body.slots
-      );
-
-      console.log("[Direct Slots Template Prompt]:", generatedMasterPrompt);
-      const imgRes = await generate2DKeychainImage(generatedMasterPrompt);
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          subjectCategory: requestedCategory,
-          replyText: `Nét 2D Keychain Agent đã tiếp nhận thông tin từ các ô điền của bạn và ghép vào khung Master Template chuẩn 2D Vector xưởng chế tác!`,
-          motifName: body.slots.subject || "Charm Độc Bản 2D",
-          story: "Chiếc móc khoá mang đậm dấu ấn cá nhân hóa, sẵn sàng để nghệ nhân xưởng đùn khối và in 3D.",
-          masterPrompt: generatedMasterPrompt,
-          featuresExtracted: {
-            subject: body.slots.subject || "",
-            feature1: body.slots.feature1 || "",
-            feature2: body.slots.feature2 || "",
-            feature3: body.slots.feature3 || "",
-          },
-          imageUrl: imgRes?.imageUrl,
-          imageProvider: imgRes?.provider,
-          recommendedColor: selectedColorHex,
-          pinSpecs: {
-            diameterMm: 4.5,
-            heightMm: 4.0,
-            eyeletHoleMm: 3.0,
-            type: "snap_mount_grid",
-          },
-        },
-      });
-    }
-
-    // NGƯỢC LẠI: NẾU CÓ ẢNH HOẶC CÂU CHỮ TỰ DO -> DÙNG GEMINI VISION ĐỂ PHÂN TÍCH VÀ ĐIỀN Ô TRỐNG
+    // NGƯỜI DÙNG CUNG CẤP Ô TRỐNG, Ý TƯỞNG HOẶC ẢNH MẪU:
+    // DÙNG GEMINI FLASH-LITE ĐỂ PHÂN TÍCH, DỊCH SANG TIẾNG ANH & THIẾT KẾ MASTER PROMPT MÓC KHOÁ 2D
     const systemInstruction = `Bạn là Nghệ nhân Thiết kế Đồ họa 2D & Giám đốc Sáng tạo của Nét Studio — thương hiệu túi lưới tái chế đại dương và móc khoá độc bản tại Đà Nẵng.
 
 MỤC TIÊU CỐT LÕI (CỰC KỲ QUAN TRỌNG):
-Tạo ra BẢN VẼ PHẲNG 2D (2D FLAT VECTOR ILLUSTRATION / DIE-CUT STICKER) ĐỘC BẢN, DỄ THƯƠNG VÀ SẮC NÉT.
+Tạo ra BẢN VẼ MÓC KHOÁ 2D PHẲNG (2D FLAT ACRYLIC / ENAMEL KEYCHAIN CHARM) ĐỘC BẢN, SẮC NÉT, ĐÚNG NGHĨA LÀ MỘT CHIẾC MÓC KHOÁ THỰC TẾ.
 Bản vẽ 2D này sẽ là bản thảo kỹ thuật trực tiếp để các NGHỆ NHÂN CỦA NÉT STUDIO lấy làm khuôn mẫu, dùng phần mềm CAD đùn khối (extrude) và in ra sản phẩm móc khoá thực tế bằng MÁY IN 3D.
-TUYỆT ĐỐI KHÔNG SINH HÌNH 3D RENDER ĐỔ BÓNG PHỨC TẠP! BẮT BUỘC PHẢI LÀ TRANH VẼ ĐỒ HOẠ 2D PHẲNG (FLAT 2D GRAPHIC).
+
+TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
+1. KHÔNG render 3D tả thực, KHÔNG vẽ đồ vật nổi khối như chụp ảnh studio.
+2. KHÔNG có bóng kim loại phản chiếu tả thực (no photorealistic metallic reflection).
+3. KHÔNG có nền dơ, KHÔNG đổ bóng gradient xám (no grey shadows, no background gradient).
+4. BẮT BUỘC nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background) để bóc nền trong suốt sạch sẽ.
+5. HÌNH DÁNG MÓC KHOÁ: Phải có khoen xỏ tròn và vòng móc kim loại trên đỉnh (top hanging loop with metal keyring). Viền ngoài bo die-cut sắc nét (bold dark die-cut outline), mảng màu phẳng (flat color blocks), phong cách 2D vector / sticker chibi.
+6. BẮT BUỘC DỊCH TOÀN BỘ CÁC Ô ĐIỀN CỦA KHÁCH TỪ TIẾNG VIỆT SANG TIẾNG ANH ĐỒ HOẠ CHUẨN XÁC TRONG masterPrompt (Tuyệt đối không để nguyên cụm từ tiếng Việt trong masterPrompt vì model sinh ảnh chỉ hiểu tiếng Anh).
 
 QUY TẮC BẢO TOÀN DANH TÍNH CHỦ THỂ (BẮT BUỘC TUÂN THỦ 100%):
 1. NẾU CÓ ẢNH TẢI LÊN:
@@ -150,26 +124,26 @@ QUY TẮC BẢO TOÀN DANH TÍNH CHỦ THỂ (BẮT BUỘC TUÂN THỦ 100%):
    - Nếu trong ảnh là ĐỒ VẬT / ĐỊA DANH: subjectCategory là "landmark" hoặc "object".
 
 2. CÁC Ô TRỐNG CẦN ĐIỀN VÀO MASTER PROMPT:
-   - subject: Tên chủ thể (ví dụ: a confident boy, a cute orange cat, a blooming lotus flower, Da Nang Dragon Bridge...)
-   - feature1: Kiểu tóc / lông / cánh hoa / kiến trúc
-   - feature2: Trang phục / phụ kiện / màu sắc men
-   - feature3: Hành động / chi tiết điểm xuyết (cầm ly cà phê, ôm trà sữa, giọt sương mai...)
+   - subject: Tên chủ thể đã dịch sang tiếng Anh (ví dụ: a cute cream coffee tumbler with highland logo, a confident chibi boy, a cute orange cat, a blooming lotus flower, Da Nang Dragon Bridge...)
+   - feature1: Kiểu dáng / kiểu tóc / lông / cánh hoa / kiến trúc
+   - feature2: Trang phục / phụ kiện / màu sắc men gốm phẳng
+   - feature3: Hành động / chi tiết điểm xuyết (đôi mắt cười kawaii, cầm ly cà phê, ôm trà sữa, giọt sương mai...)
 
-CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC TUÂN THỦ KHUÔN MẪU NÀY):
-"A cute 2D flat vector illustration of [SUBJECT_WITH_SLOTS], chibi cartoon bag charm keychain, die-cut sticker style with thick solid dark contour outline, flat bold color blocks, cel-shaded, clean 2D graphic design ready for 3D extrusion printing, with a functional 2D hanging loop ring on top with hole, direct flat front view, isolated on solid pure white background, crisp line art, no 3D rendering, no realistic shadows, high quality vector art"
+CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC DỊCH TOÀN BỘ SANG TIẾNG ANH, TUYỆT ĐỐI KHÔNG ĐỂ TIẾNG VIỆT):
+"A cute 2D flat die-cut acrylic keychain charm of [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], flat vector art, thick bold clean black die-cut contour outline, vibrant flat color blocks, featuring an integrated round hanging loop hole with attached silver metal key ring on top, direct flat front view, 2D flat sticker illustration, isolated on pure solid white #FFFFFF background, clean vector lines, no 3D rendering, no realistic shadows, no metallic reflections, no background gradient, high quality vector art"
 
 BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {
   "subjectCategory": "human" | "animal" | "flora" | "landmark" | "object" | "freeform",
   "replyText": "Lời tư vấn phong cách ấm áp tiếng Việt, phân tích các nét nhận diện và giải thích bản vẽ phác thảo 2D sẵn sàng chuyển giao cho xưởng in 3D...",
-  "motifName": "Tên móc khoá tiếng Việt ngắn gọn, dễ thương (Ví dụ: Chibi Chàng Trai Cà Phê 2D / Sen Hồng Men Lam 2D)",
+  "motifName": "Tên móc khoá tiếng Việt ngắn gọn, dễ thương (Ví dụ: Chibi Chàng Trai Cà Phê 2D / Bình Nước Highland Kawaii 2D)",
   "story": "Ý nghĩa nhân văn 2 câu ngắn kết nối tình yêu đại dương và dấu ấn chuyến đi...",
-  "masterPrompt": "Đoạn Master Prompt bằng tiếng Anh chuẩn 2D flat illustration theo đúng cấu trúc ở trên...",
+  "masterPrompt": "Đoạn Master Prompt bằng tiếng Anh chuẩn 2D flat keychain theo đúng cấu trúc ở trên...",
   "featuresExtracted": {
     "subject": "Tên chủ thể tiếng Việt",
-    "feature1": "Chi tiết tóc / lông / cánh hoa...",
+    "feature1": "Chi tiết tóc / lông / cánh hoa / kiểu dáng...",
     "feature2": "Trang phục / màu sắc...",
-    "feature3": "Hành động / phụ kiện đi kèm..."
+    "feature3": "Hành động / biểu cảm kawaii / phụ kiện đi kèm..."
   },
   "svgCode": "<svg viewBox=\\"0 0 100 135\\" xmlns=\\"http://www.w3.org/2000/svg\\">...vector 2D chuẩn đường nét liền khối để nghệ nhân nạp vào máy in 3D...</svg>",
   "recommendedColor": "${selectedColorHex}",
@@ -195,8 +169,22 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 
     // Phần nội dung gửi lần này
     const currentParts: any[] = [];
-    let promptFull = `YÊU CẦU PHÁC THẢO 2D MÓC KHOÁ CỦA KHÁCH HÀNG: "${userPrompt}".\n`;
+    let promptFull = "";
+    if (body.slots && body.slots.subject) {
+      promptFull += `YÊU CẦU THIẾT KẾ MÓC KHOÁ 2D THEO CÁC Ô TRỐNG KHÁCH ĐÃ ĐIỀN:
+- Nhóm chủ đề: ${requestedCategory}
+- Ô 1 (Chủ thể chính): "${body.slots.subject}"
+- Ô 2 (Đặc điểm nhận diện 1): "${body.slots.feature1 || ""}"
+- Ô 3 (Đặc điểm nhận diện 2 / Trang phục / Màu): "${body.slots.feature2 || ""}"
+- Ô 4 (Điểm nhấn / Biểu cảm kawaii / Hành động): "${body.slots.feature3 || ""}"
+`;
+    }
+    if (userPrompt) {
+      promptFull += `Ý TƯỞNG CỦA KHÁCH HÀNG: "${userPrompt}".\n`;
+    }
     promptFull += `- Màu túi lưới phối cùng: ${bagColorName}.\n`;
+    if (customText) promptFull += `- Chữ khắc kỷ niệm: "${customText}".\n`;
+    promptFull += `- Yêu cầu kỹ thuật cốt lõi: Bắt buộc là MÓC KHOÁ 2D (2D flat acrylic / die-cut keychain charm). Trên đỉnh có lỗ xỏ và khoen móc kim loại. Bản vẽ 2D vector phẳng, nét viền đen dày rõ ràng, mảng màu phẳng, KHÔNG RENDER 3D, KHÔNG BÓNG KIM LOẠI PHẢN CHIẾU, NỀN TRẮNG TINH KHIẾT #FFFFFF TUYỆT ĐỐI. DỊCH TOÀN BỘ CÁC Ô SANG TIẾNG ANH TRONG masterPrompt.`;
     if (customText) promptFull += `- Chữ khắc kỷ niệm: "${customText}".\n`;
     promptFull += `- Yêu cầu kỹ thuật: Tranh vẽ 2D flat vector, nét viền đen dày rõ ràng, mảng màu phẳng để nghệ nhân xưởng đùn khối in 3D, có khoen xỏ 2D trên đỉnh, nền trắng sạch sẽ, KHÔNG làm 3D đổ bóng.`;
 

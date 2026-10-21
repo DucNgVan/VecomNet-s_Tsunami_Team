@@ -122,33 +122,44 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              {/* Diamond Mesh Pattern */}
+              {/* Fine Linen Mesh Texture Pattern */}
               <pattern
                 id="netGridPattern"
-                width="16"
-                height="16"
+                width="10"
+                height="10"
                 patternUnits="userSpaceOnUse"
-                patternTransform="rotate(45)"
               >
                 <path
-                  d="M 0 0 L 16 0 M 0 0 L 0 16"
+                  d="M 0 0 L 10 0 M 0 0 L 0 10"
                   fill="none"
                   stroke="#ffffff"
-                  strokeWidth="1.2"
-                  strokeOpacity="0.28"
+                  strokeWidth="0.8"
+                  strokeOpacity="0.22"
                 />
               </pattern>
 
-              {/* Bag Gradient for Depth */}
+              {/* Real Nét Bag Teal Shading */}
               <linearGradient id="bagShade" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#2D5E4E" />
-                <stop offset="50%" stopColor="#234B3E" />
-                <stop offset="100%" stopColor="#1B3D32" />
+                <stop offset="0%" stopColor="#22AF9F" />
+                <stop offset="45%" stopColor="#189B8D" />
+                <stop offset="100%" stopColor="#107C70" />
               </linearGradient>
 
-              {/* Strap Shadow */}
+              {/* Padded Strap Shading */}
+              <linearGradient id="strapShade" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#25B5A5" />
+                <stop offset="100%" stopColor="#148577" />
+              </linearGradient>
+
+              {/* Leather Patch Gradient */}
+              <linearGradient id="leatherPatch" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#EAD3AB" />
+                <stop offset="100%" stopColor="#D5B685" />
+              </linearGradient>
+
+              {/* Realistic Ground Shadow */}
               <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
-                <feDropShadow dx="0" dy="4" stdDeviation="4" floodOpacity="0.15" />
+                <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#1A2D27" floodOpacity="0.2" />
               </filter>
             </defs>
 
@@ -156,77 +167,153 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
             <ellipse
               cx="160"
               cy="318"
-              rx="105"
-              ry="14"
+              rx="125"
+              ry="12"
               fill="#D6CDBF"
-              opacity="0.8"
+              opacity="0.7"
             />
 
-            {/* Handle / Straps (Tote Loops) */}
+            {/* Back Handle Arch */}
             <path
-              d="M 105 130 C 105 25, 215 25, 215 130"
+              d="M 108 140 C 108 30, 212 30, 212 140"
               fill="none"
-              stroke="#1B3D32"
-              strokeWidth="18"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 105 130 C 105 32, 215 32, 215 130"
-              fill="none"
-              stroke="#2D5E4E"
-              strokeWidth="14"
+              stroke="#0D6B60"
+              strokeWidth="16"
               strokeLinecap="round"
             />
 
-            {/* Bag Body (Trapezoidal Tote with soft bottom curve) */}
+            {/* Front Handle Arch */}
             <path
-              d="M 52 130 L 72 290 Q 160 310 248 290 L 268 130 Z"
+              d="M 104 145 C 104 36, 216 36, 216 145"
+              fill="none"
+              stroke="url(#strapShade)"
+              strokeWidth="15"
+              strokeLinecap="round"
+            />
+            {/* Handle Central Stitching Accent */}
+            <path
+              d="M 104 145 C 104 36, 216 36, 216 145"
+              fill="none"
+              stroke="#0E645A"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+              strokeLinecap="round"
+            />
+
+            {/* Bag Main Body (Structured Rectangular Tote matching the physical 3D scan) */}
+            <rect
+              x="38"
+              y="135"
+              width="244"
+              height="172"
+              rx="12"
               fill="url(#bagShade)"
               filter="url(#softShadow)"
             />
 
-            {/* Diamond Net Mesh Overlay */}
-            <path
-              d="M 52 130 L 72 290 Q 160 310 248 290 L 268 130 Z"
+            {/* Linen Fabric Weave Overlay */}
+            <rect
+              x="38"
+              y="135"
+              width="244"
+              height="172"
+              rx="12"
               fill="url(#netGridPattern)"
             />
 
-            {/* Bag Top Rim Trim */}
-            <path
-              d="M 48 130 Q 160 134 272 130"
+            {/* Structural Stitched Edge Piping */}
+            <rect
+              x="40"
+              y="137"
+              width="240"
+              height="168"
+              rx="10"
               fill="none"
-              stroke="#18362C"
-              strokeWidth="10"
+              stroke="#0E685E"
+              strokeWidth="2.5"
+            />
+            <rect
+              x="43"
+              y="140"
+              width="234"
+              height="162"
+              rx="8"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="1"
+              strokeDasharray="4 3"
+              strokeOpacity="0.3"
+            />
+
+            {/* Top Rim Trim */}
+            <path
+              d="M 38 139 L 282 139"
+              stroke="#0D5F56"
+              strokeWidth="6"
               strokeLinecap="round"
             />
 
-            {/* Handle Anchorage Reinforcements */}
-            <rect x="97" y="124" width="16" height="22" rx="4" fill="#18362C" />
-            <rect x="207" y="124" width="16" height="22" rx="4" fill="#18362C" />
+            {/* Handle Anchor Patches (Left & Right) */}
+            <rect x="96" y="132" width="18" height="26" rx="4" fill="#11796D" stroke="#0E6157" strokeWidth="1.5" />
+            <rect x="206" y="132" width="18" height="26" rx="4" fill="#11796D" stroke="#0E6157" strokeWidth="1.5" />
 
-            {/* "nét" Brand Label Patch at Bottom Center */}
-            <rect
-              x="132"
-              y="252"
-              width="56"
-              height="28"
-              rx="4"
-              fill="#FFFFFF"
-              stroke="#E2DDD5"
-              strokeWidth="1"
-            />
-            <text
-              x="160"
-              y="271"
-              textAnchor="middle"
-              fontFamily="Playfair Display, Georgia, serif"
-              fontSize="16"
-              fontWeight="600"
-              fill="#241B16"
-              letterSpacing="0.05em"
-            >
-              nét
-            </text>
+            {/* Signature Leather Patch: "Túi lưới & Charm Đà Nẵng" (Matches 3D Model 100%) */}
+            <g id="leatherBrandBadge">
+              <rect
+                x="110"
+                y="156"
+                width="100"
+                height="34"
+                rx="4"
+                fill="url(#leatherPatch)"
+                stroke="#A8824C"
+                strokeWidth="1.2"
+                filter="url(#softShadow)"
+              />
+              {/* Stitching around patch */}
+              <rect
+                x="112"
+                y="158"
+                width="96"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="#7D5725"
+                strokeWidth="1"
+                strokeDasharray="3 2"
+              />
+              {/* 4 Corner Rivets */}
+              <circle cx="114" cy="160" r="1.2" fill="#52381B" />
+              <circle cx="206" cy="160" r="1.2" fill="#52381B" />
+              <circle cx="114" cy="186" r="1.2" fill="#52381B" />
+              <circle cx="206" cy="186" r="1.2" fill="#52381B" />
+
+              <text
+                x="160"
+                y="170"
+                textAnchor="middle"
+                fontFamily="Playfair Display, Georgia, serif"
+                fontStyle="italic"
+                fontSize="10"
+                fontWeight="700"
+                fill="#3B2613"
+                letterSpacing="0.02em"
+              >
+                Túi lưới &amp; Charm
+              </text>
+              <text
+                x="160"
+                y="181"
+                textAnchor="middle"
+                fontFamily="system-ui, -apple-system, sans-serif"
+                fontSize="7.5"
+                fontWeight="600"
+                fill="#593C20"
+                letterSpacing="0.08em"
+              >
+                ĐÀ NẴNG
+              </text>
+            </g>
           </svg>
 
           {/* Interactive Charms Overlay */}

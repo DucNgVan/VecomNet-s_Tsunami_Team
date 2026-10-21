@@ -361,7 +361,7 @@ function NetStudioContent() {
     freeform: { subject: "", feature1: "", feature2: "", feature3: "" },
   });
   // Interactive Conversational Interview State Machine (Client-side simulation without calling API until finished)
-  type InterviewStep = "category" | "subject" | "feature1" | "feature2" | "feature3" | "ready";
+  type InterviewStep = "category" | "subject" | "feature1" | "feature2" | "feature3" | "naming" | "ready";
   const [interviewStep, setInterviewStep] = useState<InterviewStep>("category");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -619,7 +619,7 @@ function NetStudioContent() {
         const d = resData.data;
         const color = d.recommendedColor || "#234B3E";
         const svg = d.svgCode || null;
-        const motif = d.motifName || "Charm Độc Bản";
+        const motif = motifName || d.motifName || "Charm Độc Bản";
         const story = d.story || "";
         const laser = d.laserEngravingText || customText;
         const imgUrl = d.imageUrl || null;
@@ -627,7 +627,7 @@ function NetStudioContent() {
         setCustomColor(color);
         setCustomText(laser);
         setGeneratedSvgCode(svg);
-        setMotifName(motif);
+        if (!motifName) setMotifName(motif);
         setMotifStory(story);
 
         // Pre-generate STL if SVG is available in browser
@@ -1058,6 +1058,15 @@ Key 3D printing & charm specs:
         { label: "Không cần thêm gì", value: "Không cần thêm gì" },
       ];
     }
+    if (interviewStep === "naming") {
+      const currentSub = themeSlots[selectedThemeCategory].subject || "Móc Khoá";
+      return [
+        { label: `🏷️ Charm "${currentSub}"`, value: `Charm ${currentSub}` },
+        { label: `💖 Bé ${currentSub}`, value: `Bé ${currentSub}` },
+        { label: `✨ Kỷ niệm ${currentSub}`, value: `Kỷ niệm ${currentSub}` },
+        { label: `🌿 Nét • ${currentSub}`, value: `Nét • ${currentSub}` },
+      ];
+    }
     return [];
   };
 
@@ -1202,13 +1211,13 @@ Key 3D printing & charm specs:
 
       let promptText = "";
       if (selectedThemeCategory === "object" || selectedThemeCategory === "landmark" || selectedThemeCategory === "flora") {
-        promptText = `Câu hỏi cuối cùng: Về chi tiết hoặc nét mặt biểu cảm, bạn có muốn thêm gì không?\n\n(Lưu ý: Nếu bạn muốn đồ vật/cảnh quan giữ nét tối giản, chân thực, KHÔNG có mặt cười hay biểu cảm hoạt hình, bạn cứ bấm "Không có biểu cảm / Để nguyên bản" nhé!)`;
+        promptText = `Về chi tiết hoặc nét mặt biểu cảm, bạn có muốn thêm gì không?\n\n(Lưu ý: Nếu bạn muốn đồ vật/cảnh quan giữ nét tối giản, chân thực, KHÔNG có mặt cười hay biểu cảm hoạt hình, bạn cứ bấm "Không có biểu cảm / Để nguyên bản" nhé!)`;
       } else if (selectedThemeCategory === "human") {
-        promptText = `Câu hỏi cuối cùng: Bạn có muốn nhân vật cầm theo món đồ gì hoặc tạo dáng vui nhộn không? (Nếu không cần, bạn có thể bấm "Không cần thêm")`;
+        promptText = `Bạn có muốn nhân vật cầm theo món đồ gì hoặc tạo dáng vui nhộn không? (Nếu không cần, bạn có thể bấm "Không cần thêm")`;
       } else if (selectedThemeCategory === "animal") {
-        promptText = `Câu hỏi cuối cùng: Bạn có muốn bé cưng cầm theo món đồ gì hoặc có hành động đáng yêu nào không?`;
+        promptText = `Bạn có muốn bé cưng cầm theo món đồ gì hoặc có hành động đáng yêu nào không?`;
       } else {
-        promptText = `Câu hỏi cuối cùng: Bạn có muốn thêm thông điệp hay chi tiết điểm xuyết nào không?`;
+        promptText = `Bạn có muốn thêm thông điệp hay chi tiết điểm xuyết nào không?`;
       }
 
       setChatLog((prev) => [
@@ -1240,16 +1249,7 @@ Key 3D printing & charm specs:
         [selectedThemeCategory]: finalSlots,
       }));
 
-      setInterviewStep("ready");
-
-      const themeNameMap: Record<CharmThemeCategory, string> = {
-        human: "Con người / Chân dung",
-        animal: "Thú cưng / Động vật",
-        flora: "Hoa cỏ / Thiên nhiên",
-        landmark: "Cảnh quan / Địa danh Đà Nẵng",
-        object: "Đồ vật kỷ niệm",
-        freeform: "Ý tưởng tự do",
-      };
+      setInterviewStep("naming");
 
       const ackText = isNeg
         ? "Dạ vâng! Mình đã ghi nhận: Giữ nguyên thiết kế tối giản, chân thực, HOÀN TOÀN KHÔNG có mặt cười hay biểu cảm hoạt hình thừa 🌿."
@@ -1264,17 +1264,51 @@ Key 3D printing & charm specs:
           time,
         },
         {
+          id: aiMsgId,
+          sender: "ai",
+          text: `Câu hỏi cuối cùng: Bạn muốn đặt tên cho chiếc móc khoá độc bản này là gì nào? 🏷️\n(Ví dụ: "Bé Cún Miu", "Chibi Nam Cà Phê", "Kỷ Niệm Nét 2026"... hoặc bấm chọn gợi ý nhanh bên dưới nhé!)`,
+          time,
+        },
+      ]);
+      return;
+    }
+
+    if (interviewStep === "naming") {
+      const current = themeSlots[selectedThemeCategory];
+      const chosenName = text.trim() || current.subject || "Móc Khoá Của Bạn";
+      setMotifName(chosenName);
+      setCustomIdea(chosenName);
+      setInterviewStep("ready");
+
+      const themeNameMap: Record<CharmThemeCategory, string> = {
+        human: "Con người / Chân dung",
+        animal: "Thú cưng / Động vật",
+        flora: "Hoa cỏ / Thiên nhiên",
+        landmark: "Cảnh quan / Địa danh Đà Nẵng",
+        object: "Đồ vật kỷ niệm",
+        freeform: "Ý tưởng tự do",
+      };
+
+      setChatLog((prev) => [
+        ...prev,
+        {
+          id: `ai-name-ack-${Date.now()}`,
+          sender: "ai",
+          text: `Tên móc khoá "${chosenName}" nghe thật ý nghĩa và độc đáo! ✨`,
+          time,
+        },
+        {
           id: `ai-summary-${Date.now()}`,
           sender: "ai",
-          text: "✨ Toàn bộ dữ liệu thiết kế đã được thu thập hoàn tất! Dưới đây là thông số chuẩn bị chuyển cho xưởng in 3D:",
+          text: "✨ Toàn bộ dữ liệu thiết kế đã được thu thập hoàn tất! Dưới đây là thông số chuẩn bị chuyển cho xưởng in 3D và gắn trực tiếp lên túi:",
           time,
           isSummary: true,
           summaryData: {
             categoryName: themeNameMap[selectedThemeCategory],
-            subject: finalSlots.subject || "Đồ vật độc bản",
-            feature1: finalSlots.feature1 || "Kiểu dáng cơ bản",
-            feature2: finalSlots.feature2 || "Màu sắc nguyên bản",
-            feature3: isNeg ? "🚫 Không có nét mặt (Giữ nguyên bản tối giản)" : (finalSlots.feature3 || "Cơ bản"),
+            subject: current.subject || "Đồ vật độc bản",
+            feature1: current.feature1 || "Kiểu dáng cơ bản",
+            feature2: current.feature2 || "Màu sắc nguyên bản",
+            feature3: current.feature3 || "Cơ bản",
             hasPhoto: Boolean(customImageFile),
           },
         },
@@ -1315,6 +1349,12 @@ Key 3D printing & charm specs:
     setAiCustomStep(2); // Chuyển sang Bước 2 ngay để hiển thị màn hình chờ tạo tác phẩm
     const activeCat = selectedThemeCategory;
     const currentSlots = themeSlots[activeCat];
+
+    if (!motifName) {
+      const defaultName = currentSlots.subject || "Móc Khoá Của Bạn";
+      setMotifName(defaultName);
+      setCustomIdea(defaultName);
+    }
 
     const s = currentSlots.subject || "Đồ vật độc bản";
     const f1 = currentSlots.feature1 ? `, ${currentSlots.feature1}` : "";
@@ -1645,6 +1685,27 @@ Key 3D printing & charm specs:
           </div>
         </div>
 
+        {/* Đặt tên cho chiếc móc khoá (Hỏi người dùng ngay từ đầu) */}
+        <div className="p-3.5 rounded-2xl bg-white border border-[#E8E2D8] space-y-1.5 shadow-2xs">
+          <label className="text-xs font-bold text-[#241B16] flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+              <span>Tên chiếc móc khoá</span>
+            </div>
+            <span className="text-[10px] text-[#8C7A70] font-normal">Tự do đặt tên theo ý bạn</span>
+          </label>
+          <input
+            type="text"
+            value={motifName || ""}
+            onChange={(e) => {
+              setMotifName(e.target.value);
+              setCustomIdea(e.target.value);
+            }}
+            placeholder="Nhập tên chiếc móc khoá (VD: Bé Cún Miu, Chibi Nam Cà Phê, Kỷ niệm Hội An...)"
+            className="w-full px-3 py-2 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
+          />
+        </div>
+
         {/* 1. Chọn Nhóm Chủ Đề (Category Pills) */}
         <div className="space-y-1.5">
           <label className="text-[11.5px] font-bold text-[#241B16] flex items-center gap-1.5">
@@ -1860,7 +1921,7 @@ Key 3D printing & charm specs:
               ) : (
                 <>
                   <Wand2 className="w-4 h-4" />
-                  <span>🎨 DUYỆT THÔNG SỐ & TẠO MÓC KHOÁ ĐỘC BẢN →</span>
+                  <span>🎨 DUYỆT THÔNG SỐ & TẠO MÓC KHOÁ ĐỘC BẢN</span>
                 </>
               )}
             </div>
@@ -1950,7 +2011,7 @@ Key 3D printing & charm specs:
                 onClick={() => router.push(`/tracking?code=${createdRequestId}`)}
                 className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-medium shadow-sm transition-all"
               >
-                Theo dõi & duyệt thiết kế ngay →
+                Theo dõi & duyệt thiết kế ngay
               </button>
               <button
                 onClick={() => {
@@ -1978,7 +2039,7 @@ Key 3D printing & charm specs:
                       onClick={() => setIs3DMode(false)}
                       className="px-4 py-2 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                     >
-                      <span>← Trở về bản phối 2D</span>
+                      <span>Trở về bản phối 2D</span>
                     </button>
                   </div>
                   <BagCanvas3D
@@ -2778,6 +2839,10 @@ Key 3D printing & charm specs:
                                               <span>Thông Số Bản Vẽ 2D Chuẩn Xưởng</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2 text-[11.5px]">
+                                              <div className="col-span-2 p-2 rounded-lg bg-white border border-[#E8E2D8]">
+                                                <span className="text-[#8C7A70] text-[10px] block">Tên chiếc móc khoá:</span>
+                                                <strong className="text-[#B85D43] text-xs sm:text-sm font-semibold">{motifName || msg.summaryData.subject || "Móc Khoá Của Bạn"}</strong>
+                                              </div>
                                               <div>
                                                 <span className="text-[#8C7A70] block">Chủ đề:</span>
                                                 <strong className="text-[#241B16]">{msg.summaryData.categoryName}</strong>
@@ -2805,73 +2870,93 @@ Key 3D printing & charm specs:
                                               </div>
                                             )}
 
-                                            {/* 3 KHỐI TÙY BIẾN THEO YÊU CẦU: Chữ khắc Laser | Dáng phôi móc khoá | Màu men nung */}
-                                            <div className="pt-2 border-t border-[#E8E2D8] grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                              {/* 1. Chữ khắc Laser */}
+                                            {/* KHỐI TÙY BIẾN THEO YÊU CẦU: Tên móc khoá | Chữ khắc Laser | Dáng phôi | Màu men */}
+                                            <div className="pt-2 border-t border-[#E8E2D8] space-y-2">
+                                              {/* Tên móc khoá */}
                                               <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
                                                 <label className="text-[11px] font-bold text-[#241B16] flex items-center justify-between">
-                                                  <span>Chữ khắc Laser</span>
-                                                  <span className="text-[9.5px] text-[#8C7A70] font-normal">Tối đa 15 ký tự</span>
+                                                  <span>Tên chiếc móc khoá</span>
+                                                  <span className="text-[9.5px] text-[#8C7A70] font-normal">Tự do đổi tên</span>
                                                 </label>
                                                 <input
                                                   type="text"
-                                                  maxLength={15}
-                                                  value={customText}
-                                                  onChange={(e) => setCustomText(e.target.value)}
-                                                  placeholder="VD: Nét • 2026..."
-                                                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
+                                                  value={motifName || ""}
+                                                  onChange={(e) => {
+                                                    setMotifName(e.target.value);
+                                                    setCustomIdea(e.target.value);
+                                                  }}
+                                                  placeholder="VD: Bé Cún Miu, Chibi Nam Cà Phê..."
+                                                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs font-semibold text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
                                                 />
                                               </div>
 
-                                              {/* 2. Dáng phôi móc khoá */}
-                                              <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
-                                                <label className="text-[11px] font-bold text-[#241B16]">
-                                                  Dáng phôi móc khoá
-                                                </label>
-                                                <div className="grid grid-cols-5 gap-1 pt-0.5">
-                                                  {[
-                                                    { id: "circle", label: "Tròn" },
-                                                    { id: "square", label: "Vuông" },
-                                                    { id: "teardrop", label: "Giọt" },
-                                                    { id: "heart", label: "Tim" },
-                                                    { id: "freeform", label: "Tự do" },
-                                                  ].map((shape) => (
-                                                    <button
-                                                      key={shape.id}
-                                                      type="button"
-                                                      onClick={() => setCustomShape(shape.id as any)}
-                                                      className={`py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
-                                                        customShape === shape.id
-                                                          ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
-                                                          : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                                      }`}
-                                                    >
-                                                      {shape.label}
-                                                    </button>
-                                                  ))}
+                                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                                {/* 1. Chữ khắc Laser */}
+                                                <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
+                                                  <label className="text-[11px] font-bold text-[#241B16] flex items-center justify-between">
+                                                    <span>Chữ khắc Laser</span>
+                                                    <span className="text-[9.5px] text-[#8C7A70] font-normal">Tối đa 15 ký tự</span>
+                                                  </label>
+                                                  <input
+                                                    type="text"
+                                                    maxLength={15}
+                                                    value={customText}
+                                                    onChange={(e) => setCustomText(e.target.value)}
+                                                    placeholder="VD: Nét • 2026..."
+                                                    className="w-full px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
+                                                  />
                                                 </div>
-                                              </div>
 
-                                              {/* 3. Màu men nung */}
-                                              <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
-                                                <label className="text-[11px] font-bold text-[#241B16]">
-                                                  Màu men nung
-                                                </label>
-                                                <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                                                  {CERAMIC_PALETTE.map((pal) => (
-                                                    <button
-                                                      key={pal.hex}
-                                                      type="button"
-                                                      onClick={() => setCustomColor(pal.hex)}
-                                                      title={pal.name}
-                                                      className={`w-5 h-5 rounded-full border-2 transition-all cursor-pointer ${
-                                                        customColor === pal.hex
-                                                          ? "border-[#241B16] scale-110 shadow-xs ring-2 ring-[#B85D43]/30"
-                                                          : "border-white hover:scale-105"
-                                                      }`}
-                                                      style={{ backgroundColor: pal.hex }}
-                                                    />
-                                                  ))}
+                                                {/* 2. Dáng phôi móc khoá */}
+                                                <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
+                                                  <label className="text-[11px] font-bold text-[#241B16]">
+                                                    Dáng phôi móc khoá
+                                                  </label>
+                                                  <div className="grid grid-cols-5 gap-1 pt-0.5">
+                                                    {[
+                                                      { id: "circle", label: "Tròn" },
+                                                      { id: "square", label: "Vuông" },
+                                                      { id: "teardrop", label: "Giọt" },
+                                                      { id: "heart", label: "Tim" },
+                                                      { id: "freeform", label: "Tự do" },
+                                                    ].map((shape) => (
+                                                      <button
+                                                        key={shape.id}
+                                                        type="button"
+                                                        onClick={() => setCustomShape(shape.id as any)}
+                                                        className={`py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
+                                                          customShape === shape.id
+                                                            ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
+                                                            : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
+                                                        }`}
+                                                      >
+                                                        {shape.label}
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                </div>
+
+                                                {/* 3. Màu men nung */}
+                                                <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
+                                                  <label className="text-[11px] font-bold text-[#241B16]">
+                                                    Màu men nung
+                                                  </label>
+                                                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                                                    {CERAMIC_PALETTE.map((pal) => (
+                                                      <button
+                                                        key={pal.hex}
+                                                        type="button"
+                                                        onClick={() => setCustomColor(pal.hex)}
+                                                        title={pal.name}
+                                                        className={`w-5 h-5 rounded-full border-2 transition-all cursor-pointer ${
+                                                          customColor === pal.hex
+                                                            ? "border-[#241B16] scale-110 shadow-xs ring-2 ring-[#B85D43]/30"
+                                                            : "border-white hover:scale-105"
+                                                        }`}
+                                                        style={{ backgroundColor: pal.hex }}
+                                                      />
+                                                    ))}
+                                                  </div>
                                                 </div>
                                               </div>
                                             </div>
@@ -2893,7 +2978,7 @@ Key 3D printing & charm specs:
                                                   ) : (
                                                     <>
                                                       <Wand2 className="w-4 h-4" />
-                                                      <span>🎨 TẠO MÓC KHOÁ ĐỘC BẢN & GẮN LÊN TÚI →</span>
+                                                      <span>🎨 TẠO MÓC KHOÁ ĐỘC BẢN & GẮN LÊN TÚI</span>
                                                     </>
                                                   )}
                                                 </div>
@@ -2990,7 +3075,11 @@ Key 3D printing & charm specs:
                                           ? "Nhập kiểu dáng / chi tiết nhận diện (hoặc bấm 'Bỏ qua')..."
                                           : interviewStep === "feature2"
                                           ? "Nhập màu sắc / phong cách mong muốn..."
-                                          : "Nhập điểm nhấn (hoặc bấm 'Không cần biểu cảm')..."
+                                          : interviewStep === "feature3"
+                                          ? "Nhập điểm nhấn (hoặc bấm 'Không cần biểu cảm')..."
+                                          : interviewStep === "naming"
+                                          ? "Nhập tên cho chiếc móc khoá (hoặc bấm gợi ý bên trên)..."
+                                          : "Nhập tin nhắn..."
                                       }
                                       className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs sm:text-sm text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
                                     />
@@ -3127,25 +3216,6 @@ Key 3D printing & charm specs:
                                   </div>
 
                                   <div className="sm:col-span-7 space-y-2.5 text-xs text-[#5E4D43]">
-                                    {/* Đặt tên tuỳ chỉnh cho móc khoá */}
-                                    <div className="p-3 rounded-xl bg-white border border-[#E8E2D8] space-y-1 shadow-2xs">
-                                      <label className="text-xs font-bold text-[#241B16] flex items-center justify-between">
-                                        <span>Đặt tên cho chiếc móc khoá:</span>
-                                        <span className="text-[10px] text-[#8C7A70] font-normal">Tự do đổi tên</span>
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={motifName || ""}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setMotifName(val);
-                                          setCustomIdea(val);
-                                        }}
-                                        placeholder="Nhập tên móc khoá (VD: Bé Cún Miu, Chibi Nam Cà Phê...)"
-                                        className="w-full px-3 py-2 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
-                                      />
-                                    </div>
-
                                     {/* Ý nghĩa móc khoá */}
                                     {motifStory && (
                                       <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] text-xs text-[#5E4D43] leading-relaxed">
@@ -3157,14 +3227,18 @@ Key 3D printing & charm specs:
                                     )}
 
                                     {/* Thông số tinh gọn */}
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-[#5E4D43]">
+                                    <div className="grid grid-cols-3 gap-2 text-xs text-[#5E4D43]">
+                                      <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
+                                        <span className="text-[#8C7A70] text-[10.5px] block">Tên móc khoá:</span>
+                                        <strong className="text-[#B85D43] truncate block">{motifName || "Móc Khoá Độc Bản"}</strong>
+                                      </div>
                                       <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
                                         <span className="text-[#8C7A70] text-[10.5px] block">Khắc Laser:</span>
-                                        <strong className="text-[#241B16]">{customText ? `"${customText}"` : "Không khắc chữ"}</strong>
+                                        <strong className="text-[#241B16] truncate block">{customText ? `"${customText}"` : "Không khắc chữ"}</strong>
                                       </div>
                                       <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
                                         <span className="text-[#8C7A70] text-[10.5px] block">Dáng phôi:</span>
-                                        <strong className="text-[#241B16]">
+                                        <strong className="text-[#241B16] truncate block">
                                           {customShape === "circle" ? "Tròn" : customShape === "square" ? "Vuông" : customShape === "teardrop" ? "Giọt nước" : customShape === "heart" ? "Trái tim" : "Tự do Die-Cut"}
                                         </strong>
                                       </div>
@@ -3186,21 +3260,21 @@ Key 3D printing & charm specs:
                                 </div>
                               </div>
 
-                              {/* Navigation Buttons (Bằng nhau 100%) */}
+                              {/* Navigation Buttons (Bằng nhau 100%, không ký tự mũi tên, không "bước 3") */}
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                                 <button
                                   type="button"
                                   onClick={() => setAiCustomStep(1)}
                                   className="h-12 px-5 rounded-xl border border-[#E8E2D8] bg-white text-xs sm:text-sm font-semibold text-[#5E4D43] hover:bg-[#FAF7F2] transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
                                 >
-                                  ← Quay lại chỉnh sửa
+                                  Quay lại chỉnh sửa
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setAiCustomStep(3)}
                                   className="h-12 px-5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                                 >
-                                  <span>Nộp Đợi Duyệt & Báo Giá (Bước 3) →</span>
+                                  <span>Nộp Đợi Duyệt & Báo Giá</span>
                                 </button>
                               </div>
                             </>
@@ -3378,7 +3452,7 @@ Key 3D printing & charm specs:
                                 onClick={() => setAiCustomStep(2)}
                                 className="py-3 px-4 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
                               >
-                                ← Chỉnh bản phác thảo
+                                Chỉnh bản phác thảo
                               </button>
 
                               <button
@@ -3612,7 +3686,7 @@ Key 3D printing & charm specs:
                         onClick={() => setFlowStep("design")}
                         className="py-3.5 px-5 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
                       >
-                        ← Chỉnh sửa lại
+                        Chỉnh sửa lại
                       </button>
 
                       <button

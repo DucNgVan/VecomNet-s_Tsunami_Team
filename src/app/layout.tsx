@@ -8,7 +8,6 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { OceanCanvas3D } from "@/components/3d/OceanCanvas3D";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/ui/ToastNotification";
-import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 
 export const metadata: Metadata = {
   title: "NÉT | Túi Lưới Tái Chế & Charm Độc Bản Biển Sâu",

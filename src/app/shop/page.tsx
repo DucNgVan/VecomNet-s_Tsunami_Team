@@ -8,7 +8,7 @@ import { GlassButton } from "@/components/ui/GlassButton";
 import { formatVND, formatKg } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
-import { ShoppingBag, Sparkles, RotateCw, PlusCircle, AlertCircle } from "lucide-react";
+import { ShoppingBag, Sparkles, RotateCw, PlusCircle, AlertCircle, ChevronDown } from "lucide-react";
 import { BagBase, Charm, ProductCombo } from "@/types";
 import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
 import { BagCard3D } from "@/components/3d/BagCard3D";
@@ -327,8 +327,33 @@ export default function ShopPage() {
           </div>
         </motion.div>
 
-        {/* Filter Tabs Bar */}
-        <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {/* Filter Tabs Bar: Mobile Dropdown vs Desktop Tabs */}
+        {/* Mobile Dropdown */}
+        <div className="sm:hidden px-2 max-w-sm mx-auto w-full">
+          <div className="relative">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value as any)}
+              className="w-full appearance-none bg-white border border-[#E8E2D8] text-[#241B16] font-semibold text-xs py-3 pl-4 pr-12 rounded-2xl shadow-xs focus:outline-hidden focus:ring-2 focus:ring-[#B85D43] transition-all cursor-pointer"
+              aria-label="Lọc theo danh mục sản phẩm"
+            >
+              {filterTabs.map((tab) => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.label} ({tab.count})
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#7A6F68] flex items-center gap-1.5">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FAF7F2] font-mono border border-[#E8E2D8] font-bold text-[#B85D43]">
+                {filterTabs.find((t) => t.id === filterCategory)?.count || 0}
+              </span>
+              <ChevronDown className="w-4 h-4 text-[#7A6F68]" />
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Filter Tabs Bar */}
+        <div className="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {filterTabs.map((tab) => {
             const isActive = filterCategory === tab.id;
             return (

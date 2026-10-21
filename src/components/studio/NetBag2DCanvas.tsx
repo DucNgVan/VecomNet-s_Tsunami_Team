@@ -86,15 +86,16 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
 
   return (
     <div className="relative w-full flex flex-col items-center">
-      {/* 3D / 2D Toggle Switch if requested */}
+      {/* 3D / 2D Toggle Switch if requested (Centered to mirror 3D canvas position exactly) */}
       {show3dToggle && (
-        <div className="absolute top-4 right-4 z-20">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
           <button
+            type="button"
             onClick={onToggle3D}
-            className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#E8E2D8] text-xs font-semibold text-[#42342B] hover:text-[#B85D43] transition-colors shadow-sm flex items-center gap-1.5"
+            className="px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
-            <span>{is3dActive ? "Chuyển bản phối 2D" : "Xem thử 3D"}</span>
+            <span>{is3dActive ? "← Trở về bản phối 2D" : "✨ Xem thử 3D"}</span>
           </button>
         </div>
       )}
@@ -103,8 +104,8 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
       <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 flex flex-col items-center justify-between shadow-sm relative overflow-hidden select-none border border-[#E8E2D8]">
         {/* Top Arch Label */}
         <div className="pt-3 text-center">
-          <span className="text-[11px] sm:text-xs font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
-            NÉT ORIGINAL / 01
+          <span className="text-[10px] sm:text-[11px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
+            TÚI LƯỚI & CHARM ĐÀ NẴNG
           </span>
         </div>
 
@@ -434,11 +435,14 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
           </div>
         </div>
 
-        {/* Bottom Arch Note */}
-        <div className="pb-1 text-center">
-          <p className="text-[11px] text-[#7A6F68] font-light">
-            Minh họa thiết kế · Mẫu thực tế có thể khác
-          </p>
+        {/* Floating 2D Badge matching 3D Floating Pill */}
+        <div className="absolute bottom-3 inset-x-0 flex items-center justify-center pointer-events-none px-4 z-20">
+          <div className="px-3.5 py-1.5 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 text-white text-xs flex items-center gap-2 shadow-lg pointer-events-auto">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-[11px] font-medium">
+              Bản Phối 2D Mặt Trước • Kéo thả charm tự do
+            </span>
+          </div>
         </div>
       </div>
 

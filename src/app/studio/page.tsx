@@ -1319,18 +1319,19 @@ Key 3D printing & charm specs:
             <div className="lg:col-span-7">
               {flowStep === "design" ? (
                 <div className="space-y-6">
-                  {/* Top 2 Tabs Navigation */}
-                  <div className="flex border-b border-[#E8E2D8] gap-6 sm:gap-8 pb-3">
+                  {/* Top 2 Tabs Navigation - Compact on Mobile */}
+                  <div className="flex border-b border-[#E8E2D8] gap-4 sm:gap-8 pb-3">
                     <button
                       onClick={() => setActiveTab("ready")}
-                      className={`text-xs sm:text-sm font-medium transition-all pb-3 -mb-3 relative flex items-center gap-2 ${
+                      className={`text-xs sm:text-sm font-medium transition-all pb-3 -mb-3 relative flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${
                         activeTab === "ready"
                           ? "text-[#241B16] font-semibold"
                           : "text-[#7A6F68] hover:text-[#241B16]"
                       }`}
                     >
-                      <Sparkles className="w-4 h-4 text-[#B85D43]" />
-                      <span>Charm Có Sẵn & Chuyến Đi Đà Nẵng</span>
+                      <Sparkles className="w-4 h-4 text-[#B85D43] shrink-0" />
+                      <span className="hidden sm:inline">Charm Có Sẵn & Kỷ Niệm</span>
+                      <span className="sm:hidden">Charm Có Sẵn</span>
                       {activeTab === "ready" && (
                         <motion.div
                           layoutId="studioActiveTab"
@@ -1341,16 +1342,17 @@ Key 3D printing & charm specs:
 
                     <button
                       onClick={() => setActiveTab("ai_custom")}
-                      className={`text-xs sm:text-sm font-medium transition-all pb-3 -mb-3 relative flex items-center gap-2 ${
+                      className={`text-xs sm:text-sm font-medium transition-all pb-3 -mb-3 relative flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${
                         activeTab === "ai_custom"
                           ? "text-[#241B16] font-semibold"
                           : "text-[#7A6F68] hover:text-[#241B16]"
                       }`}
                     >
-                      <Wand2 className="w-4 h-4 text-[#B85D43]" />
-                      <span>Sáng Tạo Charm Riêng Cùng AI</span>
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-[#B85D43]/10 text-[#B85D43]">
-                        AI 2D
+                      <Wand2 className="w-4 h-4 text-[#B85D43] shrink-0" />
+                      <span className="hidden sm:inline">Tạo Charm Cùng AI</span>
+                      <span className="sm:hidden">Tạo Charm AI</span>
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-[#B85D43]/10 text-[#B85D43] whitespace-nowrap">
+                        2D
                       </span>
                       {activeTab === "ai_custom" && (
                         <motion.div
@@ -1363,32 +1365,32 @@ Key 3D printing & charm specs:
 
                   {/* TAB 1: PHỐI CHARM CÓ SẴN HOẶC THEO CHUYẾN ĐI ĐÀ NẴNG */}
                   {activeTab === "ready" && (
-                    <div className="bg-white rounded-3xl border border-[#E8E2D8] p-6 sm:p-8 space-y-6 shadow-xs">
-                      {/* Sub-tab switcher */}
+                    <div className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-8 space-y-6 shadow-xs">
+                      {/* Sub-tab switcher - Compact on Mobile */}
                       <div className="p-1 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] grid grid-cols-2 gap-1">
                         <button
                           type="button"
                           onClick={() => setReadySubTab("single_charms")}
-                          className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                             readySubTab === "single_charms"
                               ? "bg-white text-[#241B16] shadow-xs"
                               : "text-[#7A6F68] hover:text-[#241B16]"
                           }`}
                         >
-                          <Layers className="w-3.5 h-3.5" />
-                          <span>Tự chọn charm sẵn có</span>
+                          <Layers className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">Tự chọn charm</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setReadySubTab("journey_presets")}
-                          className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                             readySubTab === "journey_presets"
                               ? "bg-white text-[#241B16] shadow-xs"
                               : "text-[#7A6F68] hover:text-[#241B16]"
                           }`}
                         >
-                          <Compass className="w-3.5 h-3.5 text-[#B85D43]" />
-                          <span>Phối theo chuyến đi Đà Nẵng</span>
+                          <Compass className="w-3.5 h-3.5 text-[#B85D43] shrink-0" />
+                          <span className="truncate">Theo chuyến đi</span>
                         </button>
                       </div>
 
@@ -1783,10 +1785,10 @@ Key 3D printing & charm specs:
                       </div>
 
                       {/* 3 Steps Progress Bar */}
-                      <div className="grid grid-cols-3 gap-2 pb-2 border-b border-[#E8E2D8]">
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pb-2 border-b border-[#E8E2D8]">
                         {[
-                          { step: 1, label: "1. Chọn Mẫu & Điền Ô", desc: "6 Chủ đề & Ô điền chuẩn 2D" },
-                          { step: 2, label: "2. AI Sketch 2D", desc: "Xem trực tiếp trên túi" },
+                          { step: 1, label: "1. Điền ý tưởng", desc: "6 Chủ đề & Ô điền 2D" },
+                          { step: 2, label: "2. Phác thảo 2D", desc: "Gắn thử lên túi" },
                           { step: 3, label: "3. Nộp & Báo giá", desc: "Xưởng thẩm định" },
                         ].map((s) => (
                           <button

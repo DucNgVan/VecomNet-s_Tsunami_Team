@@ -328,18 +328,22 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   {/* Metal Hang Ring / Loop */}
                   <div className="w-2 h-2.5 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
 
-                  {/* Freeform Die-Cut Charm (Hiển thị ảnh 3D thật hoặc SVG vector) */}
-                  {isCustom && customCharmVisual?.imageUrl ? (
+                  {/* Custom Keychain Charm (Hiển thị ảnh chân dung/kỷ niệm của khách) */}
+                  {isCustom && (customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl) ? (
                     <div
-                      className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center relative transition-transform ${
+                      className={`w-14 h-14 sm:w-16 sm:h-16 flex flex-col items-center justify-center relative transition-transform ${
                         isSelected ? "scale-115 drop-shadow-[0_0_12px_rgba(184,93,67,0.9)]" : "drop-shadow-lg"
                       }`}
                     >
-                      <img
-                        src={customCharmVisual.imageUrl}
-                        alt={customCharmVisual.engravedText || "Móc khoá 3D Nét"}
-                        className="w-full h-full object-contain filter select-none pointer-events-none drop-shadow-md"
-                      />
+                      {/* Vòng khoen móc kim loại trên đỉnh */}
+                      <div className="w-2.5 h-3 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border-1.5 border-white/90 shadow-md bg-white flex items-center justify-center p-0.5">
+                        <img
+                          src={customCharmVisual.imageUrl || customCharmVisual.referenceImageUrl}
+                          alt={customCharmVisual.engravedText || "Móc khoá 2D Nét"}
+                          className="w-full h-full object-contain rounded-lg select-none pointer-events-none"
+                        />
+                      </div>
                       {customCharmVisual?.engravedText && (
                         <span className="absolute -bottom-1 text-[7px] font-mono tracking-tight text-white/95 truncate max-w-[48px] bg-black/75 px-1 py-0.5 rounded shadow">
                           {customCharmVisual.engravedText}

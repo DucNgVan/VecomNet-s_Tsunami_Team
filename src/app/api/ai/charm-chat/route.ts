@@ -22,120 +22,10 @@ interface ChatRequestPayload {
 }
 
 /**
- * ĐỘNG CƠ AI SINH ẢNH MÓC KHOÁ 2D (2D GRAPHIC DIFFUSION ENGINE)
- * Sinh ảnh 2D flat vector die-cut sticker với viền đậm và màu mảng phẳng.
- * Tuyệt đối không sinh hay dùng mã SVG thô sơ của LLM.
+ * NÉT STUDIO 2D KEYCHAIN DESIGN AGENT
+ * Phân tích yêu cầu, tư vấn phong cách, trích xuất đặc trưng nhận dạng
+ * và chuẩn hoá phôi móc khoá thủ công 2D cho nghệ nhân xưởng chế tác.
  */
-function isValidGeneratedImage(res: Response, buffer: Buffer): boolean {
-  if (!res.ok) return false;
-
-  // 1. Kiểm tra header thông báo giới hạn của nhà cung cấp
-  const retryAfter = res.headers.get("retry-after");
-  const paymentRequired = res.headers.get("payment-required");
-  if (retryAfter || paymentRequired) return false;
-
-  // 2. Kiểm tra chuỗi ký tự lỗi trong buffer để loại trừ ảnh vàng báo lỗi
-  const rawStr = buffer.toString("latin1");
-  if (
-    rawStr.includes("Free limit reached") ||
-    rawStr.includes("45 seconds") ||
-    rawStr.includes("enter.pollinations.ai")
-  ) {
-    return false;
-  }
-
-  // 3. Kiểm tra kích thước và MIME
-  const mime = res.headers.get("content-type") || "";
-  if (!mime.includes("image")) return false;
-  if (buffer.length < 3000) return false;
-
-  return true;
-}
-
-async function generate2DKeychainImage(
-  prompt: string
-): Promise<{ imageUrl: string; provider: string } | null> {
-  const seed = Math.floor(Math.random() * 999999);
-  const cleanPrompt = prompt.slice(0, 380);
-  const directUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    cleanPrompt
-  )}?width=512&height=512&nologo=true&seed=${seed}`;
-
-  // NHÁNH 1: Pollinations Sana Model (Đồ hoạ phẳng sắc nét, thời gian 8-18s)
-  const fetchBranch1 = async (): Promise<string> => {
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-      cleanPrompt
-    )}?model=sana&width=512&height=512&nologo=true&seed=${seed}`;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 32000); // 32s buffer để AI vẽ hoàn hảo nhất
-
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      const buf = await res.arrayBuffer();
-      const buffer = Buffer.from(buf);
-
-      if (!isValidGeneratedImage(res, buffer)) {
-        throw new Error("Branch 1 image invalid or limit detected");
-      }
-
-      const mime = res.headers.get("content-type") || "image/jpeg";
-      return `data:${mime};base64,${buffer.toString("base64")}`;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      throw err;
-    }
-  };
-
-  // NHÁNH 2: Pollinations Phân luồng Seed khác (Đua song song)
-  const fetchBranch2 = async (): Promise<string> => {
-    const seed2 = (seed + 41923) % 999999;
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-      cleanPrompt
-    )}?width=512&height=512&nologo=true&seed=${seed2}`;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s buffer
-
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      const buf = await res.arrayBuffer();
-      const buffer = Buffer.from(buf);
-
-      if (!isValidGeneratedImage(res, buffer)) {
-        throw new Error("Branch 2 image invalid or limit detected");
-      }
-
-      const mime = res.headers.get("content-type") || "image/jpeg";
-      return `data:${mime};base64,${buffer.toString("base64")}`;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      throw err;
-    }
-  };
-
-  try {
-    const fastestResult = await Promise.any([fetchBranch1(), fetchBranch2()]);
-    console.log("[2D Graphic Engine]: Tạo ảnh 2D thành công từ AI đồ hoạ thực tế!");
-    return {
-      imageUrl: fastestResult,
-      provider: "2d-graphic-diffusion",
-    };
-  } catch (raceErr) {
-    console.warn(
-      "[2D Graphic Engine]: Server bận hoặc chạm hạn mức, chuyển sang URL trực tiếp cho Client..."
-    );
-    return {
-      imageUrl: directUrl,
-      provider: "2d-direct-url",
-    };
-  }
-}
-
 export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -458,16 +348,14 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
       };
     }
 
-    // BƯỚC 2: GỌI ĐỘNG CƠ SINH ẢNH 2D ĐỒ HOẠ THỰC TẾ
-    console.log(
-      "[2D Graphic Engine]: Generating 2D Illustration with prompt:",
-      parsedData.masterPrompt.slice(0, 100) + "..."
-    );
-    const imageResult = await generate2DKeychainImage(parsedData.masterPrompt);
-
-    if (imageResult) {
-      parsedData.imageUrl = imageResult.imageUrl;
-      parsedData.imageProvider = imageResult.provider;
+    // BƯỚC 2: CHUẨN HOÁ PHÔI MÓC KHOÁ 2D THỦ CÔNG
+    // Nếu khách hàng gửi ảnh mẫu/chân dung, ưu tiên hiển thị phôi dựa trên ảnh của khách
+    if (imageBase64) {
+      parsedData.imageUrl = imageBase64;
+      parsedData.imageProvider = "user-reference";
+    } else {
+      parsedData.imageUrl = null;
+      parsedData.imageProvider = "artisan-badge";
     }
 
     return NextResponse.json({

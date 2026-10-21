@@ -2507,30 +2507,37 @@ Key 3D printing & charm specs:
                                       Tạo hình Die-Cut tự do
                                     </div>
 
-                                    {/* Freestanding Die-Cut Charm Display (Ảnh 2D thực tế từ AI) */}
+                                    {/* Freestanding Die-Cut Charm Display (Phôi móc khoá thực tế) */}
                                     <div className="w-32 h-32 flex items-center justify-center relative my-2">
-                                      {generatedImageUrl ? (
-                                        <div className="w-full h-full relative flex items-center justify-center">
-                                          <img
-                                            src={generatedImageUrl}
-                                            alt={motifName || "Móc khoá 2D Nét"}
-                                            className="w-full h-full object-contain filter drop-shadow-[0_12px_22px_rgba(0,0,0,0.25)] select-none pointer-events-none"
-                                          />
-                                        </div>
-                                      ) : customImageFile ? (
-                                        <div className="w-full h-full relative flex items-center justify-center">
-                                          <img
-                                            src={customImageFile}
-                                            alt="Custom Reference"
-                                            className="w-full h-full object-contain drop-shadow-md"
-                                          />
+                                      {customImageFile || generatedImageUrl ? (
+                                        <div className="w-full h-full relative flex flex-col items-center justify-center">
+                                          {/* Vòng móc kim loại phía trên (Keychain Ring) */}
+                                          <div className="w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent -mb-1 shadow-xs z-10" />
+                                          <div className="w-24 h-24 relative rounded-2xl overflow-hidden p-1.5 bg-white border-2 border-[#E8E2D8] shadow-md flex items-center justify-center">
+                                            <img
+                                              src={customImageFile || generatedImageUrl || ""}
+                                              alt={motifName || "Móc khoá 2D Nét"}
+                                              className="w-full h-full object-contain rounded-xl select-none"
+                                            />
+                                            {customText && (
+                                              <span className="absolute bottom-1.5 text-[8.5px] font-mono tracking-tight text-white bg-black/75 px-1.5 py-0.5 rounded shadow">
+                                                {customText}
+                                              </span>
+                                            )}
+                                          </div>
                                         </div>
                                       ) : (
                                         <div
                                           style={{ backgroundColor: customColor }}
-                                          className="w-24 h-24 rounded-2xl flex items-center justify-center text-white font-serif font-bold text-2xl drop-shadow-md"
+                                          className="w-24 h-24 rounded-2xl flex flex-col items-center justify-center text-white font-serif font-bold text-2xl drop-shadow-md relative border-2 border-white/80 shadow-md"
                                         >
-                                          {customText ? customText.slice(0, 3).toUpperCase() : "NÉT"}
+                                          <div className="absolute -top-3 w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent shadow-xs" />
+                                          <span>{customText ? customText.slice(0, 3).toUpperCase() : "NÉT"}</span>
+                                          {customText && customText.length > 3 && (
+                                            <span className="text-[8.5px] font-mono font-normal tracking-wide text-white/90 mt-1 bg-black/30 px-1.5 py-0.5 rounded">
+                                              {customText}
+                                            </span>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -2540,7 +2547,7 @@ Key 3D printing & charm specs:
                                         Quy chuẩn: ~4.5cm x 4.5cm
                                       </span>
                                       <span className="text-[10px] text-[#B85D43] font-semibold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                                        Phác thảo 2D AI
+                                        Phôi Móc Khoá 2D
                                       </span>
                                     </div>
                                   </div>

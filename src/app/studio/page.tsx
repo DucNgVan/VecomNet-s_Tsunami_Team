@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -345,6 +345,37 @@ function NetStudioContent() {
     object: { subject: "", feature1: "", feature2: "", feature3: "" },
     freeform: { subject: "", feature1: "", feature2: "", feature3: "" },
   });
+  // Interactive Conversational Interview State Machine (Client-side simulation without calling API until finished)
+  type InterviewStep = "category" | "subject" | "feature1" | "feature2" | "feature3" | "ready";
+  const [interviewStep, setInterviewStep] = useState<InterviewStep>("category");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const [chatLog, setChatLog] = useState<
+    Array<{
+      id: string;
+      sender: "ai" | "user";
+      text: string;
+      time: string;
+      imageUrl?: string;
+      isSummary?: boolean;
+      summaryData?: {
+        categoryName: string;
+        subject: string;
+        feature1: string;
+        feature2: string;
+        feature3: string;
+        hasPhoto: boolean;
+      };
+    }>
+  >([
+    {
+      id: "ai-welcome-init",
+      sender: "ai",
+      text: "Chào bạn! Mình là Nghệ nhân AI của Nét Studio 🌿.\n\nMình sẽ cùng bạn trò chuyện để lên ý tưởng chi tiết cho chiếc móc khoá 2D độc bản để các nghệ nhân lấy làm khuôn mẫu in 3D thực tế nhé!\n\nĐầu tiên, bạn muốn chiếc móc khoá mang hình ảnh về chủ đề gì nào?",
+      time: "Vừa xong",
+    },
+  ]);
+
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [showFreeformPrompt, setShowFreeformPrompt] = useState(false);
   const [customShape, setCustomShape] = useState<"circle" | "square" | "teardrop" | "heart" | "freeform">("square");
@@ -897,33 +928,392 @@ Key 3D printing & charm specs:
     return `Móc khoá 2D: [${s}] + [${f1}] + [${f2}] + [${f3}]`;
   };
 
-  // Tạo móc khoá 2D chuẩn xưởng từ các ô điền
-  const handleGenerateFromSlots = async () => {
-    const activeCfg =
-      CHARM_THEME_CONFIGS.find((c) => c.id === selectedThemeCategory) ||
-      CHARM_THEME_CONFIGS[0];
-    const current = themeSlots[selectedThemeCategory];
+  // Tự động cuộn xuống đáy khung chat khi có tin nhắn mới hoặc AI đang suy nghĩ
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatLog, isAiThinking]);
 
-    // Điền mặc định nếu để trống
-    const filled: SlotValues = {
-      subject: current.subject?.trim() || activeCfg.slots[0].suggestions[0],
-      feature1: current.feature1?.trim() || activeCfg.slots[1].suggestions[0],
-      feature2: current.feature2?.trim() || activeCfg.slots[2].suggestions[0],
-      feature3: current.feature3?.trim() || activeCfg.slots[3].suggestions[0],
-    };
+  // Reset cuộc hội thoại giả lập về bước đầu tiên
+  const handleResetInterview = () => {
+    setInterviewStep("category");
+    setChatLog([
+      {
+        id: `ai-init-${Date.now()}`,
+        sender: "ai",
+        text: "Chào bạn! Mình là Nghệ nhân AI của Nét Studio 🌿.\n\nMình sẽ cùng bạn trò chuyện để lên ý tưởng chi tiết cho chiếc móc khoá 2D độc bản để các nghệ nhân lấy làm khuôn mẫu in 3D thực tế nhé!\n\nĐầu tiên, bạn muốn chiếc móc khoá mang hình ảnh về chủ đề gì nào?",
+        time: "Vừa xong",
+      },
+    ]);
+    setThemeSlots({
+      human: { subject: "", feature1: "", feature2: "", feature3: "" },
+      animal: { subject: "", feature1: "", feature2: "", feature3: "" },
+      flora: { subject: "", feature1: "", feature2: "", feature3: "" },
+      landmark: { subject: "", feature1: "", feature2: "", feature3: "" },
+      object: { subject: "", feature1: "", feature2: "", feature3: "" },
+      freeform: { subject: "", feature1: "", feature2: "", feature3: "" },
+    });
+    setCustomImageFile(null);
+    setUploadedDocName(null);
+  };
 
-    setThemeSlots((prev) => ({
+  // Helper kiểm tra câu trả lời có mang hàm ý từ chối / bỏ qua biểu cảm hay không
+  const isNegativeResponse = (val: string) => {
+    const clean = val.trim().toLowerCase();
+    return (
+      clean === "" ||
+      /^(không|k|ko|bỏ qua|none|no|không có|để nguyên|trống|không cần|không biểu cảm|không có biểu cảm|không có mặt cười|mặc định)$/i.test(
+        clean
+      )
+    );
+  };
+
+  // Danh sách các chip gợi ý phản hồi nhanh theo từng bước trò chuyện
+  const getCurrentStepChips = (): Array<{ label: string; value: string }> => {
+    if (interviewStep === "category") {
+      return [
+        { label: "👤 Con người / Chân dung", value: "human" },
+        { label: "🐾 Thú cưng / Động vật", value: "animal" },
+        { label: "🌸 Hoa cỏ thiên nhiên", value: "flora" },
+        { label: "🌉 Địa danh Đà Nẵng", value: "landmark" },
+        { label: "☕ Đồ vật kỷ niệm", value: "object" },
+        { label: "✨ Ý tưởng tự do", value: "freeform" },
+      ];
+    }
+    if (interviewStep === "subject") {
+      const map: Record<CharmThemeCategory, string[]> = {
+        human: ["Chàng trai trẻ cá tính", "Cô gái tóc ngắn năng động", "Em bé phúng phính", "Cặp đôi du lịch"],
+        animal: ["Chú cún Poodle nâu", "Bé mèo múp míp", "Rùa biển Sơn Trà", "Linh vật Voọc Chà Vá"],
+        flora: ["Hoa sen hồng men ngọc", "Hoa muống biển Mỹ Khê", "Cành san hô biển", "Cây xương rồng nhỏ"],
+        landmark: ["Cầu Rồng Đà Nẵng", "Cầu Vàng bàn tay Bà Nà", "Ngọn Hải Đăng Tiên Sa", "Bãi biển Mỹ Khê"],
+        object: ["Bình cà phê highland", "Ly cà phê phin sữa đá", "Chiếc xe máy Vespa cổ", "Máy ảnh vintage"],
+        freeform: ["Trái đất xanh đội nón lá", "Chiếc túi lưới ôm mầm cây", "Mặt trời đeo kính râm", "Ngôi sao biển may mắn"],
+      };
+      return (map[selectedThemeCategory] || map.object).map((c) => ({ label: c, value: c }));
+    }
+    if (interviewStep === "feature1") {
+      const map: Record<CharmThemeCategory, string[]> = {
+        human: ["Tóc short quiff vuốt dựng", "Tóc dài uốn xoăn nhẹ", "Đeo kính gọng to", "Bỏ qua / Mặc định"],
+        animal: ["Lông xoăn vàng xù", "Lông cam sọc trắng", "Mắt to tròn long lanh", "Bỏ qua / Mặc định"],
+        object: ["Nắp đậy kim loại", "Thân bình bo tròn", "Phin nhôm nhỏ giọt", "Bỏ qua / Cơ bản"],
+        flora: ["Cánh hoa nở bung đều", "Cánh hoa uốn lượn tự nhiên", "Dáng tròn mềm mại", "Bỏ qua / Cơ bản"],
+        landmark: ["Thân rồng uốn lượn mini", "Đôi bàn tay rêu phong", "Tháp sọc trắng đỏ", "Bỏ qua / Cơ bản"],
+        freeform: ["Dáng tròn xoe dễ thương", "Viền ngoài sắc nét", "Bỏ qua / Cơ bản"],
+      };
+      return (map[selectedThemeCategory] || map.object).map((c) => ({ label: c, value: c }));
+    }
+    if (interviewStep === "feature2") {
+      const map: Record<CharmThemeCategory, string[]> = {
+        human: ["Áo phông đen cổ tròn", "Sơ mi trắng thanh lịch", "Váy hoa vàng rực rỡ", "Áo hoodie trẻ trung"],
+        animal: ["Đeo nơ đỏ chuông vàng", "Đội mũ len mini", "Quàng khăn ấm", "Không cần phụ kiện"],
+        object: ["Màu kem ấm áp", "Nâu cà phê và sữa đặc", "Màu men lam Hội An", "Màu nguyên bản như ảnh"],
+        flora: ["Men hồng phấn chuyển sắc", "Tím pastel viền đồng thau", "Xanh ngọc bích ánh vàng", "Màu tự nhiên"],
+        landmark: ["Vàng rực rỡ ánh kim", "Đầu rồng phun lửa", "Sọc trắng đỏ nổi bật", "Màu tự nhiên"],
+        freeform: ["Tone xanh đại dương Nét", "Vàng cam ấm áp", "Hồng pastel", "Màu tương phản"],
+      };
+      return (map[selectedThemeCategory] || map.object).map((c) => ({ label: c, value: c }));
+    }
+    if (interviewStep === "feature3") {
+      if (selectedThemeCategory === "object" || selectedThemeCategory === "landmark" || selectedThemeCategory === "flora") {
+        return [
+          { label: "🚫 Không cần / Để nguyên bản", value: "Không cần / Để nguyên bản" },
+          { label: "Không có mặt cười hay biểu cảm", value: "Không có mặt cười" },
+          { label: "Thêm giọt cà phê nhỏ", value: "Thêm giọt cà phê nhỏ" },
+          { label: "Kèm logo nhỏ", value: "Kèm logo nhỏ" },
+        ];
+      }
+      if (selectedThemeCategory === "human") {
+        return [
+          { label: "Tay cầm ly cà phê sữa đá", value: "Tay cầm ly cà phê sữa đá" },
+          { label: "Vẫy tay chào thân thiện", value: "Vẫy tay chào thân thiện" },
+          { label: "Tay đút túi quần tự tin", value: "Tay đút túi quần tự tin" },
+          { label: "Không cần thêm gì", value: "Không cần thêm gì" },
+        ];
+      }
+      if (selectedThemeCategory === "animal") {
+        return [
+          { label: "Hai chân trước ôm ly trà sữa", value: "Hai chân trước ôm ly trà sữa" },
+          { label: "Gặm chiếc bánh quy nhỏ", value: "Gặm chiếc bánh quy nhỏ" },
+          { label: "Ngồi ngoan vẫy đuôi", value: "Ngồi ngoan vẫy đuôi" },
+          { label: "Không cần thêm gì", value: "Không cần thêm gì" },
+        ];
+      }
+      return [
+        { label: "Mang thông điệp yêu biển", value: "Mang thông điệp yêu biển" },
+        { label: "Đính nơ nhỏ may mắn", value: "Đính nơ nhỏ may mắn" },
+        { label: "Không cần thêm gì", value: "Không cần thêm gì" },
+      ];
+    }
+    return [];
+  };
+
+  // Bộ xử lý hội thoại giả lập AI - Không gọi API thật cho đến khi hoàn thành
+  const processAiInterview = (text: string, imageBase64?: string) => {
+    const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const aiMsgId = `ai-${Date.now()}`;
+
+    if (imageBase64) {
+      setCustomImageFile(imageBase64);
+    }
+
+    if (interviewStep === "category") {
+      const lower = text.toLowerCase();
+      let cat: CharmThemeCategory = "object";
+      if (lower.includes("người") || lower.includes("chân dung") || lower.includes("bạn nam") || lower.includes("bạn nữ") || lower.includes("human")) {
+        cat = "human";
+      } else if (lower.includes("thú") || lower.includes("chó") || lower.includes("mèo") || lower.includes("pet") || lower.includes("animal")) {
+        cat = "animal";
+      } else if (lower.includes("hoa") || lower.includes("lá") || lower.includes("cây") || lower.includes("sen") || lower.includes("flora")) {
+        cat = "flora";
+      } else if (lower.includes("cầu") || lower.includes("hải đăng") || lower.includes("địa danh") || lower.includes("cảnh") || lower.includes("landmark")) {
+        cat = "landmark";
+      } else if (lower.includes("tự do") || lower.includes("khác") || lower.includes("freeform")) {
+        cat = "freeform";
+      } else {
+        cat = "object";
+      }
+
+      setSelectedThemeCategory(cat);
+      setInterviewStep("subject");
+
+      const questionMap: Record<CharmThemeCategory, string> = {
+        human: "Tuyệt vời! Bạn muốn vẽ chân dung ai nào? (Ví dụ: Chàng trai năng động, cô gái tóc ngắn, em bé đáng yêu, hoặc bạn có thể gửi ảnh chân dung cho mình nhé!)",
+        animal: "Dễ thương quá! Đó là bé thú cưng nào vậy bạn? (Ví dụ: Chú cún Poodle, Bé mèo múp míp, Rùa biển Sơn Trà...)",
+        flora: "Nhẹ nhàng và thanh lịch! Bạn thích loài hoa hoặc cây cỏ nào? (Ví dụ: Hoa sen hồng, Hoa muống biển Mỹ Khê...)",
+        landmark: "Thật ý nghĩa! Bạn muốn lưu giữ biểu tượng địa danh nào ở Đà Nẵng?",
+        object: "Độc đáo quá! Bạn muốn làm móc khoá hình đồ vật gì nào? (Ví dụ: Bình nước highland, Ly cà phê phin, Xe máy Vespa, Máy ảnh vintage...)",
+        freeform: "Thú vị đấy! Hãy chia sẻ ý tưởng biểu tượng tự do mà bạn muốn tạo nhé:",
+      };
+
+      setChatLog((prev) => [
+        ...prev,
+        {
+          id: aiMsgId,
+          sender: "ai",
+          text: questionMap[cat],
+          time,
+        },
+      ]);
+      return;
+    }
+
+    if (interviewStep === "subject") {
+      const subject = text || "Đồ vật kỷ niệm";
+      setThemeSlots((prev) => ({
+        ...prev,
+        [selectedThemeCategory]: {
+          ...prev[selectedThemeCategory],
+          subject,
+        },
+      }));
+      setInterviewStep("feature1");
+
+      let promptText = "";
+      if (selectedThemeCategory === "human") {
+        promptText = `Dễ thương quá! "${subject}" có kiểu tóc, khuôn mặt hay phụ kiện nhận diện gì đặc biệt không bạn?`;
+      } else if (selectedThemeCategory === "animal") {
+        promptText = `Bé "${subject}" có đặc điểm gì đặc biệt ở bộ lông hay dáng dấp không?`;
+      } else if (selectedThemeCategory === "object") {
+        promptText = `Mẫu "${subject}" khi lên móc khoá 2D sẽ rất ấn tượng! Chiếc này có kiểu dáng, nắp đậy hay nét tạo hình nào bạn muốn xưởng nhấn mạnh không?`;
+      } else if (selectedThemeCategory === "flora") {
+        promptText = `Cánh hoa hay hình thể của "${subject}" bạn muốn tạo hình như thế nào?`;
+      } else if (selectedThemeCategory === "landmark") {
+        promptText = `Đường nét tạo hình của "${subject}" bạn muốn nhấn mạnh ở đâu?`;
+      } else {
+        promptText = `Chi tiết hình dáng nhận diện của "${subject}" bạn muốn tạo là gì?`;
+      }
+
+      setChatLog((prev) => [
+        ...prev,
+        {
+          id: aiMsgId,
+          sender: "ai",
+          text: promptText,
+          time,
+        },
+      ]);
+      return;
+    }
+
+    if (interviewStep === "feature1") {
+      const isNeg = isNegativeResponse(text);
+      const feature1 = isNeg ? "" : text;
+      setThemeSlots((prev) => ({
+        ...prev,
+        [selectedThemeCategory]: {
+          ...prev[selectedThemeCategory],
+          feature1,
+        },
+      }));
+      setInterviewStep("feature2");
+
+      let promptText = "";
+      if (selectedThemeCategory === "human") {
+        promptText = "Về trang phục và màu sắc, bạn muốn bạn ấy mặc gì nào?";
+      } else if (selectedThemeCategory === "animal") {
+        promptText = "Bé có đeo phụ kiện hay mặc áo gì đáng yêu không nè?";
+      } else if (selectedThemeCategory === "object") {
+        promptText = "Về màu sắc và chất liệu hoàn thiện, bạn muốn phối tông màu chủ đạo nào?";
+      } else if (selectedThemeCategory === "flora") {
+        promptText = "Bạn muốn phối màu sắc men gốm nào cho cánh hoa?";
+      } else if (selectedThemeCategory === "landmark") {
+        promptText = "Tông màu hoặc hiệu ứng ánh sáng bạn muốn thể hiện là gì?";
+      } else {
+        promptText = "Tông màu chủ đạo bạn muốn phối cho móc khoá là gì?";
+      }
+
+      setChatLog((prev) => [
+        ...prev,
+        {
+          id: aiMsgId,
+          sender: "ai",
+          text: promptText,
+          time,
+        },
+      ]);
+      return;
+    }
+
+    if (interviewStep === "feature2") {
+      const isNeg = isNegativeResponse(text);
+      const feature2 = isNeg ? "" : text;
+      setThemeSlots((prev) => ({
+        ...prev,
+        [selectedThemeCategory]: {
+          ...prev[selectedThemeCategory],
+          feature2,
+        },
+      }));
+      setInterviewStep("feature3");
+
+      let promptText = "";
+      if (selectedThemeCategory === "object" || selectedThemeCategory === "landmark" || selectedThemeCategory === "flora") {
+        promptText = `Câu hỏi cuối cùng: Về chi tiết hoặc nét mặt biểu cảm, bạn có muốn thêm gì không?\n\n(Lưu ý: Nếu bạn muốn đồ vật/cảnh quan giữ nét tối giản, chân thực, KHÔNG có mặt cười hay biểu cảm hoạt hình, bạn cứ bấm "Không có biểu cảm / Để nguyên bản" nhé!)`;
+      } else if (selectedThemeCategory === "human") {
+        promptText = `Câu hỏi cuối cùng: Bạn có muốn nhân vật cầm theo món đồ gì hoặc tạo dáng vui nhộn không? (Nếu không cần, bạn có thể bấm "Không cần thêm")`;
+      } else if (selectedThemeCategory === "animal") {
+        promptText = `Câu hỏi cuối cùng: Bạn có muốn bé cưng cầm theo món đồ gì hoặc có hành động đáng yêu nào không?`;
+      } else {
+        promptText = `Câu hỏi cuối cùng: Bạn có muốn thêm thông điệp hay chi tiết điểm xuyết nào không?`;
+      }
+
+      setChatLog((prev) => [
+        ...prev,
+        {
+          id: aiMsgId,
+          sender: "ai",
+          text: promptText,
+          time,
+        },
+      ]);
+      return;
+    }
+
+    if (interviewStep === "feature3") {
+      const isNeg = isNegativeResponse(text);
+      const feature3 = isNeg ? "" : text;
+
+      const current = themeSlots[selectedThemeCategory];
+      const finalSlots: SlotValues = {
+        subject: current.subject,
+        feature1: current.feature1,
+        feature2: current.feature2,
+        feature3: feature3,
+      };
+
+      setThemeSlots((prev) => ({
+        ...prev,
+        [selectedThemeCategory]: finalSlots,
+      }));
+
+      setInterviewStep("ready");
+
+      const themeNameMap: Record<CharmThemeCategory, string> = {
+        human: "Con người / Chân dung",
+        animal: "Thú cưng / Động vật",
+        flora: "Hoa cỏ / Thiên nhiên",
+        landmark: "Cảnh quan / Địa danh Đà Nẵng",
+        object: "Đồ vật kỷ niệm",
+        freeform: "Ý tưởng tự do",
+      };
+
+      const ackText = isNeg
+        ? "Dạ vâng! Mình đã ghi nhận: Giữ nguyên thiết kế tối giản, chân thực, HOÀN TOÀN KHÔNG có mặt cười hay biểu cảm hoạt hình thừa 🌿."
+        : `Đã ghi nhận chi tiết: "${feature3}"!`;
+
+      setChatLog((prev) => [
+        ...prev,
+        {
+          id: `ai-ack-${Date.now()}`,
+          sender: "ai",
+          text: ackText,
+          time,
+        },
+        {
+          id: `ai-summary-${Date.now()}`,
+          sender: "ai",
+          text: "✨ Toàn bộ dữ liệu thiết kế đã được thu thập hoàn tất! Dưới đây là thông số chuẩn bị chuyển cho xưởng in 3D:",
+          time,
+          isSummary: true,
+          summaryData: {
+            categoryName: themeNameMap[selectedThemeCategory],
+            subject: finalSlots.subject || "Đồ vật độc bản",
+            feature1: finalSlots.feature1 || "Kiểu dáng cơ bản",
+            feature2: finalSlots.feature2 || "Màu sắc nguyên bản",
+            feature3: isNeg ? "🚫 Không có nét mặt (Giữ nguyên bản tối giản)" : (finalSlots.feature3 || "Cơ bản"),
+            hasPhoto: Boolean(customImageFile),
+          },
+        },
+      ]);
+      return;
+    }
+  };
+
+  // Người dùng gửi tin nhắn trong luồng trò chuyện giả lập
+  const handleConversationalUserMessage = (userText: string, imageBase64?: string) => {
+    const text = userText.trim();
+    if (!text && !imageBase64) return;
+
+    const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const userMsgId = `user-${Date.now()}`;
+
+    setChatLog((prev) => [
       ...prev,
-      [selectedThemeCategory]: filled,
-    }));
+      {
+        id: userMsgId,
+        sender: "user",
+        text: text || "Đã gửi ảnh mẫu tham chiếu",
+        time,
+        imageUrl: imageBase64 || undefined,
+      },
+    ]);
 
-    const sentence = `${filled.subject}, ${filled.feature1}, ${filled.feature2}, ${filled.feature3}`;
+    setIsAiThinking(true);
+    setTimeout(() => {
+      setIsAiThinking(false);
+      processAiInterview(text, imageBase64);
+    }, 350);
+  };
+
+  // KÍCH HOẠT API THẬT DUY NHẤT 1 LẦN KHI ĐÃ THU THẬP ĐỦ DỮ LIỆU
+  const handleTriggerRealGeneration = async () => {
     setIsAiSketching(true);
-    await handleSendChatMessage(sentence, filled, selectedThemeCategory);
+    const activeCat = selectedThemeCategory;
+    const currentSlots = themeSlots[activeCat];
+
+    const s = currentSlots.subject || "Đồ vật độc bản";
+    const f1 = currentSlots.feature1 ? `, ${currentSlots.feature1}` : "";
+    const f2 = currentSlots.feature2 ? `, ${currentSlots.feature2}` : "";
+    const f3 = currentSlots.feature3 ? `, ${currentSlots.feature3}` : "";
+    const sentence = `${s}${f1}${f2}${f3}`.trim();
+
+    await handleSendChatMessage(sentence, currentSlots, activeCat);
     setIsAiSketching(false);
     handlePlaceCustomOnBag();
     setAiCustomStep(2);
   };
+
+  // Alias tương thích ngược
+  const handleGenerateFromSlots = handleTriggerRealGeneration;
 
   // AI phân tích ảnh và tự động điền các ô trống
   const handleAnalyzePhotoToSlots = async () => {
@@ -1788,7 +2178,7 @@ Key 3D printing & charm specs:
                       {/* 3 Steps Progress Bar */}
                       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pb-2 border-b border-[#E8E2D8]">
                         {[
-                          { step: 1, label: "1. Điền ý tưởng", desc: "6 Chủ đề & Ô điền 2D" },
+                          { step: 1, label: "1. Trò chuyện cùng AI", desc: "Hỏi đáp thu thập ý tưởng" },
                           { step: 2, label: "2. Phác thảo 2D", desc: "Gắn thử lên túi" },
                           { step: 3, label: "3. Nộp & Báo giá", desc: "Xưởng thẩm định" },
                         ].map((s) => (
@@ -1796,8 +2186,8 @@ Key 3D printing & charm specs:
                             key={s.step}
                             type="button"
                             onClick={() => {
-                              if (s.step === 2 && !customIdea.trim() && !customImageFile) {
-                                alert("Vui lòng nhập ý tưởng hoặc tải tài liệu ở Bước 1 trước!");
+                              if (s.step === 2 && !customIdea.trim() && !customImageFile && !themeSlots[selectedThemeCategory].subject) {
+                                alert("Vui lòng hoàn thành cuộc trò chuyện ở Bước 1 trước!");
                                 return;
                               }
                               setAiCustomStep(s.step as any);
@@ -1825,313 +2215,244 @@ Key 3D printing & charm specs:
                         ))}
                       </div>
 
-                      {/* BƯỚC 1: KHUNG ĐIỀN Ô TRỐNG THIẾT KẾ MÓC KHOÁ 2D (SLOT-FILLING WORKSPACE) */}
+                      {/* BƯỚC 1: TRÒ CHUYỆN CÙNG NGHỆ NHÂN AI NÉT STUDIO (CONVERSATIONAL ASSISTANT) */}
                       {aiCustomStep === 1 && (
                         <div className="space-y-4">
-                          {/* Banner giới thiệu Master Prompt */}
-                          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#241B16] via-[#352720] to-[#241B16] text-white space-y-1.5 shadow-sm border border-[#3D2E24]">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 text-xs font-semibold text-[#E8C5A5] uppercase tracking-wider">
-                                <Sparkles className="w-3.5 h-3.5 text-[#E8C5A5]" />
-                                <span>Khung Mẫu Thiết Kế 2D Chuẩn Xưởng In 3D</span>
-                              </div>
-                              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
-                                100% Miễn phí
-                              </span>
-                            </div>
-                            <p className="text-xs text-white/80 leading-relaxed">
-                              Chọn chủ đề và điền chi tiết vào các ô trống dưới đây (hoặc bấm gợi ý nhanh). AI sẽ lắp vào câu lệnh mẫu chuẩn 2D vector xưởng để nghệ nhân đùn khối in 3D!
-                            </p>
-                          </div>
-
-                          {/* 6 Theme Selector Tabs */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-[#5E4D43]">
-                              <span className="flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
-                                <span>1. Chọn chủ đề móc khoá bạn muốn tạo:</span>
-                              </span>
-                              <span className="text-[10px] text-[#8C7A70] font-normal">
-                                Đủ 6 nhóm: Người, Vật, Hoa, Cảnh quan, Đồ vật, Tự do
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
-                              {CHARM_THEME_CONFIGS.map((theme) => {
-                                const isSelected = selectedThemeCategory === theme.id;
-                                return (
-                                  <button
-                                    key={theme.id}
-                                    type="button"
-                                    onClick={() => setSelectedThemeCategory(theme.id)}
-                                    className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
-                                      isSelected
-                                        ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
-                                        : "bg-white text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                      <span className="text-base">{theme.icon}</span>
-                                      <span className="text-xs font-semibold leading-tight line-clamp-1">{theme.name}</span>
-                                    </div>
-                                    <span
-                                      className={`text-[9.5px] line-clamp-1 ${
-                                        isSelected ? "text-white/70" : "text-[#8C7A70]"
-                                      }`}
-                                    >
-                                      {theme.description}
+                          {/* Chat Card Container */}
+                          <div className="bg-white rounded-3xl border border-[#E8E2D8] shadow-xs overflow-hidden flex flex-col h-[540px] sm:h-[580px]">
+                            {/* Chat Header */}
+                            <div className="px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#241B16] via-[#352720] to-[#241B16] text-white flex items-center justify-between border-b border-[#3D2E24] shrink-0">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#B85D43] flex items-center justify-center text-white shadow-xs shrink-0">
+                                  <Sparkles className="w-4 h-4 text-[#FDE68A]" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
+                                      Nghệ Nhân AI Nét Studio
                                     </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Photo Reference Upload Bar (Tùy chọn) */}
-                          <div className="p-3 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-semibold text-[#5E4D43] flex items-center gap-1.5">
-                                <Upload className="w-3.5 h-3.5 text-[#B85D43]" />
-                                <span>Bạn có ảnh chụp mẫu thực tế? (Tùy chọn)</span>
-                              </span>
-                              <span className="text-[10px] text-[#8C7A70]">AI nhìn ảnh & tự động điền các ô trống</span>
-                            </div>
-
-                            {customImageFile ? (
-                              <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-emerald-200">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-[#E8E2D8] shrink-0 bg-[#FAF7F2]">
-                                    <img src={customImageFile} alt="Preview" className="w-full h-full object-cover" />
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                                      Trực tuyến
+                                    </span>
                                   </div>
-                                  <div className="text-xs">
-                                    <p className="font-semibold text-[#241B16] line-clamp-1">{uploadedDocName || "Ảnh tài nguyên mẫu"}</p>
-                                    <p className="text-[10px] text-emerald-600 font-medium">✓ Đã nén tối ưu, sẵn sàng để AI nhận diện</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={handleAnalyzePhotoToSlots}
-                                    disabled={isAiThinking}
-                                    className="px-2.5 py-1 rounded-lg bg-[#241B16] hover:bg-[#3D2E24] text-white text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                                  >
-                                    {isAiThinking ? <Wand2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-[#E8C5A5]" />}
-                                    <span>AI điền ô từ ảnh</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setCustomImageFile(null);
-                                      setUploadedDocName(null);
-                                    }}
-                                    className="p-1 rounded-lg text-[#8C7A70] hover:text-[#241B16] cursor-pointer"
-                                    title="Xóa ảnh"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
+                                  <p className="text-[10.5px] text-white/70">
+                                    Tư vấn phác thảo móc khoá 2D chuẩn xưởng in 3D
+                                  </p>
                                 </div>
                               </div>
-                            ) : (
-                              <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#D4C8B8] bg-white hover:bg-[#F3ECE1] text-[#7A6F68] hover:text-[#241B16] cursor-pointer transition-colors text-xs">
-                                <Paperclip className="w-4 h-4 text-[#B85D43]" />
-                                <span>Bấm vào đây để tải ảnh (Selfie chân dung, thú cưng, cây hoa, đồ vật...)</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleImageUpload}
-                                  className="hidden"
-                                />
-                              </label>
-                            )}
-                          </div>
 
-                          {/* 4 Dynamic Slot Inputs with Suggestions */}
-                          {(() => {
-                            const activeThemeConfig =
-                              CHARM_THEME_CONFIGS.find((c) => c.id === selectedThemeCategory) ||
-                              CHARM_THEME_CONFIGS[0];
-                            return (
-                              <div className="space-y-3.5 bg-[#FAF7F2] p-3.5 rounded-2xl border border-[#E8E2D8]">
-                                <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-2">
-                                  <span className="text-xs font-bold text-[#241B16] flex items-center gap-1.5">
-                                    <span>{activeThemeConfig.icon}</span>
-                                    <span>2. Điền chi tiết cho {activeThemeConfig.name}:</span>
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const defaults: SlotValues = {
-                                        subject: activeThemeConfig.slots[0].suggestions[0],
-                                        feature1: activeThemeConfig.slots[1].suggestions[0],
-                                        feature2: activeThemeConfig.slots[2].suggestions[0],
-                                        feature3: activeThemeConfig.slots[3].suggestions[0],
-                                      };
-                                      setThemeSlots((prev) => ({ ...prev, [selectedThemeCategory]: defaults }));
-                                    }}
-                                    className="text-[11px] text-[#B85D43] hover:underline font-medium cursor-pointer"
-                                  >
-                                    🪄 Chọn mẫu có sẵn
-                                  </button>
-                                </div>
-
-                                <div className="space-y-3">
-                                  {activeThemeConfig.slots.map((slot, sIdx) => {
-                                    const currentVal = themeSlots[selectedThemeCategory]?.[slot.key] || "";
-                                    return (
-                                      <div key={slot.key} className="space-y-1.5">
-                                        <div className="flex items-center justify-between text-[11px]">
-                                          <label className="font-semibold text-[#5E4D43]">
-                                            {sIdx + 1}. {slot.label}
-                                          </label>
-                                          {currentVal && (
-                                            <button
-                                              type="button"
-                                              onClick={() => handleUpdateSlot(selectedThemeCategory, slot.key, "")}
-                                              className="text-[10px] text-[#8C7A70] hover:text-[#B85D43] cursor-pointer"
-                                            >
-                                              Xóa
-                                            </button>
-                                          )}
-                                        </div>
-
-                                        <input
-                                          type="text"
-                                          value={currentVal}
-                                          onChange={(e) => handleUpdateSlot(selectedThemeCategory, slot.key, e.target.value)}
-                                          placeholder={slot.placeholder}
-                                          className="w-full px-3 py-2 rounded-xl border border-[#E8E2D8] bg-white text-xs text-[#241B16] placeholder:text-[#A89F91] focus:outline-none focus:border-[#B85D43] transition-colors"
-                                        />
-
-                                        {/* Suggestion Pills */}
-                                        <div className="flex flex-wrap gap-1 pt-0.5">
-                                          {slot.suggestions.map((sug) => {
-                                            const isActive = currentVal === sug;
-                                            return (
-                                              <button
-                                                key={sug}
-                                                type="button"
-                                                onClick={() => handleUpdateSlot(selectedThemeCategory, slot.key, sug)}
-                                                className={`px-2 py-0.5 rounded-full text-[10.5px] border transition-all cursor-pointer ${
-                                                  isActive
-                                                    ? "bg-[#241B16] text-white border-[#241B16] font-medium"
-                                                    : "bg-white text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                                }`}
-                                              >
-                                                + {sug}
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          {/* Live Assembled Sentence Preview */}
-                          <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900 uppercase">
-                              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                              <span>Bản ghép mẫu thiết kế 2D đang tạo:</span>
-                            </div>
-                            <p className="text-xs text-amber-950 leading-relaxed font-medium">
-                              {getAssembledSentencePreview()}
-                            </p>
-                          </div>
-
-                          {/* Primary CTA Button */}
-                          <div className="pt-1 space-y-2.5">
-                            <button
-                              type="button"
-                              onClick={handleGenerateFromSlots}
-                              disabled={isAiThinking || isAiSketching}
-                              className="w-full py-3.5 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                            >
-                              {isAiThinking || isAiSketching ? (
-                                <>
-                                  <Wand2 className="w-4 h-4 animate-spin" />
-                                  <span>Đang tạo bản vẽ 2D vector chuẩn xưởng... (~3-5s)</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Wand2 className="w-4 h-4" />
-                                  <span>Tạo Bản Phác Thảo 2D Móc Khoá & Gắn Lên Túi (Bước 2) →</span>
-                                </>
-                              )}
-                            </button>
-
-                            {/* Toggle Xem lịch sử AI & Gõ tự do */}
-                            <div className="text-center pt-1">
                               <button
                                 type="button"
-                                onClick={() => setShowChatHistory(!showChatHistory)}
-                                className="text-[11px] text-[#7A6F68] hover:text-[#241B16] underline cursor-pointer"
+                                onClick={handleResetInterview}
+                                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                                title="Bắt đầu lại cuộc trò chuyện từ đầu"
                               >
-                                {showChatHistory ? "▲ Ẩn khung gõ tự do & tin nhắn AI" : "▼ Hoặc bạn muốn tự gõ mô tả tự do / xem tin nhắn trao đổi?"}
+                                <RotateCw className="w-3 h-3" />
+                                <span>Làm lại</span>
                               </button>
                             </div>
 
-                            {/* Collapsible Chat & Freeform Prompt */}
-                            {showChatHistory && (
-                              <div className="space-y-3 pt-2 border-t border-[#E8E2D8]">
-                                <div className="h-56 overflow-y-auto p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2.5">
-                                  {chatMessages.map((msg) => (
-                                    <div
-                                      key={msg.id}
-                                      className={`flex flex-col ${
-                                        msg.sender === "user" ? "items-end" : "items-start"
+                            {/* Messages Scroll View */}
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-[#FAF7F2]/60">
+                              {chatLog.map((msg) => (
+                                <div
+                                  key={msg.id}
+                                  className={`flex flex-col ${
+                                    msg.sender === "user" ? "items-end" : "items-start"
+                                  }`}
+                                >
+                                  <div
+                                    className={`max-w-[88%] sm:max-w-[82%] rounded-2xl p-3 sm:p-3.5 text-xs sm:text-sm leading-relaxed ${
+                                      msg.sender === "user"
+                                        ? "bg-[#241B16] text-white rounded-br-xs shadow-xs"
+                                        : "bg-white text-[#241B16] border border-[#E8E2D8] rounded-bl-xs shadow-xs"
+                                    }`}
+                                  >
+                                    {msg.sender === "ai" && (
+                                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#B85D43] uppercase mb-1.5">
+                                        <Wand2 className="w-3 h-3 text-[#B85D43]" />
+                                        <span>Nét Studio Artisan</span>
+                                      </div>
+                                    )}
+
+                                    <p className="whitespace-pre-line">{msg.text}</p>
+
+                                    {/* User Photo Preview if attached */}
+                                    {msg.imageUrl && (
+                                      <div className="mt-2 rounded-xl overflow-hidden border border-white/20 max-w-[180px]">
+                                        <img
+                                          src={msg.imageUrl}
+                                          alt="Mẫu đính kèm"
+                                          className="w-full h-auto object-cover max-h-36"
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Summary Card if this message is summary */}
+                                    {msg.isSummary && msg.summaryData && (
+                                      <div className="mt-3 p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] text-xs space-y-2.5">
+                                        <div className="font-bold text-[#241B16] flex items-center gap-1.5 text-xs uppercase tracking-wide border-b border-[#E8E2D8] pb-1.5">
+                                          <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+                                          <span>Thông Số Bản Vẽ 2D Chuẩn Xưởng</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-[11.5px]">
+                                          <div>
+                                            <span className="text-[#8C7A70] block">Chủ đề:</span>
+                                            <strong className="text-[#241B16]">{msg.summaryData.categoryName}</strong>
+                                          </div>
+                                          <div>
+                                            <span className="text-[#8C7A70] block">Chủ thể:</span>
+                                            <strong className="text-[#241B16]">{msg.summaryData.subject}</strong>
+                                          </div>
+                                          <div>
+                                            <span className="text-[#8C7A70] block">Kiểu dáng:</span>
+                                            <span className="text-[#241B16]">{msg.summaryData.feature1}</span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[#8C7A70] block">Màu sắc:</span>
+                                            <span className="text-[#241B16]">{msg.summaryData.feature2}</span>
+                                          </div>
+                                        </div>
+                                        <div className="pt-1 border-t border-[#E8E2D8] text-[11.5px]">
+                                          <span className="text-[#8C7A70] block">Điểm nhấn / Biểu cảm:</span>
+                                          <span className="text-[#241B16] font-medium">{msg.summaryData.feature3}</span>
+                                        </div>
+                                        {msg.summaryData.hasPhoto && (
+                                          <div className="pt-1 text-[11px] text-emerald-700 font-medium">
+                                            ✓ Đã đính kèm ảnh chụp mẫu thực tế
+                                          </div>
+                                        )}
+
+                                        {/* Button kích hoạt API thật duy nhất 1 lần */}
+                                        <div className="pt-2">
+                                          <button
+                                            type="button"
+                                            onClick={handleTriggerRealGeneration}
+                                            disabled={isAiSketching}
+                                            className="w-full py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                          >
+                                            {isAiSketching ? (
+                                              <>
+                                                <Wand2 className="w-4 h-4 animate-spin" />
+                                                <span>Đang tạo bản vẽ 2D vector & gắn lên túi... (~3-5s)</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Wand2 className="w-4 h-4" />
+                                                <span>🎨 Bấm vào đây để AI tạo bản phác thảo 2D & gắn lên túi →</span>
+                                              </>
+                                            )}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    <span
+                                      className={`text-[9.5px] block mt-1 ${
+                                        msg.sender === "user" ? "text-white/60 text-right" : "text-[#A89F91]"
                                       }`}
                                     >
-                                      <div
-                                        className={`max-w-[85%] rounded-2xl p-2.5 text-xs leading-relaxed ${
-                                          msg.sender === "user"
-                                            ? "bg-[#241B16] text-white rounded-br-xs"
-                                            : "bg-white text-[#241B16] border border-[#E8E2D8] rounded-bl-xs shadow-2xs"
-                                        }`}
-                                      >
-                                        {msg.sender === "ai" && (
-                                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#B85D43] uppercase mb-1">
-                                            <Wand2 className="w-3 h-3" />
-                                            <span>Nét 2D Keychain Agent</span>
-                                          </div>
-                                        )}
-                                        <p>{msg.text}</p>
-                                        {msg.attachmentName && (
-                                          <div className="mt-1.5 p-1.5 rounded-lg bg-black/10 flex items-center gap-1.5 text-[10.5px]">
-                                            <FileText className="w-3 h-3" />
-                                            <span className="truncate">{msg.attachmentName}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
+                                      {msg.time}
+                                    </span>
+                                  </div>
                                 </div>
+                              ))}
 
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="text"
-                                    value={chatInputText}
-                                    onChange={(e) => setChatInputText(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleSendChatMessage();
-                                      }
-                                    }}
-                                    placeholder="Nhập mô tả tự do nếu không muốn dùng ô điền..."
-                                    className="flex-1 p-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSendChatMessage()}
-                                    className="p-2.5 rounded-xl bg-[#241B16] hover:bg-[#42342B] text-white transition-colors cursor-pointer"
-                                  >
-                                    <Send className="w-4 h-4" />
-                                  </button>
+                              {isAiThinking && (
+                                <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-white border border-[#E8E2D8] text-xs text-[#7A6F68] w-fit shadow-2xs">
+                                  <Wand2 className="w-3.5 h-3.5 animate-spin text-[#B85D43]" />
+                                  <span className="animate-pulse">Nghệ nhân AI đang phản hồi...</span>
                                 </div>
+                              )}
+                              <div ref={chatEndRef} />
+                            </div>
+
+                            {/* Quick Suggestion Chips Bar */}
+                            {interviewStep !== "ready" && (
+                              <div className="px-4 py-2 bg-[#FAF7F2] border-t border-[#E8E2D8] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+                                <span className="text-[10.5px] text-[#8C7A70] font-medium shrink-0 mr-1 flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-[#B85D43]" />
+                                  Gợi ý:
+                                </span>
+                                {getCurrentStepChips().map((chip) => (
+                                  <button
+                                    key={chip.value}
+                                    type="button"
+                                    onClick={() => handleConversationalUserMessage(chip.value)}
+                                    className="px-2.5 py-1 rounded-full bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-xs text-[#5E4D43] font-medium transition-all shrink-0 cursor-pointer shadow-2xs whitespace-nowrap active:scale-95"
+                                  >
+                                    {chip.label}
+                                  </button>
+                                ))}
                               </div>
                             )}
+
+                            {/* Input Bar */}
+                            <div className="p-3 bg-white border-t border-[#E8E2D8] shrink-0">
+                              <form
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  handleConversationalUserMessage(chatInputText);
+                                  setChatInputText("");
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                {/* Photo attachment button */}
+                                <label
+                                  className="p-2.5 rounded-xl border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[#7A6F68] hover:text-[#B85D43] transition-colors cursor-pointer shrink-0"
+                                  title="Đính kèm ảnh mẫu thực tế"
+                                >
+                                  <Paperclip className="w-4 h-4" />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                          const base64 = event.target?.result as string;
+                                          setCustomImageFile(base64);
+                                          setUploadedDocName(file.name);
+                                          handleConversationalUserMessage(
+                                            `Đã đính kèm ảnh mẫu: ${file.name}`,
+                                            base64
+                                          );
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                    className="hidden"
+                                  />
+                                </label>
+
+                                <input
+                                  type="text"
+                                  value={chatInputText}
+                                  onChange={(e) => setChatInputText(e.target.value)}
+                                  placeholder={
+                                    interviewStep === "category"
+                                      ? "Nhập chủ đề bạn muốn làm móc khoá (hoặc bấm gợi ý bên trên)..."
+                                      : interviewStep === "subject"
+                                      ? "Nhập tên đồ vật / con người / thú cưng cụ thể..."
+                                      : interviewStep === "feature1"
+                                      ? "Nhập kiểu dáng / chi tiết nhận diện (hoặc bấm 'Bỏ qua')..."
+                                      : interviewStep === "feature2"
+                                      ? "Nhập màu sắc / phong cách mong muốn..."
+                                      : "Nhập điểm nhấn (hoặc bấm 'Không cần biểu cảm')..."
+                                  }
+                                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs sm:text-sm text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
+                                />
+
+                                <button
+                                  type="submit"
+                                  disabled={!chatInputText.trim()}
+                                  className="p-2.5 rounded-xl bg-[#241B16] hover:bg-[#B85D43] disabled:opacity-40 text-white transition-all cursor-pointer shrink-0 shadow-xs"
+                                >
+                                  <Send className="w-4 h-4" />
+                                </button>
+                              </form>
+                            </div>
                           </div>
                         </div>
                       )}

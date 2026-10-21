@@ -114,6 +114,10 @@ TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
 4. BẮT BUỘC nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background) để bóc nền trong suốt sạch sẽ.
 5. HÌNH DÁNG MÓC KHOÁ: Phải có khoen xỏ tròn và vòng móc kim loại trên đỉnh (top hanging loop with metal keyring). Viền ngoài bo die-cut sắc nét (bold dark die-cut outline), mảng màu phẳng (flat color blocks), phong cách 2D vector / sticker chibi.
 6. BẮT BUỘC DỊCH TOÀN BỘ CÁC Ô ĐIỀN CỦA KHÁCH TỪ TIẾNG VIỆT SANG TIẾNG ANH ĐỒ HOẠ CHUẨN XÁC TRONG masterPrompt (Tuyệt đối không để nguyên cụm từ tiếng Việt trong masterPrompt vì model sinh ảnh chỉ hiểu tiếng Anh).
+7. ĐỐI VỚI VẬT THỂ (OBJECT), ĐỊA DANH (LANDMARK), HOA CỎ (FLORA) HOẶC KHI KHÁCH NÓI "KHÔNG" / BỎ QUA:
+   - TUYỆT ĐỐI KHÔNG TỰ Ý THÊM NÉT MẶT, MẮT CƯỜI HAY MÁ HỒNG (NO smiling eyes, NO blushing cheeks, NO anime cartoon face on inanimate objects).
+   - Chỉ thêm biểu cảm khuôn mặt nếu khách ĐÍCH DANH yêu cầu "có mặt cười", "mặt chibi".
+   - Nếu khách chọn "không", "bỏ qua", "không có", hoặc để trống feature3, hãy giữ nguyên dáng vẻ chân thực, tinh tế, tối giản của vật thể!
 
 QUY TẮC BẢO TOÀN DANH TÍNH CHỦ THỂ (BẮT BUỘC TUÂN THỦ 100%):
 1. NẾU CÓ ẢNH TẢI LÊN:
@@ -360,7 +364,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
           subject: "a Vietnamese coffee phin",
           feature1: "vintage aluminum phin dropping coffee",
           feature2: "retro enamel colors",
-          feature3: "a happy smiling kawaii face with blushing cheeks",
+          feature3: "", // Giữ nguyên bản, không tự động thêm nét mặt
         };
       }
 

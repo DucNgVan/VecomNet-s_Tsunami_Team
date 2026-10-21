@@ -234,6 +234,20 @@ export interface SlotValues {
 }
 
 /**
+ * Helper kiểm tra người dùng có từ chối / bỏ qua chi tiết đó hay không
+ */
+function isNegativeOrEmpty(val?: string): boolean {
+  if (!val) return true;
+  const clean = val.trim().toLowerCase();
+  return (
+    clean === "" ||
+    /^(không|k|ko|bỏ qua|none|no|không có|để nguyên|trống|không cần|giữ nguyên|không thêm)$/i.test(
+      clean
+    )
+  );
+}
+
+/**
  * Xây dựng câu Master Prompt hoàn chỉnh từ các ô điền của người dùng
  */
 export function buildMaster2DKeychainPrompt(
@@ -250,51 +264,52 @@ export function buildMaster2DKeychainPrompt(
   switch (category) {
     case "human": {
       const subject = s || "a boy or girl";
-      const hair = f1 ? `with ${f1}` : "with stylish haircut and expressive anime eyes";
-      const outfit = f2 ? `, wearing ${f2}` : ", wearing modern casual clothes";
-      const pose = f3 ? `, ${f3}` : ", holding a coffee cup and striking a friendly pose";
-      subjectDescription = `a cute chibi ${subject} ${hair}${outfit}${pose}`;
+      const hair = !isNegativeOrEmpty(f1) ? `with ${f1}` : "";
+      const outfit = !isNegativeOrEmpty(f2) ? `, wearing ${f2}` : "";
+      const pose = !isNegativeOrEmpty(f3) ? `, ${f3}` : "";
+      subjectDescription = `a cute chibi ${subject} ${hair}${outfit}${pose}`.replace(/\s+/g, " ").trim();
       break;
     }
     case "animal": {
       const pet = s || "a cute pet animal";
-      const fur = f1 ? `with ${f1}` : "with fluffy fur and big round glossy eyes";
-      const acc = f2 ? `, wearing ${f2}` : ", wearing a tiny cute ribbon collar";
-      const act = f3 ? `, ${f3}` : ", playfully holding a miniature drink or item";
-      subjectDescription = `an adorable chibi ${pet} ${fur}${acc}${act}`;
+      const fur = !isNegativeOrEmpty(f1) ? `with ${f1}` : "";
+      const acc = !isNegativeOrEmpty(f2) ? `, wearing ${f2}` : "";
+      const act = !isNegativeOrEmpty(f3) ? `, ${f3}` : "";
+      subjectDescription = `an adorable chibi ${pet} ${fur}${acc}${act}`.replace(/\s+/g, " ").trim();
       break;
     }
     case "flora": {
       const flower = s || "a blooming flower";
-      const petals = f1 ? `with ${f1}` : "with smooth rounded graphic petals";
-      const colors = f2 ? `, rendered in ${f2}` : ", vibrant ceramic enamel color blocks";
-      const accent = f3 ? `, accented with ${f3}` : ", accented with delicate morning dewdrops";
-      subjectDescription = `a stylized blooming ${flower} ${petals}${colors}${accent}`;
+      const petals = !isNegativeOrEmpty(f1) ? `with ${f1}` : "";
+      const colors = !isNegativeOrEmpty(f2) ? `, rendered in ${f2}` : "";
+      const accent = !isNegativeOrEmpty(f3) ? `, accented with ${f3}` : "";
+      subjectDescription = `a stylized blooming ${flower} ${petals}${colors}${accent}`.replace(/\s+/g, " ").trim();
       break;
     }
     case "landmark": {
       const mark = s || "Da Nang Dragon Bridge";
-      const style = f1 ? `stylized with ${f1}` : "stylized with clean curved lines and bold iconic shapes";
-      const effect = f2 ? `, featuring ${f2}` : ", featuring bright vibrant colors";
-      const surrounding = f3 ? `, surrounded by ${f3}` : ", accented with stylized miniature ocean waves";
-      subjectDescription = `a cute kawaii chibi miniature landmark icon of ${mark}, ${style}${effect}${surrounding}`;
+      const style = !isNegativeOrEmpty(f1) ? `stylized with ${f1}` : "";
+      const effect = !isNegativeOrEmpty(f2) ? `, featuring ${f2}` : "";
+      const surrounding = !isNegativeOrEmpty(f3) ? `, surrounded by ${f3}` : "";
+      subjectDescription = `a 2D landmark icon of ${mark} ${style}${effect}${surrounding}`.replace(/\s+/g, " ").trim();
       break;
     }
     case "object": {
-      const item = s || "a Vietnamese coffee phin";
-      const style = f1 ? `styled with ${f1}` : "styled with clean graphic silhouettes and bold colors";
-      const color = f2 ? `, in ${f2}` : ", with smooth retro enamel colors";
-      const face = f3 ? `, featuring ${f3}` : ", with an adorable happy smiling kawaii face and blushing cheeks";
-      subjectDescription = `a cute kawaii chibi coffee tumbler or accessory of ${item}, ${style}${color}${face}`;
+      const item = s || "a souvenir object";
+      const style = !isNegativeOrEmpty(f1) ? `styled with ${f1}` : "";
+      const color = !isNegativeOrEmpty(f2) ? `, in ${f2}` : "";
+      // TUYỆT ĐỐI KHÔNG TỰ ĐỘNG THÊM MẶT CƯỜI HAY BIỂU CẢM NẾU NGƯỜI DÙNG BỎ QUA HOẶC NÓI KHÔNG
+      const extra = !isNegativeOrEmpty(f3) ? `, featuring ${f3}` : "";
+      subjectDescription = `a 2D flat ${item} ${style}${color}${extra}`.replace(/\s+/g, " ").trim();
       break;
     }
     case "freeform":
     default: {
-      const idea = s || "a creative friendly mascot";
-      const shape = f1 ? `featuring ${f1}` : "featuring clean bold outlines";
-      const pal = f2 ? `, in ${f2}` : ", in harmonious vibrant colors";
-      const touch = f3 ? `, with ${f3}` : ", with charming details";
-      subjectDescription = `a cute creative 2D charm of ${idea}, ${shape}${pal}${touch}`;
+      const idea = s || "a creative design";
+      const shape = !isNegativeOrEmpty(f1) ? `featuring ${f1}` : "";
+      const pal = !isNegativeOrEmpty(f2) ? `, in ${f2}` : "";
+      const touch = !isNegativeOrEmpty(f3) ? `, with ${f3}` : "";
+      subjectDescription = `a creative 2D charm of ${idea} ${shape}${pal}${touch}`.replace(/\s+/g, " ").trim();
       break;
     }
   }

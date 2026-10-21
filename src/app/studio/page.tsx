@@ -1297,6 +1297,7 @@ Key 3D printing & charm specs:
   // KÍCH HOẠT API THẬT DUY NHẤT 1 LẦN KHI ĐÃ THU THẬP ĐỦ DỮ LIỆU
   const handleTriggerRealGeneration = async () => {
     setIsAiSketching(true);
+    setAiCustomStep(2); // Chuyển sang Bước 2 ngay để hiển thị màn hình chờ tạo tác phẩm
     const activeCat = selectedThemeCategory;
     const currentSlots = themeSlots[activeCat];
 
@@ -1306,10 +1307,12 @@ Key 3D printing & charm specs:
     const f3 = currentSlots.feature3 ? `, ${currentSlots.feature3}` : "";
     const sentence = `${s}${f1}${f2}${f3}`.trim();
 
-    await handleSendChatMessage(sentence, currentSlots, activeCat);
-    setIsAiSketching(false);
-    handlePlaceCustomOnBag();
-    setAiCustomStep(2);
+    try {
+      await handleSendChatMessage(sentence, currentSlots, activeCat);
+      handlePlaceCustomOnBag();
+    } finally {
+      setIsAiSketching(false);
+    }
   };
 
   // Alias tương thích ngược
@@ -2334,7 +2337,7 @@ Key 3D printing & charm specs:
                                             {isAiSketching ? (
                                               <>
                                                 <Wand2 className="w-4 h-4 animate-spin" />
-                                                <span>Đang tạo bản vẽ 2D vector & gắn lên túi... (~3-5s)</span>
+                                                <span>AI Nét đang vẽ bản phác thảo 2D độc bản...</span>
                                               </>
                                             ) : (
                                               <>
@@ -2461,14 +2464,22 @@ Key 3D printing & charm specs:
                       {aiCustomStep === 2 && (
                         <div className="space-y-5">
                           {isAiSketching ? (
-                            <div className="p-8 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] text-center space-y-3">
-                              <Wand2 className="w-8 h-8 animate-spin text-[#B85D43] mx-auto" />
-                              <h3 className="font-serif text-lg text-[#241B16]">
-                                AI đang render bản phác thảo 2D...
-                              </h3>
-                              <p className="text-xs text-[#7A6F68]">
-                                Tự động tính toán toạ độ và gắn lên túi Nét bên trái.
-                              </p>
+                            <div className="p-8 rounded-2xl bg-gradient-to-b from-[#FAF7F2] to-[#F5EFEB] border border-[#E8E2D8] text-center space-y-4 shadow-sm animate-pulse">
+                              <div className="w-14 h-14 rounded-full bg-[#B85D43]/10 flex items-center justify-center mx-auto text-[#B85D43]">
+                                <Wand2 className="w-7 h-7 animate-spin" />
+                              </div>
+                              <div className="space-y-1.5">
+                                <h3 className="font-serif text-lg text-[#241B16] font-medium">
+                                  AI Nét đang vẽ bản phác thảo 2D độc bản...
+                                </h3>
+                                <p className="text-xs text-[#7A6F68] max-w-sm mx-auto">
+                                  Đang trau chuốt đường nét die-cut, hoàn thiện màu men nung và tính toán toạ độ gắn lên túi Nét.
+                                </p>
+                              </div>
+                              <div className="flex items-center justify-center gap-2 text-[11px] text-[#B85D43] font-mono font-medium">
+                                <span className="w-2 h-2 rounded-full bg-[#B85D43] animate-ping" />
+                                <span>Đang hoàn thiện phôi móc khoá chất lượng cao nhất...</span>
+                              </div>
                             </div>
                           ) : (
                             <>

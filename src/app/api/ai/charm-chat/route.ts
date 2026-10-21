@@ -6,6 +6,7 @@ import {
 } from "@/lib/masterPromptTemplates";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Đảm bảo server có đủ thời gian (60s) để AI đồ hoạ vẽ và trau chuốt bản vẽ 2D hoàn hảo nhất
 
 interface ChatRequestPayload {
   prompt?: string;
@@ -60,14 +61,14 @@ async function generate2DKeychainImage(
     cleanPrompt
   )}?width=512&height=512&nologo=true&seed=${seed}`;
 
-  // NHÁNH 1: Pollinations Sana Model (Đồ hoạ phẳng sắc nét, thời gian 8-15s)
+  // NHÁNH 1: Pollinations Sana Model (Đồ hoạ phẳng sắc nét, thời gian 8-18s)
   const fetchBranch1 = async (): Promise<string> => {
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
       cleanPrompt
     )}?model=sana&width=512&height=512&nologo=true&seed=${seed}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const timeoutId = setTimeout(() => controller.abort(), 32000); // 32s buffer để AI vẽ hoàn hảo nhất
 
     try {
       const res = await fetch(url, { signal: controller.signal });
@@ -96,7 +97,7 @@ async function generate2DKeychainImage(
     )}?width=512&height=512&nologo=true&seed=${seed2}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 22000);
+    const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s buffer
 
     try {
       const res = await fetch(url, { signal: controller.signal });

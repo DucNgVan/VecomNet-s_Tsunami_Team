@@ -3224,100 +3224,6 @@ Key 3D printing & charm specs:
                                 </div>
                               </div>
 
-                              {/* Live Quick Fine-tuning controls (Shape, Color, Text, Position) */}
-                              <div className="space-y-3.5 pt-1">
-                                <div className="text-xs font-semibold text-[#241B16] flex items-center gap-1.5">
-                                  <Sliders className="w-3.5 h-3.5 text-[#B85D43]" />
-                                  <span>Tinh chỉnh nhanh đặc điểm 2D:</span>
-                                </div>
-
-                                {/* Shape selector */}
-                                <div>
-                                  <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
-                                    Hình khối charm:
-                                  </label>
-                                  <div className="grid grid-cols-5 gap-1.5">
-                                    {[
-                                      { id: "square", label: "Vuông bo" },
-                                      { id: "circle", label: "Tròn" },
-                                      { id: "teardrop", label: "Giọt nước" },
-                                      { id: "heart", label: "Trái tim" },
-                                      { id: "freeform", label: "Tự do" },
-                                    ].map((s) => (
-                                      <button
-                                        key={s.id}
-                                        type="button"
-                                        onClick={() => {
-                                          setCustomShape(s.id as any);
-                                          handlePlaceCustomOnBag(s.id as any, customColor, customText);
-                                        }}
-                                        className={`py-1.5 px-2 rounded-xl text-xs font-medium text-center border transition-all cursor-pointer ${
-                                          customShape === s.id
-                                            ? "bg-[#B85D43] text-white border-[#B85D43]"
-                                            : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                        }`}
-                                      >
-                                        {s.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Color selector */}
-                                <div>
-                                  <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
-                                    Màu men nung chủ đạo:
-                                  </label>
-                                  <div className="flex flex-wrap gap-2">
-                                    {[
-                                      { hex: "#C2674F", name: "Đất nung" },
-                                      { hex: "#234B3E", name: "Xanh lưới" },
-                                      { hex: "#2563EB", name: "Xanh biển" },
-                                      { hex: "#D97706", name: "Vàng đồng" },
-                                      { hex: "#BE185D", name: "Hồng gốm" },
-                                    ].map((col) => (
-                                      <button
-                                        key={col.hex}
-                                        type="button"
-                                        onClick={() => {
-                                          setCustomColor(col.hex);
-                                          handlePlaceCustomOnBag(customShape, col.hex, customText);
-                                        }}
-                                        className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5 cursor-pointer ${
-                                          customColor === col.hex
-                                            ? "ring-2 ring-[#B85D43] border-white font-semibold"
-                                            : "border-[#E8E2D8] bg-[#FAF7F2]"
-                                        }`}
-                                      >
-                                        <span
-                                          className="w-2.5 h-2.5 rounded-full"
-                                          style={{ backgroundColor: col.hex }}
-                                        />
-                                        <span>{col.name}</span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Laser Engraving input */}
-                                <div>
-                                  <label className="block text-[11px] font-medium text-[#7A6F68] mb-1">
-                                    Chữ hoặc số khắc laser (tối đa 12 ký tự):
-                                  </label>
-                                  <input
-                                    type="text"
-                                    maxLength={12}
-                                    value={customText}
-                                    onChange={(e) => {
-                                      setCustomText(e.target.value);
-                                      handlePlaceCustomOnBag(customShape, customColor, e.target.value);
-                                    }}
-                                    placeholder="Ví dụ: ĐÀ NẴNG 2026"
-                                    className="w-full p-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs text-[#241B16] focus:outline-none focus:border-[#B85D43]"
-                                  />
-                                </div>
-                              </div>
-
                               {/* Navigation Buttons */}
                               <div className="flex items-center gap-3 pt-2">
                                 <button
@@ -3325,7 +3231,7 @@ Key 3D printing & charm specs:
                                   onClick={() => setAiCustomStep(1)}
                                   className="py-3 px-4 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
                                 >
-                                  ← Chat thêm với AI
+                                  ← Quay lại chỉnh sửa
                                 </button>
                                 <button
                                   type="button"

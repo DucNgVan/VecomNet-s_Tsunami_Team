@@ -520,31 +520,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           </div>
         )}
 
-        {/* Floating 3D Badge & Status */}
-        {isInteractive && !isLoadingModel && (
-          <div className="absolute bottom-3 inset-x-0 flex items-center justify-center pointer-events-none px-4">
-            <div className="px-3.5 py-1.5 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 text-white text-xs flex items-center gap-2 shadow-lg pointer-events-auto">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-medium">
-                {isGlbActive ? "Mặt Trước Túi Mẫu" : "Túi 3D"} • Xoay 360°
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  targetRotYRef.current = 0;
-                  targetRotXRef.current = 0;
-                  if (bagGroupRef.current) {
-                    bagGroupRef.current.rotation.set(0, 0, 0);
-                  }
-                }}
-                className="ml-1 text-[10px] text-sky-300 hover:text-white underline cursor-pointer"
-                title="Căn thẳng mặt trước túi"
-              >
-                Căn thẳng
-              </button>
-            </div>
-          </div>
-        )}
+
       </div>
     );
   }

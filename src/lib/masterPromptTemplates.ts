@@ -186,9 +186,9 @@ export const CHARM_THEME_CONFIGS: PromptSlotConfig[] = [
       },
       {
         key: "feature3",
-        label: "Nét mặt biểu cảm Kawaii",
-        placeholder: "Ví dụ: Đôi mắt cười híp kawaii, má hồng phúng phính...",
-        suggestions: ["Đôi mắt cười híp má hồng kawaii", "Mặt cười toe toét đáng yêu", "Nháy mắt tinh nghịch ngộ nghĩnh", "Trái tim nhỏ bay lơ lửng"],
+        label: "Chi tiết điểm xuyết (Tùy chọn)",
+        placeholder: "Ví dụ: Khắc logo nhỏ, tia sáng, hoặc để trống để giữ nguyên bản...",
+        suggestions: ["Không có nét mặt (Để nguyên bản tối giản)", "Khắc logo nhỏ", "Tia sáng lấp lánh", "Bỏ qua"],
       },
     ],
   },

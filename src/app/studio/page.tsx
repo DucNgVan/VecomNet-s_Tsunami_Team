@@ -333,6 +333,11 @@ function NetStudioContent() {
   const [uploadedDocName, setUploadedDocName] = useState<string | null>(null);
   const [isAiSketching, setIsAiSketching] = useState(false);
 
+  // 2 Nhánh tạo charm: "photo" (Có ảnh nguyên liệu) hoặc "chat" (Trò chuyện cùng AI khi chưa có ảnh)
+  const [creationMode, setCreationMode] = useState<"photo" | "chat">("photo");
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const [showPromptDetails, setShowPromptDetails] = useState(false);
+
   const [customIdea, setCustomIdea] = useState("");
   const [customImageFile, setCustomImageFile] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("auto");
@@ -1318,24 +1323,25 @@ Key 3D printing & charm specs:
   // Alias tương thích ngược
   const handleGenerateFromSlots = handleTriggerRealGeneration;
 
-  // AI phân tích ảnh và tự động điền các ô trống
-  const handleAnalyzePhotoToSlots = async () => {
-    if (!customImageFile) return;
+  // AI phân tích ảnh nguyên liệu và tự động điền các ô trống vào bảng prompt
+  const handleAnalyzePhotoToSlots = async (imageInput?: string) => {
+    const targetImage = imageInput || customImageFile;
+    if (!targetImage) return;
+    setIsAnalyzingPhoto(true);
     setIsAiThinking(true);
     try {
       const response = await fetch("/api/ai/charm-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: "Phân tích ảnh mẫu này để trích xuất đặc điểm 2D keychain",
-          imageBase64: customImageFile,
+          prompt: "PHÂN TÍCH ẢNH NGUYÊN LIỆU: Xác định chính xác chủ thể (người, thú cưng, hoa cỏ hay đồ vật), trích xuất đặc trưng nhận dạng rõ rệt nhất (kiểu tóc, kính, trang phục, biểu cảm...), và điền vào các ô trống slot values chuẩn phôi móc khoá 2D phẳng.",
+          imageBase64: targetImage,
           category: "auto",
           bagColor: selectedColor.hex,
           bagColorName: selectedColor.name,
         }),
       });
       const resData = await response.json();
-      setIsAiThinking(false);
 
       if (resData.success && resData.data) {
         const d = resData.data;
@@ -1356,34 +1362,27 @@ Key 3D printing & charm specs:
         }
         if (d.motifName) setMotifName(d.motifName);
         if (d.story) setMotifStory(d.story);
-        if (d.imageUrl) {
-          let finalDisplayImg = d.imageUrl;
-          if (typeof window !== "undefined") {
-            try {
-              finalDisplayImg = await removeWhiteBackground(d.imageUrl);
-            } catch (e) {}
-          }
-          setGeneratedImageUrl(finalDisplayImg);
-        }
+        if (d.customText) setCustomText(d.customText);
       }
     } catch (err) {
+      console.warn("AI photo analyze error:", err);
+    } finally {
+      setIsAnalyzingPhoto(false);
       setIsAiThinking(false);
-      console.warn("AI analyze error:", err);
     }
   };
 
-  // Custom Charm Image / Doc upload with client-side downscaling
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Xử lý nén ảnh nguyên liệu và tự động gọi Gemini Vision phân tích
+  const handleProcessUploadedFile = (file: File) => {
     if (!file) return;
     setUploadedDocName(file.name);
-    setSelectedCategory("auto"); // Tự động reset về chế độ AI tự nhận diện ảnh thực tế
+    setSelectedCategory("auto"); // Reset về tự động nhận diện ảnh
 
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const rawData = ev.target?.result as string;
-        // Tự động nén ảnh xuống tối đa 720px để gửi Gemini AI siêu tốc (~2 giây)
+        // Nén ảnh xuống tối đa 720px để gửi Gemini Vision siêu tốc (~1.5s - 2.5s)
         const img = new Image();
         img.onload = () => {
           const maxDim = 720;
@@ -1406,17 +1405,28 @@ Key 3D printing & charm specs:
             ctx.drawImage(img, 0, 0, w, h);
             const optimizedBase64 = canvas.toDataURL("image/jpeg", 0.82);
             setCustomImageFile(optimizedBase64);
+            handleAnalyzePhotoToSlots(optimizedBase64);
           } else {
             setCustomImageFile(rawData);
+            handleAnalyzePhotoToSlots(rawData);
           }
         };
-        img.onerror = () => setCustomImageFile(rawData);
+        img.onerror = () => {
+          setCustomImageFile(rawData);
+          handleAnalyzePhotoToSlots(rawData);
+        };
         img.src = rawData;
       };
       reader.readAsDataURL(file);
     } else {
       setCustomImageFile(null);
     }
+  };
+
+  // Custom Charm Image upload via file input
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleProcessUploadedFile(file);
   };
 
   // Place custom charm draft on the bag
@@ -1569,6 +1579,299 @@ Key 3D printing & charm specs:
     navigator.clipboard.writeText(createdRequestId);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  // BẢNG DUYỆT & TÙY CHỈNH THÔNG SỐ (PROMPT REVIEW FORM)
+  const renderPromptReviewForm = () => {
+    const currentConfig =
+      CHARM_THEME_CONFIGS.find((c) => c.id === selectedThemeCategory) ||
+      CHARM_THEME_CONFIGS[0];
+    const activeSlots = themeSlots[selectedThemeCategory];
+
+    const updateSlot = (
+      key: "subject" | "feature1" | "feature2" | "feature3",
+      val: string
+    ) => {
+      setThemeSlots((prev) => ({
+        ...prev,
+        [selectedThemeCategory]: {
+          ...prev[selectedThemeCategory],
+          [key]: val,
+        },
+      }));
+    };
+
+    const isObjectOrFlora =
+      selectedThemeCategory === "object" ||
+      selectedThemeCategory === "landmark" ||
+      selectedThemeCategory === "flora";
+
+    const fullEnglishPrompt = buildMaster2DKeychainPrompt(
+      selectedThemeCategory,
+      activeSlots
+    );
+
+    const CERAMIC_PALETTE = [
+      { name: "Đỏ Đất Nung", hex: "#B85D43" },
+      { name: "Xanh Rừng Tràm", hex: "#234B3E" },
+      { name: "Xanh Biển Mỹ Khê", hex: "#2563EB" },
+      { name: "Vàng Hoàng Kim", hex: "#D97706" },
+      { name: "Xám Đá Non Nước", hex: "#475569" },
+      { name: "Men Ngọc Bích", hex: "#059669" },
+    ];
+
+    return (
+      <div className="bg-white rounded-3xl border border-[#E8E2D8] p-4 sm:p-6 space-y-5 shadow-xs">
+        {/* Form Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-[#E8E2D8] pb-3.5">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-bold tracking-[0.18em] text-[#B85D43]">
+                BẢNG DUYỆT & TÙY CHỈNH THÔNG SỐ (PROMPT REVIEW)
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
+                Kiểm tra trước khi tạo
+              </span>
+            </div>
+            <h3 className="font-serif text-base sm:text-lg font-bold text-[#241B16] mt-0.5">
+              {customImageFile
+                ? "Thông số trích xuất từ ảnh nguyên liệu"
+                : "Thông số phác thảo từ cuộc trò chuyện"}
+            </h3>
+            <p className="text-[11.5px] text-[#7A6F68] mt-0.5">
+              Bạn có thể điều chỉnh bất kỳ ô nào bên dưới trước khi bấm duyệt để AI tạo bản vẽ 2D độc bản:
+            </p>
+          </div>
+        </div>
+
+        {/* 1. Chọn Nhóm Chủ Đề (Category Pills) */}
+        <div className="space-y-1.5">
+          <label className="text-[11.5px] font-bold text-[#241B16] flex items-center gap-1.5">
+            <span>1. Nhóm chủ đề</span>
+            <span className="text-[10px] text-[#8C7A70] font-normal">
+              (AI tự chọn, bạn có thể bấm để đổi)
+            </span>
+          </label>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+            {CHARM_THEME_CONFIGS.map((cfg) => {
+              const isSelected = selectedThemeCategory === cfg.id;
+              return (
+                <button
+                  key={cfg.id}
+                  type="button"
+                  onClick={() => setSelectedThemeCategory(cfg.id)}
+                  className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43] text-[#B85D43] font-bold shadow-2xs"
+                      : "bg-white border-[#E8E2D8] text-[#5E4D43] hover:border-[#B85D43]/40 hover:bg-[#FAF7F2]/50 text-xs"
+                  }`}
+                >
+                  <div className="text-base leading-none mb-1">{cfg.icon}</div>
+                  <div className="text-[11px] truncate">{cfg.name}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2. Các ô thông số (Prompt Slots) */}
+        <div className="space-y-3 pt-1">
+          <label className="text-[11.5px] font-bold text-[#241B16] flex items-center justify-between">
+            <span>2. Chi tiết nhận diện móc khoá 2D</span>
+            <span className="text-[10.5px] font-normal text-[#8C7A70]">
+              Nhập nội dung hoặc chọn gợi ý
+            </span>
+          </label>
+
+          {currentConfig.slots.map((slot) => {
+            const currentVal = activeSlots[slot.key] || "";
+            return (
+              <div
+                key={slot.key}
+                className="p-3 sm:p-3.5 rounded-2xl bg-[#FAF7F2]/70 border border-[#E8E2D8] space-y-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-semibold text-[#241B16]">
+                    {slot.label}
+                  </label>
+                  {slot.key === "feature3" && isObjectOrFlora && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateSlot(
+                          "feature3",
+                          "Không có nét mặt (Để nguyên bản tối giản)"
+                        )
+                      }
+                      className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                    >
+                      ✓ Giữ nguyên bản (Không vẽ mặt)
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  value={currentVal}
+                  onChange={(e) => updateSlot(slot.key, e.target.value)}
+                  placeholder={slot.placeholder}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#E8E2D8] text-xs sm:text-sm text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
+                />
+
+                {/* Suggestions chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-0.5">
+                  <span className="text-[10px] text-[#8C7A70] shrink-0">
+                    Gợi ý:
+                  </span>
+                  {slot.suggestions.map((sug) => (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={() => updateSlot(slot.key, sug)}
+                      className="px-2 py-0.5 rounded-md bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-[10.5px] text-[#5E4D43] transition-all shrink-0 cursor-pointer whitespace-nowrap active:scale-95"
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 3. Tùy Biến Thêm: Chữ khắc laser, Dáng phôi, Màu men */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-[#E8E2D8]">
+          {/* Chữ khắc Laser */}
+          <div className="p-3 rounded-2xl bg-[#FAF7F2]/70 border border-[#E8E2D8] space-y-1.5">
+            <label className="text-xs font-semibold text-[#241B16] flex items-center justify-between">
+              <span>Chữ khắc Laser</span>
+              <span className="text-[10px] text-[#8C7A70] font-normal">Tối đa 15 ký tự</span>
+            </label>
+            <input
+              type="text"
+              maxLength={15}
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              placeholder="VD: Nét • 2026..."
+              className="w-full px-3 py-2 rounded-xl bg-white border border-[#E8E2D8] text-xs text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
+            />
+          </div>
+
+          {/* Dáng Phôi Móc Khoá */}
+          <div className="p-3 rounded-2xl bg-[#FAF7F2]/70 border border-[#E8E2D8] space-y-1.5">
+            <label className="text-xs font-semibold text-[#241B16]">
+              Dáng phôi móc khoá
+            </label>
+            <div className="grid grid-cols-5 gap-1">
+              {[
+                { id: "circle", label: "Tròn" },
+                { id: "square", label: "Vuông" },
+                { id: "teardrop", label: "Giọt" },
+                { id: "heart", label: "Tim" },
+                { id: "freeform", label: "Tự do" },
+              ].map((shape) => (
+                <button
+                  key={shape.id}
+                  type="button"
+                  onClick={() => setCustomShape(shape.id as any)}
+                  className={`py-1.5 rounded-lg text-[10px] font-semibold border transition-all cursor-pointer ${
+                    customShape === shape.id
+                      ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
+                      : "bg-white text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
+                  }`}
+                >
+                  {shape.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Màu men nung phối túi */}
+          <div className="p-3 rounded-2xl bg-[#FAF7F2]/70 border border-[#E8E2D8] space-y-1.5">
+            <label className="text-xs font-semibold text-[#241B16]">
+              Màu men nung
+            </label>
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              {CERAMIC_PALETTE.map((pal) => (
+                <button
+                  key={pal.hex}
+                  type="button"
+                  onClick={() => setCustomColor(pal.hex)}
+                  title={pal.name}
+                  className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
+                    customColor === pal.hex
+                      ? "border-[#241B16] scale-110 shadow-xs ring-2 ring-[#B85D43]/30"
+                      : "border-white hover:scale-105"
+                  }`}
+                  style={{ backgroundColor: pal.hex }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Xem trước Master Prompt Kỹ Thuật (Collapsible Accordion) */}
+        <div className="border border-[#E8E2D8] rounded-2xl overflow-hidden bg-[#FAF7F2]/40">
+          <button
+            type="button"
+            onClick={() => setShowPromptDetails(!showPromptDetails)}
+            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left text-xs font-semibold text-[#5E4D43] hover:bg-[#FAF7F2] transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5 text-[#B85D43]" />
+              <span>Xem câu lệnh Master Prompt chuẩn xưởng in 3D</span>
+            </div>
+            {showPromptDetails ? (
+              <ChevronUp className="w-4 h-4 text-[#8C7A70]" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-[#8C7A70]" />
+            )}
+          </button>
+
+          {showPromptDetails && (
+            <div className="p-3.5 border-t border-[#E8E2D8] bg-white space-y-2">
+              <p className="text-[11px] text-[#7A6F68] leading-relaxed">
+                Đoạn prompt tiếng Anh kỹ thuật tự động chuẩn hoá cho phôi móc khoá phẳng 2D:
+              </p>
+              <div className="p-2.5 rounded-xl bg-[#241B16] text-emerald-300 font-mono text-[10.5px] leading-relaxed break-all select-all">
+                {fullEnglishPrompt}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 5. Nút Duyệt & Kích Hoạt Tạo Móc Khoá (CTA Button) */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={handleTriggerRealGeneration}
+            disabled={
+              isAiSketching || (!activeSlots.subject && !customImageFile)
+            }
+            className="w-full py-3.5 px-5 rounded-2xl bg-[#B85D43] hover:bg-[#A24E36] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex flex-col items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+          >
+            <div className="flex items-center gap-2">
+              {isAiSketching ? (
+                <>
+                  <Wand2 className="w-4 h-4 animate-spin" />
+                  <span>Nghệ Nhân AI đang tạo móc khoá 2D độc bản...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4" />
+                  <span>🎨 DUYỆT THÔNG SỐ & TẠO MÓC KHOÁ ĐỘC BẢN →</span>
+                </>
+              )}
+            </div>
+            <span className="text-[10px] text-white/80 font-normal">
+              {customImageFile
+                ? "Gửi thông số kèm ảnh nguyên liệu để AI phác thảo và gắn trực tiếp lên túi"
+                : "AI sẽ phác thảo bản vẽ 2D kỹ thuật và gắn trực tiếp lên túi Nét"}
+            </span>
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -2218,245 +2521,462 @@ Key 3D printing & charm specs:
                         ))}
                       </div>
 
-                      {/* BƯỚC 1: TRÒ CHUYỆN CÙNG NGHỆ NHÂN AI NÉT STUDIO (CONVERSATIONAL ASSISTANT) */}
+                      {/* BƯỚC 1: THU THẬP THÔNG TIN & DUYỆT PROMPT (2 NHÁNH: ẢNH NGUYÊN LIỆU HOẶC TRÒ CHUYỆN AI) */}
                       {aiCustomStep === 1 && (
                         <div className="space-y-4">
-                          {/* Chat Card Container */}
-                          <div className="bg-white rounded-3xl border border-[#E8E2D8] shadow-xs overflow-hidden flex flex-col h-[540px] sm:h-[580px]">
-                            {/* Chat Header */}
-                            <div className="px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#241B16] via-[#352720] to-[#241B16] text-white flex items-center justify-between border-b border-[#3D2E24] shrink-0">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#B85D43] flex items-center justify-center text-white shadow-xs shrink-0">
-                                  <Sparkles className="w-4 h-4 text-[#FDE68A]" />
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
-                                      Nghệ Nhân AI Nét Studio
-                                    </span>
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-                                      Trực tuyến
-                                    </span>
-                                  </div>
-                                  <p className="text-[10.5px] text-white/70">
-                                    Tư vấn phác thảo móc khoá 2D chuẩn xưởng in 3D
-                                  </p>
-                                </div>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={handleResetInterview}
-                                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                                title="Bắt đầu lại cuộc trò chuyện từ đầu"
+                          {/* 1. LỰA CHỌN ĐẦU VÀO: CÓ ẢNH NGUYÊN LIỆU HAY CHƯA CÓ ẢNH */}
+                          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setCreationMode("photo")}
+                              className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-2.5 sm:gap-3 ${
+                                creationMode === "photo"
+                                  ? "bg-[#FAF7F2] border-[#B85D43] ring-2 ring-[#B85D43]/20 shadow-xs"
+                                  : "bg-white border-[#E8E2D8] hover:border-[#B85D43]/40 hover:bg-[#FAF7F2]/40"
+                              }`}
+                            >
+                              <div
+                                className={`p-2 rounded-xl shrink-0 transition-colors ${
+                                  creationMode === "photo"
+                                    ? "bg-[#B85D43] text-white shadow-xs"
+                                    : "bg-[#FAF7F2] text-[#7A6F68]"
+                                }`}
                               >
-                                <RotateCw className="w-3 h-3" />
-                                <span>Làm lại</span>
-                              </button>
-                            </div>
-
-                            {/* Messages Scroll View */}
-                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-[#FAF7F2]/60">
-                              {chatLog.map((msg) => (
-                                <div
-                                  key={msg.id}
-                                  className={`flex flex-col ${
-                                    msg.sender === "user" ? "items-end" : "items-start"
-                                  }`}
-                                >
-                                  <div
-                                    className={`max-w-[88%] sm:max-w-[82%] rounded-2xl p-3 sm:p-3.5 text-xs sm:text-sm leading-relaxed ${
-                                      msg.sender === "user"
-                                        ? "bg-[#241B16] text-white rounded-br-xs shadow-xs"
-                                        : "bg-white text-[#241B16] border border-[#E8E2D8] rounded-bl-xs shadow-xs"
+                                <Upload className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span
+                                    className={`text-xs sm:text-sm font-bold ${
+                                      creationMode === "photo"
+                                        ? "text-[#B85D43]"
+                                        : "text-[#241B16]"
                                     }`}
                                   >
-                                    {msg.sender === "ai" && (
-                                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#B85D43] uppercase mb-1.5">
-                                        <Wand2 className="w-3 h-3 text-[#B85D43]" />
-                                        <span>Nét Studio Artisan</span>
-                                      </div>
-                                    )}
+                                    Tôi có ảnh nguyên liệu
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#B85D43]/10 text-[#B85D43] font-semibold">
+                                    AI quét & điền
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-[#7A6F68] mt-0.5 line-clamp-1">
+                                  Gửi ảnh chân dung, cún mèo, đồ vật để AI tự trích xuất
+                                </p>
+                              </div>
+                            </button>
 
-                                    <p className="whitespace-pre-line">{msg.text}</p>
+                            <button
+                              type="button"
+                              onClick={() => setCreationMode("chat")}
+                              className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-2.5 sm:gap-3 ${
+                                creationMode === "chat"
+                                  ? "bg-[#FAF7F2] border-[#B85D43] ring-2 ring-[#B85D43]/20 shadow-xs"
+                                  : "bg-white border-[#E8E2D8] hover:border-[#B85D43]/40 hover:bg-[#FAF7F2]/40"
+                              }`}
+                            >
+                              <div
+                                className={`p-2 rounded-xl shrink-0 transition-colors ${
+                                  creationMode === "chat"
+                                    ? "bg-[#B85D43] text-white shadow-xs"
+                                    : "bg-[#FAF7F2] text-[#7A6F68]"
+                                }`}
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span
+                                    className={`text-xs sm:text-sm font-bold ${
+                                      creationMode === "chat"
+                                        ? "text-[#B85D43]"
+                                        : "text-[#241B16]"
+                                    }`}
+                                  >
+                                    Tôi chưa có ảnh
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-500/10 text-emerald-700 font-semibold">
+                                    Trò chuyện AI
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-[#7A6F68] mt-0.5 line-clamp-1">
+                                  Nghệ nhân AI hỏi đáp từng bước để gợi mở ý tưởng
+                                </p>
+                              </div>
+                            </button>
+                          </div>
 
-                                    {/* User Photo Preview if attached */}
-                                    {msg.imageUrl && (
-                                      <div className="mt-2 rounded-xl overflow-hidden border border-white/20 max-w-[180px]">
+                          {/* NHÁNH 1: TÔI CÓ ẢNH NGUYÊN LIỆU */}
+                          {creationMode === "photo" && (
+                            <div className="space-y-4">
+                              {!customImageFile ? (
+                                <div
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    const f = e.dataTransfer.files?.[0];
+                                    if (f) handleProcessUploadedFile(f);
+                                  }}
+                                  className="p-8 sm:p-10 rounded-3xl bg-white border-2 border-dashed border-[#E8E2D8] hover:border-[#B85D43] transition-all text-center space-y-4 group"
+                                >
+                                  <div className="w-16 h-16 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-center mx-auto text-[#B85D43] group-hover:scale-110 transition-transform shadow-xs">
+                                    <Upload className="w-8 h-8" />
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <h3 className="font-serif text-base sm:text-lg text-[#241B16] font-semibold">
+                                      Kéo thả hoặc tải lên ảnh nguyên liệu của bạn
+                                    </h3>
+                                    <p className="text-xs text-[#7A6F68] max-w-md mx-auto leading-relaxed">
+                                      Ảnh chân dung, thú cưng, đồ vật kỷ niệm, logo hay hoa cỏ. AI sẽ tự động phân tích đường nét nhận dạng và điền vào bảng thông số để bạn kiểm tra!
+                                    </p>
+                                  </div>
+
+                                  <div className="pt-2">
+                                    <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#241B16] hover:bg-[#B85D43] text-white text-xs sm:text-sm font-semibold transition-all cursor-pointer shadow-md active:scale-95">
+                                      <Upload className="w-4 h-4" />
+                                      <span>Chọn ảnh từ thiết bị</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                  </div>
+
+                                  {/* Gợi ý các loại ảnh mẫu */}
+                                  <div className="pt-3 border-t border-[#E8E2D8]/60 flex items-center justify-center gap-2 flex-wrap text-[11px] text-[#8C7A70]">
+                                    <span className="font-medium text-[#241B16]">Gợi ý ảnh:</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">👤 Ảnh chân dung</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">🐾 Bé cún / mèo cưng</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">☕ Ly nước / Bình giữ nhiệt</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">🌸 Hoa sen / Cây cỏ</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-4">
+                                  {/* Preview bar for uploaded image */}
+                                  <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E8E2D8] flex items-center justify-between gap-3 shadow-xs">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-14 h-14 rounded-xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shrink-0">
                                         <img
-                                          src={msg.imageUrl}
-                                          alt="Mẫu đính kèm"
-                                          className="w-full h-auto object-cover max-h-36"
+                                          src={customImageFile}
+                                          alt="Ảnh nguyên liệu"
+                                          className="w-full h-full object-cover"
                                         />
                                       </div>
-                                    )}
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-xs font-bold text-[#241B16] truncate">
+                                            {uploadedDocName || "Ảnh nguyên liệu đã tải"}
+                                          </span>
+                                          <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 shrink-0">
+                                            Đã đính kèm
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] text-[#7A6F68] truncate mt-0.5">
+                                          {isAnalyzingPhoto
+                                            ? "AI đang phân tích các đường nét nhận dạng..."
+                                            : "AI đã trích xuất đặc điểm vào bảng bên dưới"}
+                                        </p>
+                                      </div>
+                                    </div>
 
-                                    {/* Summary Card if this message is summary */}
-                                    {msg.isSummary && msg.summaryData && (
-                                      <div className="mt-3 p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] text-xs space-y-2.5">
-                                        <div className="font-bold text-[#241B16] flex items-center gap-1.5 text-xs uppercase tracking-wide border-b border-[#E8E2D8] pb-1.5">
-                                          <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
-                                          <span>Thông Số Bản Vẽ 2D Chuẩn Xưởng</span>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2 text-[11.5px]">
-                                          <div>
-                                            <span className="text-[#8C7A70] block">Chủ đề:</span>
-                                            <strong className="text-[#241B16]">{msg.summaryData.categoryName}</strong>
-                                          </div>
-                                          <div>
-                                            <span className="text-[#8C7A70] block">Chủ thể:</span>
-                                            <strong className="text-[#241B16]">{msg.summaryData.subject}</strong>
-                                          </div>
-                                          <div>
-                                            <span className="text-[#8C7A70] block">Kiểu dáng:</span>
-                                            <span className="text-[#241B16]">{msg.summaryData.feature1}</span>
-                                          </div>
-                                          <div>
-                                            <span className="text-[#8C7A70] block">Màu sắc:</span>
-                                            <span className="text-[#241B16]">{msg.summaryData.feature2}</span>
-                                          </div>
-                                        </div>
-                                        <div className="pt-1 border-t border-[#E8E2D8] text-[11.5px]">
-                                          <span className="text-[#8C7A70] block">Điểm nhấn / Biểu cảm:</span>
-                                          <span className="text-[#241B16] font-medium">{msg.summaryData.feature3}</span>
-                                        </div>
-                                        {msg.summaryData.hasPhoto && (
-                                          <div className="pt-1 text-[11px] text-emerald-700 font-medium">
-                                            ✓ Đã đính kèm ảnh chụp mẫu thực tế
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <label
+                                        className="px-2.5 py-1.5 rounded-xl border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[11px] font-semibold text-[#5E4D43] transition-colors cursor-pointer flex items-center gap-1"
+                                        title="Đổi ảnh khác"
+                                      >
+                                        <RotateCw className="w-3 h-3 text-[#B85D43]" />
+                                        <span className="hidden sm:inline">Đổi ảnh</span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={handleImageUpload}
+                                          className="hidden"
+                                        />
+                                      </label>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCustomImageFile(null);
+                                          setUploadedDocName(null);
+                                        }}
+                                        className="p-1.5 rounded-xl hover:bg-rose-50 text-[#8C7A70] hover:text-rose-600 transition-colors cursor-pointer"
+                                        title="Xoá ảnh"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Trạng thái phân tích hoặc Bảng Duyệt Prompt */}
+                                  {isAnalyzingPhoto ? (
+                                    <div className="p-8 rounded-3xl bg-white border border-[#E8E2D8] text-center space-y-3.5 shadow-xs animate-pulse">
+                                      <div className="w-12 h-12 rounded-full bg-[#B85D43]/10 flex items-center justify-center mx-auto text-[#B85D43]">
+                                        <Wand2 className="w-6 h-6 animate-spin" />
+                                      </div>
+                                      <div>
+                                        <h4 className="font-serif text-sm sm:text-base font-semibold text-[#241B16]">
+                                          Nghệ Nhân AI đang phân tích ảnh nguyên liệu...
+                                        </h4>
+                                        <p className="text-xs text-[#7A6F68] mt-1 max-w-sm mx-auto">
+                                          Nhận diện chủ thể, kiểu tóc, trang phục và tự động điền các ô thông số thiết kế cho bạn kiểm tra.
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#B85D43] font-medium">
+                                        <span className="w-2 h-2 rounded-full bg-[#B85D43] animate-ping" />
+                                        <span>Khoảng 2 - 3 giây...</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    renderPromptReviewForm()
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* NHÁNH 2: TÔI CHƯA CÓ ẢNH (TRÒ CHUYỆN CÙNG NGHỆ NHÂN AI) */}
+                          {creationMode === "chat" && (
+                            <div className="space-y-4">
+                              {/* Chat Card Container */}
+                              <div className="bg-white rounded-3xl border border-[#E8E2D8] shadow-xs overflow-hidden flex flex-col h-[540px] sm:h-[580px]">
+                                {/* Chat Header */}
+                                <div className="px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#241B16] via-[#352720] to-[#241B16] text-white flex items-center justify-between border-b border-[#3D2E24] shrink-0">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#B85D43] flex items-center justify-center text-white shadow-xs shrink-0">
+                                      <Sparkles className="w-4 h-4 text-[#FDE68A]" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
+                                          Nghệ Nhân AI Nét Studio
+                                        </span>
+                                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                                          Trực tuyến
+                                        </span>
+                                      </div>
+                                      <p className="text-[10.5px] text-white/70">
+                                        Tư vấn phác thảo móc khoá 2D chuẩn xưởng in 3D
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={handleResetInterview}
+                                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                                    title="Bắt đầu lại cuộc trò chuyện từ đầu"
+                                  >
+                                    <RotateCw className="w-3 h-3" />
+                                    <span>Làm lại</span>
+                                  </button>
+                                </div>
+
+                                {/* Messages Scroll View */}
+                                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-[#FAF7F2]/60">
+                                  {chatLog.map((msg) => (
+                                    <div
+                                      key={msg.id}
+                                      className={`flex flex-col ${
+                                        msg.sender === "user" ? "items-end" : "items-start"
+                                      }`}
+                                    >
+                                      <div
+                                        className={`max-w-[88%] sm:max-w-[82%] rounded-2xl p-3 sm:p-3.5 text-xs sm:text-sm leading-relaxed ${
+                                          msg.sender === "user"
+                                            ? "bg-[#241B16] text-white rounded-br-xs shadow-xs"
+                                            : "bg-white text-[#241B16] border border-[#E8E2D8] rounded-bl-xs shadow-xs"
+                                        }`}
+                                      >
+                                        {msg.sender === "ai" && (
+                                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#B85D43] uppercase mb-1.5">
+                                            <Wand2 className="w-3 h-3 text-[#B85D43]" />
+                                            <span>Nét Studio Artisan</span>
                                           </div>
                                         )}
 
-                                        {/* Button kích hoạt API thật duy nhất 1 lần */}
-                                        <div className="pt-2">
-                                          <button
-                                            type="button"
-                                            onClick={handleTriggerRealGeneration}
-                                            disabled={isAiSketching}
-                                            className="w-full py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                                          >
-                                            {isAiSketching ? (
-                                              <>
-                                                <Wand2 className="w-4 h-4 animate-spin" />
-                                                <span>AI Nét đang vẽ bản phác thảo 2D độc bản...</span>
-                                              </>
-                                            ) : (
-                                              <>
-                                                <Wand2 className="w-4 h-4" />
-                                                <span>🎨 Bấm vào đây để AI tạo bản phác thảo 2D & gắn lên túi →</span>
-                                              </>
+                                        <p className="whitespace-pre-line">{msg.text}</p>
+
+                                        {/* User Photo Preview if attached */}
+                                        {msg.imageUrl && (
+                                          <div className="mt-2 rounded-xl overflow-hidden border border-white/20 max-w-[180px]">
+                                            <img
+                                              src={msg.imageUrl}
+                                              alt="Mẫu đính kèm"
+                                              className="w-full h-auto object-cover max-h-36"
+                                            />
+                                          </div>
+                                        )}
+
+                                        {/* Summary Card if this message is summary */}
+                                        {msg.isSummary && msg.summaryData && (
+                                          <div className="mt-3 p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] text-xs space-y-2.5">
+                                            <div className="font-bold text-[#241B16] flex items-center gap-1.5 text-xs uppercase tracking-wide border-b border-[#E8E2D8] pb-1.5">
+                                              <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+                                              <span>Thông Số Bản Vẽ 2D Chuẩn Xưởng</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 text-[11.5px]">
+                                              <div>
+                                                <span className="text-[#8C7A70] block">Chủ đề:</span>
+                                                <strong className="text-[#241B16]">{msg.summaryData.categoryName}</strong>
+                                              </div>
+                                              <div>
+                                                <span className="text-[#8C7A70] block">Chủ thể:</span>
+                                                <strong className="text-[#241B16]">{msg.summaryData.subject}</strong>
+                                              </div>
+                                              <div>
+                                                <span className="text-[#8C7A70] block">Kiểu dáng:</span>
+                                                <span className="text-[#241B16]">{msg.summaryData.feature1}</span>
+                                              </div>
+                                              <div>
+                                                <span className="text-[#8C7A70] block">Màu sắc:</span>
+                                                <span className="text-[#241B16]">{msg.summaryData.feature2}</span>
+                                              </div>
+                                            </div>
+                                            <div className="pt-1 border-t border-[#E8E2D8] text-[11.5px]">
+                                              <span className="text-[#8C7A70] block">Điểm nhấn / Biểu cảm:</span>
+                                              <span className="text-[#241B16] font-medium">{msg.summaryData.feature3}</span>
+                                            </div>
+                                            {msg.summaryData.hasPhoto && (
+                                              <div className="pt-1 text-[11px] text-emerald-700 font-medium">
+                                                ✓ Đã đính kèm ảnh chụp mẫu thực tế
+                                              </div>
                                             )}
-                                          </button>
-                                        </div>
+
+                                            {/* Button kích hoạt API thật duy nhất 1 lần */}
+                                            <div className="pt-2">
+                                              <button
+                                                type="button"
+                                                onClick={handleTriggerRealGeneration}
+                                                disabled={isAiSketching}
+                                                className="w-full py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                              >
+                                                {isAiSketching ? (
+                                                  <>
+                                                    <Wand2 className="w-4 h-4 animate-spin" />
+                                                    <span>AI Nét đang vẽ bản phác thảo 2D độc bản...</span>
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Wand2 className="w-4 h-4" />
+                                                    <span>🎨 Bấm vào đây để AI tạo bản phác thảo 2D & gắn lên túi →</span>
+                                                  </>
+                                                )}
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        <span
+                                          className={`text-[9.5px] block mt-1 ${
+                                            msg.sender === "user" ? "text-white/60 text-right" : "text-[#A89F91]"
+                                          }`}
+                                        >
+                                          {msg.time}
+                                        </span>
                                       </div>
-                                    )}
+                                    </div>
+                                  ))}
 
-                                    <span
-                                      className={`text-[9.5px] block mt-1 ${
-                                        msg.sender === "user" ? "text-white/60 text-right" : "text-[#A89F91]"
-                                      }`}
-                                    >
-                                      {msg.time}
-                                    </span>
-                                  </div>
+                                  {isAiThinking && (
+                                    <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-white border border-[#E8E2D8] text-xs text-[#7A6F68] w-fit shadow-2xs">
+                                      <Wand2 className="w-3.5 h-3.5 animate-spin text-[#B85D43]" />
+                                      <span className="animate-pulse">Nghệ nhân AI đang phản hồi...</span>
+                                    </div>
+                                  )}
+                                  <div ref={chatEndRef} />
                                 </div>
-                              ))}
 
-                              {isAiThinking && (
-                                <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-white border border-[#E8E2D8] text-xs text-[#7A6F68] w-fit shadow-2xs">
-                                  <Wand2 className="w-3.5 h-3.5 animate-spin text-[#B85D43]" />
-                                  <span className="animate-pulse">Nghệ nhân AI đang phản hồi...</span>
+                                {/* Quick Suggestion Chips Bar */}
+                                {interviewStep !== "ready" && (
+                                  <div className="px-4 py-2 bg-[#FAF7F2] border-t border-[#E8E2D8] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+                                    <span className="text-[10.5px] text-[#8C7A70] font-medium shrink-0 mr-1 flex items-center gap-1">
+                                      <Sparkles className="w-3 h-3 text-[#B85D43]" />
+                                      Gợi ý:
+                                    </span>
+                                    {getCurrentStepChips().map((chip) => (
+                                      <button
+                                        key={chip.value}
+                                        type="button"
+                                        onClick={() => handleConversationalUserMessage(chip.value)}
+                                        className="px-2.5 py-1 rounded-full bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-xs text-[#5E4D43] font-medium transition-all shrink-0 cursor-pointer shadow-2xs whitespace-nowrap active:scale-95"
+                                      >
+                                        {chip.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Input Bar */}
+                                <div className="p-3 bg-white border-t border-[#E8E2D8] shrink-0">
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+                                      handleConversationalUserMessage(chatInputText);
+                                      setChatInputText("");
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    {/* Photo attachment button */}
+                                    <label
+                                      className="p-2.5 rounded-xl border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[#7A6F68] hover:text-[#B85D43] transition-colors cursor-pointer shrink-0"
+                                      title="Đính kèm ảnh mẫu thực tế"
+                                    >
+                                      <Paperclip className="w-4 h-4" />
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            handleProcessUploadedFile(file);
+                                            handleConversationalUserMessage(
+                                              `Đã đính kèm ảnh mẫu: ${file.name}`
+                                            );
+                                          }
+                                        }}
+                                        className="hidden"
+                                      />
+                                    </label>
+
+                                    <input
+                                      type="text"
+                                      value={chatInputText}
+                                      onChange={(e) => setChatInputText(e.target.value)}
+                                      placeholder={
+                                        interviewStep === "category"
+                                          ? "Nhập chủ đề bạn muốn làm móc khoá (hoặc bấm gợi ý bên trên)..."
+                                          : interviewStep === "subject"
+                                          ? "Nhập tên đồ vật / con người / thú cưng cụ thể..."
+                                          : interviewStep === "feature1"
+                                          ? "Nhập kiểu dáng / chi tiết nhận diện (hoặc bấm 'Bỏ qua')..."
+                                          : interviewStep === "feature2"
+                                          ? "Nhập màu sắc / phong cách mong muốn..."
+                                          : "Nhập điểm nhấn (hoặc bấm 'Không cần biểu cảm')..."
+                                      }
+                                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs sm:text-sm text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
+                                    />
+
+                                    <button
+                                      type="submit"
+                                      disabled={!chatInputText.trim()}
+                                      className="p-2.5 rounded-xl bg-[#241B16] hover:bg-[#B85D43] disabled:opacity-40 text-white transition-all cursor-pointer shrink-0 shadow-xs"
+                                    >
+                                      <Send className="w-4 h-4" />
+                                    </button>
+                                  </form>
+                                </div>
+                              </div>
+
+                              {/* Hiển thị Bảng Duyệt & Tùy Chỉnh Thông Số khi trò chuyện hoàn tất */}
+                              {interviewStep === "ready" && (
+                                <div className="pt-2 animate-fadeIn">
+                                  {renderPromptReviewForm()}
                                 </div>
                               )}
-                              <div ref={chatEndRef} />
                             </div>
-
-                            {/* Quick Suggestion Chips Bar */}
-                            {interviewStep !== "ready" && (
-                              <div className="px-4 py-2 bg-[#FAF7F2] border-t border-[#E8E2D8] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
-                                <span className="text-[10.5px] text-[#8C7A70] font-medium shrink-0 mr-1 flex items-center gap-1">
-                                  <Sparkles className="w-3 h-3 text-[#B85D43]" />
-                                  Gợi ý:
-                                </span>
-                                {getCurrentStepChips().map((chip) => (
-                                  <button
-                                    key={chip.value}
-                                    type="button"
-                                    onClick={() => handleConversationalUserMessage(chip.value)}
-                                    className="px-2.5 py-1 rounded-full bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-xs text-[#5E4D43] font-medium transition-all shrink-0 cursor-pointer shadow-2xs whitespace-nowrap active:scale-95"
-                                  >
-                                    {chip.label}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Input Bar */}
-                            <div className="p-3 bg-white border-t border-[#E8E2D8] shrink-0">
-                              <form
-                                onSubmit={(e) => {
-                                  e.preventDefault();
-                                  handleConversationalUserMessage(chatInputText);
-                                  setChatInputText("");
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                {/* Photo attachment button */}
-                                <label
-                                  className="p-2.5 rounded-xl border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[#7A6F68] hover:text-[#B85D43] transition-colors cursor-pointer shrink-0"
-                                  title="Đính kèm ảnh mẫu thực tế"
-                                >
-                                  <Paperclip className="w-4 h-4" />
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        const reader = new FileReader();
-                                        reader.onload = (event) => {
-                                          const base64 = event.target?.result as string;
-                                          setCustomImageFile(base64);
-                                          setUploadedDocName(file.name);
-                                          handleConversationalUserMessage(
-                                            `Đã đính kèm ảnh mẫu: ${file.name}`,
-                                            base64
-                                          );
-                                        };
-                                        reader.readAsDataURL(file);
-                                      }
-                                    }}
-                                    className="hidden"
-                                  />
-                                </label>
-
-                                <input
-                                  type="text"
-                                  value={chatInputText}
-                                  onChange={(e) => setChatInputText(e.target.value)}
-                                  placeholder={
-                                    interviewStep === "category"
-                                      ? "Nhập chủ đề bạn muốn làm móc khoá (hoặc bấm gợi ý bên trên)..."
-                                      : interviewStep === "subject"
-                                      ? "Nhập tên đồ vật / con người / thú cưng cụ thể..."
-                                      : interviewStep === "feature1"
-                                      ? "Nhập kiểu dáng / chi tiết nhận diện (hoặc bấm 'Bỏ qua')..."
-                                      : interviewStep === "feature2"
-                                      ? "Nhập màu sắc / phong cách mong muốn..."
-                                      : "Nhập điểm nhấn (hoặc bấm 'Không cần biểu cảm')..."
-                                  }
-                                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs sm:text-sm text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
-                                />
-
-                                <button
-                                  type="submit"
-                                  disabled={!chatInputText.trim()}
-                                  className="p-2.5 rounded-xl bg-[#241B16] hover:bg-[#B85D43] disabled:opacity-40 text-white transition-all cursor-pointer shrink-0 shadow-xs"
-                                >
-                                  <Send className="w-4 h-4" />
-                                </button>
-                              </form>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       )}
 

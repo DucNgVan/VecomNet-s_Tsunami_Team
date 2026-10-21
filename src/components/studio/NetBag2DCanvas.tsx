@@ -350,26 +350,6 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                         <Move className="w-2.5 h-2.5" />
                       </div>
                     </div>
-                  ) : isCustom && customCharmVisual?.svgCode ? (
-                    <div
-                      className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center relative transition-transform ${
-                        isSelected ? "scale-110 drop-shadow-[0_0_10px_rgba(184,93,67,0.8)]" : "drop-shadow-md"
-                      }`}
-                    >
-                      <div
-                        className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow"
-                        dangerouslySetInnerHTML={{ __html: customCharmVisual.svgCode }}
-                      />
-                      {customCharmVisual?.engravedText && (
-                        <span className="absolute -bottom-1 text-[7px] font-mono tracking-tight text-white/95 truncate max-w-[44px] bg-black/70 px-1 py-0.5 rounded shadow">
-                          {customCharmVisual.engravedText}
-                        </span>
-                      )}
-                      {/* Active Drag Indicator Icon */}
-                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
-                        <Move className="w-2.5 h-2.5" />
-                      </div>
-                    </div>
                   ) : (
                     /* Standard / Fallback badge */
                     <div

@@ -2496,21 +2496,16 @@ Key 3D printing & charm specs:
                                       Tạo hình Die-Cut tự do
                                     </div>
 
-                                    {/* Freestanding Die-Cut Charm Display (Ưu tiên ảnh 3D thật hoặc SVG vector) */}
+                                    {/* Freestanding Die-Cut Charm Display (Ảnh 2D thực tế từ AI) */}
                                     <div className="w-32 h-32 flex items-center justify-center relative my-2">
                                       {generatedImageUrl ? (
                                         <div className="w-full h-full relative flex items-center justify-center">
                                           <img
                                             src={generatedImageUrl}
-                                            alt={motifName || "Móc khoá 3D Nét"}
+                                            alt={motifName || "Móc khoá 2D Nét"}
                                             className="w-full h-full object-contain filter drop-shadow-[0_12px_22px_rgba(0,0,0,0.25)] select-none pointer-events-none"
                                           />
                                         </div>
-                                      ) : generatedSvgCode ? (
-                                        <div
-                                          className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)]"
-                                          dangerouslySetInnerHTML={{ __html: generatedSvgCode }}
-                                        />
                                       ) : customImageFile ? (
                                         <div className="w-full h-full relative flex items-center justify-center">
                                           <img
@@ -2533,8 +2528,8 @@ Key 3D printing & charm specs:
                                       <span className="text-[10px] text-[#7A6F68] font-mono bg-white px-2 py-0.5 rounded-md border border-[#E8E2D8]">
                                         Quy chuẩn: ~4.5cm x 4.5cm
                                       </span>
-                                      <span className="text-[10px] text-[#2D5A27] font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                        2D Vector đùn in 3D
+                                      <span className="text-[10px] text-[#B85D43] font-semibold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                                        Phác thảo 2D AI
                                       </span>
                                     </div>
                                   </div>
@@ -2546,7 +2541,7 @@ Key 3D printing & charm specs:
                                     </div>
                                     <div>
                                       <strong className="text-[#241B16]">Dạng phác thảo:</strong>{" "}
-                                      Bản vẽ 2D Flat Vector / Viền dày chuẩn cho nghệ nhân đùn khối in 3D
+                                      Bản phác thảo 2D phẳng chuẩn phôi móc khoá thủ công Nét Studio
                                     </div>
                                     <div>
                                       <strong className="text-[#241B16]">Độ dày đùn khối:</strong> 3.0 mm (chuẩn in 3D FDM/Resin)

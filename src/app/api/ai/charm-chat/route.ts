@@ -21,12 +21,9 @@ interface ChatRequestPayload {
 }
 
 /**
- * HỆ THỐNG 3 TẦNG AI SINH ẢNH MÓC KHOÁ 2D SIÊU TỐC (3-TIER AI PARALLEL RACING)
- * Tầng 1: Động cơ Siêu tốc Turbo (Sana / SDXL-Turbo, 1-2 giây, không bị giới hạn 45s)
- * Tầng 2: Động cơ Phân luồng Sana HD (Sana Model độc lập, dự phòng tức thì)
- * Tầng 3: Động cơ Vector Kỹ Thuật Chuẩn In 3D (Instant Procedural Vector Engine)
- * 
- * Đua song song (Promise.any) để lấy AI phản hồi nhanh nhất và chặn 100% ảnh vàng "Limit reached"
+ * ĐỘNG CƠ AI SINH ẢNH MÓC KHOÁ 2D (2D GRAPHIC DIFFUSION ENGINE)
+ * Sinh ảnh 2D flat vector die-cut sticker với viền đậm và màu mảng phẳng.
+ * Tuyệt đối không sinh hay dùng mã SVG thô sơ của LLM.
  */
 function isValidGeneratedImage(res: Response, buffer: Buffer): boolean {
   if (!res.ok) return false;
@@ -55,21 +52,22 @@ function isValidGeneratedImage(res: Response, buffer: Buffer): boolean {
 }
 
 async function generate2DKeychainImage(
-  prompt: string,
-  svgFallback?: string,
-  themeColorHex?: string
-): Promise<{ imageUrl: string; provider: string }> {
+  prompt: string
+): Promise<{ imageUrl: string; provider: string } | null> {
   const seed = Math.floor(Math.random() * 999999);
-  const cleanPrompt = prompt.slice(0, 420);
+  const cleanPrompt = prompt.slice(0, 380);
+  const directUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+    cleanPrompt
+  )}?width=512&height=512&nologo=true&seed=${seed}`;
 
-  // TẦNG 1: Pollinations Turbo (Sana / Turbo Engine - Rất nhanh 1-2s, không bị cap 45s)
-  const fetchTier1 = async (): Promise<string> => {
+  // NHÁNH 1: Pollinations Sana Model (Đồ hoạ phẳng sắc nét, thời gian 8-15s)
+  const fetchBranch1 = async (): Promise<string> => {
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
       cleanPrompt
-    )}?model=turbo&width=512&height=512&nologo=true&seed=${seed}`;
+    )}?model=sana&width=512&height=512&nologo=true&seed=${seed}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7500);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
       const res = await fetch(url, { signal: controller.signal });
@@ -79,7 +77,7 @@ async function generate2DKeychainImage(
       const buffer = Buffer.from(buf);
 
       if (!isValidGeneratedImage(res, buffer)) {
-        throw new Error("Tier 1 image invalid or limit detected");
+        throw new Error("Branch 1 image invalid or limit detected");
       }
 
       const mime = res.headers.get("content-type") || "image/jpeg";
@@ -90,15 +88,15 @@ async function generate2DKeychainImage(
     }
   };
 
-  // TẦNG 2: Pollinations Sana HD (Cụm server Sana riêng biệt, chạy đua song song)
-  const fetchTier2 = async (): Promise<string> => {
-    const seed2 = (seed + 24681) % 999999;
+  // NHÁNH 2: Pollinations Phân luồng Seed khác (Đua song song)
+  const fetchBranch2 = async (): Promise<string> => {
+    const seed2 = (seed + 41923) % 999999;
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
       cleanPrompt
-    )}?model=sana&width=512&height=512&nologo=true&seed=${seed2}`;
+    )}?width=512&height=512&nologo=true&seed=${seed2}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8500);
+    const timeoutId = setTimeout(() => controller.abort(), 22000);
 
     try {
       const res = await fetch(url, { signal: controller.signal });
@@ -108,7 +106,7 @@ async function generate2DKeychainImage(
       const buffer = Buffer.from(buf);
 
       if (!isValidGeneratedImage(res, buffer)) {
-        throw new Error("Tier 2 image invalid or limit detected");
+        throw new Error("Branch 2 image invalid or limit detected");
       }
 
       const mime = res.headers.get("content-type") || "image/jpeg";
@@ -119,40 +117,22 @@ async function generate2DKeychainImage(
     }
   };
 
-  // ĐUA SONG SONG TẦNG 1 & TẦNG 2 ĐỂ LẤY AI NHANH NHẤT
   try {
-    const fastestResult = await Promise.any([fetchTier1(), fetchTier2()]);
-    console.log("[3-Tier AI Racing]: Đã nhận được ảnh thành công từ tầng AI nhanh nhất!");
+    const fastestResult = await Promise.any([fetchBranch1(), fetchBranch2()]);
+    console.log("[2D Graphic Engine]: Tạo ảnh 2D thành công từ AI đồ hoạ thực tế!");
     return {
       imageUrl: fastestResult,
-      provider: "3-tier-ai-fastest",
+      provider: "2d-graphic-diffusion",
     };
   } catch (raceErr) {
     console.warn(
-      "[3-Tier AI Racing]: Tầng 1 và Tầng 2 bận hoặc chạm hạn mức, kích hoạt Tầng 3 Vector..."
+      "[2D Graphic Engine]: Server bận hoặc chạm hạn mức, chuyển sang URL trực tiếp cho Client..."
     );
+    return {
+      imageUrl: directUrl,
+      provider: "2d-direct-url",
+    };
   }
-
-  // TẦNG 3: ĐỘNG CƠ VECTOR CHUẨN XƯỞNG IN 3D (ĐỘC BẢN, SẮC NÉT, KHÔNG BAO GIỜ BỊ LỖI)
-  const color = themeColorHex || "#234B3E";
-  const defaultSvg = `<svg viewBox="0 0 100 135" xmlns="http://www.w3.org/2000/svg">
-  <g id="keychainCharm2D">
-    <path d="M43 14 C43 6, 57 6, 57 14 C57 17.5, 54 18.5, 50 18.5 C46 18.5, 43 17.5, 43 14 Z" fill="#281D17" stroke="#281D17" stroke-width="2.5"/>
-    <circle cx="50" cy="12" r="3.2" fill="#FFFFFF" stroke="#281D17" stroke-width="1.8"/>
-    <rect x="15" y="24" width="70" height="92" rx="18" fill="${color}" stroke="#1F1A17" stroke-width="3"/>
-    <rect x="20" y="29" width="60" height="82" rx="14" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.6"/>
-    <circle cx="50" cy="65" r="22" fill="#FFFFFF" opacity="0.2"/>
-    <text x="50" y="70" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="20" fill="#FFFFFF">NÉT</text>
-  </g>
-</svg>`;
-
-  const svgContent = svgFallback || defaultSvg;
-  const svgBase64 = Buffer.from(svgContent).toString("base64");
-
-  return {
-    imageUrl: `data:image/svg+xml;base64,${svgBase64}`,
-    provider: "3-tier-procedural-vector",
-  };
 }
 
 export async function POST(req: NextRequest) {
@@ -237,7 +217,6 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     "feature2": "Trang phục / màu sắc...",
     "feature3": "Hành động / biểu cảm kawaii / phụ kiện đi kèm..."
   },
-  "svgCode": "<svg viewBox=\\"0 0 100 135\\" xmlns=\\"http://www.w3.org/2000/svg\\">...vector 2D chuẩn đường nét liền khối để nghệ nhân nạp vào máy in 3D...</svg>",
   "recommendedColor": "${selectedColorHex}",
   "pinSpecs": {
     "diameterMm": 4.5,
@@ -478,38 +457,16 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
       };
     }
 
-    // BƯỚC 2: GỌI ĐỘNG CƠ SINH ẢNH 2D VECTOR MIỄN PHÍ 100% (FREE 2D FLUX ENGINE)
+    // BƯỚC 2: GỌI ĐỘNG CƠ SINH ẢNH 2D ĐỒ HOẠ THỰC TẾ
     console.log(
-      "[Free 2D Keychain Agent]: Generating 2D Illustration with prompt:",
+      "[2D Graphic Engine]: Generating 2D Illustration with prompt:",
       parsedData.masterPrompt.slice(0, 100) + "..."
     );
-    const imageResult = await generate2DKeychainImage(
-      parsedData.masterPrompt,
-      parsedData.svgCode,
-      parsedData.recommendedColor || selectedColorHex
-    );
+    const imageResult = await generate2DKeychainImage(parsedData.masterPrompt);
 
     if (imageResult) {
       parsedData.imageUrl = imageResult.imageUrl;
       parsedData.imageProvider = imageResult.provider;
-    }
-
-    // SVG silhouette dự phòng cho việc nạp trực tiếp vào máy in 3D
-    if (!parsedData.svgCode) {
-      parsedData.svgCode = `<svg viewBox="0 0 100 135" xmlns="http://www.w3.org/2000/svg">
-  <g id="keychainCharm2D">
-    <path d="M43 14 C43 6, 57 6, 57 14 C57 17.5, 54 18.5, 50 18.5 C46 18.5, 43 17.5, 43 14 Z" fill="#281D17" stroke="#281D17" stroke-width="2.5"/>
-    <circle cx="50" cy="12" r="3.2" fill="#FFFFFF" stroke="#281D17" stroke-width="1.8"/>
-    <circle cx="50" cy="65" r="42" fill="${parsedData.recommendedColor || selectedColorHex}" stroke="#281D17" stroke-width="3"/>
-    <ellipse cx="40" cy="58" rx="4" ry="5.5" fill="#281D17"/>
-    <circle cx="41.5" cy="56" r="1.5" fill="#FFFFFF"/>
-    <ellipse cx="60" cy="58" rx="4" ry="5.5" fill="#281D17"/>
-    <circle cx="61.5" cy="56" r="1.5" fill="#FFFFFF"/>
-    <ellipse cx="33" cy="68" rx="4.5" ry="2.5" fill="#F43F5E" opacity="0.6"/>
-    <ellipse cx="67" cy="68" rx="4.5" ry="2.5" fill="#F43F5E" opacity="0.6"/>
-    <path d="M44 68 Q50 74, 56 68" fill="none" stroke="#281D17" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-</svg>`;
     }
 
     return NextResponse.json({

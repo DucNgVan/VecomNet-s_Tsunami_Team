@@ -349,13 +349,40 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     }
 
     // BƯỚC 2: CHUẨN HOÁ PHÔI MÓC KHOÁ 2D THỦ CÔNG
-    // Nếu khách hàng gửi ảnh mẫu/chân dung, ưu tiên hiển thị phôi dựa trên ảnh của khách
-    if (imageBase64) {
-      parsedData.imageUrl = imageBase64;
-      parsedData.imageProvider = "user-reference";
-    } else {
-      parsedData.imageUrl = null;
-      parsedData.imageProvider = "artisan-badge";
+    // 1. Nếu đã cấu hình CUSTOM_AI_API_URL (Hugging Face Spaces / Replicate): Gọi thẳng mô hình LoRA
+    const customAiEndpoint = process.env.CUSTOM_AI_API_URL;
+    if (customAiEndpoint && parsedData.masterPrompt) {
+      try {
+        const aiRes = await fetch(`${customAiEndpoint.replace(/\/$/, "")}/api/generate-keychain`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: parsedData.masterPrompt,
+            imageBase64: imageBase64 || undefined,
+            customText,
+          }),
+        });
+        if (aiRes.ok) {
+          const aiJson = await aiRes.json();
+          if (aiJson.imageUrl) {
+            parsedData.imageUrl = aiJson.imageUrl;
+            parsedData.imageProvider = "net-keychain-lora";
+          }
+        }
+      } catch (loraErr) {
+        console.warn("[Custom LoRA Endpoint Warning]:", loraErr);
+      }
+    }
+
+    // 2. Fallback: Nếu chưa bật LoRA Cloud hoặc đang chạy nội bộ, hiển thị ảnh mẫu khách gửi
+    if (!parsedData.imageUrl) {
+      if (imageBase64) {
+        parsedData.imageUrl = imageBase64;
+        parsedData.imageProvider = "user-reference";
+      } else {
+        parsedData.imageUrl = null;
+        parsedData.imageProvider = "artisan-badge";
+      }
     }
 
     return NextResponse.json({

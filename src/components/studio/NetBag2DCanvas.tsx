@@ -337,11 +337,25 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                     >
                       {/* Vòng khoen móc kim loại trên đỉnh */}
                       <div className="w-2.5 h-3 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border-1.5 border-white/90 shadow-md bg-white flex items-center justify-center p-0.5">
+                      <div
+                        className={`w-12 h-12 overflow-hidden border-1.5 border-white/90 shadow-md bg-white flex items-center justify-center p-0.5 transition-all ${
+                          customCharmVisual?.shape === "circle"
+                            ? "rounded-full"
+                            : customCharmVisual?.shape === "teardrop"
+                            ? "rounded-t-full rounded-b-md"
+                            : customCharmVisual?.shape === "heart"
+                            ? "rounded-2xl"
+                            : customCharmVisual?.shape === "freeform"
+                            ? "rounded-[16px_4px_16px_4px]"
+                            : "rounded-xl"
+                        }`}
+                      >
                         <img
                           src={customCharmVisual.imageUrl || customCharmVisual.referenceImageUrl}
                           alt={customCharmVisual.engravedText || "Móc khoá 2D Nét"}
-                          className="w-full h-full object-contain rounded-lg select-none pointer-events-none"
+                          className={`w-full h-full object-cover select-none pointer-events-none ${
+                            customCharmVisual?.shape === "circle" ? "rounded-full" : "rounded-lg"
+                          }`}
                         />
                       </div>
                       {customCharmVisual?.engravedText && (

@@ -2513,11 +2513,25 @@ Key 3D printing & charm specs:
                                         <div className="w-full h-full relative flex flex-col items-center justify-center">
                                           {/* Vòng móc kim loại phía trên (Keychain Ring) */}
                                           <div className="w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent -mb-1 shadow-xs z-10" />
-                                          <div className="w-24 h-24 relative rounded-2xl overflow-hidden p-1.5 bg-white border-2 border-[#E8E2D8] shadow-md flex items-center justify-center">
+                                          <div
+                                            className={`w-24 h-24 relative overflow-hidden p-1.5 bg-white border-2 border-[#E8E2D8] shadow-md flex items-center justify-center transition-all ${
+                                              customShape === "circle"
+                                                ? "rounded-full"
+                                                : customShape === "teardrop"
+                                                ? "rounded-t-full rounded-b-xl"
+                                                : customShape === "heart"
+                                                ? "rounded-3xl"
+                                                : customShape === "freeform"
+                                                ? "rounded-[22px_6px_22px_6px]"
+                                                : "rounded-2xl"
+                                            }`}
+                                          >
                                             <img
                                               src={customImageFile || generatedImageUrl || ""}
                                               alt={motifName || "Móc khoá 2D Nét"}
-                                              className="w-full h-full object-contain rounded-xl select-none"
+                                              className={`w-full h-full object-cover select-none ${
+                                                customShape === "circle" ? "rounded-full" : "rounded-xl"
+                                              }`}
                                             />
                                             {customText && (
                                               <span className="absolute bottom-1.5 text-[8.5px] font-mono tracking-tight text-white bg-black/75 px-1.5 py-0.5 rounded shadow">
@@ -2529,7 +2543,17 @@ Key 3D printing & charm specs:
                                       ) : (
                                         <div
                                           style={{ backgroundColor: customColor }}
-                                          className="w-24 h-24 rounded-2xl flex flex-col items-center justify-center text-white font-serif font-bold text-2xl drop-shadow-md relative border-2 border-white/80 shadow-md"
+                                          className={`w-24 h-24 flex flex-col items-center justify-center text-white font-serif font-bold text-2xl drop-shadow-md relative border-2 border-white/80 shadow-md transition-all ${
+                                            customShape === "circle"
+                                              ? "rounded-full"
+                                              : customShape === "teardrop"
+                                              ? "rounded-t-full rounded-b-xl"
+                                              : customShape === "heart"
+                                              ? "rounded-3xl"
+                                              : customShape === "freeform"
+                                              ? "rounded-[22px_6px_22px_6px]"
+                                              : "rounded-2xl"
+                                          }`}
                                         >
                                           <div className="absolute -top-3 w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent shadow-xs" />
                                           <span>{customText ? customText.slice(0, 3).toUpperCase() : "NÉT"}</span>

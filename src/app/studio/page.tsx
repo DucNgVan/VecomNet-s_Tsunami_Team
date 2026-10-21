@@ -52,6 +52,16 @@ import {
   buildMaster2DKeychainPrompt,
 } from "@/lib/masterPromptTemplates";
 
+// Bảng màu men gốm thủ công Nét Studio
+const CERAMIC_PALETTE = [
+  { name: "Đỏ Đất Nung", hex: "#B85D43" },
+  { name: "Xanh Rừng Tràm", hex: "#234B3E" },
+  { name: "Xanh Biển Mỹ Khê", hex: "#2563EB" },
+  { name: "Vàng Hoàng Kim", hex: "#D97706" },
+  { name: "Xám Đá Non Nước", hex: "#475569" },
+  { name: "Men Ngọc Bích", hex: "#059669" },
+];
+
 // 6 Đà Nẵng signature charms
 const READY_CHARMS: Charm[] = [
   {
@@ -1611,15 +1621,6 @@ Key 3D printing & charm specs:
       activeSlots
     );
 
-    const CERAMIC_PALETTE = [
-      { name: "Đỏ Đất Nung", hex: "#B85D43" },
-      { name: "Xanh Rừng Tràm", hex: "#234B3E" },
-      { name: "Xanh Biển Mỹ Khê", hex: "#2563EB" },
-      { name: "Vàng Hoàng Kim", hex: "#D97706" },
-      { name: "Xám Đá Non Nước", hex: "#475569" },
-      { name: "Men Ngọc Bích", hex: "#059669" },
-    ];
-
     return (
       <div className="bg-white rounded-3xl border border-[#E8E2D8] p-4 sm:p-6 space-y-5 shadow-xs">
         {/* Form Header */}
@@ -2740,7 +2741,7 @@ Key 3D printing & charm specs:
                           {creationMode === "chat" && (
                             <div className="space-y-4">
                               {/* Chat Card Container */}
-                              <div className="bg-white rounded-3xl border border-[#E8E2D8] shadow-xs overflow-hidden flex flex-col h-[540px] sm:h-[580px]">
+                              <div className="bg-white rounded-3xl border border-[#E8E2D8] shadow-xs overflow-hidden flex flex-col h-[580px] sm:h-[640px]">
                                 {/* Chat Header */}
                                 <div className="px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#241B16] via-[#352720] to-[#241B16] text-white flex items-center justify-between border-b border-[#3D2E24] shrink-0">
                                   <div className="flex items-center gap-3">
@@ -2844,25 +2845,101 @@ Key 3D printing & charm specs:
                                               </div>
                                             )}
 
-                                            {/* Button kích hoạt API thật duy nhất 1 lần */}
+                                            {/* 3 KHỐI TÙY BIẾN THEO YÊU CẦU: Chữ khắc Laser | Dáng phôi móc khoá | Màu men nung */}
+                                            <div className="pt-2 border-t border-[#E8E2D8] grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                              {/* 1. Chữ khắc Laser */}
+                                              <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
+                                                <label className="text-[11px] font-bold text-[#241B16] flex items-center justify-between">
+                                                  <span>Chữ khắc Laser</span>
+                                                  <span className="text-[9.5px] text-[#8C7A70] font-normal">Tối đa 15 ký tự</span>
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  maxLength={15}
+                                                  value={customText}
+                                                  onChange={(e) => setCustomText(e.target.value)}
+                                                  placeholder="VD: Nét • 2026..."
+                                                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
+                                                />
+                                              </div>
+
+                                              {/* 2. Dáng phôi móc khoá */}
+                                              <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
+                                                <label className="text-[11px] font-bold text-[#241B16]">
+                                                  Dáng phôi móc khoá
+                                                </label>
+                                                <div className="grid grid-cols-5 gap-1 pt-0.5">
+                                                  {[
+                                                    { id: "circle", label: "Tròn" },
+                                                    { id: "square", label: "Vuông" },
+                                                    { id: "teardrop", label: "Giọt" },
+                                                    { id: "heart", label: "Tim" },
+                                                    { id: "freeform", label: "Tự do" },
+                                                  ].map((shape) => (
+                                                    <button
+                                                      key={shape.id}
+                                                      type="button"
+                                                      onClick={() => setCustomShape(shape.id as any)}
+                                                      className={`py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
+                                                        customShape === shape.id
+                                                          ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
+                                                          : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
+                                                      }`}
+                                                    >
+                                                      {shape.label}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              </div>
+
+                                              {/* 3. Màu men nung */}
+                                              <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
+                                                <label className="text-[11px] font-bold text-[#241B16]">
+                                                  Màu men nung
+                                                </label>
+                                                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                                                  {CERAMIC_PALETTE.map((pal) => (
+                                                    <button
+                                                      key={pal.hex}
+                                                      type="button"
+                                                      onClick={() => setCustomColor(pal.hex)}
+                                                      title={pal.name}
+                                                      className={`w-5 h-5 rounded-full border-2 transition-all cursor-pointer ${
+                                                        customColor === pal.hex
+                                                          ? "border-[#241B16] scale-110 shadow-xs ring-2 ring-[#B85D43]/30"
+                                                          : "border-white hover:scale-105"
+                                                      }`}
+                                                      style={{ backgroundColor: pal.hex }}
+                                                    />
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            {/* Button tạo móc khoá trực tiếp, không cần kiểm tra lại */}
                                             <div className="pt-2">
                                               <button
                                                 type="button"
                                                 onClick={handleTriggerRealGeneration}
                                                 disabled={isAiSketching}
-                                                className="w-full py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                                className="w-full py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
                                               >
-                                                {isAiSketching ? (
-                                                  <>
-                                                    <Wand2 className="w-4 h-4 animate-spin" />
-                                                    <span>AI Nét đang vẽ bản phác thảo 2D độc bản...</span>
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    <Wand2 className="w-4 h-4" />
-                                                    <span>🎨 Bấm vào đây để AI tạo bản phác thảo 2D & gắn lên túi →</span>
-                                                  </>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                  {isAiSketching ? (
+                                                    <>
+                                                      <Wand2 className="w-4 h-4 animate-spin" />
+                                                      <span>AI Nét đang vẽ bản phác thảo 2D độc bản...</span>
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <Wand2 className="w-4 h-4" />
+                                                      <span>🎨 TẠO MÓC KHOÁ ĐỘC BẢN & GẮN LÊN TÚI →</span>
+                                                    </>
+                                                  )}
+                                                </div>
+                                                <span className="text-[10px] text-white/80 font-normal">
+                                                  AI sẽ phác thảo bản vẽ 2D kỹ thuật và gắn trực tiếp lên túi Nét
+                                                </span>
                                               </button>
                                             </div>
                                           </div>
@@ -2968,13 +3045,6 @@ Key 3D printing & charm specs:
                                   </form>
                                 </div>
                               </div>
-
-                              {/* Hiển thị Bảng Duyệt & Tùy Chỉnh Thông Số khi trò chuyện hoàn tất */}
-                              {interviewStep === "ready" && (
-                                <div className="pt-2 animate-fadeIn">
-                                  {renderPromptReviewForm()}
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>

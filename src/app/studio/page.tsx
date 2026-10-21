@@ -2482,46 +2482,6 @@ Key 3D printing & charm specs:
                         </p>
                       </div>
 
-                      {/* 3 Steps Progress Bar */}
-                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pb-2 border-b border-[#E8E2D8]">
-                        {[
-                          { step: 1, label: "1. Trò chuyện cùng AI", desc: "Hỏi đáp thu thập ý tưởng" },
-                          { step: 2, label: "2. Phác thảo 2D", desc: "Gắn thử lên túi" },
-                          { step: 3, label: "3. Nộp & Báo giá", desc: "Xưởng thẩm định" },
-                        ].map((s) => (
-                          <button
-                            key={s.step}
-                            type="button"
-                            onClick={() => {
-                              if (s.step === 2 && !customIdea.trim() && !customImageFile && !themeSlots[selectedThemeCategory].subject) {
-                                alert("Vui lòng hoàn thành cuộc trò chuyện ở Bước 1 trước!");
-                                return;
-                              }
-                              setAiCustomStep(s.step as any);
-                              if (s.step === 2) handlePlaceCustomOnBag();
-                            }}
-                            className={`p-2.5 rounded-xl text-left transition-all border cursor-pointer ${
-                              aiCustomStep === s.step
-                                ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/20"
-                                : "bg-transparent border-transparent hover:bg-[#FAF7F2]/60"
-                            }`}
-                          >
-                            <div
-                              className={`text-xs font-bold ${
-                                aiCustomStep === s.step
-                                  ? "text-[#B85D43]"
-                                  : "text-[#7A6F68]"
-                              }`}
-                            >
-                              {s.label}
-                            </div>
-                            <div className="text-[10px] text-[#A89F91] truncate hidden sm:block">
-                              {s.desc}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
                       {/* BƯỚC 1: THU THẬP THÔNG TIN & DUYỆT PROMPT (2 NHÁNH: ẢNH NGUYÊN LIỆU HOẶC TRÒ CHUYỆN AI) */}
                       {aiCustomStep === 1 && (
                         <div className="space-y-4">
@@ -3075,17 +3035,17 @@ Key 3D printing & charm specs:
                             <>
                               {/* Blueprint Technical Sketch Card */}
                               <div className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-4">
-                                <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
-                                  <div>
-                                    <span className="text-[10px] tracking-[0.2em] uppercase text-[#B85D43] font-semibold">
+                                <div className="flex items-center justify-between gap-3 border-b border-[#E8E2D8] pb-3">
+                                  <div className="min-w-0 flex-1">
+                                    <span className="text-[10px] tracking-[0.2em] uppercase text-[#B85D43] font-semibold block">
                                       BẢN VẼ KỸ THUẬT 2D XƯỞNG THỦ CÔNG
                                     </span>
-                                    <h3 className="font-serif text-base text-[#241B16] mt-0.5">
-                                      {customIdea ? `Charm "${customIdea}"` : "Charm Độc Bản AI"}
+                                    <h3 className="font-serif text-base sm:text-lg text-[#241B16] mt-0.5 truncate font-semibold">
+                                      Charm "{motifName || "Móc Khoá Của Bạn"}"
                                     </h3>
                                   </div>
-                                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-                                    <Check className="w-3 h-3" />
+                                  <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700 flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-2xs">
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                     <span>Đã gắn lên túi</span>
                                   </span>
                                 </div>
@@ -3166,77 +3126,79 @@ Key 3D printing & charm specs:
                                     </div>
                                   </div>
 
-                                  <div className="sm:col-span-7 space-y-1.5 text-xs text-[#5E4D43]">
-                                    <div>
-                                      <strong className="text-[#241B16]">Biểu tượng:</strong>{" "}
-                                      {motifName || (customIdea ? `"${customIdea}"` : "Charm độc bản")}
-                                    </div>
-                                    <div>
-                                      <strong className="text-[#241B16]">Dạng phác thảo:</strong>{" "}
-                                      Bản phác thảo 2D phẳng chuẩn phôi móc khoá thủ công Nét Studio
-                                    </div>
-                                    <div>
-                                      <strong className="text-[#241B16]">Độ dày đùn khối:</strong> 3.0 mm (chuẩn in 3D FDM/Resin)
-                                    </div>
-                                    <div>
-                                      <strong className="text-[#241B16]">Cơ cấu cài túi:</strong>{" "}
-                                      <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                        Ngàm chốt cài mắt lưới (D=4.5mm, H=4.0mm) + Khoen móc đỉnh
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <strong className="text-[#241B16]">Khắc laser:</strong>{" "}
-                                      {customText ? `"${customText}"` : "Theo yêu cầu"}
+                                  <div className="sm:col-span-7 space-y-2.5 text-xs text-[#5E4D43]">
+                                    {/* Đặt tên tuỳ chỉnh cho móc khoá */}
+                                    <div className="p-3 rounded-xl bg-white border border-[#E8E2D8] space-y-1 shadow-2xs">
+                                      <label className="text-xs font-bold text-[#241B16] flex items-center justify-between">
+                                        <span>Đặt tên cho chiếc móc khoá:</span>
+                                        <span className="text-[10px] text-[#8C7A70] font-normal">Tự do đổi tên</span>
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={motifName || ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setMotifName(val);
+                                          setCustomIdea(val);
+                                        }}
+                                        placeholder="Nhập tên móc khoá (VD: Bé Cún Miu, Chibi Nam Cà Phê...)"
+                                        className="w-full px-3 py-2 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
+                                      />
                                     </div>
 
-                                    <div className="pt-2 flex flex-wrap items-center gap-2">
+                                    {/* Ý nghĩa móc khoá */}
+                                    {motifStory && (
+                                      <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] text-xs text-[#5E4D43] leading-relaxed">
+                                        <span className="text-[10px] uppercase font-bold text-[#B85D43] tracking-wide block mb-0.5">
+                                          Ý nghĩa thiết kế
+                                        </span>
+                                        <p>{motifStory}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Thông số tinh gọn */}
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-[#5E4D43]">
+                                      <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
+                                        <span className="text-[#8C7A70] text-[10.5px] block">Khắc Laser:</span>
+                                        <strong className="text-[#241B16]">{customText ? `"${customText}"` : "Không khắc chữ"}</strong>
+                                      </div>
+                                      <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
+                                        <span className="text-[#8C7A70] text-[10.5px] block">Dáng phôi:</span>
+                                        <strong className="text-[#241B16]">
+                                          {customShape === "circle" ? "Tròn" : customShape === "square" ? "Vuông" : customShape === "teardrop" ? "Giọt nước" : customShape === "heart" ? "Trái tim" : "Tự do Die-Cut"}
+                                        </strong>
+                                      </div>
+                                    </div>
+
+                                    <div className="pt-1 flex items-center gap-2">
                                       {generatedImageUrl && (
                                         <a
                                           href={generatedImageUrl}
                                           download={`mockhoa-2d-${(motifName || "net-charm").toLowerCase().replace(/\s+/g, "-")}.png`}
-                                          className="px-3 py-1.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                                          className="px-3.5 py-2 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                                         >
                                           <Download className="w-3.5 h-3.5" />
                                           <span>Tải bản vẽ 2D (.PNG)</span>
                                         </a>
                                       )}
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const svgToUse =
-                                            generatedSvgCode ||
-                                            `<svg viewBox="0 0 100 135" xmlns="http://www.w3.org/2000/svg"><path d="M43 14 C43 6, 57 6, 57 14 C57 17.5, 54 18.5, 50 18.5 C46 18.5, 43 17.5, 43 14 Z" fill="#281D17" stroke="#281D17" stroke-width="2.5"/><circle cx="50" cy="12" r="3.2" fill="#FFFFFF" stroke="#281D17" stroke-width="1.8"/><path d="M25 43 C22 34, 25 24, 34 20 C42 16, 54 17, 62 21 C68 25, 75 32, 73 40 Z" fill="#2D231E" stroke="#281D17" stroke-width="2.5"/><path d="M28 42 C26 58, 32 72, 49 72 C66 72, 72 58, 70 42 Z" fill="#FCD5B5" stroke="#281D17" stroke-width="2.5"/><rect x="32" y="44" width="17" height="13" rx="3.5" fill="none" stroke="#1D1D1D" stroke-width="2.4"/><rect x="55" y="44" width="17" height="13" rx="3.5" fill="none" stroke="#1D1D1D" stroke-width="2.4"/><circle cx="42" cy="50" r="2.2" fill="#FFFFFF"/><circle cx="62" cy="50" r="2.2" fill="#FFFFFF"/><path d="M33 74 L67 74 L65 100 L34 100 Z" fill="#242424" stroke="#281D17" stroke-width="2.4"/><path d="M35 100 L65 100 L64 124 L52 124 L50 106 L48 124 L36 124 Z" fill="#F4EED7" stroke="#281D17" stroke-width="2.4"/></svg>`;
-                                          try {
-                                            const res = generateCharmSTLFromSVG(svgToUse, { depthMm: 3.0 });
-                                            setGeneratedStlData(res.stlString);
-                                            triggerSTLDownload(res.stlString, `charm-${(motifName || "net-bag-charm").toLowerCase().replace(/\s+/g, "-")}.stl`);
-                                          } catch (e: any) {
-                                            alert("Lỗi khi tạo file in 3D: " + e.message);
-                                          }
-                                        }}
-                                        className="px-3 py-1.5 rounded-xl bg-[#241B16] hover:bg-[#42342B] text-white text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                                      >
-                                        <Download className="w-3.5 h-3.5" />
-                                        <span>Tải file phôi in 3D (.STL)</span>
-                                      </button>
                                     </div>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Navigation Buttons */}
-                              <div className="flex items-center gap-3 pt-2">
+                              {/* Navigation Buttons (Bằng nhau 100%) */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                                 <button
                                   type="button"
                                   onClick={() => setAiCustomStep(1)}
-                                  className="py-3 px-4 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
+                                  className="h-12 px-5 rounded-xl border border-[#E8E2D8] bg-white text-xs sm:text-sm font-semibold text-[#5E4D43] hover:bg-[#FAF7F2] transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
                                 >
                                   ← Quay lại chỉnh sửa
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setAiCustomStep(3)}
-                                  className="flex-1 py-3 px-5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                  className="h-12 px-5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                   <span>Nộp Đợi Duyệt & Báo Giá (Bước 3) →</span>
                                 </button>

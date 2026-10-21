@@ -9,7 +9,12 @@ export function removeWhiteBackground(
   imageUrl: string,
   threshold: number = 235
 ): Promise<string> {
-  if (typeof window === "undefined") {
+  if (
+    typeof window === "undefined" ||
+    !imageUrl ||
+    imageUrl.startsWith("data:image/svg") ||
+    imageUrl.includes(".svg")
+  ) {
     return Promise.resolve(imageUrl);
   }
 

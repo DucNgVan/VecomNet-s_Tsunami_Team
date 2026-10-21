@@ -21,49 +21,137 @@ interface ChatRequestPayload {
 }
 
 /**
- * 100% FREE 2D Graphic Engine:
- * Generates clean 2D flat vector die-cut illustrations with thick outlines
- * optimized for artisans to extrude and 3D print in the workshop.
- * Zero cost, no OpenAI credits required.
+ * HỆ THỐNG 3 TẦNG AI SINH ẢNH MÓC KHOÁ 2D SIÊU TỐC (3-TIER AI PARALLEL RACING)
+ * Tầng 1: Động cơ Siêu tốc Turbo (Sana / SDXL-Turbo, 1-2 giây, không bị giới hạn 45s)
+ * Tầng 2: Động cơ Phân luồng Sana HD (Sana Model độc lập, dự phòng tức thì)
+ * Tầng 3: Động cơ Vector Kỹ Thuật Chuẩn In 3D (Instant Procedural Vector Engine)
+ * 
+ * Đua song song (Promise.any) để lấy AI phản hồi nhanh nhất và chặn 100% ảnh vàng "Limit reached"
  */
-async function generate2DKeychainImage(
-  prompt: string
-): Promise<{ imageUrl: string; provider: "free-2d-flux" }> {
-  const seed = Math.floor(Math.random() * 999999);
-  // Sử dụng endpoint chuẩn tối ưu của Pollinations với nologo và seed ngẫu nhiên
-  const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    prompt
-  )}?width=768&height=768&nologo=true&seed=${seed}`;
+function isValidGeneratedImage(res: Response, buffer: Buffer): boolean {
+  if (!res.ok) return false;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+  // 1. Kiểm tra header thông báo giới hạn của nhà cung cấp
+  const retryAfter = res.headers.get("retry-after");
+  const paymentRequired = res.headers.get("payment-required");
+  if (retryAfter || paymentRequired) return false;
 
-    const fluxRes = await fetch(pollUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (fluxRes.ok) {
-      const buf = await fluxRes.arrayBuffer();
-      const base64 = Buffer.from(buf).toString("base64");
-      const mime = fluxRes.headers.get("content-type") || "image/jpeg";
-      // Đảm bảo không trả về file JSON lỗi dưới dạng base64
-      if (mime.includes("image")) {
-        return {
-          imageUrl: `data:${mime};base64,${base64}`,
-          provider: "free-2d-flux",
-        };
-      }
-    } else {
-      console.warn("[Free 2D Engine Status != 200]:", fluxRes.status);
-    }
-  } catch (fluxErr) {
-    console.warn("[Free 2D Engine Fetch fallback to direct URL]:", fluxErr);
+  // 2. Kiểm tra chuỗi ký tự lỗi trong buffer để loại trừ ảnh vàng báo lỗi
+  const rawStr = buffer.toString("latin1");
+  if (
+    rawStr.includes("Free limit reached") ||
+    rawStr.includes("45 seconds") ||
+    rawStr.includes("enter.pollinations.ai")
+  ) {
+    return false;
   }
 
-  // Fallback an toàn 100%: Trả về trực tiếp URL của Pollinations (hỗ trợ CORS cho Canvas)
+  // 3. Kiểm tra kích thước và MIME
+  const mime = res.headers.get("content-type") || "";
+  if (!mime.includes("image")) return false;
+  if (buffer.length < 3000) return false;
+
+  return true;
+}
+
+async function generate2DKeychainImage(
+  prompt: string,
+  svgFallback?: string,
+  themeColorHex?: string
+): Promise<{ imageUrl: string; provider: string }> {
+  const seed = Math.floor(Math.random() * 999999);
+  const cleanPrompt = prompt.slice(0, 420);
+
+  // TẦNG 1: Pollinations Turbo (Sana / Turbo Engine - Rất nhanh 1-2s, không bị cap 45s)
+  const fetchTier1 = async (): Promise<string> => {
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+      cleanPrompt
+    )}?model=turbo&width=512&height=512&nologo=true&seed=${seed}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7500);
+
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      const buf = await res.arrayBuffer();
+      const buffer = Buffer.from(buf);
+
+      if (!isValidGeneratedImage(res, buffer)) {
+        throw new Error("Tier 1 image invalid or limit detected");
+      }
+
+      const mime = res.headers.get("content-type") || "image/jpeg";
+      return `data:${mime};base64,${buffer.toString("base64")}`;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    }
+  };
+
+  // TẦNG 2: Pollinations Sana HD (Cụm server Sana riêng biệt, chạy đua song song)
+  const fetchTier2 = async (): Promise<string> => {
+    const seed2 = (seed + 24681) % 999999;
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+      cleanPrompt
+    )}?model=sana&width=512&height=512&nologo=true&seed=${seed2}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8500);
+
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      const buf = await res.arrayBuffer();
+      const buffer = Buffer.from(buf);
+
+      if (!isValidGeneratedImage(res, buffer)) {
+        throw new Error("Tier 2 image invalid or limit detected");
+      }
+
+      const mime = res.headers.get("content-type") || "image/jpeg";
+      return `data:${mime};base64,${buffer.toString("base64")}`;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    }
+  };
+
+  // ĐUA SONG SONG TẦNG 1 & TẦNG 2 ĐỂ LẤY AI NHANH NHẤT
+  try {
+    const fastestResult = await Promise.any([fetchTier1(), fetchTier2()]);
+    console.log("[3-Tier AI Racing]: Đã nhận được ảnh thành công từ tầng AI nhanh nhất!");
+    return {
+      imageUrl: fastestResult,
+      provider: "3-tier-ai-fastest",
+    };
+  } catch (raceErr) {
+    console.warn(
+      "[3-Tier AI Racing]: Tầng 1 và Tầng 2 bận hoặc chạm hạn mức, kích hoạt Tầng 3 Vector..."
+    );
+  }
+
+  // TẦNG 3: ĐỘNG CƠ VECTOR CHUẨN XƯỞNG IN 3D (ĐỘC BẢN, SẮC NÉT, KHÔNG BAO GIỜ BỊ LỖI)
+  const color = themeColorHex || "#234B3E";
+  const defaultSvg = `<svg viewBox="0 0 100 135" xmlns="http://www.w3.org/2000/svg">
+  <g id="keychainCharm2D">
+    <path d="M43 14 C43 6, 57 6, 57 14 C57 17.5, 54 18.5, 50 18.5 C46 18.5, 43 17.5, 43 14 Z" fill="#281D17" stroke="#281D17" stroke-width="2.5"/>
+    <circle cx="50" cy="12" r="3.2" fill="#FFFFFF" stroke="#281D17" stroke-width="1.8"/>
+    <rect x="15" y="24" width="70" height="92" rx="18" fill="${color}" stroke="#1F1A17" stroke-width="3"/>
+    <rect x="20" y="29" width="60" height="82" rx="14" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.6"/>
+    <circle cx="50" cy="65" r="22" fill="#FFFFFF" opacity="0.2"/>
+    <text x="50" y="70" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="20" fill="#FFFFFF">NÉT</text>
+  </g>
+</svg>`;
+
+  const svgContent = svgFallback || defaultSvg;
+  const svgBase64 = Buffer.from(svgContent).toString("base64");
+
   return {
-    imageUrl: pollUrl,
-    provider: "free-2d-flux",
+    imageUrl: `data:image/svg+xml;base64,${svgBase64}`,
+    provider: "3-tier-procedural-vector",
   };
 }
 
@@ -395,7 +483,11 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
       "[Free 2D Keychain Agent]: Generating 2D Illustration with prompt:",
       parsedData.masterPrompt.slice(0, 100) + "..."
     );
-    const imageResult = await generate2DKeychainImage(parsedData.masterPrompt);
+    const imageResult = await generate2DKeychainImage(
+      parsedData.masterPrompt,
+      parsedData.svgCode,
+      parsedData.recommendedColor || selectedColorHex
+    );
 
     if (imageResult) {
       parsedData.imageUrl = imageResult.imageUrl;

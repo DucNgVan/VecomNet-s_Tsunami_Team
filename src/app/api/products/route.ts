@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth, unauthorizedResponse } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!verifyAdminAuth(req)) {
+      return unauthorizedResponse("Yêu cầu quyền Quản trị viên để thêm sản phẩm mới.");
+    }
+
     const { ProductController } = await import("@/be");
     return await ProductController.handleCreateProduct(req);
   } catch (error: any) {

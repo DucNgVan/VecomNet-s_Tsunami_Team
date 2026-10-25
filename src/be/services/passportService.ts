@@ -36,6 +36,15 @@ export class PassportService {
       throw new Error("Không tìm thấy mã sản phẩm trong hệ thống!");
     }
 
+    // Chống ghi đè bảo hành (IDOR protection)
+    if (item.isClaimed) {
+      if (item.claimedBy?.phone && item.claimedBy.phone !== customer.phone) {
+        throw new Error(
+          "Sản phẩm này đã được kích hoạt bảo hành chính chủ trước đó bởi một khách hàng khác. Vui lòng liên hệ bộ phận hỗ trợ Nét Studio."
+        );
+      }
+    }
+
     const now = new Date();
     const activatedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const expiryYear = now.getFullYear() + Math.round((item.warrantyMonths || 24) / 12);

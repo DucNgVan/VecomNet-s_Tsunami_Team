@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth, unauthorizedResponse } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,10 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!verifyAdminAuth(req)) {
+      return unauthorizedResponse("Yêu cầu quyền Quản trị viên để sửa đơn hàng.");
+    }
+
     const { OrderController } = await import("@/be");
     return await OrderController.handleUpdateStatus(params.id, req);
   } catch (error: any) {
@@ -22,6 +27,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!verifyAdminAuth(req)) {
+      return unauthorizedResponse("Yêu cầu quyền Quản trị viên để sửa đơn hàng.");
+    }
+
     const { OrderController } = await import("@/be");
     return await OrderController.handleUpdateStatus(params.id, req);
   } catch (error: any) {
@@ -33,10 +42,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!verifyAdminAuth(req)) {
+      return unauthorizedResponse("Yêu cầu quyền Quản trị viên để xóa đơn hàng.");
+    }
+
     const { OrderController } = await import("@/be");
     return await OrderController.handleDeleteOrder(params.id);
   } catch (error: any) {

@@ -16,6 +16,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Không tìm thấy file tải lên" }, { status: 400 });
     }
 
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // Giới hạn tối đa 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { success: false, error: "Dung lượng file vượt quá giới hạn cho phép (Tối đa 10MB)." },
+        { status: 400 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const timestamp = Date.now();

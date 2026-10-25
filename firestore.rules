@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Dữ liệu sản phẩm (Products): Công khai đọc, chỉ Admin (qua Admin SDK serverless) mới được ghi
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 2. Dữ liệu mẻ lưới & nguồn gốc (Batches / Traceability): Công khai đọc, chỉ Admin mới được ghi
+    match /batches/{batchId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 3. Túi sản xuất & Hộ chiếu (Bag Items): Công khai đọc hộ chiếu, không cho client xóa/sửa tự do
+    match /bag_items/{itemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 4. Bài viết & Tin tức (Posts): Công khai đọc, cấm client ghi
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 5. Đơn hàng (Orders): Cho phép tạo đơn từ Client khi checkout, cấm client tự ý sửa/xóa đơn hàng
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+
+    // 6. Tài khoản người dùng (Users): Chỉ chính chủ được đọc và sửa thông tin của mình
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 7. Yêu cầu thiết kế studio (Design Requests): Cho phép tạo mới, cấm xóa tự do
+    match /design_requests/{requestId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if false;
+    }
+
+    // 8. Thống kê toàn cầu (Enterprise Impact)
+    match /enterprise_impact/{statId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Mặc định: Chặn toàn bộ các thao tác ghi khác ngoài danh mục cho phép
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -24,46 +24,49 @@ export default function AdminLoginPage() {
     authenticateAdmin("NET-OCEAN-ADMIN-2024");
   };
 
-  const authenticateAdmin = (keyToTest?: string) => {
+  const authenticateAdmin = async (keyToTest?: string) => {
     setIsSubmitting(true);
-    const key = keyToTest || masterKey.trim();
+    const key = keyToTest || masterKey.trim() || adminPassword.trim();
 
-    // Verification check (Accepts master key or admin email/pass)
-    const isValidMasterKey =
-      key.toUpperCase() === "NET-OCEAN-ADMIN-2024" ||
-      key.toLowerCase() === "net-admin" ||
-      key === "123456";
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      const data = await res.json();
 
-    const isValidCredentials =
-      adminEmail.toLowerCase().includes("admin") && adminPassword.length >= 6;
+      if (res.ok && data.success) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("net_admin_authenticated", "true");
+          localStorage.setItem(
+            "net_admin_session",
+            JSON.stringify({
+              adminEmail: adminEmail || "admin@net.eco",
+              role: "admin",
+              loginTime: new Date().toISOString(),
+            })
+          );
+        }
 
-    if (isValidMasterKey || isValidCredentials) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("net_admin_authenticated", "true");
-        localStorage.setItem(
-          "net_admin_session",
-          JSON.stringify({
-            adminEmail: adminEmail || "admin@net.eco",
-            role: "admin",
-            loginTime: new Date().toISOString(),
-          })
+        if (user) {
+          updateUserProfile({ role: "admin" }).catch(() => {});
+        }
+
+        showToast("Xác thực Quản trị viên thành công!", "success");
+        setTimeout(() => {
+          router.push("/admin?tab=dashboard");
+        }, 400);
+      } else {
+        setIsSubmitting(false);
+        showToast(
+          data.error || "Mã bảo mật Quản trị viên không chính xác. Bạn có thể sử dụng nút 'Nạp Khóa Demo' bên dưới.",
+          "error"
         );
       }
-
-      if (user) {
-        updateUserProfile({ role: "admin" }).catch(() => {});
-      }
-
-      showToast("Xác thực Quản trị viên thành công!", "success");
-      setTimeout(() => {
-        router.push("/admin?tab=dashboard");
-      }, 400);
-    } else {
+    } catch {
       setIsSubmitting(false);
-      showToast(
-        "Mã bảo mật Quản trị viên không chính xác. Bạn có thể sử dụng nút 'Nạp Khóa Demo' bên dưới.",
-        "error"
-      );
+      showToast("Lỗi kết nối máy chủ xác thực quản trị viên.", "error");
     }
   };
 

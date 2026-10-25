@@ -11,7 +11,7 @@ import {
   TrackingEvent,
 } from "@/lib/designRequestStorage";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
-import { formatVND } from "@/lib/utils";
+import { formatVND, sanitizeSvg } from "@/lib/utils";
 import { deductInventoryForCustomOrder } from "@/lib/inventoryStorage";
 import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
 
@@ -1529,7 +1529,7 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                         <div className="flex items-center gap-3">
                           <div
                             className="w-16 h-16 bg-white rounded-xl p-1.5 shadow-sm flex items-center justify-center border border-[#E8E2D8] shrink-0"
-                            dangerouslySetInnerHTML={{ __html: selectedStudioReq.customCharm.svgCode }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeSvg(selectedStudioReq.customCharm.svgCode) }}
                           />
                           <div className="space-y-1.5 flex-1">
                             <p className="text-[10px] text-[#5E4D43] leading-tight">

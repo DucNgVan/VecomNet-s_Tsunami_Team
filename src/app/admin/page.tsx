@@ -83,15 +83,27 @@ function AdminPortalContent() {
     router.push(`/admin?tab=${tabId}`, { scroll: false });
   };
 
-  // Auth Guard State
+  // Server-side Auth Guard State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isAuthed = localStorage.getItem("net_admin_authenticated") === "true";
-      setIsAdminAuthenticated(isAuthed);
+    async function checkServerAuth() {
+      try {
+        const res = await fetch("/api/admin/auth");
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAdminAuthenticated(true);
+        } else {
+          setIsAdminAuthenticated(false);
+          router.push("/admin/login?redirect=/admin");
+        }
+      } catch {
+        setIsAdminAuthenticated(false);
+        router.push("/admin/login?redirect=/admin");
+      }
     }
-  }, []);
+    checkServerAuth();
+  }, [router]);
 
   // Shared Data States
   const [orders, setOrders] = useState<Order[]>([]);

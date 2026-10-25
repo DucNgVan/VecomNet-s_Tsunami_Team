@@ -1,6 +1,33 @@
 import { OrderRepository } from "../database/orderRepo";
+import crypto from "crypto";
 
 export class PaymentService {
+  /**
+   * Xác thực chữ ký số HMAC-SHA256 hoặc Secret Token từ cổng thanh toán
+   */
+  static verifySignature(
+    payload: any,
+    signature: string | null,
+    secret: string
+  ): boolean {
+    if (!signature || !secret) return false;
+    try {
+      if (signature === secret) return true;
+
+      const dataToSign =
+        typeof payload === "string"
+          ? payload
+          : JSON.stringify(payload.data || payload);
+      const hmac = crypto.createHmac("sha256", secret).update(dataToSign).digest("hex");
+
+      if (signature.length !== hmac.length) return false;
+      return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(hmac));
+    } catch (err) {
+      console.warn("[PaymentService] Lỗi kiểm tra chữ ký:", err);
+      return false;
+    }
+  }
+
   /**
    * Xử lý tín hiệu Webhook từ ngân hàng hoặc cổng thanh toán PayOS / SeAPay
    */

@@ -30,3 +30,18 @@ export function generateBatchQrCode(batchId: string): string {
     `https://net.eco/trace/${batchId}`
   )}&bgcolor=060F1E&color=00F2FE`;
 }
+
+/**
+ * Làm sạch mã SVG trước khi render ra DOM để chống XSS Injection
+ */
+export function sanitizeSvg(svgString?: string): string {
+  if (!svgString) return "";
+  return svgString
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, "")
+    .replace(/\bon\w+\s*=\s*[^>\s]+/gi, "")
+    .replace(/javascript\s*:/gi, "")
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "");
+}

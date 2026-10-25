@@ -11,6 +11,7 @@ import {
 } from "@/lib/designRequestStorage";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
+import { sanitizeSvg } from "@/lib/utils";
 // (Icon-free layout as requested)
 
 export const AdminDesignRequestsTab: React.FC = () => {
@@ -398,7 +399,7 @@ export const AdminDesignRequestsTab: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <div
                               className="w-16 h-16 bg-white rounded-lg p-1.5 shadow flex items-center justify-center border border-purple-400 shrink-0"
-                              dangerouslySetInnerHTML={{ __html: selectedReq.customCharm.svgCode }}
+                              dangerouslySetInnerHTML={{ __html: sanitizeSvg(selectedReq.customCharm.svgCode) }}
                             />
                             <div className="space-y-1.5 flex-1">
                               <p className="text-[10px] text-slate-300 leading-tight">

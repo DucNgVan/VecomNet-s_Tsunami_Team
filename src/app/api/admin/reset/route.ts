@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { verifyAdminAuth, unauthorizedResponse } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    if (!verifyAdminAuth(req)) {
+      return unauthorizedResponse("Bạn không có quyền thực hiện thao tác xóa dữ liệu hệ thống.");
+    }
+
     const body = await req.json().catch(() => ({}));
     const target = body.target || "all"; // "bag_items" | "batches" | "products" | "all"
 

@@ -18,6 +18,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // Giới hạn tối đa 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { success: false, error: "Dung lượng file vượt quá giới hạn cho phép (Tối đa 10MB)." },
+        { status: 400 }
+      );
+    }
+
     const is3dModel =
       file.name.toLowerCase().endsWith(".glb") ||
       file.name.toLowerCase().endsWith(".gltf") ||

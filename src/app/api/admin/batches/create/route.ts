@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
+import { verifyAdminAuth, unauthorizedResponse } from "@/lib/adminAuth";
 
 export async function POST(req: NextRequest) {
   try {
+    if (!verifyAdminAuth(req)) {
+      return unauthorizedResponse("Yêu cầu quyền Quản trị viên để tạo lô lưới mới.");
+    }
+
     const body = await req.json();
     const {
       batchId,

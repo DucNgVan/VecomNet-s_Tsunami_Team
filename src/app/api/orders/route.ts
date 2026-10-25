@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth, unauthorizedResponse } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
+    if (!verifyAdminAuth(req)) {
+      return unauthorizedResponse("Yêu cầu quyền Quản trị viên để truy xuất danh sách đơn hàng.");
+    }
+
     const { OrderController } = await import("@/be");
     return await OrderController.handleGetOrders();
   } catch (error: any) {

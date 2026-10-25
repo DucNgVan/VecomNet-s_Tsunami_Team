@@ -36,7 +36,33 @@ async function callLoraKeychainModel(
     headers["Authorization"] = `Bearer ${hfToken}`;
   }
 
-  // 1. Thử gọi qua giao thức Gradio 5/6 Call & SSE Stream (giới hạn 12s tránh timeout serverless)
+  // 1. Nếu có ảnh gốc người dùng: Ưu tiên gọi thẳng REST endpoint /api/generate-keychain để nạp trực tiếp PIL Image cho Image-to-Image
+  if (imageBase64) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          prompt,
+          imageBase64: imageBase64,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (aiRes.ok) {
+        const aiJson = await aiRes.json();
+        if (aiJson.imageUrl) {
+          return aiJson.imageUrl;
+        }
+      }
+    } catch (restErr) {
+      console.warn("[REST Image-to-Image Warning]:", restErr);
+    }
+  }
+
+  // 2. Thử gọi qua giao thức Gradio 5/6 Call & SSE Stream (Hỗ trợ cả Text2Img và Img2Img)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
@@ -110,24 +136,29 @@ async function callLoraKeychainModel(
     console.warn("[Gradio API Warning]:", gradioErr);
   }
 
-  // 2. Thử fallback qua custom REST endpoint (/api/generate-keychain) nếu có
-  try {
-    const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        prompt,
-        imageBase64: imageBase64 || undefined,
-      }),
-    });
-    if (aiRes.ok) {
-      const aiJson = await aiRes.json();
-      if (aiJson.imageUrl) {
-        return aiJson.imageUrl;
+  // 3. Fallback cuối cùng cho trường hợp Text-to-Image qua REST endpoint
+  if (!imageBase64) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          prompt,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (aiRes.ok) {
+        const aiJson = await aiRes.json();
+        if (aiJson.imageUrl) {
+          return aiJson.imageUrl;
+        }
       }
+    } catch (customErr) {
+      console.warn("[Custom Endpoint Warning]:", customErr);
     }
-  } catch (customErr) {
-    console.warn("[Custom Endpoint Warning]:", customErr);
   }
 
   return null;
@@ -216,22 +247,28 @@ TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
    - CHỈ VẼ DUY NHẤT 1 NHÂN VẬT/CHỦ THỂ ĐỨNG CHÍNH GIỮA BỨC TRANH.
    - NỀN BẮT BUỘC LÀ TRẮNG TRỐNG HOÀN TOÀN #FFFFFF (pure solid white #FFFFFF background, completely empty background, no background objects).
 
-QUY TẮC BẢO TOÀN DANH TÍNH CHỦ THỂ (BẮT BUỘC TUÂN THỦ 100%):
+QUY TẮC BẢO TOÀN DANH TÍNH, KHUÔN MẶT & DÁNG NGƯỜI (BẮT BUỘC TUÂN THỦ 100%):
 1. NẾU CÓ ẢNH TẢI LÊN:
-   - ƯU TIÊN SỐ 1 TUYỆT ĐỐI: Phân tích ảnh thực tế.
-   - Nếu trong ảnh là NGƯỜI (chàng trai, cô gái, em bé): subjectCategory BẮT BUỘC là "human". Trích xuất chính xác: kiểu tóc, kính mắt, trang phục, biểu cảm từ ảnh. TUYỆT ĐỐI KHÔNG vẽ con vật!
-   - Nếu trong ảnh là THÚ CƯNG (chó, mèo, rùa...): subjectCategory là "animal".
-   - Nếu trong ảnh là HOA CỎ / THIÊN NHIÊN: subjectCategory là "flora".
-   - Nếu trong ảnh là ĐỒ VẬT / ĐỊA DANH: subjectCategory là "landmark" hoặc "object".
+   - ƯU TIÊN SỐ 1 TUYỆT ĐỐI: Bám sát 100% người và hình ảnh thực tế!
+   - Nếu trong ảnh là NGƯỜI (chàng trai, cô gái, em bé):
+     * Khuôn mặt: Giữ nguyên hình dạng khuôn mặt, kiểu tóc, râu, kính mắt (màu gọng/kiểu gọng), biểu cảm (nụ cười, ánh mắt) từ ảnh gốc.
+     * Dáng người & Tư thế: Giữ nguyên tư thế tạo dáng (đứng thẳng, khoanh tay, đút tay túi quần, góc nghiêng đầu, vị trí cánh tay) của người trong ảnh.
+     * Trang phục: Giữ nguyên kiểu dáng và phối màu quần áo từ ảnh thật (áo polo, áo thun, áo khoác, màu sắc chi tiết).
+     * Tuyệt đối không thay đổi dáng người hoặc đổi sang nhân vật khác!
+   - Nếu trong ảnh là THÚ CƯNG: Bám sát giống loài, màu lông, đốm lông, tư thế từ ảnh thật.
+   - Nếu trong ảnh là HOA CỎ / ĐỒ VẬT / ĐỊA DANH: Bám sát hình dáng và cấu trúc vật thể từ ảnh thật.
 
-2. CÁC Ô TRỐNG CẦN ĐIỀN VÀO MASTER PROMPT:
-   - subject: Tên chủ thể đã dịch sang tiếng Anh (ví dụ: a cute cream coffee tumbler with highland logo, a confident chibi boy, a cute orange cat, a blooming lotus flower, Da Nang Dragon Bridge...)
-   - feature1: Kiểu dáng / kiểu tóc / lông / cánh hoa / kiến trúc
-   - feature2: Trang phục / phụ kiện / màu sắc men gốm phẳng
-   - feature3: Hành động / chi tiết điểm xuyết (đôi mắt cười kawaii, cầm ly cà phê, ôm trà sữa, giọt sương mai...)
+2. NẾU KHÔNG CÓ ẢNH TẢI LÊN:
+   - Tự do sáng tạo phôi móc khoá 2D độc bản hoàn toàn mới dựa trên ý tưởng và các ô trống khách hàng điền.
+
+3. CÁC Ô TRỐNG CẦN ĐIỀN VÀO MASTER PROMPT:
+   - subject: Tên chủ thể đã dịch sang tiếng Anh (ví dụ: a chibi boy with black glasses and swept-back hair, a cute cream coffee tumbler with highland logo, a cute orange cat...)
+   - feature1: Kiểu dáng / kiểu tóc / tư thế dáng người từ ảnh
+   - feature2: Trang phục / phụ kiện / màu sắc từ ảnh
+   - feature3: Hành động / biểu cảm từ ảnh
 
 CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC DỊCH TOÀN BỘ SANG TIẾNG ANH, TUYỆT ĐỐI KHÔNG ĐỂ TIẾNG VIỆT):
-"a single isolated 2D flat die-cut acrylic charm of a cute chibi [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], centered single subject, thick bold clean black die-cut contour outline, vibrant flat color blocks, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter, no arch frame, no metal key ring, no loops"
+"a single isolated 2D flat die-cut acrylic charm of a cute chibi [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], exact same face and posture from reference, centered single subject, thick bold clean black die-cut contour outline, vibrant flat color blocks, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter, no arch frame, no metal key ring, no loops"
 
 BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {

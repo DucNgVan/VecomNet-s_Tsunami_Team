@@ -7,7 +7,7 @@ from PIL import Image
 from pydantic import BaseModel
 from typing import Optional
 import gradio as gr
-from diffusers import StableDiffusionXLPipeline
+from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -27,6 +27,9 @@ if os.path.exists(LORA_PATH):
 else:
     print(f"⚠️ Cảnh báo: Không tìm thấy file {LORA_PATH}")
 
+# Pipeline Image-to-Image dùng chung 100% trọng số với pipe (không tốn thêm VRAM)
+pipe_img2img = StableDiffusionXLImg2ImgPipeline.from_pipe(pipe)
+
 # 2. Hàm sinh ảnh cốt lõi gắn trực tiếp @spaces.GPU cho ZeroGPU nhận diện (duration=20s tối ưu quota)
 @spaces.GPU(duration=20)
 def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> Image.Image:
@@ -41,12 +44,6 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
     if clean_p.lower().startswith("a cute 2d flat die-cut acrylic keychain charm of"):
         clean_p = clean_p[len("a cute 2d flat die-cut acrylic keychain charm of"):].strip()
 
-    full_prompt = (
-        f"net_keychain, a single isolated 2D flat die-cut acrylic charm of {clean_p}, "
-        "centered single subject, clean bold black contour die-cut outline, "
-        "vibrant flat colors, "
-        "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art"
-    )
     negative_prompt = (
         "multiple items, multiple keychains, collage, grid, sheet, collection, extra objects, "
         "jacket sketches, surrounding clothes, floating accessories, background clutter, "
@@ -55,12 +52,42 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
         "realistic photo, photorealistic, shadow on floor, grey background, gradient background, "
         "blurry, deformed, ugly, metal glare"
     )
-    result = pipe(
-        prompt=full_prompt,
-        negative_prompt=negative_prompt,
-        num_inference_steps=28,
-        guidance_scale=7.5,
-    ).images[0]
+
+    if user_image is not None:
+        print("🖼️ Chế độ Image-to-Image: Bám sát khuôn mặt, tư thế và dáng người từ ảnh gốc...")
+        init_img = user_image.convert("RGB")
+        init_img = init_img.resize((1024, 1024), Image.LANCZOS)
+
+        img2img_prompt = (
+            f"net_keychain, 2D flat die-cut acrylic charm, chibi illustration of this person, {clean_p}, "
+            "exact same face, exact same pose, exact same body posture, exact same clothing and hairstyle, "
+            "bold clean black contour die-cut outline, vibrant flat color blocks, "
+            "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art"
+        )
+
+        result = pipe_img2img(
+            prompt=img2img_prompt,
+            negative_prompt=negative_prompt + ", deformed face, different pose, different clothing",
+            image=init_img,
+            strength=0.60,
+            guidance_scale=8.0,
+            num_inference_steps=28,
+        ).images[0]
+    else:
+        print("✏️ Chế độ Text-to-Image: Sinh ảnh mới 100% từ mô tả text...")
+        full_prompt = (
+            f"net_keychain, a single isolated 2D flat die-cut acrylic charm of {clean_p}, "
+            "centered single subject, clean bold black contour die-cut outline, "
+            "vibrant flat colors, "
+            "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art"
+        )
+        result = pipe(
+            prompt=full_prompt,
+            negative_prompt=negative_prompt,
+            num_inference_steps=28,
+            guidance_scale=7.5,
+        ).images[0]
+
     return result
 
 # 3. Tạo giao diện Gradio Blocks

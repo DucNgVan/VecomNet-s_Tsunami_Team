@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ArrowUpRight, Sparkles, User } from "lucide-react";
@@ -39,12 +40,19 @@ export const Navbar: React.FC = () => {
       {/* Main Navbar */}
       <header className="sticky top-0 z-40 w-full bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between">
-          {/* Brand Logo: nét | CONNECT */}
-          <Link href="/" className="flex items-baseline gap-2.5 group">
-            <span className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-[#241B16] group-hover:text-[#B85D43] transition-colors">
-              nét
-            </span>
-            <span className="text-xs tracking-[0.2em] font-sans text-[#7A6F68] font-medium uppercase border-l border-[#D6CDBF] pl-2.5">
+          {/* Brand Logo: Nets Signature */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="relative h-8 sm:h-9 flex items-center">
+              <Image
+                src="/assets/logo-nets.png"
+                alt="Nets"
+                width={90}
+                height={38}
+                priority
+                className="h-8 sm:h-9 w-auto object-contain transition-transform group-hover:scale-105"
+              />
+            </div>
+            <span className="text-[11px] tracking-[0.2em] font-sans text-[#7A6F68] font-medium uppercase border-l border-[#D6CDBF] pl-2.5 hidden sm:inline-block">
               CONNECT
             </span>
           </Link>

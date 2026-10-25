@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 interface AdminNavbarProps {
@@ -74,8 +75,14 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
         {/* Left: Brand & Status */}
         <div className="flex items-center gap-3">
           <Link href="/admin?tab=dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-[#352720] border border-[#4A3B32] text-[#B85D43] flex items-center justify-center font-serif font-bold text-sm shadow-inner group-hover:scale-105 transition-all">
-              NÉT
+            <div className="h-9 px-2.5 rounded-xl bg-[#352720] border border-[#4A3B32] flex items-center justify-center shadow-inner group-hover:scale-105 transition-all">
+              <Image
+                src="/assets/logo-nets-white.png"
+                alt="Nets"
+                width={56}
+                height={24}
+                className="h-5 w-auto object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, ShieldCheck, Heart, Leaf, MapPin } from "lucide-react";
 
@@ -19,11 +20,17 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           {/* Brand Info */}
           <div className="md:col-span-5 space-y-3">
-            <Link href="/" className="flex items-baseline gap-2.5">
-              <span className="font-serif text-2xl font-semibold text-[#241B16]">
-                nét
-              </span>
-              <span className="text-xs tracking-[0.2em] font-sans text-[#7A6F68] font-medium uppercase border-l border-[#D6CDBF] pl-2.5">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="relative h-8 flex items-center">
+                <Image
+                  src="/assets/logo-nets.png"
+                  alt="Nets"
+                  width={84}
+                  height={36}
+                  className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                />
+              </div>
+              <span className="text-[11px] tracking-[0.2em] font-sans text-[#7A6F68] font-medium uppercase border-l border-[#D6CDBF] pl-2.5">
                 CONNECT
               </span>
             </Link>

@@ -10,9 +10,17 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/ui/ToastNotification";
 
 export const metadata: Metadata = {
-  title: "NÉT | Túi Lưới Tái Chế & Charm Độc Bản Biển Sâu",
+  title: "Nets | Túi Lưới Tái Chế & Charm Độc Bản Biển Sâu",
   description:
     "Thương hiệu thời trang bền vững tiên phong tại Việt Nam, biến đổi lưới đánh cá vô chủ mắc kẹt đáy biển thành túi xách cao cấp và charm thủy tinh 3D tùy biến thời gian thực.",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png",
+  },
   keywords: [
     "túi lưới tái chế",
     "thời trang bền vững",

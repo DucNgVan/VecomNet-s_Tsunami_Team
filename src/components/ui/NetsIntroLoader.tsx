@@ -107,7 +107,7 @@ export const NetsIntroLoader: React.FC<NetsIntroLoaderProps> = ({
                 }}
               />
 
-              {/* Stroke 2: Crossbar for the 't' */}
+              {/* Stroke 2: Crossbar for the 't' (chỉ hiện khi bắt đầu nét gạch ngang, tránh lộ 2 dấu chấm cap trước khi vẽ) */}
               <motion.path
                 d="M 218 84 C 230 82, 246 82, 256 84"
                 fill="none"
@@ -115,12 +115,18 @@ export const NetsIntroLoader: React.FC<NetsIntroLoaderProps> = ({
                 strokeWidth="7"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
                 transition={{
-                  duration: 0.35,
-                  delay: 1.35,
-                  ease: "easeInOut",
+                  pathLength: {
+                    duration: 0.35,
+                    delay: 1.35,
+                    ease: "easeInOut",
+                  },
+                  opacity: {
+                    duration: 0.01,
+                    delay: 1.35,
+                  },
                 }}
               />
             </svg>

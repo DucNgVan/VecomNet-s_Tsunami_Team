@@ -5,6 +5,8 @@ export type BagMeshColor = {
   glowHex: string;
   accentHex: string;
   description: string;
+  image?: string;
+  model3dUrl?: string;
 };
 
 export type AnchorPoint = {

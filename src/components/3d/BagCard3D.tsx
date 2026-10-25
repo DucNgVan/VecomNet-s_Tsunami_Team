@@ -93,8 +93,9 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
 
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.6;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.NeutralToneMapping;
+    renderer.toneMappingExposure = 1.0;
 
     const dom = renderer.domElement;
     dom.style.width = "100%";
@@ -110,19 +111,19 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
 
     container.appendChild(dom);
 
-    // 3. Studio Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
+    // 3. Studio Lighting Rig - Natural, Faithful Studio Illumination
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 3.6);
+    const keyLight = new THREE.DirectionalLight(0xfffdf7, 1.35);
     keyLight.position.set(3, 6, 4);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x7dd3fc, 1.8);
-    fillLight.position.set(-3, -1, 3);
+    const fillLight = new THREE.DirectionalLight(0xf8fafc, 0.6);
+    fillLight.position.set(-3, 1, 3);
     scene.add(fillLight);
 
-    const underGlow = new THREE.PointLight(parseThreeColor(glowColor || color, "#38bdf8"), 3.0, 9);
+    const underGlow = new THREE.PointLight(parseThreeColor(glowColor || color, "#38bdf8"), 0.5, 7);
     underGlow.position.set(0, -2.5, 1.5);
     scene.add(underGlow);
 
@@ -229,8 +230,10 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
           const m = child as THREE.Mesh;
           if (m.material) {
             const mat = m.material as THREE.MeshStandardMaterial;
-            mat.roughness = Math.max(0.25, mat.roughness ?? 0.4);
-            mat.envMapIntensity = 1.3;
+            mat.side = THREE.DoubleSide;
+            mat.roughness = 1.0;
+            mat.metalness = 0.0;
+            mat.envMapIntensity = 0.6;
           }
         }
       });

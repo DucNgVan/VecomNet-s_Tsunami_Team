@@ -81,7 +81,7 @@ export const AdminSupplyChainTab: React.FC<AdminSupplyChainTabProps> = ({
   const [productionForm, setProductionForm] = useState({
     sourcePackId: netPacks[0]?.packId || "",
     bagBaseId: availableBagModels[0]?.id || "1",
-    colorId: BAG_COLORS[0]?.id || "abyss-blue",
+    colorId: BAG_COLORS[0]?.id || "green",
     quantity: 10,
     workshopName: "Làng nghề đan lưới Nam Ô",
   });

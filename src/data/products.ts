@@ -2,38 +2,68 @@ import { BagBase, BagMeshColor, Charm, ProductCombo } from "@/types";
 
 export const BAG_COLORS: BagMeshColor[] = [
   {
-    id: "abyss-blue",
-    name: "Xanh Thẳm Đại Dương",
-    hex: "#0c2340",
+    id: "green",
+    name: "Xanh Lá",
+    hex: "#3d8b85",
+    glowHex: "#34d399",
+    accentHex: "#6ee7b7",
+    description: "Sắc xanh lá tươi mát từ sợi lưới tái sinh đại dương, mang hơi thở thiên nhiên Nam Ô trong lành.",
+    image: "/assets/products/bags/tuixach-xanh-la.png",
+    model3dUrl: "/assets/models/tuixach-xanh-la.glb",
+  },
+  {
+    id: "blue",
+    name: "Xanh Dương",
+    hex: "#3b82f6",
     glowHex: "#00F2FE",
     accentHex: "#38bdf8",
-    description: "Sắc xanh huyền bí của đáy vực Mariana, sợi nylon bóng nhẹ phản chiếu ánh lân tinh.",
+    description: "Sắc xanh dương đại dương phóng khoáng, thanh lịch và mang đậm tinh thần biển cả.",
+    image: "/assets/products/bags/tuixach-xanh-duong.png",
+    model3dUrl: "/assets/models/tuixach-xanh-duong.glb",
   },
   {
-    id: "kelp-emerald",
-    name: "Lục Tảo Biển Sâu",
-    hex: "#064e3b",
-    glowHex: "#10b981",
-    accentHex: "#6ee7b7",
-    description: "Màu xanh ngọc bích từ các mảng rừng tảo biển được giải cứu khỏi rác lưới ma.",
+    id: "pink",
+    name: "Hồng",
+    hex: "#ec4899",
+    glowHex: "#f472b6",
+    accentHex: "#fbcfe8",
+    description: "Sắc hồng san hô ngọt ngào, tinh tế và mang năng lượng trẻ trung đầy cuốn hút.",
+    image: "/assets/products/bags/tuixach-hong.png",
+    model3dUrl: "/assets/models/tuixach-hong.glb",
   },
   {
-    id: "coral-sand",
-    name: "Cát San Hô Ánh Dương",
-    hex: "#3b2219",
-    glowHex: "#f59e0b",
-    accentHex: "#fbbf24",
-    description: "Màu hoàng hôn phủ lên bãi cát trắng và vụn san hô nguyên sơ đảo Côn Đảo.",
+    id: "burgundy",
+    name: "Đỏ Tía",
+    hex: "#881337",
+    glowHex: "#e11d48",
+    accentHex: "#fda4af",
+    description: "Sắc đỏ tía quý phái, sâu lắng và thời thượng tựa ráng chiều rực rỡ trên vịnh biển.",
+    image: "/assets/products/bags/tuixach-do-tia.png",
+    model3dUrl: "/assets/models/tuixach-do-tia.glb",
   },
   {
-    id: "ghost-pearl",
-    name: "Bạc Lưới Ma Tinh Khiết",
-    hex: "#1e293b",
-    glowHex: "#e2e8f0",
-    accentHex: "#f8fafc",
-    description: "Sợi cước tái chế tự nhiên không qua nhuộm hóa chất độc hại, giữ vẹn nét mộc mạc.",
+    id: "black",
+    name: "Đen",
+    hex: "#18181b",
+    glowHex: "#94a3b8",
+    accentHex: "#cbd5e1",
+    description: "Sắc đen huyền bí tối giản, sang trọng và trường tồn cùng phong cách hiện đại.",
+    image: "/assets/products/bags/tuixach-den.png",
+    model3dUrl: "/assets/models/tuixach-den.glb",
   },
 ];
+
+export function getBagColor(id?: string): BagMeshColor {
+  if (!id) return BAG_COLORS[0];
+  const found = BAG_COLORS.find((c) => c.id === id);
+  if (found) return found;
+  if (id === "kelp-emerald" || id.includes("la") || id.includes("green")) return BAG_COLORS[0];
+  if (id === "abyss-blue" || id.includes("duong") || id.includes("blue")) return BAG_COLORS[1];
+  if (id === "coral-sand" || id.includes("hong") || id.includes("pink")) return BAG_COLORS[2];
+  if (id.includes("tia") || id.includes("burgundy") || id.includes("red")) return BAG_COLORS[3];
+  if (id === "ghost-pearl" || id.includes("den") || id.includes("black")) return BAG_COLORS[4];
+  return BAG_COLORS[0];
+}
 
 export const BAG_BASES: BagBase[] = [
   {
@@ -49,8 +79,8 @@ export const BAG_BASES: BagBase[] = [
     colors: BAG_COLORS,
     maxCharms: 10,
     modelType: "tote",
-    image: "/assets/products/tote-blue.png",
-    model3dUrl: "/assets/models/tuixach.glb",
+    image: "/assets/products/bags/tuixach-xanh-la.png",
+    model3dUrl: "/assets/models/tuixach-xanh-la.glb",
     anchorPoints: [
       { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
       { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
@@ -77,8 +107,8 @@ export const BAG_BASES: BagBase[] = [
     colors: BAG_COLORS,
     maxCharms: 7,
     modelType: "hobo",
-    image: "/assets/products/hobo-emerald.png",
-    model3dUrl: "/assets/models/tuixach.glb",
+    image: "/assets/products/bags/tuixach-xanh-duong.png",
+    model3dUrl: "/assets/models/tuixach-xanh-duong.glb",
     anchorPoints: [
       { id: "h1", x: 28, y: 40, label: "Cung trái" },
       { id: "h2", x: 50, y: 38, label: "Cung đỉnh" },
@@ -102,8 +132,8 @@ export const BAG_BASES: BagBase[] = [
     colors: BAG_COLORS,
     maxCharms: 8,
     modelType: "bucket",
-    image: "/assets/products/bucket-sand.png",
-    model3dUrl: "/assets/models/tuixach.glb",
+    image: "/assets/products/bags/tuixach-hong.png",
+    model3dUrl: "/assets/models/tuixach-hong.glb",
     anchorPoints: [
       { id: "b1", x: 30, y: 30, label: "Cổ túi trái" },
       { id: "b2", x: 70, y: 30, label: "Cổ túi phải" },
@@ -128,8 +158,8 @@ export const BAG_BASES: BagBase[] = [
     colors: BAG_COLORS,
     maxCharms: 5,
     modelType: "mini",
-    image: "/assets/products/mini-pearl.png",
-    model3dUrl: "/assets/models/tuixach.glb",
+    image: "/assets/products/bags/tuixach-den.png",
+    model3dUrl: "/assets/models/tuixach-den.glb",
     anchorPoints: [
       { id: "m1", x: 32, y: 35, label: "Góc trên trái" },
       { id: "m2", x: 68, y: 35, label: "Góc trên phải" },

@@ -59,9 +59,9 @@ export const Bag3DShowcase: React.FC = () => {
               modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(p.category)
                 ? p.category
                 : "tote") as any,
-              image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
+              image: p.imageUrl || p.image || "/assets/products/bags/tuixach-xanh-la.png",
               model3dUrl:
-                p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach.glb",
+                p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach-xanh-la.glb",
               stockCount: Number(p.stockCount) || 0,
               inStock: Boolean(p.inStock && Number(p.stockCount) > 0),
             }));
@@ -185,7 +185,7 @@ export const Bag3DShowcase: React.FC = () => {
               selectedColor={selectedColor}
               placedCharms={[]}
               isInteractive={true}
-              modelUrl={selectedBag.model3dUrl || "/assets/models/tuixach.glb"}
+              modelUrl={selectedColor.model3dUrl || selectedBag.model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
             />
           </div>
 

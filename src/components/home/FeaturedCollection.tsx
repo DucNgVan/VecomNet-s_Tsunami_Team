@@ -84,7 +84,7 @@ export const FeaturedCollection: React.FC = () => {
             const price = item.basePrice || item.price || 1250000;
             const plasticKg = item.plasticOffsetKg || 1.8;
             const model3d = item.model3dUrl;
-            const img = item.imageUrl || item.image || "/assets/products/tote-blue.png";
+            const img = item.imageUrl || item.image || "/assets/products/bags/tuixach-xanh-la.png";
             const inStock = Boolean(item.inStock && Number(item.stockCount) > 0);
 
           return (

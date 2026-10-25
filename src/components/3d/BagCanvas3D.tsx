@@ -20,6 +20,9 @@ interface BagCanvas3DProps {
   modelUrl?: string;
 }
 
+// Global cache for parsed bag 3D GLTF models
+const bagGltfModelCache = new Map<string, THREE.Group>();
+
 export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
   (
     {
@@ -28,10 +31,16 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       placedCharms,
       className = "",
       isInteractive = true,
-      modelUrl = "/assets/models/tuixach.glb",
+      modelUrl,
     },
     ref
   ) => {
+    const activeModelUrl =
+      modelUrl ||
+      selectedColor?.model3dUrl ||
+      bagBase?.model3dUrl ||
+      "/assets/models/tuixach-xanh-la.glb";
+
     const containerRef = useRef<HTMLDivElement>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
@@ -99,38 +108,39 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.68;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.NeutralToneMapping;
+      renderer.toneMappingExposure = 1.0;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       rendererRef.current = renderer;
       container.appendChild(renderer.domElement);
 
-      // 3. Studio Lighting Rig
-      const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
+      // 3. Studio Lighting Rig - True-to-life studio lighting (prevents overexposure/washing out)
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
       scene.add(ambientLight);
 
-      // Primary Key Sunbeam
-      const sunLight = new THREE.DirectionalLight(0xffffff, 3.8);
-      sunLight.position.set(4, 8, 6);
+      // Primary Key Daylight
+      const sunLight = new THREE.DirectionalLight(0xfffdf7, 1.35);
+      sunLight.position.set(3.5, 6.5, 5);
       sunLight.castShadow = true;
       scene.add(sunLight);
 
-      // Soft Skylight Fill
-      const skyLight = new THREE.DirectionalLight(0x7dd3fc, 2.0);
-      skyLight.position.set(-4, -2, 4);
+      // Soft Daylight Fill
+      const skyLight = new THREE.DirectionalLight(0xf8fafc, 0.6);
+      skyLight.position.set(-3.5, 2, 3.5);
       scene.add(skyLight);
 
-      // Rim Light for edge definition
-      const rimLight = new THREE.DirectionalLight(0xffffff, 2.4);
-      rimLight.position.set(0, 5, -6);
+      // Subtle Rim Light for outline separation
+      const rimLight = new THREE.DirectionalLight(0xffffff, 0.45);
+      rimLight.position.set(0, 4.5, -5);
       scene.add(rimLight);
 
-      // Dynamic Under-Glow matching current ocean color
+      // Soft Under-Glow (gentle accent, not blinding)
       const underGlow = new THREE.PointLight(
         new THREE.Color(selectedColor.glowHex || "#38bdf8"),
-        3.5,
-        10
+        0.5,
+        7
       );
       underGlow.position.set(0, -2.4, 1.2);
       scene.add(underGlow);
@@ -214,14 +224,19 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         modelContainer.add(h2);
       };
 
-      // 5. Asynchronously Load the Uploaded Bag Model (tuixach.glb)
-      // Note: As requested, the 3D bag serves as the pure sample 3D bag without charms attached.
+      // 5. Asynchronously Load the Uploaded Bag Model
       setIsLoadingModel(true);
 
-      if (modelUrl) {
+      if (bagGltfModelCache.has(activeModelUrl)) {
+        modelContainer.clear();
+        const cachedGroup = bagGltfModelCache.get(activeModelUrl)!.clone(true);
+        modelContainer.add(cachedGroup);
+        setIsGlbActive(true);
+        setIsLoadingModel(false);
+      } else if (activeModelUrl) {
         const loader = new GLTFLoader();
         loader.load(
-          modelUrl,
+          activeModelUrl,
           (gltf) => {
             if (!isSubscribed) return;
 
@@ -247,12 +262,12 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             const scale = maxDim > 0 ? targetSize / maxDim : 1;
             glbWrapper.scale.setScalar(scale);
 
-            // Rotate -90 degrees around Y axis so the front face (normal +X in raw scan) faces directly towards camera (+Z)
+            // Rotate -90 degrees around Y axis so the front face faces directly towards camera (+Z) if needed
             if (size.z > size.x) {
               glbWrapper.rotation.y = -Math.PI / 2;
             }
 
-            // Material enhancements
+            // Material enhancements: preserve authored PBR textures and matte fabric surface
             loadedScene.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) {
                 const m = child as THREE.Mesh;
@@ -260,13 +275,17 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
                 m.receiveShadow = true;
                 if (m.material) {
                   const mat = m.material as THREE.MeshStandardMaterial;
-                  mat.roughness = Math.max(0.25, mat.roughness ?? 0.4);
-                  mat.envMapIntensity = 1.4;
+                  mat.side = THREE.DoubleSide;
+                  // Respect authored fabric roughness - avoid overriding to artificial glossy shine
+                  mat.roughness = 1.0;
+                  mat.metalness = 0.0;
+                  mat.envMapIntensity = 0.6;
                 }
               }
             });
 
-            modelContainer.add(glbWrapper);
+            bagGltfModelCache.set(activeModelUrl, glbWrapper);
+            modelContainer.add(glbWrapper.clone(true));
             setIsGlbActive(true);
             setIsLoadingModel(false);
           },
@@ -401,7 +420,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         }
         renderer.dispose();
       };
-    }, [bagBase, modelUrl, isInteractive]);
+    }, [bagBase, activeModelUrl, isInteractive]);
 
     // Update dynamic under-glow color when selectedColor changes
     useEffect(() => {

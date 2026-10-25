@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Article, PostCategory } from "@/types";
+import { Article, PostCategory, BagMeshColor } from "@/types";
 import { formatVND } from "@/lib/utils";
 import { uploadProductFile } from "@/lib/storageService";
+import { BAG_COLORS } from "@/data/products";
 // (Icon-free layout as requested)
 import Link from "next/link";
 import { BagCard3D } from "@/components/3d/BagCard3D";
@@ -73,23 +74,40 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [preview3dModel, setPreview3dModel] = useState<{ name: string; url: string } | null>(null);
-  const [productForm, setProductForm] = useState({
+  const [productForm, setProductForm] = useState<{
+    id: string;
+    name: string;
+    category: string;
+    basePrice: number;
+    description: string;
+    plasticOffsetKg: number;
+    imageUrl: string;
+    model3dUrl: string;
+    inStock: boolean;
+    stockCount: number;
+    colors: BagMeshColor[];
+  }>({
     id: "1",
     name: "",
     category: "tote",
     basePrice: 1250000,
     description: "",
     plasticOffsetKg: 1.8,
-    imageUrl: "",
-    model3dUrl: "/assets/models/tuixach.glb",
+    imageUrl: "/assets/products/bags/tuixach-xanh-la.png",
+    model3dUrl: "/assets/models/tuixach-xanh-la.glb",
     inStock: false,
     stockCount: 0,
+    colors: JSON.parse(JSON.stringify(BAG_COLORS)),
   });
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageProgress, setImageProgress] = useState(0);
   const [isUploadingModel, setIsUploadingModel] = useState(false);
   const [modelProgress, setModelProgress] = useState(0);
+  const [uploadingColorIndex, setUploadingColorIndex] = useState<{
+    idx: number;
+    type: "image" | "model";
+  } | null>(null);
 
   const handleOpenAddProduct = () => {
     setEditingProductId(null);
@@ -101,10 +119,11 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       basePrice: 1250000,
       description: "Mẫu túi đan thủ công từ sợi cước lưới ma đại dương Việt Nam.",
       plasticOffsetKg: 1.8,
-      imageUrl: "",
-      model3dUrl: "/assets/models/tuixach.glb",
+      imageUrl: "/assets/products/bags/tuixach-xanh-la.png",
+      model3dUrl: "/assets/models/tuixach-xanh-la.glb",
       inStock: false,
       stockCount: 0,
+      colors: JSON.parse(JSON.stringify(BAG_COLORS)),
     });
     setShowProductModal(true);
   };
@@ -112,6 +131,14 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
   const handleOpenEditProduct = (prod: any) => {
     const realStock = getProductRealStock(prod);
     setEditingProductId(prod.id);
+    const isBagCategory = !["charm", "combo"].includes(prod.category);
+    let initialColors: BagMeshColor[] = [];
+    if (Array.isArray(prod.colors) && prod.colors.length > 0) {
+      initialColors = JSON.parse(JSON.stringify(prod.colors));
+    } else if (isBagCategory) {
+      initialColors = JSON.parse(JSON.stringify(BAG_COLORS));
+    }
+
     setProductForm({
       id: prod.id,
       name: prod.name,
@@ -119,12 +146,83 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       basePrice: prod.basePrice || prod.price || 1250000,
       description: prod.description || "",
       plasticOffsetKg: prod.plasticOffsetKg || 1.8,
-      imageUrl: prod.imageUrl || prod.image || "",
-      model3dUrl: prod.model3dUrl || "/assets/models/tuixach.glb",
+      imageUrl: prod.imageUrl || prod.image || (initialColors[0]?.image || ""),
+      model3dUrl: prod.model3dUrl || (initialColors[0]?.model3dUrl || "/assets/models/tuixach-xanh-la.glb"),
       inStock: realStock > 0,
       stockCount: realStock,
+      colors: initialColors,
     });
     setShowProductModal(true);
+  };
+
+  const handleColorCountChange = (newCount: number) => {
+    const count = Math.max(0, Math.min(20, newCount));
+    const currentColors = productForm.colors || [];
+    if (count > currentColors.length) {
+      const palettePresets = [
+        { name: "Xanh Lá", hex: "#3d8b85" },
+        { name: "Xanh Dương", hex: "#3b82f6" },
+        { name: "Hồng", hex: "#ec4899" },
+        { name: "Đỏ Tía", hex: "#881337" },
+        { name: "Đen", hex: "#18181b" },
+        { name: "Men Ngọc Bích", hex: "#059669" },
+        { name: "Vàng Hoàng Kim", hex: "#d97706" },
+        { name: "Xanh Biển Mỹ Khê", hex: "#2563eb" },
+      ];
+      const toAdd = count - currentColors.length;
+      const added: BagMeshColor[] = [];
+      for (let i = 0; i < toAdd; i++) {
+        const p = palettePresets[(currentColors.length + i) % palettePresets.length];
+        added.push({
+          id: `color-${Date.now()}-${i}`,
+          name: p.name,
+          hex: p.hex,
+          glowHex: p.hex,
+          accentHex: p.hex,
+          description: `Phiên bản màu ${p.name}`,
+          image: productForm.imageUrl || "",
+          model3dUrl: productForm.model3dUrl || "",
+        });
+      }
+      setProductForm((prev) => ({
+        ...prev,
+        colors: [...currentColors, ...added],
+      }));
+    } else if (count < currentColors.length) {
+      setProductForm((prev) => ({
+        ...prev,
+        colors: currentColors.slice(0, count),
+      }));
+    }
+  };
+
+  const handleColorFileUpload = async (
+    index: number,
+    type: "image" | "model",
+    file: File
+  ) => {
+    if (type === "model" && !file.name.endsWith(".glb") && !file.name.endsWith(".gltf")) {
+      alert("Vui lòng chọn file 3D định dạng .glb hoặc .gltf!");
+      return;
+    }
+    setUploadingColorIndex({ idx: index, type });
+    try {
+      const folder = type === "image" ? "products" : "models";
+      const res = await uploadToCloudinary(file, folder);
+      setProductForm((prev) => {
+        const nextColors = [...prev.colors];
+        if (type === "image") {
+          nextColors[index] = { ...nextColors[index], image: res.url };
+        } else {
+          nextColors[index] = { ...nextColors[index], model3dUrl: res.url };
+        }
+        return { ...prev, colors: nextColors };
+      });
+    } catch (err: any) {
+      alert(`Lỗi upload ${type === "image" ? "ảnh" : "file 3D"}: ${err.message}`);
+    } finally {
+      setUploadingColorIndex(null);
+    }
   };
 
   const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,8 +266,31 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       return;
     }
     const realStock = getProductRealStock(productForm);
+    const isBag = productForm.category !== "charm" && productForm.category !== "combo";
+    
+    // Đảm bảo túi xách có danh sách màu hợp lệ
+    let finalColors = productForm.colors || [];
+    if (isBag && finalColors.length === 0) {
+      finalColors = JSON.parse(JSON.stringify(BAG_COLORS));
+    }
+
+    let mainImageUrl = productForm.imageUrl;
+    let mainModelUrl = productForm.model3dUrl;
+    if (isBag && finalColors.length > 0) {
+      if (!mainImageUrl && finalColors[0].image) {
+        mainImageUrl = finalColors[0].image;
+      }
+      if (!mainModelUrl && finalColors[0].model3dUrl) {
+        mainModelUrl = finalColors[0].model3dUrl;
+      }
+    }
+
     const cleanProd = {
       ...productForm,
+      imageUrl: mainImageUrl,
+      image: mainImageUrl,
+      model3dUrl: mainModelUrl,
+      colors: finalColors,
       stockCount: realStock,
       inStock: realStock > 0,
       updatedAt: new Date().toISOString(),
@@ -414,6 +535,25 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                       <div className="text-[10px] text-slate-400 line-clamp-2 mt-1">
                         {prod.description}
                       </div>
+
+                      {/* Hiển thị các chấm màu của mẫu túi */}
+                      {prod.colors && Array.isArray(prod.colors) && prod.colors.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                          <div className="flex items-center -space-x-1">
+                            {prod.colors.slice(0, 7).map((c: any, cIdx: number) => (
+                              <span
+                                key={c.id || cIdx}
+                                title={`${c.name || 'Màu'} (${c.hex})`}
+                                className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs inline-block"
+                                style={{ backgroundColor: c.hex }}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-500">
+                            {prod.colors.length} màu
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -558,7 +698,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <form
             onSubmit={handleSubmitProduct}
-            className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto animate-scaleUp"
+            className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto animate-scaleUp"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
@@ -774,6 +914,232 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Cấu Hình Bộ Màu Sắc Của Túi (Hiển thị cho dòng túi xách) */}
+              {productForm.category !== "charm" && productForm.category !== "combo" && (
+                <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-200/80 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-2.5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <label className="font-bold text-slate-800 text-xs">
+                          Cấu Hình Màu Sắc Túi Xách
+                        </label>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
+                          {productForm.colors?.length || 0} màu
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Người dùng tại <strong>NÉT Studio</strong> sẽ thấy bảng màu tương ứng với mẫu túi này.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-amber-200 text-xs">
+                        <span className="text-[11px] text-slate-600 font-medium">Số lượng màu:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={productForm.colors?.length || 0}
+                          onChange={(e) => handleColorCountChange(parseInt(e.target.value, 10) || 0)}
+                          className="w-12 text-center font-bold text-amber-900 border-b border-amber-300 focus:outline-none"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProductForm((prev) => ({
+                            ...prev,
+                            colors: JSON.parse(JSON.stringify(BAG_COLORS)),
+                          }));
+                        }}
+                        className="px-2.5 py-1 rounded-xl bg-white hover:bg-amber-100 text-amber-900 text-[11px] font-bold border border-amber-300 cursor-pointer transition-colors shadow-2xs"
+                        title="Nạp nhanh 5 màu chính thức: Xanh lá, Xanh dương, Hồng, Đỏ tía, Đen"
+                      >
+                        Nạp 5 Màu Gốc
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleColorCountChange((productForm.colors?.length || 0) + 1)}
+                        className="px-2.5 py-1 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-[11px] font-bold cursor-pointer transition-colors shadow-xs"
+                      >
+                        + Thêm Màu
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Danh Sách Từng Màu (Mã Hex, Tên, Ảnh 2D, File 3D) */}
+                  {(!productForm.colors || productForm.colors.length === 0) ? (
+                    <div className="p-4 rounded-xl bg-white border border-dashed border-amber-200 text-center text-xs text-slate-500">
+                      Chưa có màu nào. Bấm <strong>"+ Thêm Màu"</strong> hoặc <strong>"Nạp 5 Màu Gốc"</strong> để thiết lập.
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                      {productForm.colors.map((color, cIdx) => (
+                        <div
+                          key={color.id || cIdx}
+                          className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 hover:border-amber-300 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-400 w-5 text-center shrink-0">
+                              #{cIdx + 1}
+                            </span>
+                            {/* Color Picker Swatch */}
+                            <div className="relative shrink-0 flex items-center">
+                              <input
+                                type="color"
+                                value={color.hex || "#3d8b85"}
+                                onChange={(e) => {
+                                  const hex = e.target.value;
+                                  const nextColors = [...productForm.colors];
+                                  nextColors[cIdx] = {
+                                    ...nextColors[cIdx],
+                                    hex,
+                                    glowHex: hex,
+                                    accentHex: hex,
+                                  };
+                                  setProductForm({ ...productForm, colors: nextColors });
+                                }}
+                                className="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 p-0.5 shadow-2xs"
+                                title="Bấm để chọn màu"
+                              />
+                            </div>
+                            {/* Hex Input */}
+                            <div className="w-28 shrink-0">
+                              <input
+                                type="text"
+                                value={color.hex}
+                                onChange={(e) => {
+                                  const hex = e.target.value;
+                                  const nextColors = [...productForm.colors];
+                                  nextColors[cIdx] = {
+                                    ...nextColors[cIdx],
+                                    hex,
+                                    glowHex: hex,
+                                    accentHex: hex,
+                                  };
+                                  setProductForm({ ...productForm, colors: nextColors });
+                                }}
+                                placeholder="#3d8b85"
+                                className="w-full p-1.5 rounded-lg border border-slate-300 text-xs font-mono font-bold uppercase"
+                              />
+                            </div>
+                            {/* Color Name Input */}
+                            <div className="flex-1 min-w-[120px]">
+                              <input
+                                type="text"
+                                value={color.name}
+                                onChange={(e) => {
+                                  const name = e.target.value;
+                                  const nextColors = [...productForm.colors];
+                                  nextColors[cIdx] = { ...nextColors[cIdx], name };
+                                  setProductForm({ ...productForm, colors: nextColors });
+                                }}
+                                placeholder="Tên màu (VD: Xanh Lá)"
+                                className="w-full p-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-800"
+                              />
+                            </div>
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextColors = productForm.colors.filter((_, i) => i !== cIdx);
+                                setProductForm({ ...productForm, colors: nextColors });
+                              }}
+                              className="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold shrink-0 cursor-pointer transition-colors"
+                              title="Xóa màu này"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          {/* Per-color 2D Image & 3D Model URLs */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-100">
+                            {/* 2D Image for this color */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                                <span>Ảnh 2D màu này:</span>
+                                {uploadingColorIndex?.idx === cIdx && uploadingColorIndex?.type === "image" && (
+                                  <span className="text-teal-600 font-mono">Đang tải...</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {color.image && (
+                                  <img
+                                    src={color.image}
+                                    alt={color.name}
+                                    className="w-7 h-7 rounded object-contain bg-slate-50 border border-slate-200 shrink-0 p-0.5"
+                                  />
+                                )}
+                                <input
+                                  type="text"
+                                  value={color.image || ""}
+                                  onChange={(e) => {
+                                    const image = e.target.value;
+                                    const nextColors = [...productForm.colors];
+                                    nextColors[cIdx] = { ...nextColors[cIdx], image };
+                                    setProductForm({ ...productForm, colors: nextColors });
+                                  }}
+                                  placeholder="/assets/products/bags/... hoặc URL ảnh"
+                                  className="w-full p-1 rounded border border-slate-200 text-[10px] font-mono"
+                                />
+                                <label className="shrink-0 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold cursor-pointer">
+                                  Tải ảnh
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleColorFileUpload(cIdx, "image", file);
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+
+                            {/* 3D Model for this color */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                                <span>File 3D (.glb) màu này:</span>
+                                {uploadingColorIndex?.idx === cIdx && uploadingColorIndex?.type === "model" && (
+                                  <span className="text-indigo-600 font-mono">Đang tải...</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={color.model3dUrl || ""}
+                                  onChange={(e) => {
+                                    const model3dUrl = e.target.value;
+                                    const nextColors = [...productForm.colors];
+                                    nextColors[cIdx] = { ...nextColors[cIdx], model3dUrl };
+                                    setProductForm({ ...productForm, colors: nextColors });
+                                  }}
+                                  placeholder="/assets/models/... hoặc URL .glb"
+                                  className="w-full p-1 rounded border border-slate-200 text-[10px] font-mono"
+                                />
+                                <label className="shrink-0 px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold cursor-pointer">
+                                  Tải 3D
+                                  <input
+                                    type="file"
+                                    accept=".glb,.gltf"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleColorFileUpload(cIdx, "model", file);
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

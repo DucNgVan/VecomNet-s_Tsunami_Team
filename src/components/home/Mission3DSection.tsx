@@ -46,9 +46,9 @@ export const Mission3DSection: React.FC = () => {
               modelType: (["tote", "bucket", "mini", "hobo"].includes(b.category)
                 ? b.category
                 : "tote") as any,
-              image: b.imageUrl || b.image || "/assets/products/tote-blue.png",
+              image: b.imageUrl || b.image || "/assets/products/bags/tuixach-xanh-la.png",
               model3dUrl:
-                b.model3dUrl && b.model3dUrl.trim() !== "" ? b.model3dUrl : "/assets/models/tuixach.glb",
+                b.model3dUrl && b.model3dUrl.trim() !== "" ? b.model3dUrl : "/assets/models/tuixach-xanh-la.glb",
             });
           }
         }
@@ -72,8 +72,8 @@ export const Mission3DSection: React.FC = () => {
     dimensions: "34cm x 38cm x 10cm",
     capacity: "12L",
     modelType: "tote",
-    image: "/assets/products/tote-blue.png",
-    model3dUrl: "/assets/models/tuixach.glb",
+    image: "/assets/products/bags/tuixach-xanh-la.png",
+    model3dUrl: "/assets/models/tuixach-xanh-la.glb",
   };
 
   return (
@@ -127,7 +127,7 @@ export const Mission3DSection: React.FC = () => {
                 selectedColor={selectedColor}
                 placedCharms={[]}
                 isInteractive={true}
-                modelUrl={activeBag.model3dUrl || "/assets/models/tuixach.glb"}
+                modelUrl={selectedColor.model3dUrl || activeBag.model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
               />
             </div>
 

@@ -38,6 +38,8 @@ import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
 import { PlacedCharm, BagBase, BagMeshColor, Charm } from "@/types";
 import { BAG_COLORS, BAG_BASES } from "@/data/products";
+import { formatVND } from "@/lib/utils";
+import { getProductsFromFirestore } from "@/lib/firestoreService";
 import {
   saveDesignRequest,
   generateRequestId,
@@ -261,11 +263,90 @@ function NetStudioContent() {
   // Flow Step: "design" | "review" | "success"
   const [flowStep, setFlowStep] = useState<"design" | "review" | "success">("design");
 
-  // Bag State
-  const baseBagPrice = 299000;
-  const bagBase = BAG_BASES[0];
-  const [selectedColor, setSelectedColor] = useState<BagMeshColor>(BAG_COLORS[1]); // Kelp emerald (net green)
+  // Bag State from Firestore Collection (fallback to BAG_BASES)
+  const [availableBags, setAvailableBags] = useState<BagBase[]>(BAG_BASES);
+  const [selectedBag, setSelectedBag] = useState<BagBase>(BAG_BASES[0]);
+  const [selectedColor, setSelectedColor] = useState<BagMeshColor>(BAG_COLORS[0]);
+  const [isLoadingBags, setIsLoadingBags] = useState(true);
   const [is3DMode, setIs3DMode] = useState(true); // Default directly to interactive 3D view
+
+  const baseBagPrice = selectedBag?.basePrice || 1250000;
+
+  // Tải danh mục mẫu túi từ bộ sưu tập do Admin đăng trên Firestore
+  useEffect(() => {
+    async function loadBagCollection() {
+      try {
+        setIsLoadingBags(true);
+        const dbProducts = await getProductsFromFirestore();
+        if (dbProducts && dbProducts.length > 0) {
+          const liveBags: BagBase[] = dbProducts
+            .filter(
+              (p: any) =>
+                p &&
+                p.isActive !== false &&
+                p.category !== "charm" &&
+                p.category !== "combo"
+            )
+            .map((p: any) => {
+              const bagColors: BagMeshColor[] =
+                Array.isArray(p.colors) && p.colors.length > 0
+                  ? p.colors
+                  : BAG_COLORS;
+
+              return {
+                id: String(p.id),
+                name: p.name || "Túi Lưới Tái Sinh NÉT",
+                tagline: p.tagline || p.description || "Dệt thủ công từ lưới rác đại dương.",
+                description: p.description || "Dệt thủ công từ lưới rác đại dương.",
+                basePrice: Number(p.basePrice || p.price) || 1250000,
+                plasticOffsetKg:
+                  p.plasticOffsetKg ?? (p.plasticOffsetGrams ? p.plasticOffsetGrams / 1000 : 1.6),
+                dimensions: typeof p.dimensions === "string" ? p.dimensions : "38cm x 34cm x 12cm",
+                capacity: p.capacity || "16 Lít",
+                colors: bagColors,
+                maxCharms: p.maxCharms || 10,
+                modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(p.category)
+                  ? p.category
+                  : "tote") as any,
+                image: p.imageUrl || p.image || bagColors[0]?.image || "/assets/products/bags/tuixach-xanh-la.png",
+                model3dUrl:
+                  p.model3dUrl && p.model3dUrl.trim() !== ""
+                    ? p.model3dUrl
+                    : bagColors[0]?.model3dUrl || "/assets/models/tuixach-xanh-la.glb",
+                anchorPoints: [
+                  { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+                  { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+                  { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+                  { id: "a4", x: 22, y: 48, label: "Giữa mạn trái" },
+                  { id: "a5", x: 50, y: 48, label: "Trung tâm túi" },
+                  { id: "a6", x: 78, y: 48, label: "Giữa mạn phải" },
+                  { id: "a7", x: 30, y: 66, label: "Mặt tiền dưới trái" },
+                  { id: "a8", x: 50, y: 68, label: "Trọng tâm dưới" },
+                  { id: "a9", x: 70, y: 66, label: "Mặt tiền dưới phải" },
+                  { id: "a10", x: 50, y: 84, label: "Đáy trước" },
+                ],
+                stockCount: Number(p.stockCount) || 0,
+                inStock: Boolean(p.inStock !== false),
+              };
+            });
+
+          if (liveBags.length > 0) {
+            setAvailableBags(liveBags);
+            setSelectedBag(liveBags[0]);
+            if (liveBags[0].colors && liveBags[0].colors.length > 0) {
+              setSelectedColor(liveBags[0].colors[0]);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Lỗi tải danh mục túi từ Firestore, sử dụng danh mục mẫu chuẩn:", err);
+      } finally {
+        setIsLoadingBags(false);
+      }
+    }
+
+    loadBagCollection();
+  }, []);
 
   // Placed Charms on Bag (default with Wave and Sun matching mockups)
   const [placedCharms, setPlacedCharms] = useState<PlacedCharm[]>([
@@ -452,8 +533,9 @@ function NetStudioContent() {
 
   // Handle Charm add/remove
   const handleAddReadyCharm = (charm: Charm) => {
-    if (placedCharms.length >= 6) {
-      alert("Túi Nét Original tối đa gắn được 6 charm để bảo đảm cân đối!");
+    const maxAllowed = selectedBag?.maxCharms || 6;
+    if (placedCharms.length >= maxAllowed) {
+      alert(`Túi ${selectedBag?.name || "Nét"} tối đa gắn được ${maxAllowed} charm để bảo đảm cân đối!`);
       return;
     }
     const newId = `placed-${charm.id}-${Date.now()}`;
@@ -1589,8 +1671,8 @@ Key 3D printing & charm specs:
       partnerCode: partnerCode.trim() || undefined,
       allowStoryOnPassport: allowStoryPassport,
       notes: customCharmExtraNote.trim() || customIdea.trim() || undefined,
-      bagId: "net-tote-original",
-      bagName: "Túi Nét Original",
+      bagId: selectedBag.id,
+      bagName: selectedBag.name,
       bagPrice: baseBagPrice,
       bagColor: selectedColor,
       placedCharms,
@@ -1972,6 +2054,87 @@ Key 3D printing & charm specs:
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             {/* Left Column: Interactive Bag Canvas (2D / 3D Fallback) */}
             <div className="lg:col-span-5 flex flex-col items-center">
+              {/* Bag Model Selector (Mẫu Túi Trong Bộ Sưu Tập) - Đặt phía trên để người dùng dễ chọn */}
+              <div className="w-full max-w-[440px] mb-3.5 bg-[#FAF8F5] p-3 rounded-2xl border border-[#E8E2D8] shadow-xs">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-[#7A6F68] font-bold">
+                      Bộ Sưu Tập Mẫu Túi
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#EFE9DF] text-[10px] font-bold text-[#5E4D43]">
+                      {availableBags.length} mẫu
+                    </span>
+                  </div>
+                  {selectedBag && (
+                    <span className="text-xs font-bold text-[#B85D43]">
+                      {formatVND(selectedBag.basePrice)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Danh sách các mẫu túi trong Bộ Sưu Tập (Ngang cuộn mượt mà) */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                  {availableBags.map((bag) => {
+                    const isSelected = selectedBag.id === bag.id;
+                    const thumbImg =
+                      bag.image ||
+                      bag.colors?.[0]?.image ||
+                      "/assets/products/bags/tuixach-xanh-la.png";
+
+                    return (
+                      <button
+                        key={bag.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedBag(bag);
+                          const bagColors =
+                            bag.colors && bag.colors.length > 0
+                              ? bag.colors
+                              : BAG_COLORS;
+                          const matchingColor = bagColors.find(
+                            (c) =>
+                              c.id === selectedColor.id ||
+                              c.hex?.toLowerCase() === selectedColor.hex?.toLowerCase()
+                          );
+                          if (matchingColor) {
+                            setSelectedColor(matchingColor);
+                          } else {
+                            setSelectedColor(bagColors[0]);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-all shrink-0 cursor-pointer ${
+                          isSelected
+                            ? "bg-white border-[#B85D43] shadow-xs ring-1 ring-[#B85D43]/30"
+                            : "bg-white/60 border-[#E8E2D8] hover:bg-white hover:border-[#D6CCC0]"
+                        }`}
+                      >
+                        <img
+                          src={thumbImg}
+                          alt={bag.name}
+                          className="w-8 h-8 object-contain rounded-md shrink-0 bg-slate-50 border border-slate-100"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span
+                            className={`text-xs font-bold whitespace-nowrap truncate max-w-[130px] ${
+                              isSelected ? "text-[#1A130F]" : "text-[#5E4D43]"
+                            }`}
+                          >
+                            {bag.name}
+                          </span>
+                          <span className="text-[10px] text-[#7A6F68]">
+                            {bag.colors?.length || 5} màu · {formatVND(bag.basePrice)}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <Check className="w-3.5 h-3.5 text-[#B85D43] stroke-[3] ml-1 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3D / 2D Canvas */}
               {is3DMode ? (
                 <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 shadow-sm relative border border-[#E8E2D8] overflow-hidden">
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
@@ -1984,9 +2147,10 @@ Key 3D printing & charm specs:
                     </button>
                   </div>
                   <BagCanvas3D
-                    bagBase={bagBase}
+                    bagBase={selectedBag}
                     selectedColor={selectedColor}
                     placedCharms={placedCharms}
+                    modelUrl={selectedColor.model3dUrl || selectedBag.model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
                   />
                 </div>
               ) : (
@@ -1999,6 +2163,9 @@ Key 3D printing & charm specs:
                   show3dToggle={true}
                   onToggle3D={() => setIs3DMode(!is3DMode)}
                   is3dActive={is3DMode}
+                  bagImageUrl={selectedColor?.image || selectedBag.image}
+                  selectedColorHex={selectedColor?.hex}
+                  selectedColorName={selectedColor?.name}
                   customCharmVisual={
                     hasAppliedCustomToBag
                       ? {
@@ -2013,6 +2180,52 @@ Key 3D printing & charm specs:
                   }
                 />
               )}
+
+              {/* Dynamic Bag Colors Selector Bar (Đồng bộ với mẫu túi đang chọn) */}
+              {(() => {
+                const currentBagColors =
+                  selectedBag?.colors && selectedBag.colors.length > 0
+                    ? selectedBag.colors
+                    : BAG_COLORS;
+
+                return (
+                  <div className="mt-4 w-full max-w-[440px] bg-[#FAF8F5] p-3.5 rounded-2xl border border-[#E8E2D8] shadow-xs flex items-center justify-between gap-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] uppercase tracking-wider text-[#7A6F68] font-bold truncate">
+                        {currentBagColors.length} Màu Của {selectedBag.name}
+                      </span>
+                      <span className="text-xs font-bold text-[#1A130F] truncate">
+                        {selectedColor.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {currentBagColors.map((c) => {
+                        const isSelected =
+                          selectedColor.id === c.id ||
+                          selectedColor.hex?.toLowerCase() === c.hex?.toLowerCase();
+                        return (
+                          <button
+                            key={c.id || c.hex}
+                            type="button"
+                            onClick={() => setSelectedColor(c)}
+                            className={`w-7 h-7 rounded-full transition-all relative flex items-center justify-center cursor-pointer shadow-sm ${
+                              isSelected
+                                ? "ring-2 ring-[#B85D43] ring-offset-2 scale-110"
+                                : "opacity-80 hover:opacity-100 hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: c.hex }}
+                            title={`Màu ${c.name} (${c.hex})`}
+                          >
+                            {isSelected && (
+                              <Check className="w-3.5 h-3.5 text-white drop-shadow-md stroke-[3]" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Right Column: Dynamic Tabs & Forms */}
@@ -3120,8 +3333,8 @@ Key 3D printing & charm specs:
                               TỔNG HỢP YÊU CẦU THIẾT KẾ
                             </span>
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#5E4D43]">Túi Nét Original (Phôi chuẩn):</span>
-                              <span className="font-semibold text-[#241B16]">299.000 đ</span>
+                              <span className="text-[#5E4D43]">{selectedBag?.name || "Túi Nét"} (Phôi chuẩn):</span>
+                              <span className="font-semibold text-[#241B16]">{formatVND(baseBagPrice)}</span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-[#5E4D43]">Charm độc bản AI:</span>

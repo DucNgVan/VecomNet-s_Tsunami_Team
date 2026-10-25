@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { BagBase, Charm, ProductCombo } from "@/types";
+import { BagBase, BagMeshColor, Charm, ProductCombo } from "@/types";
+import { BAG_COLORS } from "@/data/products";
 import { BagCard3D } from "@/components/3d/BagCard3D";
 import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
 import { GlassButton } from "@/components/ui/GlassButton";
@@ -87,12 +88,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       : Boolean(charmData?.model3dUrl && charmData.model3dUrl.trim() !== "")
   );
 
+  const [selectedBagColor, setSelectedBagColor] = React.useState<BagMeshColor>(
+    bagData?.colors?.[0] || BAG_COLORS[0]
+  );
+
   const [viewMode, setViewMode] = React.useState<"3d" | "photo">(has3dModel ? "3d" : "photo");
 
-  // Reset view mode when item changes
+  // Reset view mode & color when item changes
   React.useEffect(() => {
     setViewMode(has3dModel ? "3d" : "photo");
-  }, [item, has3dModel]);
+    if (isBag && bagData) {
+      setSelectedBagColor(bagData.colors?.[0] || BAG_COLORS[0]);
+    }
+  }, [item, has3dModel, isBag, bagData]);
+
+  const activeImageUrl = isBag ? selectedBagColor?.image || imageUrl : imageUrl;
+  const activeModelUrl = isBag
+    ? selectedBagColor?.model3dUrl || bagData?.model3dUrl || "/assets/models/tuixach-xanh-la.glb"
+    : isCombo
+    ? comboData!.bagBase.model3dUrl!
+    : "/assets/models/tuixach-xanh-la.glb";
+  const activeColorHex = isBag ? selectedBagColor?.hex : isCombo ? comboData!.color.hex : "#0c2340";
+  const activeGlowHex = isBag ? selectedBagColor?.glowHex : isCombo ? comboData!.color.glowHex : "#38bdf8";
 
   return (
     <AnimatePresence>
@@ -181,10 +198,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 )}
 
                 <div className="w-full aspect-square rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200/90 relative overflow-hidden flex items-center justify-center shadow-inner">
-                  {(!has3dModel || viewMode === "photo") && imageUrl ? (
+                  {(!has3dModel || viewMode === "photo") && activeImageUrl ? (
                     <div className="w-full h-full p-4 flex items-center justify-center">
                       <CloudinaryImage
-                        src={imageUrl}
+                        src={activeImageUrl}
                         alt={title}
                         width={600}
                         height={600}
@@ -200,9 +217,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     />
                   ) : has3dModel ? (
                     <BagCard3D
-                      modelUrl={isCombo ? comboData!.bagBase.model3dUrl! : bagData!.model3dUrl!}
-                      color={isCombo ? comboData!.color.hex : bagData!.colors[0]?.hex}
-                      glowColor={isCombo ? comboData!.color.glowHex : bagData!.colors[0]?.glowHex}
+                      modelUrl={activeModelUrl}
+                      color={activeColorHex}
+                      glowColor={activeGlowHex}
                       isInteractive={true}
                     />
                   ) : (
@@ -266,6 +283,37 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       : charmData?.description || "Phụ kiện charm độc bản đúc thủ công từ thủy tinh biển và cước lưới ma."}
                   </p>
                 </div>
+
+                {/* 5 Colors Swatches for Bag */}
+                {isBag && (
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700">5 Sắc màu chính thức:</span>
+                      <span className="text-xs font-bold text-[#0b1e3b]">{selectedBagColor.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {BAG_COLORS.map((c) => {
+                        const isSelected = selectedBagColor.id === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setSelectedBagColor(c)}
+                            className={`w-7 h-7 rounded-full transition-all relative flex items-center justify-center cursor-pointer shadow-sm ${
+                              isSelected
+                                ? "ring-2 ring-[#0b1e3b] ring-offset-2 scale-110"
+                                : "opacity-75 hover:opacity-100 hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: c.hex }}
+                            title={c.name}
+                          >
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-white drop-shadow-md" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Specs Grid */}
                 <div className="grid grid-cols-2 gap-2.5 text-xs pt-1">
@@ -348,7 +396,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     disabled={!isAvailable}
                     onClick={() => {
                       if (!isAvailable) return;
-                      onAddToCart(item);
+                      onAddToCart(
+                        isBag
+                          ? {
+                              type: "bag",
+                              data: {
+                                ...bagData!,
+                                colors: [selectedBagColor],
+                                image: selectedBagColor.image || bagData!.image,
+                              },
+                            }
+                          : item
+                      );
                       onClose();
                     }}
                     className={`w-full justify-center shadow-md cursor-pointer text-xs sm:text-sm font-bold ${

@@ -173,8 +173,9 @@ export default function HomePage() {
                   </div>
                   <BagCanvas3D
                     bagBase={BAG_BASES[0]}
-                    selectedColor={BAG_COLORS[1]}
+                    selectedColor={BAG_COLORS[0]}
                     placedCharms={heroCharms}
+                    modelUrl={BAG_COLORS[0].model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
                   />
                 </div>
               ) : (
@@ -185,6 +186,9 @@ export default function HomePage() {
                   show3dToggle={true}
                   onToggle3D={() => setHero3dMode(true)}
                   is3dActive={false}
+                  bagImageUrl={BAG_COLORS[0].image}
+                  selectedColorName={BAG_COLORS[0].name}
+                  selectedColorHex={BAG_COLORS[0].hex}
                 />
               )}
 

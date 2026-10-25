@@ -99,8 +99,8 @@ export default function ShopPage() {
           modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(p.category)
             ? p.category
             : "tote") as any,
-          image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
-          model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : undefined,
+          image: p.imageUrl || p.image || "/assets/products/bags/tuixach-xanh-la.png",
+          model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach-xanh-la.glb",
           stockCount: mfgStock,
           inStock,
         };
@@ -137,7 +137,7 @@ export default function ShopPage() {
             p.originalPrice || Math.round((p.basePrice || p.price || 1450000) * 1.15),
           plasticOffsetKg: p.plasticOffsetKg || 2.2,
           badge: p.badge || "Bộ Phối Độc Bản",
-          image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
+          image: p.imageUrl || p.image || "/assets/products/bags/tuixach-xanh-duong.png",
           bagBase: {
             id: p.id,
             name: p.name || "Túi Lưới Combo",
@@ -151,8 +151,8 @@ export default function ShopPage() {
             anchorPoints: [],
             maxCharms: 6,
             modelType: "tote",
-            image: p.imageUrl || p.image || "/assets/products/tote-blue.png",
-            model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : undefined,
+            image: p.imageUrl || p.image || "/assets/products/bags/tuixach-xanh-duong.png",
+            model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach-xanh-duong.glb",
           },
           color: BAG_COLORS[0],
           includedCharms: Array.isArray(p.includedCharms) ? p.includedCharms : [],

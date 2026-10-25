@@ -1,5 +1,5 @@
 import { NetPack, ManufacturedBagItem, Order, BagBase, BagMeshColor } from "@/types";
-import { BAG_BASES, BAG_COLORS } from "@/data/products";
+import { BAG_BASES, BAG_COLORS, getBagColor } from "@/data/products";
 
 const NET_PACKS_KEY = "net_packs_v1";
 const MANUFACTURED_ITEMS_KEY = "net_manufactured_items_v1";
@@ -124,7 +124,7 @@ export function manufactureBags(params: ManufactureParams): {
   );
   const targetBagId = params.customProduct?.id || matchedBagBase?.id || params.bagBaseId;
 
-  const color = BAG_COLORS.find((c) => c.id === params.colorId) || BAG_COLORS[0];
+  const color = getBagColor(params.colorId);
   const totalNetNeeded = Number((netRequiredPerBag * params.quantity).toFixed(2));
 
   if (pack.remainingWeightKg < totalNetNeeded) {
@@ -374,7 +374,7 @@ export function createNetPackWithBatchPlan(params: CreatePackWithPlanParams): {
   newItems: ManufacturedBagItem[];
 } {
   const bag = BAG_BASES.find((b) => b.id === params.bagBaseId) || BAG_BASES[0];
-  const color = BAG_COLORS.find((c) => c.id === params.colorId) || BAG_COLORS[0];
+  const color = getBagColor(params.colorId);
   const netRequiredPerBag = bag.plasticOffsetKg;
   const totalNetNeeded = Number((netRequiredPerBag * params.quantity).toFixed(2));
 

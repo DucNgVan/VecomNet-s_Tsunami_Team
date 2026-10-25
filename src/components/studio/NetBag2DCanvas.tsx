@@ -24,6 +24,9 @@ interface NetBag2DCanvasProps {
   show3dToggle?: boolean;
   onToggle3D?: () => void;
   is3dActive?: boolean;
+  bagImageUrl?: string;
+  selectedColorHex?: string;
+  selectedColorName?: string;
 }
 
 export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
@@ -36,6 +39,9 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
   show3dToggle = false,
   onToggle3D,
   is3dActive = false,
+  bagImageUrl,
+  selectedColorHex,
+  selectedColorName,
 }) => {
   const bagBoundaryRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -93,6 +99,17 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
           <span className="text-[10px] sm:text-[11px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
             TÚI LƯỚI & CHARM ĐÀ NẴNG
           </span>
+          {selectedColorName && (
+            <div className="flex items-center justify-center gap-1.5 mt-0.5">
+              <span
+                className="w-2 h-2 rounded-full inline-block shadow-xs"
+                style={{ backgroundColor: selectedColorHex || "#489f92" }}
+              />
+              <span className="text-[11px] font-medium text-[#42342B]">
+                {selectedColorName}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* The Bag Container & Dropzone */}
@@ -102,12 +119,21 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
           onPointerUp={handlePointerUp}
           className="relative w-full max-w-[320px] h-[340px] flex items-center justify-center my-auto"
         >
-          {/* SVG Illustration of Bag */}
-          <svg
-            viewBox="0 0 320 340"
-            className="w-full h-full drop-shadow-md overflow-visible pointer-events-none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          {bagImageUrl ? (
+            <div className="w-full h-full relative flex items-center justify-center select-none pointer-events-none p-2">
+              <img
+                src={bagImageUrl}
+                alt={selectedColorName ? `Túi xách NÉT (${selectedColorName})` : "Túi xách NÉT"}
+                className="max-w-full max-h-full object-contain drop-shadow-[0_12px_24px_rgba(36,27,22,0.14)] select-none pointer-events-none transition-all duration-300"
+              />
+            </div>
+          ) : (
+            /* SVG Illustration of Bag */
+            <svg
+              viewBox="0 0 320 340"
+              className="w-full h-full drop-shadow-md overflow-visible pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
             <defs>
               {/* Fine Linen Mesh Texture Pattern */}
               <pattern
@@ -302,6 +328,7 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
               </text>
             </g>
           </svg>
+          )}
 
           {/* Interactive Charms Overlay */}
           <div className="absolute inset-0 pointer-events-auto">

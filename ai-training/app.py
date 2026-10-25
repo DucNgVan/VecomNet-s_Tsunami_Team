@@ -45,15 +45,14 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
         clean_p = clean_p[len("a cute 2d flat die-cut acrylic keychain charm of"):].strip()
 
     negative_prompt = (
-        "mirror, bathroom, toilet, room, walls, door, interior, indoor background, "
-        "holding phone, smartphone, camera, taking selfie, "
-        "real person, realistic photo, photograph, photorealistic, real human skin, 3d render, "
+        "mirror, mirror frame, bathroom, toilet, room, walls, door, interior, indoor background, "
+        "real person photo, photograph, photorealistic, real human skin, 3d render, "
         "multiple items, multiple keychains, collage, grid, sheet, collection, extra objects, "
         "jacket sketches, surrounding clothes, floating accessories, background clutter, "
-        "patterned background, split screen, frame, arch frame, yellow frame, hanging metal loops, key ring, "
-        "border, text, watermark, "
+        "patterned background, split screen, arch frame, yellow frame, "
+        "border text, watermark, "
         "shadow on floor, grey background, gradient background, "
-        "blurry, deformed, ugly, metal glare"
+        "blurry, deformed, ugly, bad anatomy, extra limbs"
     )
 
     if user_image is not None:

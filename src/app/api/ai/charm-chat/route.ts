@@ -170,7 +170,7 @@ async function callLoraKeychainModel(
 async function callFallbackKeychainImage(prompt: string): Promise<string | null> {
   try {
     const encoded = encodeURIComponent(
-      `single isolated 2D flat die-cut acrylic charm of a cute chibi ${prompt}, centered single subject charm, bold clean black contour die-cut outline, isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art, no other objects, no background clutter, no collage, no extra loops, no arch frame`
+      `a cute custom acrylic keychain charm of an adorable 2D anime chibi character: ${prompt}, clear transparent laser-cut die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no other objects, no background clutter, no collage`
     );
     const seed = Math.floor(Math.random() * 999999);
     const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${seed}`;
@@ -247,32 +247,32 @@ TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
    - CHỈ VẼ DUY NHẤT 1 NHÂN VẬT/CHỦ THỂ ĐỨNG CHÍNH GIỮA BỨC TRANH.
    - NỀN BẮT BUỘC LÀ TRẮNG TRỐNG HOÀN TOÀN #FFFFFF (pure solid white #FFFFFF background, completely empty background, no background objects).
 
-QUY TẮC BẢO TOÀN DANH TÍNH, KHUÔN MẶT & DÁNG NGƯỜI (BẮT BUỘC TUÂN THỦ 100%):
+QUY TẮC CHIBI HOÁ NGƯỜI THẬT THÀNH MÓC KHOÁ ACRYLIC MINI (BẮT BUỘC TUÂN THỦ 100%):
 1. NẾU CÓ ẢNH TẢI LÊN:
-   - ƯU TIÊN SỐ 1 TUYỆT ĐỐI: Bám sát 100% người và hình ảnh thực tế!
-   - Nếu trong ảnh là NGƯỜI (chàng trai, cô gái, em bé):
-     * Khuôn mặt: Giữ nguyên hình dạng khuôn mặt, kiểu tóc, râu (râu quai nón/ria mép), kính mắt (màu gọng/kiểu gọng), biểu cảm (nụ cười, ánh mắt) từ ảnh gốc.
-     * Dáng người & Tư thế: Giữ nguyên tư thế tạo dáng (đứng thẳng, đút tay túi quần, góc nghiêng đầu, vị trí cánh tay) của người trong ảnh.
-     * Trang phục: Giữ nguyên kiểu dáng và phối màu quần áo từ ảnh thật (áo polo, áo thun, quần kaki, màu sắc chi tiết).
-     * Tuyệt đối không thay đổi dáng người hoặc đổi sang nhân vật khác!
-   - CỰC KỲ QUAN TRỌNG KHI ẢNH LÀ ẢNH CHỤP ĐỜI THẬT / ẢNH CHỤP GƯƠNG (MIRROR SELFIE) / TRONG NHÀ TẮM / TRONG PHÒNG:
-     * BỎ HOÀN TOÀN BỐI CẢNH XUNG QUANH: TUYỆT ĐỐI KHÔNG vẽ gương soi, KHÔNG vẽ khung viền gương, KHÔNG vẽ tường nhà tắm, cánh cửa phòng, nền nhà hay bất kỳ đồ vật nội thất nào!
-     * TUYỆT ĐỐI KHÔNG VẼ CHIẾC ĐIỆN THOẠI CẦM TAY hay tư thế giơ điện thoại chụp ảnh selfie. Hãy chuyển tay của nhân vật thành tư thế tự nhiên (ví dụ đút một tay vào túi quần, hoặc đứng tạo dáng tự tin).
-     * BÓC TÁCH RIÊNG NHÂN VẬT THÀNH 1 CHIẾC MÓC KHOÁ 2D ĐƠN LẺ: Vẽ riêng duy nhất nhân vật chibi đó, đứng ở giữa trên nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background, clean empty background, no room, no mirror, no phone, no door, no background objects).
-   - Nếu trong ảnh là THÚ CƯNG: Bám sát giống loài, màu lông, đốm lông, tư thế từ ảnh thật.
+   - ƯU TIÊN SỐ 1 TUYỆT ĐỐI: Bám sát người trong ảnh và CHIBI HOÁ THÀNH MÓC KHOÁ ACRYLIC CHARM MINI CỰC KỲ DỄ THƯƠNG (cute kawaii 2D anime chibi acrylic keychain charm)!
+   - PHONG CÁCH CHIBI ANIME ĐỘC BẢN:
+     * Tỷ lệ chibi đáng yêu: Đầu to tròn ngộ nghĩnh (oversized cute round head), đôi má phúng phính ửng hồng (chubby rosy blushing cheeks), mắt anime cười híp mí đáng yêu (happy crescent smiling anime eyes), nụ cười tươi thân thiện.
+     * Khuôn mặt & Kiểu tóc: Giữ nguyên kiểu tóc từ ảnh gốc (ví dụ: short spiky black hair with undercut), kính mắt (round black eyeglasses), râu quai nón tối giản dễ thương.
+     * Trang phục: Giữ nguyên màu áo (áo thun đen, áo polo đen) và màu quần (quần kaki, quần short) từ ảnh thật.
+     * Tư thế dáng người: BÁM SÁT TƯ THẾ TỪ ẢNH! Nếu trong ảnh là tư thế chụp ảnh selfie trước gương: Chuyển thành nhân vật chibi đứng toàn thân, MỘT TAY CẦM CHIẾC SMARTPHONE TRẮNG MINI TẠO DÁNG CHỤP SELFIE, TAY CÒN LẠI ĐÚT TÚI QUẦN (holding a mini white smartphone taking a mirror selfie with one hand, other hand in pocket).
+     * Hình thái móc khoá: Nhân vật chibi được bao bọc bởi đường viền acrylic trong suốt (clear transparent laser-cut die-cut acrylic border around the character), phía trên đỉnh có khoen xỏ kim loại màu bạc (silver metal keychain ring on top).
+   - LOẠI BỎ TRIỆT ĐỂ BỐI CẢNH ĐỜI THẬT:
+     * BỎ HOÀN TOÀN bối cảnh phòng tắm, gương soi, tường nhà, cánh cửa hay đồ vật nội thất đời thật!
+     * Nhân vật đứng trên nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background).
+   - Nếu trong ảnh là THÚ CƯNG: Bám sát giống loài, màu lông, đốm lông, tư thế từ ảnh thật và chibi hoá dễ thương.
    - Nếu trong ảnh là HOA CỎ / ĐỒ VẬT / ĐỊA DANH: Bám sát hình dáng và cấu trúc vật thể từ ảnh thật.
 
 2. NẾU KHÔNG CÓ ẢNH TẢI LÊN:
    - Tự do sáng tạo phôi móc khoá 2D độc bản hoàn toàn mới dựa trên ý tưởng và các ô trống khách hàng điền.
 
 3. CÁC Ô TRỐNG CẦN ĐIỀN VÀO MASTER PROMPT:
-   - subject: Tên chủ thể đã dịch sang tiếng Anh (ví dụ: a cute chibi young man with short black spiky hair, rectangular glasses, neat goatee, wearing black t-shirt and beige pants, a cute cream coffee tumbler with highland logo, a cute orange cat...)
+   - subject: Tên chủ thể đã dịch sang tiếng Anh (ví dụ: a cute custom acrylic keychain charm of an adorable 2D anime chibi character of a young Asian man, a cute cream coffee tumbler with highland logo, a cute orange cat...)
    - feature1: Kiểu dáng / kiểu tóc / tư thế dáng người từ ảnh
    - feature2: Trang phục / phụ kiện / màu sắc từ ảnh
    - feature3: Hành động / biểu cảm từ ảnh
 
 CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC DỊCH TOÀN BỘ SANG TIẾNG ANH, TUYỆT ĐỐI KHÔNG ĐỂ TIẾNG VIỆT):
-"a single isolated 2D flat die-cut acrylic charm of a cute chibi [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], exact same face and posture from reference, centered single subject, thick bold clean black die-cut contour outline, vibrant flat color blocks, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter, no arch frame, no metal key ring, no loops, no mirror, no bathroom, no phone, no room background"
+"a cute custom acrylic keychain charm of an adorable 2D anime chibi character: [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], trendy short spiky black hair with undercut, round black eyeglasses, happy crescent smiling anime eyes with pink blushing cheeks, wearing black polo shirt and beige pants, holding a mini white smartphone taking a mirror selfie with one hand, other hand in pocket, clear transparent die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no background, no room, no mirror, no real photo"
 
 BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {

@@ -263,11 +263,11 @@ export function buildMaster2DKeychainPrompt(
 
   switch (category) {
     case "human": {
-      const subject = s || "a boy or girl";
+      const subject = s || "a young person";
       const hair = !isNegativeOrEmpty(f1) ? `with ${f1}` : "";
       const outfit = !isNegativeOrEmpty(f2) ? `, wearing ${f2}` : "";
       const pose = !isNegativeOrEmpty(f3) ? `, ${f3}` : "";
-      subjectDescription = `a cute chibi ${subject} ${hair}${outfit}${pose}`.replace(/\s+/g, " ").trim();
+      subjectDescription = `an adorable kawaii 2D anime chibi ${subject} ${hair}${outfit}${pose}, oversized cute round head, chubby cheeks with soft pink blush, happy smiling crescent anime eyes`.replace(/\s+/g, " ").trim();
       break;
     }
     case "animal": {
@@ -314,6 +314,6 @@ export function buildMaster2DKeychainPrompt(
     }
   }
 
-  // Khung sườn kỹ thuật 2D Keychain chuẩn in 3D (Bất biến và không thể phá vỡ)
-  return `A cute 2D flat die-cut acrylic keychain charm of ${subjectDescription}, flat vector art, thick bold clean black die-cut contour outline, vibrant flat color blocks, featuring an integrated round hanging loop hole with attached silver metal key ring on top, direct flat front view, 2D flat sticker illustration, isolated on pure solid white #FFFFFF background, clean vector lines, no 3D rendering, no realistic shadows, no metallic reflections, no background gradient, high quality vector art`;
+  // Khung sườn kỹ thuật 2D Acrylic Keychain chuẩn xưởng chế tác
+  return `a cute custom acrylic keychain charm of an adorable 2D anime chibi character: ${subjectDescription}, clear transparent laser-cut die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter, no collage`;
 }

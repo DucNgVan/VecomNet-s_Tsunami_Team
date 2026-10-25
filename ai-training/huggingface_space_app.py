@@ -30,8 +30,8 @@ else:
 # Pipeline Image-to-Image dùng chung 100% trọng số với pipe (không tốn thêm VRAM)
 pipe_img2img = StableDiffusionXLImg2ImgPipeline.from_pipe(pipe)
 
-# 2. Hàm sinh ảnh cốt lõi gắn trực tiếp @spaces.GPU cho ZeroGPU nhận diện (duration=20s tối ưu quota)
-@spaces.GPU(duration=20)
+# 2. Hàm sinh ảnh cốt lõi gắn trực tiếp @spaces.GPU cho ZeroGPU nhận diện (duration=15s tối ưu quota)
+@spaces.GPU(duration=15)
 def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> Image.Image:
     if not prompt or prompt.strip() == "":
         prompt = "a cute 2D acrylic keychain charm"
@@ -78,7 +78,7 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
             image=init_img,
             strength=0.82,
             guidance_scale=8.5,
-            num_inference_steps=28,
+            num_inference_steps=22,
         ).images[0]
     else:
         print("✏️ Chế độ Text-to-Image: Sinh ảnh phôi móc khoá chibi 2D chuẩn nét...")
@@ -91,7 +91,7 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
         result = pipe(
             prompt=full_prompt,
             negative_prompt=negative_prompt,
-            num_inference_steps=28,
+            num_inference_steps=22,
             guidance_scale=7.5,
         ).images[0]
 

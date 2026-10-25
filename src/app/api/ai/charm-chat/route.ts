@@ -40,7 +40,7 @@ async function callLoraKeychainModel(
   if (imageBase64) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
       const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
         method: "POST",
         headers,
@@ -65,7 +65,7 @@ async function callLoraKeychainModel(
   // 2. Thử gọi qua giao thức Gradio 5/6 Call & SSE Stream (Hỗ trợ cả Text2Img và Img2Img)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
 
     const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
       method: "POST",
@@ -140,7 +140,7 @@ async function callLoraKeychainModel(
   if (!imageBase64) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
       const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
         method: "POST",
         headers,

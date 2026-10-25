@@ -325,19 +325,19 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   }`}
                   title={`${placed.charm.vietnameseName} - Kéo để đổi vị trí`}
                 >
-                  {/* Metal Hang Ring / Loop */}
-                  <div className="w-2 h-2.5 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
+                  {/* Metal Hang Ring / Loop only for non-custom standard charms */}
+                  {!isCustom && (
+                    <div className="w-2 h-2.5 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
+                  )}
 
                   {/* Custom Keychain Charm (Hiển thị phôi móc khoá 2D Die-Cut độc bản) */}
                   {isCustom && (customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl) ? (
                     <div
-                      className={`w-14 h-14 sm:w-16 sm:h-16 flex flex-col items-center justify-center relative transition-transform ${
+                      className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center relative transition-transform ${
                         isSelected ? "scale-115 drop-shadow-[0_0_12px_rgba(184,93,67,0.9)]" : "drop-shadow-lg"
                       }`}
                     >
-                      {/* Vòng khoen móc kim loại trên đỉnh */}
-                      <div className="w-2.5 h-3 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs shrink-0" />
-                      <div className="w-12 h-12 flex items-center justify-center p-0.5 relative">
+                      <div className="w-full h-full flex items-center justify-center p-0.5 relative">
                         <img
                           src={customCharmVisual.imageUrl || customCharmVisual.referenceImageUrl}
                           alt="Móc khoá 2D Nét"

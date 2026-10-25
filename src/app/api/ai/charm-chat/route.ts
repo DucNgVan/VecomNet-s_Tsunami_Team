@@ -139,7 +139,7 @@ async function callLoraKeychainModel(
 async function callFallbackKeychainImage(prompt: string): Promise<string | null> {
   try {
     const encoded = encodeURIComponent(
-      `single isolated 2D flat die-cut acrylic keychain charm of a cute chibi ${prompt}, centered single subject charm, bold clean black contour die-cut outline, top metal key ring, isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art, no other objects, no background clutter, no collage`
+      `single isolated 2D flat die-cut acrylic charm of a cute chibi ${prompt}, centered single subject charm, bold clean black contour die-cut outline, isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art, no other objects, no background clutter, no collage, no extra loops, no arch frame`
     );
     const seed = Math.floor(Math.random() * 999999);
     const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${seed}`;
@@ -206,7 +206,7 @@ TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
 2. KHÔNG có bóng kim loại phản chiếu tả thực (no photorealistic metallic reflection).
 3. KHÔNG có nền dơ, KHÔNG đổ bóng gradient xám (no grey shadows, no background gradient).
 4. BẮT BUỘC nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background) để bóc nền trong suốt sạch sẽ.
-5. HÌNH DÁNG MÓC KHOÁ: Phải có khoen xỏ tròn và vòng móc kim loại trên đỉnh (top hanging loop with metal keyring). Viền ngoài bo die-cut sắc nét (bold dark die-cut outline), mảng màu phẳng (flat color blocks), phong cách 2D vector / sticker chibi.
+5. HÌNH DÁNG CHARM: Viền ngoài bo die-cut sắc nét (bold dark die-cut outline), mảng màu phẳng (flat color blocks), phong cách 2D vector / sticker chibi. TUYỆT ĐỐI KHÔNG vẽ thêm khoen xỏ, vòng kim loại hay khung vòm thừa trên đỉnh đầu (NO metal loops, NO key rings, NO arch frame).
 6. BẮT BUỘC DỊCH TOÀN BỘ CÁC Ô ĐIỀN CỦA KHÁCH TỪ TIẾNG VIỆT SANG TIẾNG ANH ĐỒ HOẠ CHUẨN XÁC TRONG masterPrompt (Tuyệt đối không để nguyên cụm từ tiếng Việt trong masterPrompt vì model sinh ảnh chỉ hiểu tiếng Anh).
 7. ĐỐI VỚI VẬT THỂ (OBJECT), ĐỊA DANH (LANDMARK), HOA CỎ (FLORA) HOẶC KHI KHÁCH NÓI "KHÔNG" / BỎ QUA:
    - TUYỆT ĐỐI KHÔNG TỰ Ý THÊM NÉT MẶT, MẮT CƯỜI HAY MÁ HỒNG (NO smiling eyes, NO blushing cheeks, NO anime cartoon face on inanimate objects).
@@ -234,7 +234,7 @@ QUY TẮC BẢO TOÀN DANH TÍNH CHỦ THỂ (BẮT BUỘC TUÂN THỦ 100%):
    - feature3: Hành động / chi tiết điểm xuyết (đôi mắt cười kawaii, cầm ly cà phê, ôm trà sữa, giọt sương mai...)
 
 CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC DỊCH TOÀN BỘ SANG TIẾNG ANH, TUYỆT ĐỐI KHÔNG ĐỂ TIẾNG VIỆT):
-"a single isolated 2D flat die-cut acrylic keychain charm of a cute chibi [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], centered single subject, thick bold clean black die-cut contour outline, vibrant flat color blocks, top hanging loop with attached silver metal key ring, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter"
+"a single isolated 2D flat die-cut acrylic charm of a cute chibi [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], centered single subject, thick bold clean black die-cut contour outline, vibrant flat color blocks, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter, no arch frame, no metal key ring, no loops"
 
 BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {

@@ -42,15 +42,16 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
         clean_p = clean_p[len("a cute 2d flat die-cut acrylic keychain charm of"):].strip()
 
     full_prompt = (
-        f"net_keychain, a single isolated 2D flat die-cut acrylic keychain charm of {clean_p}, "
+        f"net_keychain, a single isolated 2D flat die-cut acrylic charm of {clean_p}, "
         "centered single subject, clean bold black contour die-cut outline, "
-        "vibrant flat colors, top hanging loop with attached silver metal key ring, "
+        "vibrant flat colors, "
         "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art"
     )
     negative_prompt = (
         "multiple items, multiple keychains, collage, grid, sheet, collection, extra objects, "
         "jacket sketches, surrounding clothes, floating accessories, background clutter, "
-        "patterned background, split screen, frame, border, text, watermark, 3d render, "
+        "patterned background, split screen, frame, arch frame, yellow frame, hanging metal loops, key ring, "
+        "border, text, watermark, 3d render, "
         "realistic photo, photorealistic, shadow on floor, grey background, gradient background, "
         "blurry, deformed, ugly, metal glare"
     )

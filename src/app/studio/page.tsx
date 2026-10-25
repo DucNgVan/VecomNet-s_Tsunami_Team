@@ -3025,20 +3025,15 @@ Key 3D printing & charm specs:
                                           <span className="text-[9px] text-[#B85D43] font-medium leading-tight">AI đang vẽ lại phôi 2D...</span>
                                         </div>
                                       ) : generatedImageUrl || customImageFile ? (
-                                        <div className="w-full h-full relative flex flex-col items-center justify-center">
-                                          {/* Vòng móc kim loại phía trên (Keychain Ring) */}
-                                          <div className="w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent -mb-1 shadow-xs z-10 shrink-0" />
-                                          <div className="w-24 h-24 relative flex items-center justify-center">
-                                            <img
-                                              src={generatedImageUrl || customImageFile || ""}
-                                              alt={motifName || "Móc khoá 2D Nét"}
-                                              className="w-full h-full object-contain select-none drop-shadow-md"
-                                            />
-                                          </div>
+                                        <div className="w-28 h-28 relative flex items-center justify-center">
+                                          <img
+                                            src={generatedImageUrl || customImageFile || ""}
+                                            alt={motifName || "Móc khoá 2D Nét"}
+                                            className="w-full h-full object-contain select-none drop-shadow-md"
+                                          />
                                         </div>
                                       ) : (
                                         <div className="w-24 h-24 flex flex-col items-center justify-center text-[#B85D43] relative border-2 border-dashed border-[#B85D43]/40 rounded-2xl bg-white/60 shadow-xs">
-                                          <div className="absolute -top-3 w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent shadow-xs" />
                                           <Sparkles className="w-6 h-6 mb-1 text-[#B85D43]" />
                                           <span className="text-[10px] font-semibold">Phôi Tự Do</span>
                                         </div>

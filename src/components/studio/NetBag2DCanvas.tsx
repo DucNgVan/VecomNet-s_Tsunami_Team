@@ -328,7 +328,7 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   {/* Metal Hang Ring / Loop */}
                   <div className="w-2 h-2.5 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
 
-                  {/* Custom Keychain Charm (Hiển thị ảnh chân dung/kỷ niệm của khách) */}
+                  {/* Custom Keychain Charm (Hiển thị phôi móc khoá 2D Die-Cut độc bản) */}
                   {isCustom && (customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl) ? (
                     <div
                       className={`w-14 h-14 sm:w-16 sm:h-16 flex flex-col items-center justify-center relative transition-transform ${
@@ -336,33 +336,14 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                       }`}
                     >
                       {/* Vòng khoen móc kim loại trên đỉnh */}
-                      <div className="w-2.5 h-3 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
-                      <div
-                        className={`w-12 h-12 overflow-hidden border-1.5 border-white/90 shadow-md bg-white flex items-center justify-center p-0.5 transition-all ${
-                          customCharmVisual?.shape === "circle"
-                            ? "rounded-full"
-                            : customCharmVisual?.shape === "teardrop"
-                            ? "rounded-t-full rounded-b-md"
-                            : customCharmVisual?.shape === "heart"
-                            ? "rounded-2xl"
-                            : customCharmVisual?.shape === "freeform"
-                            ? "rounded-[16px_4px_16px_4px]"
-                            : "rounded-xl"
-                        }`}
-                      >
+                      <div className="w-2.5 h-3 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs shrink-0" />
+                      <div className="w-12 h-12 flex items-center justify-center p-0.5 relative">
                         <img
                           src={customCharmVisual.imageUrl || customCharmVisual.referenceImageUrl}
-                          alt={customCharmVisual.engravedText || "Móc khoá 2D Nét"}
-                          className={`w-full h-full object-cover select-none pointer-events-none ${
-                            customCharmVisual?.shape === "circle" ? "rounded-full" : "rounded-lg"
-                          }`}
+                          alt="Móc khoá 2D Nét"
+                          className="w-full h-full object-contain select-none pointer-events-none drop-shadow-md"
                         />
                       </div>
-                      {customCharmVisual?.engravedText && (
-                        <span className="absolute -bottom-1 text-[7px] font-mono tracking-tight text-white/95 truncate max-w-[48px] bg-black/75 px-1 py-0.5 rounded shadow">
-                          {customCharmVisual.engravedText}
-                        </span>
-                      )}
                       {/* Active Drag Indicator Icon */}
                       <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
                         <Move className="w-2.5 h-2.5" />

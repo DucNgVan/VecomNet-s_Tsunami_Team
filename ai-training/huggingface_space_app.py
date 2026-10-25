@@ -1,107 +1,130 @@
-"""
-NÉT STUDIO — CLOUD API SERVICE (DEPLOY LÊN HUGGING FACE SPACES ZERO-GPU HOẶC REPLICATE)
-Chức năng: Cung cấp API trực tiếp cho website Next.js gọi vào khi khách bấm nút "Tạo Móc Khoá Độc Bản".
-Chi phí: 0đ (Hugging Face Spaces Zero-GPU).
-"""
-
 import os
 import io
 import base64
 import torch
-from fastapi import FastAPI, HTTPException
+import spaces
+from PIL import Image
 from pydantic import BaseModel
 from typing import Optional
-from PIL import Image
+import gradio as gr
 from diffusers import StableDiffusionXLPipeline
-from diffusers.utils import load_image
+from fastapi import HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="Nét Studio 2D Keychain AI API")
-
-# Load model weights
-device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.float16 if device == "cuda" else torch.float32
-
-print("⏳ Khởi động mô hình Nét Keychain AI...")
-pipeline = StableDiffusionXLPipeline.from_pretrained(
+# 1. Khởi tạo mô hình SDXL Base và nạp trọng số LoRA Nét Studio
+print("⏳ Đang tải mô hình SDXL Base...")
+pipe = StableDiffusionXLPipeline.from_pretrained(
     "stabilityai/stable-diffusion-xl-base-1.0",
-    torch_dtype=dtype,
-    variant="fp16" if device == "cuda" else None,
-).to(device)
+    torch_dtype=torch.float16,
+    variant="fp16",
+    use_safetensors=True
+).to("cuda")
 
-# Nạp LoRA nếu có sẵn
 LORA_PATH = os.getenv("LORA_PATH", "./net_keychain_sdxl_lora.safetensors")
 if os.path.exists(LORA_PATH):
-    print(f"✓ Nạp LoRA: {LORA_PATH}")
-    pipeline.load_lora_weights(LORA_PATH)
+    print(f"✓ Nạp LoRA thành công từ: {LORA_PATH}")
+    pipe.load_lora_weights(LORA_PATH)
+else:
+    print(f"⚠️ Cảnh báo: Không tìm thấy file {LORA_PATH}")
 
-# Nạp IP-Adapter nếu có GPU
-if device == "cuda":
-    try:
-        pipeline.load_ip_adapter(
-            "h94/IP-Adapter",
-            subfolder="sdxl_models",
-            weight_name="ip-adapter-plus_sdxl_vit-h.safetensors"
-        )
-        pipeline.set_ip_adapter_scale(0.7)
-        print("✓ Nạp IP-Adapter Plus thành công!")
-    except Exception as e:
-        print(f"⚠️ Cảnh báo nạp IP-Adapter: {e}")
+# 2. Hàm sinh ảnh cốt lõi gắn trực tiếp @spaces.GPU cho ZeroGPU nhận diện (duration=20s tối ưu quota)
+@spaces.GPU(duration=20)
+def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> Image.Image:
+    if not prompt or prompt.strip() == "":
+        prompt = "a cute 2D acrylic keychain charm"
+    
+    # Chuẩn hoá prompt, tránh bị lặp từ khoá
+    clean_p = prompt.replace("net_keychain,", "").replace("net_keychain", "").strip()
+    prefix_check = "a 2d flat die-cut acrylic keychain charm of"
+    if clean_p.lower().startswith(prefix_check):
+        clean_p = clean_p[len(prefix_check):].strip()
+    if clean_p.lower().startswith("a cute 2d flat die-cut acrylic keychain charm of"):
+        clean_p = clean_p[len("a cute 2d flat die-cut acrylic keychain charm of"):].strip()
 
+    full_prompt = (
+        f"net_keychain, a single isolated 2D flat die-cut acrylic keychain charm of {clean_p}, "
+        "centered single subject, clean bold black contour die-cut outline, "
+        "vibrant flat colors, top hanging loop with attached silver metal key ring, "
+        "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art"
+    )
+    negative_prompt = (
+        "multiple items, multiple keychains, collage, grid, sheet, collection, extra objects, "
+        "jacket sketches, surrounding clothes, floating accessories, background clutter, "
+        "patterned background, split screen, frame, border, text, watermark, 3d render, "
+        "realistic photo, photorealistic, shadow on floor, grey background, gradient background, "
+        "blurry, deformed, ugly, metal glare"
+    )
+    result = pipe(
+        prompt=full_prompt,
+        negative_prompt=negative_prompt,
+        num_inference_steps=28,
+        guidance_scale=7.5,
+    ).images[0]
+    return result
+
+# 3. Tạo giao diện Gradio Blocks
+with gr.Blocks(title="Nét Studio 2D Keychain AI") as demo:
+    gr.Markdown("# 🎨 NÉT STUDIO — 2D KEYCHAIN AI GENERATOR")
+    gr.Markdown("Mô hình AI tạo **Móc khoá 2D Độc Bản (2D Flat Acrylic Keychain Charm)** từ lưới ma đại dương.")
+    
+    with gr.Row():
+        with gr.Column():
+            prompt_input = gr.Textbox(
+                label="Mô tả ý tưởng (Prompt)",
+                placeholder="Ví dụ: a cool chibi Vietnamese boy with glasses, black t-shirt",
+                lines=3
+            )
+            image_input = gr.Image(label="Ảnh tham chiếu (Tuỳ chọn)", type="pil")
+            btn = gr.Button("✨ Tạo Móc Khoá 2D", variant="primary")
+        with gr.Column():
+            output_image = gr.Image(label="Bản vẽ Móc Khoá 2D Độc Bản")
+    
+    # ZeroGPU yêu cầu hàm truyền vào fn phải được bọc trực tiếp bởi @spaces.GPU
+    btn.click(
+        fn=generate_keychain,
+        inputs=[prompt_input, image_input],
+        outputs=[output_image],
+        api_name="generate_keychain"
+    )
+
+# 4. Gắn thêm REST API endpoint cho Website Nét Studio Next.js
 class GenerateRequest(BaseModel):
     prompt: str
     imageBase64: Optional[str] = None
     customText: Optional[str] = ""
 
-class GenerateResponse(BaseModel):
-    success: bool
-    imageUrl: str
-    message: str
-
-@app.post("/api/generate-keychain", response_model=GenerateResponse)
-async def generate_keychain_api(req: GenerateRequest):
+async def api_generate_keychain(req: GenerateRequest):
     try:
-        full_prompt = (
-            f"net_keychain, a 2D flat die-cut acrylic keychain charm of {req.prompt}, "
-            "direct flat front view, bold clean black contour die-cut outline, "
-            "vibrant flat colors, top hanging loop with attached silver metal key ring, "
-            "isolated on pure solid white #FFFFFF background, no shadows, 2d sticker vector art"
-        )
-        negative_prompt = (
-            "3d render, realistic photo, photorealistic, shadow on floor, grey background, "
-            "gradient background, blurry, deformed, ugly, metal glare"
-        )
-
-        ip_image = None
+        input_image = None
         if req.imageBase64:
             clean_base64 = req.imageBase64.split(",")[-1]
             image_data = base64.b64decode(clean_base64)
-            ip_image = Image.open(io.BytesIO(image_data)).convert("RGB").resize((1024, 1024))
+            input_image = Image.open(io.BytesIO(image_data)).convert("RGB").resize((1024, 1024))
+        
+        result_img = generate_keychain(req.prompt, input_image)
 
-        kwargs = {
-            "prompt": full_prompt,
-            "negative_prompt": negative_prompt,
-            "num_inference_steps": 28,
-            "guidance_scale": 7.5,
-        }
-        if ip_image and device == "cuda":
-            kwargs["ip_adapter_image"] = ip_image
-
-        generated = pipeline(**kwargs).images[0]
-
-        # Convert to Base64
         buffered = io.BytesIO()
-        generated.save(buffered, format="PNG")
+        result_img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         data_url = f"data:image/png;base64,{img_str}"
 
-        return GenerateResponse(
-            success=True,
-            imageUrl=data_url,
-            message="Đã tạo móc khoá 2D độc bản thành công!"
-        )
-    except Exception as err:
-        raise HTTPException(status_code=500, detail=str(err))
+        return {
+            "success": True,
+            "imageUrl": data_url,
+            "message": "Đã tạo móc khoá 2D độc bản thành công!"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-def health_check():
-    return {"status": "ok", "service": "Nét Studio 2D Keychain AI API"}
+demo.app.add_api_route("/api/generate-keychain", api_generate_keychain, methods=["POST"])
+demo.app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 5. Khởi chạy bằng demo.launch() chuẩn của Hugging Face Gradio Space
+if __name__ == "__main__":
+    demo.launch()

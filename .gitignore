@@ -16,6 +16,7 @@
 # Misc
 .DS_Store
 *.pem
+*.safetensors
 
 # Debug
 npm-debug.log*

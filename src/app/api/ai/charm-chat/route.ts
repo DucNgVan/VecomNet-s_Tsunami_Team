@@ -22,6 +22,141 @@ interface ChatRequestPayload {
 }
 
 /**
+ * Gọi mô hình LoRA SDXL trên Hugging Face Spaces (Zero-GPU Gradio 5/6 SSE API hoặc REST fallback)
+ */
+async function callLoraKeychainModel(
+  baseUrl: string,
+  prompt: string,
+  imageBase64?: string
+): Promise<string | null> {
+  const cleanBase = baseUrl.replace(/\/$/, "");
+  const hfToken = process.env.HF_TOKEN;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (hfToken) {
+    headers["Authorization"] = `Bearer ${hfToken}`;
+  }
+
+  // 1. Thử gọi qua giao thức Gradio 5/6 Call & SSE Stream
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        data: [prompt, imageBase64 ? { url: imageBase64 } : null],
+      }),
+      signal: controller.signal,
+    });
+
+    if (initRes.ok) {
+      const initData = await initRes.json();
+      const eventId = initData.event_id;
+
+      if (eventId) {
+        const streamRes = await fetch(
+          `${cleanBase}/gradio_api/call/generate_keychain/${eventId}`,
+          { headers, signal: controller.signal }
+        );
+
+        if (streamRes.ok && streamRes.body) {
+          const reader = streamRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split("\n");
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].startsWith("event: complete")) {
+                const nextLine = lines[i + 1] || "";
+                if (nextLine.startsWith("data: ")) {
+                  clearTimeout(timeoutId);
+                  const rawData = nextLine.replace("data: ", "").trim();
+                  const parsed = JSON.parse(rawData);
+                  const fileObj = Array.isArray(parsed) ? parsed[0] : parsed;
+                  const remoteUrl = fileObj?.url;
+                  if (remoteUrl) {
+                    try {
+                      const imgFetch = await fetch(remoteUrl);
+                      if (imgFetch.ok) {
+                        const arrayBuf = await imgFetch.arrayBuffer();
+                        const b64 = Buffer.from(arrayBuf).toString("base64");
+                        const mime = imgFetch.headers.get("content-type") || "image/webp";
+                        return `data:${mime};base64,${b64}`;
+                      }
+                    } catch (fetchErr) {
+                      console.warn("Could not convert image to base64, using remote URL:", fetchErr);
+                    }
+                    return remoteUrl;
+                  }
+                }
+              } else if (lines[i].startsWith("event: error")) {
+                clearTimeout(timeoutId);
+                console.warn("[Gradio SSE Error Event]:", lines[i + 1] || "");
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    clearTimeout(timeoutId);
+  } catch (gradioErr) {
+    console.warn("[Gradio API Warning]:", gradioErr);
+  }
+
+  // 2. Thử fallback qua custom REST endpoint (/api/generate-keychain) nếu có
+  try {
+    const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        prompt,
+        imageBase64: imageBase64 || undefined,
+      }),
+    });
+    if (aiRes.ok) {
+      const aiJson = await aiRes.json();
+      if (aiJson.imageUrl) {
+        return aiJson.imageUrl;
+      }
+    }
+  } catch (customErr) {
+    console.warn("[Custom Endpoint Warning]:", customErr);
+  }
+
+  return null;
+}
+
+/**
+ * Sinh ảnh móc khoá 2D dự phòng khi Hugging Face ZeroGPU bận hoặc hết hạn mức
+ */
+async function callFallbackKeychainImage(prompt: string): Promise<string | null> {
+  try {
+    const encoded = encodeURIComponent(
+      `single isolated 2D flat die-cut acrylic keychain charm of a cute chibi ${prompt}, centered single subject charm, bold clean black contour die-cut outline, top metal key ring, isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art, no other objects, no background clutter, no collage`
+    );
+    const seed = Math.floor(Math.random() * 999999);
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${seed}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const buf = await res.arrayBuffer();
+      const b64 = Buffer.from(buf).toString("base64");
+      const mime = res.headers.get("content-type") || "image/jpeg";
+      return `data:${mime};base64,${b64}`;
+    }
+  } catch (err) {
+    console.warn("[Fallback Image Error]:", err);
+  }
+  return null;
+}
+
+/**
  * NÉT STUDIO 2D KEYCHAIN DESIGN AGENT
  * Phân tích yêu cầu, tư vấn phong cách, trích xuất đặc trưng nhận dạng
  * và chuẩn hoá phôi móc khoá thủ công 2D cho nghệ nhân xưởng chế tác.
@@ -77,6 +212,12 @@ TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
    - TUYỆT ĐỐI KHÔNG TỰ Ý THÊM NÉT MẶT, MẮT CƯỜI HAY MÁ HỒNG (NO smiling eyes, NO blushing cheeks, NO anime cartoon face on inanimate objects).
    - Chỉ thêm biểu cảm khuôn mặt nếu khách ĐÍCH DANH yêu cầu "có mặt cười", "mặt chibi".
    - Nếu khách chọn "không", "bỏ qua", "không có", hoặc để trống feature3, hãy giữ nguyên dáng vẻ chân thực, tinh tế, tối giản của vật thể!
+8. TUYỆT ĐỐI CHỈ VẼ DUY NHẤT 1 CHIẾC MÓC KHOÁ Ở CHÍNH GIỮA (SINGLE ISOLATED CHARM ONLY - CỰC KỲ QUAN TRỌNG):
+   - KHÔNG ĐƯỢC VẼ NHIỀU ĐỒ VẬT, KHÔNG VẼ BỘ SƯU TẬP (NO multiple items, NO duplicate keychains, NO collection, NO sticker sheet).
+   - TUYỆT ĐỐI KHÔNG VẼ TRANH GHÉP, KHÔNG CHIA Ô LƯỚI (NO collage, NO grid, NO split screen).
+   - TUYỆT ĐỐI KHÔNG VẼ THÊM ÁO KHOÁC, QUẦN ÁO HAY PHỤ KIỆN LƠ LỬNG XUNG QUANH (NO extra jackets, NO floating clothes, NO surrounding accessories, NO floating sketches).
+   - CHỈ VẼ DUY NHẤT 1 NHÂN VẬT/CHỦ THỂ ĐỨNG CHÍNH GIỮA BỨC TRANH.
+   - NỀN BẮT BUỘC LÀ TRẮNG TRỐNG HOÀN TOÀN #FFFFFF (pure solid white #FFFFFF background, completely empty background, no background objects).
 
 QUY TẮC BẢO TOÀN DANH TÍNH CHỦ THỂ (BẮT BUỘC TUÂN THỦ 100%):
 1. NẾU CÓ ẢNH TẢI LÊN:
@@ -93,7 +234,7 @@ QUY TẮC BẢO TOÀN DANH TÍNH CHỦ THỂ (BẮT BUỘC TUÂN THỦ 100%):
    - feature3: Hành động / chi tiết điểm xuyết (đôi mắt cười kawaii, cầm ly cà phê, ôm trà sữa, giọt sương mai...)
 
 CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC DỊCH TOÀN BỘ SANG TIẾNG ANH, TUYỆT ĐỐI KHÔNG ĐỂ TIẾNG VIỆT):
-"A cute 2D flat die-cut acrylic keychain charm of [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], flat vector art, thick bold clean black die-cut contour outline, vibrant flat color blocks, featuring an integrated round hanging loop hole with attached silver metal key ring on top, direct flat front view, 2D flat sticker illustration, isolated on pure solid white #FFFFFF background, clean vector lines, no 3D rendering, no realistic shadows, no metallic reflections, no background gradient, high quality vector art"
+"a single isolated 2D flat die-cut acrylic keychain charm of a cute chibi [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], centered single subject, thick bold clean black die-cut contour outline, vibrant flat color blocks, top hanging loop with attached silver metal key ring, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter"
 
 BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {
@@ -144,11 +285,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     if (userPrompt) {
       promptFull += `Ý TƯỞNG CỦA KHÁCH HÀNG: "${userPrompt}".\n`;
     }
-    promptFull += `- Màu túi lưới phối cùng: ${bagColorName}.\n`;
-    if (customText) promptFull += `- Chữ khắc kỷ niệm: "${customText}".\n`;
-    promptFull += `- Yêu cầu kỹ thuật cốt lõi: Bắt buộc là MÓC KHOÁ 2D (2D flat acrylic / die-cut keychain charm). Trên đỉnh có lỗ xỏ và khoen móc kim loại. Bản vẽ 2D vector phẳng, nét viền đen dày rõ ràng, mảng màu phẳng, KHÔNG RENDER 3D, KHÔNG BÓNG KIM LOẠI PHẢN CHIẾU, NỀN TRẮNG TINH KHIẾT #FFFFFF TUYỆT ĐỐI. DỊCH TOÀN BỘ CÁC Ô SANG TIẾNG ANH TRONG masterPrompt.`;
-    if (customText) promptFull += `- Chữ khắc kỷ niệm: "${customText}".\n`;
-    promptFull += `- Yêu cầu kỹ thuật: Tranh vẽ 2D flat vector, nét viền đen dày rõ ràng, mảng màu phẳng để nghệ nhân xưởng đùn khối in 3D, có khoen xỏ 2D trên đỉnh, nền trắng sạch sẽ, KHÔNG làm 3D đổ bóng.`;
+    promptFull += `- Yêu cầu kỹ thuật cốt lõi: Bắt buộc là DUY NHẤT 1 CHIẾC MÓC KHOÁ 2D ĐƠN LẺ Ở CHÍNH GIỮA (a single isolated 2D flat acrylic keychain charm). Trên đỉnh có lỗ xỏ và 1 khoen móc kim loại duy nhất. Bản vẽ 2D vector phẳng, nét viền đen dày rõ ràng bo quanh thân, mảng màu phẳng, KHÔNG RENDER 3D, KHÔNG VẼ NHIỀU ĐỒ VẬT, KHÔNG VẼ TRANH GHÉP COLLAGE, KHÔNG VẼ ÁO KHOÁC VÀ PHỤ KIỆN LƠ LỬNG PHÍA SAU, NỀN TRẮNG TINH KHIẾT #FFFFFF TUYỆT ĐỐI. DỊCH TOÀN BỘ CÁC Ô SANG TIẾNG ANH TRONG masterPrompt.`;
 
     currentParts.push({ text: promptFull });
 
@@ -349,40 +486,51 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     }
 
     // BƯỚC 2: CHUẨN HOÁ PHÔI MÓC KHOÁ 2D THỦ CÔNG
-    // 1. Nếu đã cấu hình CUSTOM_AI_API_URL (Hugging Face Spaces / Replicate): Gọi thẳng mô hình LoRA
-    const customAiEndpoint = process.env.CUSTOM_AI_API_URL;
+    // 1. Thử gọi mô hình LoRA SDXL chuyên biệt trên Hugging Face Spaces
+    const customAiEndpoint =
+      process.env.CUSTOM_AI_API_URL ||
+      "https://ducnv1792005-nets-ecommerce.hf.space";
     if (customAiEndpoint && parsedData.masterPrompt) {
       try {
-        const aiRes = await fetch(`${customAiEndpoint.replace(/\/$/, "")}/api/generate-keychain`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: parsedData.masterPrompt,
-            imageBase64: imageBase64 || undefined,
-            customText,
-          }),
-        });
-        if (aiRes.ok) {
-          const aiJson = await aiRes.json();
-          if (aiJson.imageUrl) {
-            parsedData.imageUrl = aiJson.imageUrl;
-            parsedData.imageProvider = "net-keychain-lora";
-          }
+        const loraImageUrl = await callLoraKeychainModel(
+          customAiEndpoint,
+          parsedData.masterPrompt,
+          imageBase64 || undefined
+        );
+        if (loraImageUrl) {
+          parsedData.imageUrl = loraImageUrl;
+          parsedData.imageProvider = "net-keychain-lora";
         }
       } catch (loraErr) {
         console.warn("[Custom LoRA Endpoint Warning]:", loraErr);
       }
     }
 
-    // 2. Fallback: Nếu chưa bật LoRA Cloud hoặc đang chạy nội bộ, hiển thị ảnh mẫu khách gửi
-    if (!parsedData.imageUrl) {
-      if (imageBase64) {
-        parsedData.imageUrl = imageBase64;
-        parsedData.imageProvider = "user-reference";
-      } else {
-        parsedData.imageUrl = null;
-        parsedData.imageProvider = "artisan-badge";
+    // 2. Dự phòng AI tức thì: Nếu Hugging Face ZeroGPU đang bận hoặc quá tải quota, sinh phôi 2D tự động
+    if (!parsedData.imageUrl && parsedData.masterPrompt) {
+      try {
+        const fallbackTarget =
+          parsedData.featuresExtracted?.subject ||
+          parsedData.motifName ||
+          userPrompt ||
+          "acrylic charm";
+        const fallbackImg = await callFallbackKeychainImage(fallbackTarget);
+        if (fallbackImg) {
+          parsedData.imageUrl = fallbackImg;
+          parsedData.imageProvider = "keychain-ai-fallback";
+        }
+      } catch (fallbackErr) {
+        console.warn("[Fallback AI Warning]:", fallbackErr);
       }
+    }
+
+    // 3. Dự phòng cấp cuối: Nếu không tạo được ảnh AI, hiển thị phôi nghệ nhân (không gán ảnh gốc vào imageUrl để tránh bị nhầm ảnh chụp với bản vẽ 2D)
+    if (!parsedData.imageUrl) {
+      parsedData.imageUrl = null;
+      parsedData.imageProvider = "artisan-badge";
+    }
+    if (imageBase64) {
+      parsedData.referenceImageUrl = imageBase64;
     }
 
     return NextResponse.json({

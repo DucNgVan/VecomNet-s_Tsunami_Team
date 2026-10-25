@@ -1,0 +1,12 @@
+diffusers>=0.30.0
+transformers>=4.40.0
+accelerate>=0.30.0
+peft>=0.7.0
+torch>=2.2.0
+torchvision
+safetensors
+fastapi
+uvicorn
+pydantic
+Pillow
+spaces

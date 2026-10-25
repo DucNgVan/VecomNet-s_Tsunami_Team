@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NÉT Atelier OS — Bảng Điều Hành Xưởng Thủ Công NÉT</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Canvas Confetti for Celebration Effects -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts: Playfair Display + Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          },
+          colors: {
+            brand: {
+              espresso: '#1A130F',
+              wood: '#241B16',
+              terracotta: '#B85D43',
+              terracottaHover: '#A04E36',
+              gold: '#D4AF37',
+              goldSoft: '#EEDC9A',
+              sand: '#FBF9F5',
+              cream: '#F4ECE1',
+              border: '#E8DFD5',
+              borderDark: '#3D2F27',
+              muted: '#7A6F68',
+            }
+          },
+          boxShadow: {
+            'luxury': '0 12px 35px -8px rgba(36, 27, 22, 0.08), 0 4px 12px -2px rgba(36, 27, 22, 0.04)',
+            'luxury-hover': '0 20px 45px -10px rgba(184, 93, 67, 0.16), 0 8px 16px -4px rgba(36, 27, 22, 0.06)',
+            'glow-gold': '0 0 25px -4px rgba(212, 175, 55, 0.35)',
+            'glow-terracotta': '0 0 25px -4px rgba(184, 93, 67, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F8F5EE;
+      color: #241B16;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient luxury grain */
+    .artisan-pattern {
+      background-image: radial-gradient(#241B16 0.5px, transparent 0.5px);
+      background-size: 24px 24px;
+      opacity: 0.035;
+    }
+
+    /* Smooth Drag & Drop / Transitions */
+    .pipeline-card {
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pipeline-card:hover {
+      transform: translateY(-3px);
+    }
+
+    /* Senior / Big Font Mode */
+    body.senior-mode {
+      font-size: 1.125rem;
+    }
+    body.senior-mode .pipeline-card {
+      padding: 1.5rem !important;
+    }
+    body.senior-mode button {
+      min-height: 3.5rem !important;
+      font-size: 1.1rem !important;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F4ECE1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D8CEBE;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #B85D43;
+    }
+
+    @keyframes pulseSoft {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.04); opacity: 0.85; }
+    }
+    .pulse-soft {
+      animation: pulseSoft 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col relative selection:bg-[#B85D43] selection:text-white">
+
+  <!-- Background Texture -->
+  <div class="artisan-pattern fixed inset-0 pointer-events-none z-0"></div>
+
+  <!-- TOAST NOTIFICATION CONTAINER (Floating Luxury Feedback) -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
+  <!-- TOP LUXURY HEADER (Boutique Atelier Style) -->
+  <header class="bg-[#1A130F] text-[#FAF7F2] border-b border-[#36271F] sticky top-0 z-40 shadow-xl backdrop-blur-md">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between gap-6">
+      
+      <!-- Brand & Atelier Title -->
+      <div class="flex items-center gap-4">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2E2018] to-[#120D0A] border border-[#5A4335] text-[#D4AF37] font-serif font-bold text-xl flex items-center justify-center shadow-inner tracking-wider">
+          NÉT
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h1 class="font-serif font-bold text-lg sm:text-xl text-white tracking-wide">
+              Bảng Điều Hành Xưởng NÉT
+            </h1>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-[#D4AF37]/15 text-[#EEDC9A] border border-[#D4AF37]/30">
+              ATELIER OS
+            </span>
+          </div>
+          <p class="text-xs text-[#A89C93] flex items-center gap-2 mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>Ca sáng hôm nay • Dành cho nhân viên xưởng & trực ban</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Center: 3 Clean Primary Tabs (No Tech Jargon) -->
+      <nav class="hidden md:flex items-center bg-[#241B16] p-1.5 rounded-2xl border border-white/10 shadow-inner">
+        <button id="nav-btn-orders" onclick="switchTab('orders')" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#B85D43] text-white shadow-md transition-all flex items-center gap-2.5">
+          <span>📋 Đơn Hàng Cần Làm</span>
+          <span id="nav-pending-badge" class="px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-extrabold">5</span>
+        </button>
+        <button id="nav-btn-inventory" onclick="switchTab('inventory')" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#D8CEBE] hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+          <span>🎒 Kho Túi Sẵn Có</span>
+          <span class="text-[11px] text-emerald-400 font-mono font-semibold">14 cái</span>
+        </button>
+        <button id="nav-btn-finance" onclick="switchTab('finance')" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#D8CEBE] hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+          <span>💵 Tiền Bán Hôm Nay</span>
+          <span class="text-[11px] text-[#EEDC9A] font-mono font-semibold">4.850.000 đ</span>
+        </button>
+      </nav>
+
+      <!-- Right: Senior Mode Toggle + New Order Button -->
+      <div class="flex items-center gap-3">
+        
+        <!-- Toggle Chế Độ Chữ To Cho Người Lớn Tuổi -->
+        <button 
+          id="senior-toggle-btn"
+          onclick="toggleSeniorMode()"
+          class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-xs text-[#D8CEBE] hover:text-white transition-all cursor-pointer"
+          title="Bật giao diện chữ to, nút bấm cực lớn cho người lớn tuổi hoặc không rành công nghệ"
+        >
+          <span class="text-base">👓</span>
+          <span id="senior-btn-text">Chế Độ Chữ To</span>
+        </button>
+
+        <!-- Nút Tạo Đơn 10 Giây -->
+        <button 
+          onclick="openCreateModal()"
+          class="bg-gradient-to-r from-[#B85D43] to-[#A04E36] hover:from-[#A04E36] hover:to-[#8B3F2A] text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-[#B85D43]/25 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+        >
+          <span class="text-base font-light leading-none">+</span>
+          <span>Tạo Đơn Nhanh</span>
+        </button>
+
+        <!-- Avatar Cô Lan -->
+        <div class="hidden lg:flex items-center gap-2.5 pl-3 border-l border-white/15">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#B85D43] p-0.5 shadow-sm">
+            <div class="w-full h-full rounded-full bg-[#1A130F] flex items-center justify-center font-bold text-xs text-[#EEDC9A]">
+              CL
+            </div>
+          </div>
+          <div class="text-left text-xs leading-snug">
+            <div class="font-bold text-white">Cô Lan</div>
+            <div class="text-[10.5px] text-[#A89C93]">Trực ban xưởng NÉT</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Mobile Sub-Bar -->
+    <div class="md:hidden flex items-center justify-around border-t border-white/10 py-2.5 bg-[#120D0A] text-xs font-semibold px-2">
+      <button onclick="switchTab('orders')" class="text-[#EEDC9A] font-bold flex items-center gap-1.5">
+        <span>📋 Đơn Hàng</span>
+        <span class="bg-[#B85D43] text-white text-[10px] px-1.5 rounded-full">5</span>
+      </button>
+      <button onclick="switchTab('inventory')" class="text-[#A89C93] flex items-center gap-1">
+        <span>🎒 Kho Túi</span>
+      </button>
+      <button onclick="switchTab('finance')" class="text-[#A89C93] flex items-center gap-1">
+        <span>💵 Thu Tiền</span>
+      </button>
+      <button onclick="toggleSeniorMode()" class="text-[#D4AF37] text-xs">
+        👓 Chữ to
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="max-w-[1600px] mx-auto px-4 sm:px-8 py-7 flex-1 w-full space-y-7 relative z-10">
+
+    <!-- ======================================================== -->
+    <!-- 4 HERO METRICS CARDS (Thống Kê Nhìn Phát Hiểu Ngay) -->
+    <!-- ======================================================== -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      
+      <!-- Thẻ 1: Khách Vừa Đặt (Cần làm ngay) -->
+      <div 
+        onclick="highlightColumn('col-pending')" 
+        class="bg-white p-5 rounded-3xl border-2 border-amber-300 shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer group relative overflow-hidden"
+      >
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-100/60 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+            1. Cần tiếp nhận
+          </span>
+          <span class="text-2xl p-2 bg-amber-50 rounded-2xl">📥</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="metric-pending" class="text-3xl sm:text-4xl font-extrabold text-amber-950 font-serif">3</span>
+          <span class="text-xs font-semibold text-amber-900">đơn khách mới đặt</span>
+        </div>
+        <p class="text-xs text-[#7A6F68] mt-1.5 flex items-center gap-1">
+          <span class="text-emerald-600 font-bold">●</span> Bấm xem & giao việc cho thợ ngay
+        </p>
+      </div>
+
+      <!-- Thẻ 2: Thợ Đang May & In 3D -->
+      <div 
+        onclick="highlightColumn('col-crafting')" 
+        class="bg-white p-5 rounded-3xl border border-[#D0E2EC] shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer group relative overflow-hidden"
+      >
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-100/60 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
+            2. Thợ đang may
+          </span>
+          <span class="text-2xl p-2 bg-blue-50 rounded-2xl">🧵</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="metric-crafting" class="text-3xl sm:text-4xl font-extrabold text-blue-950 font-serif">2</span>
+          <span class="text-xs font-semibold text-blue-900">đơn đang ráp xưởng</span>
+        </div>
+        <p class="text-xs text-[#7A6F68] mt-1.5 flex items-center gap-1">
+          <span>May xong bấm 1 nút gửi shipper</span>
+        </p>
+      </div>
+
+      <!-- Thẻ 3: Đang Giao Khách -->
+      <div 
+        onclick="highlightColumn('col-shipping')" 
+        class="bg-white p-5 rounded-3xl border border-[#E3D9F8] shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer group relative overflow-hidden"
+      >
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-purple-100/60 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-purple-800 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+            3. Shipper đang đi
+          </span>
+          <span class="text-2xl p-2 bg-purple-50 rounded-2xl">🛵</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="metric-shipping" class="text-3xl sm:text-4xl font-extrabold text-purple-950 font-serif">4</span>
+          <span class="text-xs font-semibold text-purple-900">đơn trên đường giao</span>
+        </div>
+        <p class="text-xs text-[#7A6F68] mt-1.5 flex items-center gap-1">
+          <span>GHTK & Khách sạn đối tác</span>
+        </p>
+      </div>
+
+      <!-- Thẻ 4: Tiền Bán Hôm Nay -->
+      <div 
+        onclick="switchTab('finance')" 
+        class="bg-white p-5 rounded-3xl border border-[#C6E6D3] shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer group relative overflow-hidden"
+      >
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-100/60 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+            Tiền thu hôm nay
+          </span>
+          <span class="text-2xl p-2 bg-emerald-50 rounded-2xl">💰</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-1.5">
+          <span class="text-2xl sm:text-3xl font-black text-emerald-900 font-mono">4.850.000</span>
+          <span class="text-xs font-extrabold text-emerald-700">VNĐ</span>
+        </div>
+        <p class="text-xs text-[#7A6F68] mt-1.5 flex items-center gap-1">
+          <span class="text-emerald-700 font-bold">✓ 8 đơn</span> đã nhận & thu đủ tiền
+        </p>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: PIPELINE QUẢN LÝ ĐƠN HÀNG (TRỌNG TÂM ATELIER) -->
+    <!-- ======================================================== -->
+    <div id="section-orders" class="space-y-6">
+
+      <!-- TOOLBAR: TÌM KIẾM NHANH & BỘ LỌC 1 CHẠM -->
+      <div class="bg-white p-4 sm:p-5 rounded-3xl border border-brand-border shadow-luxury flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        <!-- Search box to rõ ràng -->
+        <div class="relative w-full md:w-96">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-brand-muted text-base">
+            🔍
+          </div>
+          <input 
+            type="text" 
+            id="searchInput" 
+            oninput="handleSearch(this.value)"
+            placeholder="Tìm theo tên khách, SĐT (VD: 0905...)" 
+            class="w-full pl-10 pr-10 py-3 rounded-2xl bg-brand-sand border border-brand-border text-xs sm:text-sm text-brand-wood font-medium placeholder:text-[#A89F91] focus:outline-hidden focus:border-brand-terracotta focus:bg-white transition-all shadow-inner"
+          >
+          <button 
+            type="button" 
+            onclick="clearSearch()"
+            id="searchClearBtn"
+            class="hidden absolute right-3 top-2.5 text-xs text-[#A89F91] hover:text-brand-wood p-1"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Filter Segmented Chips -->
+        <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none text-xs font-bold">
+          <button 
+            onclick="setFilterCategory('all')" 
+            id="filter-all"
+            class="filter-pill px-4 py-2.5 rounded-xl bg-brand-wood text-white shadow-xs transition-all cursor-pointer whitespace-nowrap"
+          >
+            Tất cả đơn (9)
+          </button>
+          <button 
+            onclick="setFilterCategory('ai-charm')" 
+            id="filter-ai"
+            class="filter-pill px-4 py-2.5 rounded-xl bg-brand-sand hover:bg-brand-cream border border-brand-border text-brand-wood transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+          >
+            <span>🎨 Có Móc Khoá AI</span>
+            <span class="px-1.5 py-0.2 rounded-full bg-brand-terracotta text-white text-[10px]">5</span>
+          </button>
+          <button 
+            onclick="setFilterCategory('standard')" 
+            id="filter-standard"
+            class="filter-pill px-4 py-2.5 rounded-xl bg-brand-sand hover:bg-brand-cream border border-brand-border text-brand-wood transition-all cursor-pointer whitespace-nowrap"
+          >
+            🎒 Túi Có Sẵn (3)
+          </button>
+          <button 
+            onclick="setFilterCategory('b2b')" 
+            id="filter-b2b"
+            class="filter-pill px-4 py-2.5 rounded-xl bg-brand-sand hover:bg-brand-cream border border-brand-border text-brand-wood transition-all cursor-pointer whitespace-nowrap flex items-center gap-1"
+          >
+            <span>🏨 Khách Sạn Furama / Pullman (1)</span>
+          </button>
+        </div>
+
+        <!-- Toggle View Mode: 4 Cột vs Danh Sách Lớn -->
+        <div class="hidden xl:flex items-center gap-1 bg-brand-sand p-1.5 rounded-2xl border border-brand-border shrink-0 text-xs font-bold">
+          <button onclick="changeView('kanban')" id="btn-view-kanban" class="px-3 py-1.5 rounded-xl bg-white text-brand-wood shadow-xs transition-all cursor-pointer">
+            Bảng 4 Cột
+          </button>
+          <button onclick="changeView('list')" id="btn-view-list" class="px-3 py-1.5 rounded-xl text-brand-muted hover:text-brand-wood transition-all cursor-pointer">
+            Danh Sách Cuộn
+          </button>
+        </div>
+
+      </div>
+
+      <!-- KANBAN BOARD: 4 CỘT TUYẾN TÍNH SIÊU ĐẸP -->
+      <div id="board-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-start">
+        
+        <!-- ============================================== -->
+        <!-- CỘT 1: CHỜ XỬ LÝ (KHÁCH MỚI ĐẶT) -->
+        <!-- ============================================== -->
+        <div id="col-pending" class="bg-gradient-to-b from-[#FFFDF9] to-[#FBF8F2] p-4 rounded-3xl border-2 border-amber-300 shadow-luxury space-y-4">
+          
+          <!-- Column Header -->
+          <div class="flex items-center justify-between pb-3 border-b border-amber-200/80">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-amber-400 ring-4 ring-amber-100 flex items-center justify-center"></span>
+              <h2 class="font-serif font-bold text-base text-amber-950">1. Chờ xử lý</h2>
+            </div>
+            <span id="badge-col-pending" class="px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-xs">
+              3 đơn
+            </span>
+          </div>
+
+          <div class="text-[11.5px] text-[#7A6F68] bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/60">
+            Khách mới đặt. Bấm nút màu xanh để nhận may & in 3D.
+          </div>
+
+          <!-- Cards in Column 1 -->
+          <div id="cards-pending" class="space-y-4">
+            
+            <!-- CARD 101: Chibi Nam Cà Phê -->
+            <div 
+              id="card-NET-101" 
+              class="pipeline-card bg-white p-4 sm:p-4.5 rounded-2xl border border-brand-border shadow-luxury hover:border-brand-terracotta relative group cursor-pointer"
+              onclick="inspectOrder('NET-101')"
+            >
+              <!-- Top tags -->
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-brand-terracotta text-[10.5px] font-bold flex items-center gap-1">
+                  <span>🎨 Móc Khoá AI</span>
+                </span>
+                <span class="text-[11px] font-mono font-medium text-brand-muted">#NET-101 • 15 phút trước</span>
+              </div>
+
+              <!-- Visual Preview of Product + Charm Die-Cut -->
+              <div class="flex items-center gap-3.5 p-2 rounded-xl bg-brand-sand border border-[#EFE8DE]">
+                <!-- Bag Image -->
+                <div class="w-16 h-16 rounded-lg bg-white p-1 border border-brand-border flex items-center justify-center shrink-0 relative overflow-hidden shadow-2xs">
+                  <img src="/assets/products/tote-blue.png" alt="Túi Nét" class="w-full h-full object-contain">
+                  <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#D4AF37] border-2 border-white text-[9px] flex items-center justify-center font-bold text-[#1A130F]" title="Charm đính kèm">
+                    ✨
+                  </div>
+                </div>
+                <!-- Details -->
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-bold text-xs sm:text-sm text-brand-wood truncate">Túi NÉT Original Xanh</h4>
+                  <div class="text-xs font-semibold text-brand-terracotta mt-0.5 truncate">
+                    Charm: "Chibi Nam Cà Phê"
+                  </div>
+                  <div class="text-[11px] text-[#7A6F68] truncate">
+                    Khắc: "Nam • 2026" | Men ngọc
+                  </div>
+                </div>
+              </div>
+
+              <!-- Customer info & Price -->
+              <div class="mt-3 pt-2.5 border-t border-[#F0EAE1] flex items-center justify-between text-xs">
+                <div>
+                  <div class="font-bold text-brand-wood flex items-center gap-1.5">
+                    <span>Anh Hoàng Nam</span>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-stone-100 text-[#7A6F68]">Khách mới</span>
+                  </div>
+                  <div class="flex items-center gap-2 mt-1 text-[11px]">
+                    <a 
+                      href="tel:0905123456" 
+                      onclick="event.stopPropagation()" 
+                      class="px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold flex items-center gap-1"
+                    >
+                      📞 0905.123.456
+                    </a>
+                    <a 
+                      href="https://zalo.me/0905123456" 
+                      target="_blank" 
+                      onclick="event.stopPropagation()" 
+                      class="px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-semibold"
+                    >
+                      💬 Zalo
+                    </a>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-extrabold text-brand-terracotta font-mono">1.335.000 đ</div>
+                  <span class="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                    Thu COD
+                  </span>
+                </div>
+              </div>
+
+              <!-- Progress Dots -->
+              <div class="mt-3 flex items-center gap-1 justify-center py-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+              </div>
+
+              <!-- 1 NÚT BẤM TO DUY NHẤT ĐỂ CHUYỂN BƯỚC -->
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); advanceOrder('NET-101')" 
+                class="w-full mt-2.5 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>✨ Bấm: Nhận May & In 3D</span>
+              </button>
+            </div>
+
+            <!-- CARD 102: Bé Cún Miu Xù -->
+            <div 
+              id="card-NET-102" 
+              class="pipeline-card bg-white p-4 sm:p-4.5 rounded-2xl border border-brand-border shadow-luxury hover:border-brand-terracotta relative group cursor-pointer"
+              onclick="inspectOrder('NET-102')"
+            >
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-brand-terracotta text-[10.5px] font-bold flex items-center gap-1">
+                  <span>🎨 Móc Khoá AI</span>
+                </span>
+                <span class="text-[11px] font-mono font-medium text-brand-muted">#NET-102 • 1 giờ trước</span>
+              </div>
+
+              <div class="flex items-center gap-3.5 p-2 rounded-xl bg-brand-sand border border-[#EFE8DE]">
+                <div class="w-16 h-16 rounded-lg bg-white p-1 border border-brand-border flex items-center justify-center shrink-0 relative overflow-hidden shadow-2xs">
+                  <img src="/assets/products/bucket-sand.png" alt="Túi Nét" class="w-full h-full object-contain">
+                  <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#D4AF37] border-2 border-white text-[9px] flex items-center justify-center font-bold text-[#1A130F]">
+                    🐶
+                  </div>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-bold text-xs sm:text-sm text-brand-wood truncate">Túi NÉT Bucket Cát Trắng</h4>
+                  <div class="text-xs font-semibold text-brand-terracotta mt-0.5 truncate">
+                    Charm: "Bé Cún Miu Xù"
+                  </div>
+                  <div class="text-[11px] text-[#7A6F68] truncate">
+                    Khắc: "Miu Miu" | Men hồng
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 pt-2.5 border-t border-[#F0EAE1] flex items-center justify-between text-xs">
+                <div>
+                  <div class="font-bold text-brand-wood">Chị Minh Thư</div>
+                  <div class="flex items-center gap-2 mt-1 text-[11px]">
+                    <a href="tel:0988456789" onclick="event.stopPropagation()" class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
+                      📞 0988.456.789
+                    </a>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-extrabold text-brand-terracotta font-mono">1.250.000 đ</div>
+                  <span class="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                    Đã CK VNPAY
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center gap-1 justify-center py-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); advanceOrder('NET-102')" 
+                class="w-full mt-2.5 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>✨ Bấm: Nhận May & In 3D</span>
+              </button>
+            </div>
+
+            <!-- CARD 103: Túi có sẵn mua tại xưởng -->
+            <div 
+              id="card-NET-103" 
+              class="pipeline-card bg-white p-4 sm:p-4.5 rounded-2xl border border-brand-border shadow-luxury hover:border-brand-terracotta relative group cursor-pointer"
+              onclick="inspectOrder('NET-103')"
+            >
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-stone-100 border border-stone-200 text-[#5E4D43] text-[10.5px] font-bold">
+                  🎒 Túi Có Sẵn
+                </span>
+                <span class="text-[11px] font-mono font-medium text-brand-muted">#NET-103 • 2 giờ trước</span>
+              </div>
+
+              <div class="flex items-center gap-3.5 p-2 rounded-xl bg-brand-sand border border-[#EFE8DE]">
+                <div class="w-16 h-16 rounded-lg bg-white p-1 border border-brand-border flex items-center justify-center shrink-0">
+                  <img src="/assets/products/hobo-emerald.png" alt="Túi Nét" class="w-full h-full object-contain">
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-bold text-xs sm:text-sm text-brand-wood truncate">NÉT Hobo Crescent</h4>
+                  <div class="text-xs text-[#7A6F68] mt-0.5 truncate">
+                    Màu Lục Tảo • Có sẵn trong kho
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 pt-2.5 border-t border-[#F0EAE1] flex items-center justify-between text-xs">
+                <div>
+                  <div class="font-bold text-brand-wood">Bác Hải (Hội An)</div>
+                  <div class="text-[11px] text-[#7A6F68]">0913.999.888</div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-extrabold text-brand-terracotta font-mono">950.000 đ</div>
+                  <span class="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                    Thu COD
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); advanceOrder('NET-103', 'shipping')" 
+                class="w-full mt-3 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>📦 Có Sẵn: Giao Shipper Ngay</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- CỘT 2: THỢ ĐANG MAY TẠI XƯỞNG -->
+        <!-- ============================================== -->
+        <div id="col-crafting" class="bg-gradient-to-b from-[#FAFDFE] to-[#F2F7FA] p-4 rounded-3xl border border-blue-200 shadow-luxury space-y-4">
+          
+          <div class="flex items-center justify-between pb-3 border-b border-blue-200">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-blue-500 ring-4 ring-blue-100 flex items-center justify-center"></span>
+              <h2 class="font-serif font-bold text-base text-blue-950">2. Thợ đang làm</h2>
+            </div>
+            <span id="badge-col-crafting" class="px-3 py-1 rounded-full bg-blue-100 border border-blue-300 text-blue-900 font-extrabold text-xs">
+              2 đơn
+            </span>
+          </div>
+
+          <div class="text-[11.5px] text-[#7A6F68] bg-blue-50/70 p-2.5 rounded-xl border border-blue-200/60">
+            Thợ đang may & in 3D. May xong bấm nút để gửi shipper.
+          </div>
+
+          <!-- Cards in Column 2 -->
+          <div id="cards-crafting" class="space-y-4">
+            
+            <!-- CARD 098: Bé Voọc Chà Vá -->
+            <div 
+              id="card-NET-098" 
+              class="pipeline-card bg-white p-4 sm:p-4.5 rounded-2xl border border-blue-200/80 shadow-luxury hover:border-blue-400 relative group cursor-pointer"
+              onclick="inspectOrder('NET-098')"
+            >
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[10.5px] font-bold">
+                  🧵 Đang may tại xưởng
+                </span>
+                <span class="text-[11px] font-mono font-medium text-brand-muted">#NET-098</span>
+              </div>
+
+              <div class="flex items-center gap-3.5 p-2 rounded-xl bg-blue-50/40 border border-blue-100">
+                <div class="w-16 h-16 rounded-lg bg-white p-1 border border-brand-border flex items-center justify-center shrink-0">
+                  <img src="/assets/products/mini-pearl.png" alt="Túi Nét" class="w-full h-full object-contain">
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-bold text-xs sm:text-sm text-brand-wood truncate">Túi NÉT Original Đen Lưới</h4>
+                  <div class="text-xs font-semibold text-brand-terracotta mt-0.5 truncate">
+                    Charm: "Bé Voọc Chà Vá"
+                  </div>
+                  <div class="text-[11px] text-blue-700 font-medium truncate">
+                    Bác Tâm xưởng may đang ráp
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 pt-2.5 border-t border-[#F0EAE1] flex items-center justify-between text-xs">
+                <div>
+                  <div class="font-bold text-brand-wood">Anh Đức Nghĩa</div>
+                  <div class="text-[11px] text-[#7A6F68]">0935.111.222 (TP.HCM)</div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-extrabold text-brand-terracotta font-mono">1.450.000 đ</div>
+                  <span class="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                    Đã thanh toán
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center gap-1 justify-center py-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-8 h-1 rounded-full bg-blue-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); advanceOrder('NET-098')" 
+                class="w-full mt-2.5 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>📦 Bấm: May Xong - Giao Shipper</span>
+              </button>
+            </div>
+
+            <!-- CARD 099: Hoa Sen Men Lam -->
+            <div 
+              id="card-NET-099" 
+              class="pipeline-card bg-white p-4 sm:p-4.5 rounded-2xl border border-blue-200/80 shadow-luxury hover:border-blue-400 relative group cursor-pointer"
+              onclick="inspectOrder('NET-099')"
+            >
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[10.5px] font-bold">
+                  🧵 Đang in móc khoá
+                </span>
+                <span class="text-[11px] font-mono font-medium text-brand-muted">#NET-099</span>
+              </div>
+
+              <div class="flex items-center gap-3.5 p-2 rounded-xl bg-blue-50/40 border border-blue-100">
+                <div class="w-16 h-16 rounded-lg bg-white p-1 border border-brand-border flex items-center justify-center shrink-0">
+                  <img src="/assets/products/mini-pearl.png" alt="Túi Nét" class="w-full h-full object-contain">
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-bold text-xs sm:text-sm text-brand-wood truncate">Túi NÉT Mini Biển Sâu</h4>
+                  <div class="text-xs font-semibold text-brand-terracotta mt-0.5 truncate">
+                    Charm: "Hoa Sen Men Lam"
+                  </div>
+                  <div class="text-[11px] text-blue-700 font-medium truncate">
+                    Máy in 3D số 2 đang chạy
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 pt-2.5 border-t border-[#F0EAE1] flex items-center justify-between text-xs">
+                <div>
+                  <div class="font-bold text-brand-wood">Chị Thu Hương</div>
+                  <div class="text-[11px] text-[#7A6F68]">0908.777.888</div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-extrabold text-brand-terracotta font-mono">1.150.000 đ</div>
+                  <span class="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                    Thu COD
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center gap-1 justify-center py-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-8 h-1 rounded-full bg-blue-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); advanceOrder('NET-099')" 
+                class="w-full mt-2.5 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>📦 Bấm: May Xong - Giao Shipper</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- CỘT 3: ĐANG GIAO HÀNG (SHIPPER ĐANG ĐI) -->
+        <!-- ============================================== -->
+        <div id="col-shipping" class="bg-gradient-to-b from-[#FAF8FE] to-[#F5F2FB] p-4 rounded-3xl border border-purple-200 shadow-luxury space-y-4">
+          
+          <div class="flex items-center justify-between pb-3 border-b border-purple-200">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-purple-500 ring-4 ring-purple-100 flex items-center justify-center"></span>
+              <h2 class="font-serif font-bold text-base text-purple-950">3. Đang giao hàng</h2>
+            </div>
+            <span id="badge-col-shipping" class="px-3 py-1 rounded-full bg-purple-100 border border-purple-300 text-purple-900 font-extrabold text-xs">
+              4 đơn
+            </span>
+          </div>
+
+          <div class="text-[11.5px] text-[#7A6F68] bg-purple-50/70 p-2.5 rounded-xl border border-purple-200/60">
+            Đã bàn giao bưu tá. Khách nhận tiền thì bấm hoàn tất.
+          </div>
+
+          <!-- Cards in Column 3 -->
+          <div id="cards-shipping" class="space-y-4">
+            
+            <!-- CARD 094: Pullman Resort -->
+            <div 
+              id="card-NET-094" 
+              class="pipeline-card bg-white p-4 sm:p-4.5 rounded-2xl border border-purple-200/80 shadow-luxury hover:border-purple-400 relative group cursor-pointer"
+              onclick="inspectOrder('NET-094')"
+            >
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-800 text-[10.5px] font-bold">
+                  🛵 GHTK Giao Trong Ngày
+                </span>
+                <span class="text-[11px] font-mono font-medium text-brand-muted">#NET-094</span>
+              </div>
+
+              <div class="flex items-center gap-3.5 p-2 rounded-xl bg-purple-50/40 border border-purple-100">
+                <div class="w-16 h-16 rounded-lg bg-white p-1 border border-brand-border flex items-center justify-center shrink-0">
+                  <img src="/assets/products/tote-blue.png" alt="Túi Nét" class="w-full h-full object-contain">
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-bold text-xs sm:text-sm text-brand-wood truncate">Túi NÉT Signature Lục Tảo</h4>
+                  <div class="text-xs text-[#7A6F68] mt-0.5 truncate">
+                    Giao tại Pullman Resort Đà Nẵng
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 pt-2.5 border-t border-[#F0EAE1] flex items-center justify-between text-xs">
+                <div>
+                  <div class="font-bold text-brand-wood">Cô Ánh Tuyết</div>
+                  <div class="text-[11px] text-[#7A6F68]">0918.333.444</div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-extrabold text-brand-terracotta font-mono">1.250.000 đ</div>
+                  <span class="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                    Đã thanh toán
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center gap-1 justify-center py-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-8 h-1 rounded-full bg-emerald-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-8 h-1 rounded-full bg-purple-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-500 ring-2 ring-purple-200"></span>
+                <span class="w-8 h-1 rounded-full bg-stone-200"></span>
+                <span class="w-2 h-2 rounded-full bg-stone-200"></span>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); advanceOrder('NET-094')" 
+                class="w-full mt-2.5 py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>🎉 Bấm: Khách Đã Nhận & Thu Tiền</span>
+              </button>
+            </div>
+
+            <!-- CARD B2B: Furama Resort -->
+            <div 
+              id="card-NET-B2B" 
+              class="pipeline-card bg-white p-4 sm:p-4.5 rounded-2xl border border-amber-200/80 shadow-luxury hover:border-amber-400 relative group cursor-pointer"
+              onclick="inspectOrder('NET-B2B')"
+            >
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[10.5px] font-bold">
+                  🏨 Furama Resort (B2B)
+                </span>
+                <span class="text-[11px] font-mono font-medium text-brand-muted">#B2B-01</span>
+              </div>
+
+              <div class="flex items-center gap-3.5 p-2 rounded-xl bg-amber-50/40 border border-amber-100">
+                <div class="w-16 h-16 rounded-lg bg-white p-1 border border-brand-border flex items-center justify-center shrink-0">
+                  <img src="/assets/products/bucket-sand.png" alt="Túi Nét" class="w-full h-full object-contain">
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-bold text-xs sm:text-sm text-brand-wood truncate">Lô 10 Túi Quà Tặng ESG</h4>
+                  <div class="text-xs text-amber-900 font-semibold mt-0.5 truncate">
+                    Kèm 10 móc khoá logo Furama
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 pt-2.5 border-t border-[#F0EAE1] flex items-center justify-between text-xs">
+                <div>
+                  <div class="font-bold text-brand-wood">Bộ phận Mua Hàng</div>
+                  <div class="text-[11px] text-[#7A6F68]">0236.3847.333</div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-extrabold text-brand-terracotta font-mono">11.500.000 đ</div>
+                  <span class="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                    Hợp đồng B2B
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); advanceOrder('NET-B2B')" 
+                class="w-full mt-3 py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>🎉 Bấm: Khách Đã Nhận & Thu Tiền</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- CỘT 4: ĐÃ XONG & THU ĐỦ TIỀN -->
+        <!-- ============================================== -->
+        <div id="col-completed" class="bg-gradient-to-b from-[#F9FDFB] to-[#F1F9F4] p-4 rounded-3xl border border-emerald-200 shadow-luxury space-y-4">
+          
+          <div class="flex items-center justify-between pb-3 border-b border-emerald-200">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 flex items-center justify-center"></span>
+              <h2 class="font-serif font-bold text-base text-emerald-950">4. Đã xong</h2>
+            </div>
+            <span id="badge-col-completed" class="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 font-extrabold text-xs">
+              8 đơn
+            </span>
+          </div>
+
+          <div class="text-[11.5px] text-[#7A6F68] bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200/60">
+            Khách đã nhận túi và xưởng đã thu đủ tiền.
+          </div>
+
+          <!-- Cards in Column 4 -->
+          <div id="cards-completed" class="space-y-4">
+            
+            <!-- CARD 090: Đã xong -->
+            <div 
+              class="pipeline-card bg-white p-3.5 rounded-2xl border border-emerald-200 shadow-2xs space-y-2 opacity-95 hover:opacity-100 cursor-pointer"
+              onclick="inspectOrder('NET-090')"
+            >
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-brand-wood">Anh Tuấn Anh</span>
+                <span class="font-extrabold text-emerald-700 font-mono">1.250.000 đ</span>
+              </div>
+              <div class="text-[11.5px] text-[#7A6F68]">Túi NÉT Original Xanh • Đã giao 8:30 sáng</div>
+              <div class="text-[10.5px] text-emerald-700 font-bold flex items-center gap-1.5 pt-1 border-t border-[#F0EAE1]">
+                <span>✓ Đã nhận túi & thanh toán thành công</span>
+              </div>
+            </div>
+
+            <!-- CARD 091: Đã xong -->
+            <div 
+              class="pipeline-card bg-white p-3.5 rounded-2xl border border-emerald-200 shadow-2xs space-y-2 opacity-95 hover:opacity-100 cursor-pointer"
+              onclick="inspectOrder('NET-091')"
+            >
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-brand-wood">Chị Ngọc Mai</span>
+                <span class="font-extrabold text-emerald-700 font-mono">1.335.000 đ</span>
+              </div>
+              <div class="text-[11.5px] text-[#7A6F68]">Túi Cát Trắng + Charm AI Hoa Sen Vàng</div>
+              <div class="text-[10.5px] text-emerald-700 font-bold flex items-center gap-1.5 pt-1 border-t border-[#F0EAE1]">
+                <span>✓ Đã nhận túi & thanh toán thành công</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: KHO TÚI THÀNH PHẨM (ĐƠN GIẢN, TRỰC QUAN) -->
+    <!-- ======================================================== -->
+    <div id="section-inventory" class="hidden space-y-6">
+      
+      <div class="bg-white p-5 rounded-3xl border border-brand-border shadow-luxury flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif font-bold text-lg text-brand-wood">🎒 Kho Túi Sẵn Có Tại Xưởng NÉT</h2>
+          <p class="text-xs text-[#7A6F68] mt-0.5">Nhìn vào số lượng bên dưới để biết túi nào còn, túi nào sắp hết</p>
+        </div>
+        <button onclick="quickAddInventory()" class="bg-brand-terracotta hover:bg-brand-terracottaHover text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+          <span class="text-base leading-none">+</span>
+          <span>Nhập 5 Túi Mới May Vào Kho</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- Mẫu 1 -->
+        <div class="bg-white p-5 rounded-3xl border border-brand-border shadow-luxury space-y-4">
+          <div class="w-full h-44 rounded-2xl bg-brand-sand p-3 flex items-center justify-center border border-[#EFE8DE]">
+            <img src="/assets/products/tote-blue.png" alt="Túi NÉT Tote" class="h-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-brand-wood">NÉT Tote Signature</h3>
+            <p class="text-xs text-[#7A6F68]">Màu Xanh Thẳm Đại Dương</p>
+          </div>
+          <div class="pt-3 border-t border-brand-border flex items-center justify-between">
+            <div>
+              <span class="text-xs text-[#7A6F68] block">Còn trong kho:</span>
+              <span class="text-2xl font-black text-emerald-700 font-mono">14 chiếc</span>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 font-bold text-xs border border-emerald-200">
+              Còn Nhiều
+            </span>
+          </div>
+        </div>
+
+        <!-- Mẫu 2 -->
+        <div class="bg-white p-5 rounded-3xl border border-brand-border shadow-luxury space-y-4">
+          <div class="w-full h-44 rounded-2xl bg-brand-sand p-3 flex items-center justify-center border border-[#EFE8DE]">
+            <img src="/assets/products/bucket-sand.png" alt="Túi NÉT Bucket" class="h-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-brand-wood">NÉT Ocean Bucket</h3>
+            <p class="text-xs text-[#7A6F68]">Màu Cát San Hô Ánh Dương</p>
+          </div>
+          <div class="pt-3 border-t border-brand-border flex items-center justify-between">
+            <div>
+              <span class="text-xs text-[#7A6F68] block">Còn trong kho:</span>
+              <span class="text-2xl font-black text-amber-600 font-mono">3 chiếc</span>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 font-bold text-xs border border-amber-200">
+              Sắp Hết
+            </span>
+          </div>
+        </div>
+
+        <!-- Mẫu 3 -->
+        <div class="bg-white p-5 rounded-3xl border border-brand-border shadow-luxury space-y-4">
+          <div class="w-full h-44 rounded-2xl bg-brand-sand p-3 flex items-center justify-center border border-[#EFE8DE]">
+            <img src="/assets/products/hobo-emerald.png" alt="Túi NÉT Hobo" class="h-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-brand-wood">NÉT Hobo Crescent</h3>
+            <p class="text-xs text-[#7A6F68]">Màu Lục Tảo Biển Sâu</p>
+          </div>
+          <div class="pt-3 border-t border-brand-border flex items-center justify-between">
+            <div>
+              <span class="text-xs text-[#7A6F68] block">Còn trong kho:</span>
+              <span class="text-2xl font-black text-emerald-700 font-mono">8 chiếc</span>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 font-bold text-xs border border-emerald-200">
+              Còn Hàng
+            </span>
+          </div>
+        </div>
+
+        <!-- Mẫu 4 -->
+        <div class="bg-white p-5 rounded-3xl border border-brand-border shadow-luxury space-y-4">
+          <div class="w-full h-44 rounded-2xl bg-brand-sand p-3 flex items-center justify-center border border-[#EFE8DE]">
+            <img src="/assets/products/mini-pearl.png" alt="Túi NÉT Mini" class="h-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-brand-wood">NÉT Mini Crossbody</h3>
+            <p class="text-xs text-[#7A6F68]">Màu Bạc Lưới Ma</p>
+          </div>
+          <div class="pt-3 border-t border-brand-border flex items-center justify-between">
+            <div>
+              <span class="text-xs text-[#7A6F68] block">Còn trong kho:</span>
+              <span class="text-2xl font-black text-rose-600 font-mono">0 chiếc</span>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-rose-50 text-rose-800 font-bold text-xs border border-rose-200">
+              Hết Hàng
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: TIỀN BÁN HÔM NAY (SỔ THU CHI RÕ RÀNG) -->
+    <!-- ======================================================== -->
+    <div id="section-finance" class="hidden space-y-6">
+      
+      <div class="bg-white p-5 rounded-3xl border border-brand-border shadow-luxury flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif font-bold text-lg text-brand-wood">💵 Sổ Bán Hàng & Tiền Thu Hôm Nay</h2>
+          <p class="text-xs text-[#7A6F68] mt-0.5">Tự động cộng tiền khi đơn hàng hoàn thành</p>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-[#7A6F68] block font-medium">Tổng tiền thực thu hôm nay:</span>
+          <span class="text-2xl sm:text-3xl font-black text-emerald-800 font-mono">4.850.000 đ</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-3xl border border-brand-border shadow-luxury space-y-4">
+        <h3 class="font-bold text-sm text-brand-wood border-b border-brand-border pb-3 flex items-center justify-between">
+          <span>Danh sách đơn đã thanh toán hôm nay</span>
+          <span class="text-xs text-brand-muted font-normal">8 đơn hoàn tất</span>
+        </h3>
+        
+        <div class="divide-y divide-brand-border text-xs sm:text-sm">
+          <div class="py-3 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-brand-wood">Anh Tuấn Anh</span>
+              <span class="text-brand-muted ml-2">Túi NÉT Original Xanh</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-emerald-700 font-semibold text-xs bg-emerald-50 px-2 py-0.5 rounded">Chuyển khoản VNPAY</span>
+              <span class="font-extrabold text-brand-wood font-mono">1.250.000 đ</span>
+            </div>
+          </div>
+          <div class="py-3 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-brand-wood">Chị Ngọc Mai</span>
+              <span class="text-brand-muted ml-2">Túi Cát Trắng + Charm AI Sen Vàng</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-amber-800 font-semibold text-xs bg-amber-50 px-2 py-0.5 rounded">Shipper thu COD</span>
+              <span class="font-extrabold text-brand-wood font-mono">1.335.000 đ</span>
+            </div>
+          </div>
+          <div class="py-3 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-brand-wood">Cô Ánh Tuyết</span>
+              <span class="text-brand-muted ml-2">Túi NÉT Signature Lục Tảo</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-emerald-700 font-semibold text-xs bg-emerald-50 px-2 py-0.5 rounded">Tiền mặt tại xưởng</span>
+              <span class="font-extrabold text-brand-wood font-mono">1.250.000 đ</span>
+            </div>
+          </div>
+          <div class="py-3 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-brand-wood">Khách Vãng Lai Hội An</span>
+              <span class="text-brand-muted ml-2">2 Móc khoá lưu niệm thủ công</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-emerald-700 font-semibold text-xs bg-emerald-50 px-2 py-0.5 rounded">Quét mã QR Momo</span>
+              <span class="font-extrabold text-brand-wood font-mono">1.015.000 đ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: XEM CHI TIẾT ĐƠN HÀNG & PHIẾU MAY CHO THỢ -->
+  <!-- ======================================================== -->
+  <div id="inspectModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-brand-border animate-fadeIn max-h-[92vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-brand-border pb-3.5">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-brand-terracotta bg-orange-50 px-2 py-0.5 rounded">
+              Phiếu Chế Tác Xưởng
+            </span>
+            <span id="modalStageBadge" class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
+              Chờ Tiếp Nhận
+            </span>
+          </div>
+          <h3 id="modalOrderCode" class="text-lg sm:text-xl font-serif font-bold text-brand-wood mt-1">#NET-101</h3>
+        </div>
+        <button onclick="closeInspectModal()" class="w-8 h-8 rounded-full bg-brand-sand hover:bg-brand-cream text-brand-muted font-bold text-sm flex items-center justify-center cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Large Preview of Custom Bag & Charm -->
+      <div class="p-4 rounded-2xl bg-brand-sand border border-[#EFE8DE] flex flex-col sm:flex-row items-center gap-4">
+        <div class="w-24 h-24 rounded-xl bg-white p-2 border border-brand-border flex items-center justify-center shrink-0 shadow-xs relative">
+          <img id="modalBagImage" src="/assets/products/tote-blue.png" alt="Túi Nét" class="w-full h-full object-contain">
+          <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#D4AF37] border-2 border-white text-xs flex items-center justify-center font-bold text-[#1A130F]">
+            ✨
+          </div>
+        </div>
+        <div class="space-y-1 text-center sm:text-left flex-1 min-w-0">
+          <h4 id="modalBagTitle" class="font-bold text-sm sm:text-base text-brand-wood">Túi NÉT Original Xanh Thẳm</h4>
+          <div id="modalCharmTitle" class="text-xs font-semibold text-brand-terracotta">Charm: "Chibi Nam Cà Phê"</div>
+          <div id="modalLaserText" class="text-xs text-[#7A6F68]">Khắc chữ Laser: "Nam • 2026"</div>
+          <div id="modalSpec" class="text-[11.5px] text-[#7A6F68]">Dáng phôi: Bo tròn • Men lam Đà Nẵng</div>
+        </div>
+      </div>
+
+      <!-- Customer & Shipping Specs -->
+      <div class="bg-white p-4 rounded-2xl border border-brand-border space-y-2.5 text-xs sm:text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-brand-muted">Khách nhận:</span>
+          <strong id="modalCustName" class="text-brand-wood text-sm">Anh Hoàng Nam</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-brand-muted">Điện thoại:</span>
+          <div class="flex items-center gap-2">
+            <strong id="modalCustPhone" class="text-brand-wood font-mono">0905.123.456</strong>
+            <a id="modalTelLink" href="tel:0905123456" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-xs border border-emerald-200">
+              📞 Gọi
+            </a>
+            <a id="modalZaloLink" href="https://zalo.me/0905123456" target="_blank" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 font-bold text-xs border border-blue-200">
+              💬 Zalo
+            </a>
+          </div>
+        </div>
+        <div class="flex items-start justify-between pt-2 border-t border-brand-border">
+          <span class="text-brand-muted shrink-0">Địa chỉ giao:</span>
+          <span id="modalCustAddress" class="text-right text-brand-wood font-medium ml-4">123 Trần Phú, Hải Châu, Đà Nẵng</span>
+        </div>
+        <div class="flex items-center justify-between pt-2 border-t border-brand-border">
+          <span class="text-brand-muted">Tiền cần thu:</span>
+          <strong id="modalPriceVal" class="text-base sm:text-lg text-brand-terracotta font-extrabold font-mono">1.335.000 đ</strong>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2 pt-1">
+        <button 
+          id="modalNextBtn"
+          onclick="modalAdvanceStep()"
+          class="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+        >
+          <span>👉 Chuyển Sang Bước Tiếp Theo</span>
+        </button>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <button 
+            type="button" 
+            onclick="showToast('Đang kết nối máy in xưởng... Đã in phiếu may thành công!')"
+            class="py-2.5 px-4 rounded-xl border border-brand-border bg-brand-sand hover:bg-brand-cream text-xs font-bold text-brand-wood transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            🖨️ In Phiếu May Cho Thợ
+          </button>
+          <button 
+            type="button" 
+            onclick="closeInspectModal()"
+            class="py-2.5 px-4 rounded-xl border border-brand-border bg-white hover:bg-brand-sand text-xs font-semibold text-brand-muted transition-colors cursor-pointer"
+          >
+            Đóng Lại
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: TẠO ĐƠN BÁN TẠI XƯỞNG 10 GIÂY -->
+  <!-- ======================================================== -->
+  <div id="createModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-brand-border">
+      
+      <div class="flex items-center justify-between border-b border-brand-border pb-3">
+        <div>
+          <h3 class="font-serif font-bold text-lg text-brand-wood">Tạo Đơn Bán Nhanh</h3>
+          <p class="text-xs text-[#7A6F68]">Chỉ cần 3 bước, 10 giây là xong</p>
+        </div>
+        <button onclick="closeCreateModal()" class="w-7 h-7 rounded-full bg-brand-sand text-xs font-bold text-[#7A6F68] cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form onsubmit="handleQuickCreate(event)" class="space-y-3.5 text-xs sm:text-sm">
+        <div>
+          <label class="block font-bold text-brand-wood mb-1">1. Chọn mẫu túi khách mua:</label>
+          <select id="quickBag" class="w-full p-3 rounded-xl border border-brand-border bg-brand-sand text-brand-wood font-medium">
+            <option value="Túi NÉT Tote Signature (1.250.000 đ)">NÉT Tote Signature - 1.250.000 đ</option>
+            <option value="Túi NÉT Ocean Bucket (1.150.000 đ)">NÉT Ocean Bucket - 1.150.000 đ</option>
+            <option value="NÉT Hobo Crescent (950.000 đ)">NÉT Hobo Crescent - 950.000 đ</option>
+            <option value="Móc Khoá Lưới AI (85.000 đ)">Móc Khoá Lưới AI - 85.000 đ</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-brand-wood mb-1">2. Tên khách hàng:</label>
+          <input 
+            type="text" 
+            id="quickName" 
+            required 
+            placeholder="Ví dụ: Chị Lan Anh" 
+            class="w-full p-3 rounded-xl border border-brand-border bg-brand-sand text-brand-wood font-medium"
+          >
+        </div>
+
+        <div>
+          <label class="block font-bold text-brand-wood mb-1">3. Số điện thoại:</label>
+          <input 
+            type="tel" 
+            id="quickPhone" 
+            required 
+            placeholder="Ví dụ: 0905.123.456" 
+            class="w-full p-3 rounded-xl border border-brand-border bg-brand-sand text-brand-wood font-medium"
+          >
+        </div>
+
+        <div>
+          <label class="block font-bold text-brand-wood mb-1">4. Hình thức thanh toán:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-brand-border bg-brand-sand cursor-pointer font-medium">
+              <input type="radio" name="quickPay" value="cash" checked class="accent-brand-terracotta">
+              <span>Tiền mặt tại chỗ</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-brand-border bg-brand-sand cursor-pointer font-medium">
+              <input type="radio" name="quickPay" value="qr" class="accent-brand-terracotta">
+              <span>Chuyển khoản QR</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button 
+            type="submit" 
+            class="w-full py-3.5 rounded-xl bg-brand-terracotta hover:bg-brand-terracottaHover text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+          >
+            ✓ Lưu Đơn Bán Hàng Ngay
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- SCRIPT XỬ LÝ TƯƠNG TÁC ĐẲNG CẤP (100% Client-Side Pure JS) -->
+  <script>
+    // Dữ liệu mẫu phong phú của các đơn hàng
+    const ordersDB = {
+      'NET-101': {
+        id: 'NET-101',
+        stage: 'pending',
+        bagImage: '/assets/products/tote-blue.png',
+        bagTitle: 'Túi NÉT Original Xanh Thẳm',
+        charmTitle: 'Charm "Chibi Nam Cà Phê"',
+        laserText: 'Khắc chữ: "Nam • 2026"',
+        spec: 'Dáng phôi: Bo tròn • Men lam Đà Nẵng',
+        custName: 'Anh Hoàng Nam',
+        custPhone: '0905.123.456',
+        custAddress: '123 Trần Phú, Hải Châu, Đà Nẵng',
+        priceVal: '1.335.000 đ',
+        isAI: true,
+      },
+      'NET-102': {
+        id: 'NET-102',
+        stage: 'pending',
+        bagImage: '/assets/products/bucket-sand.png',
+        bagTitle: 'Túi NÉT Bucket Cát Trắng',
+        charmTitle: 'Charm "Bé Cún Miu Xù"',
+        laserText: 'Khắc chữ: "Miu Miu"',
+        spec: 'Dáng phôi: Trái tim • Men hồng',
+        custName: 'Chị Minh Thư',
+        custPhone: '0988.456.789',
+        custAddress: '45 Cầu Giấy, Hà Nội',
+        priceVal: '1.250.000 đ',
+        isAI: true,
+      },
+      'NET-103': {
+        id: 'NET-103',
+        stage: 'pending',
+        bagImage: '/assets/products/hobo-emerald.png',
+        bagTitle: 'NÉT Hobo Crescent',
+        charmTitle: 'Túi có sẵn (Không charm)',
+        laserText: 'Không khắc chữ',
+        spec: 'Phôi chuẩn xưởng',
+        custName: 'Bác Hải (Hội An)',
+        custPhone: '0913.999.888',
+        custAddress: 'Khách mua mang về tại xưởng',
+        priceVal: '950.000 đ',
+        isAI: false,
+      },
+      'NET-098': {
+        id: 'NET-098',
+        stage: 'crafting',
+        bagImage: '/assets/products/mini-pearl.png',
+        bagTitle: 'Túi NÉT Original Đen Lưới',
+        charmTitle: 'Charm "Bé Voọc Chà Vá"',
+        laserText: 'Khắc chữ: "Sơn Trà Green"',
+        spec: 'Dáng phôi: Tự do Die-Cut',
+        custName: 'Anh Đức Nghĩa',
+        custPhone: '0935.111.222',
+        custAddress: 'Quận 1, TP. Hồ Chí Minh',
+        priceVal: '1.450.000 đ',
+        isAI: true,
+      },
+      'NET-099': {
+        id: 'NET-099',
+        stage: 'crafting',
+        bagImage: '/assets/products/mini-pearl.png',
+        bagTitle: 'Túi NÉT Mini Biển Sâu',
+        charmTitle: 'Charm "Hoa Sen Men Lam"',
+        laserText: 'Khắc chữ: "Sen Việt"',
+        spec: 'Dáng phôi: Giọt nước',
+        custName: 'Chị Thu Hương',
+        custPhone: '0908.777.888',
+        custAddress: 'Ngũ Hành Sơn, Đà Nẵng',
+        priceVal: '1.150.000 đ',
+        isAI: true,
+      },
+      'NET-094': {
+        id: 'NET-094',
+        stage: 'shipping',
+        bagImage: '/assets/products/tote-blue.png',
+        bagTitle: 'Túi NÉT Signature Lục Tảo',
+        charmTitle: 'Túi quà tặng Pullman',
+        laserText: 'Khắc chữ: "Pullman Eco"',
+        spec: 'Phôi vuông kim loại',
+        custName: 'Cô Ánh Tuyết',
+        custPhone: '0918.333.444',
+        custAddress: 'Pullman Resort Đà Nẵng',
+        priceVal: '1.250.000 đ',
+        isAI: false,
+      },
+      'NET-B2B': {
+        id: 'NET-B2B',
+        stage: 'shipping',
+        bagImage: '/assets/products/bucket-sand.png',
+        bagTitle: 'Lô 10 Túi Quà Tặng ESG',
+        charmTitle: '10 Móc khoá logo Furama',
+        laserText: 'Furama Resort 2026',
+        spec: 'Khắc Logo Men Ngọc',
+        custName: 'Bộ phận Mua Hàng Furama',
+        custPhone: '0236.3847.333',
+        custAddress: 'Võ Nguyên Giáp, Đà Nẵng',
+        priceVal: '11.500.000 đ',
+        isAI: false,
+      },
+      'NET-090': {
+        id: 'NET-090',
+        stage: 'completed',
+        bagImage: '/assets/products/tote-blue.png',
+        bagTitle: 'Túi NÉT Original Xanh',
+        charmTitle: 'Không gắn charm',
+        laserText: 'Không khắc',
+        spec: 'Tiêu chuẩn',
+        custName: 'Anh Tuấn Anh',
+        custPhone: '0903.111.444',
+        custAddress: 'Hải Châu, Đà Nẵng',
+        priceVal: '1.250.000 đ',
+        isAI: false,
+      },
+      'NET-091': {
+        id: 'NET-091',
+        stage: 'completed',
+        bagImage: '/assets/products/bucket-sand.png',
+        bagTitle: 'Túi Cát Trắng + Charm AI',
+        charmTitle: 'Charm "Hoa Sen Vàng"',
+        laserText: 'Mai • 2026',
+        spec: 'Men ngọc',
+        custName: 'Chị Ngọc Mai',
+        custPhone: '0902.999.777',
+        custAddress: 'Thanh Khê, Đà Nẵng',
+        priceVal: '1.335.000 đ',
+        isAI: true,
+      }
+    };
+
+    let activeInspectId = null;
+
+    // Âm thanh chúc mừng nhẹ nhàng (Web Audio API Synthesizer)
+    function playChime(type = 'success') {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.35);
+        } else {
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        }
+      } catch (e) {}
+    }
+
+    // Hiển thị Toast thông báo đẹp mắt
+    function showToast(message, type = 'success') {
+      playChime(type);
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'px-4 py-3 rounded-2xl bg-[#1A130F] text-white text-xs sm:text-sm font-semibold shadow-2xl border border-[#D4AF37]/30 flex items-center gap-2.5 transition-all transform translate-y-2 opacity-0';
+      toast.innerHTML = `
+        <span class="text-base">${type === 'celebrate' ? '🎉' : '✨'}</span>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 20);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Tiến bước đơn hàng 1 chạm duy nhất
+    function advanceOrder(orderId, forceStage = null) {
+      const order = ordersDB[orderId];
+      if (!order) return;
+
+      const stageFlow = {
+        'pending': 'crafting',
+        'crafting': 'shipping',
+        'shipping': 'completed',
+        'completed': 'completed'
+      };
+
+      const nextStage = forceStage || stageFlow[order.stage];
+      order.stage = nextStage;
+
+      const card = document.getElementById(`card-${orderId}`);
+      if (card) {
+        // Animation bay thẻ mượt mà
+        card.style.transform = 'scale(0.95)';
+        card.style.opacity = '0.5';
+
+        setTimeout(() => {
+          const targetCol = document.getElementById(`cards-${nextStage}`);
+          if (targetCol) {
+            targetCol.prepend(card);
+            card.style.transform = '';
+            card.style.opacity = '';
+          }
+          refreshCardsUI(orderId, nextStage);
+        }, 150);
+      }
+
+      if (nextStage === 'completed') {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+        showToast(`Đơn hàng #${order.id} đã hoàn tất và đã thu đủ tiền! 💰`, 'celebrate');
+      } else if (nextStage === 'crafting') {
+        showToast(`Đã nhận đơn #${order.id}! Đã gửi lệnh in 3D & cắt may cho thợ.`);
+      } else if (nextStage === 'shipping') {
+        showToast(`Đã bàn giao đơn #${order.id} cho Shipper / Bưu tá! 🛵`);
+      }
+
+      closeInspectModal();
+    }
+
+    // Cập nhật lại nút bấm tương ứng theo bước mới
+    function refreshCardsUI(orderId, stage) {
+      const card = document.getElementById(`card-${orderId}`);
+      if (!card) return;
+
+      const btn = card.querySelector('button');
+      if (!btn) return;
+
+      if (stage === 'crafting') {
+        btn.className = "w-full mt-2.5 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer";
+        btn.innerHTML = "<span>📦 Bấm: May Xong - Giao Shipper</span>";
+        btn.setAttribute('onclick', `event.stopPropagation(); advanceOrder('${orderId}', 'shipping')`);
+      } else if (stage === 'shipping') {
+        btn.className = "w-full mt-2.5 py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer";
+        btn.innerHTML = "<span>🎉 Bấm: Khách Đã Nhận & Thu Tiền</span>";
+        btn.setAttribute('onclick', `event.stopPropagation(); advanceOrder('${orderId}', 'completed')`);
+      } else if (stage === 'completed') {
+        btn.className = "w-full mt-2 py-2 px-3 rounded-xl bg-emerald-50 text-emerald-800 font-bold text-xs border border-emerald-200 pointer-events-none flex items-center justify-center gap-1.5";
+        btn.innerHTML = "<span>✓ Đã Hoàn Thành</span>";
+      }
+    }
+
+    // Xem chi tiết đơn
+    function inspectOrder(orderId) {
+      const o = ordersDB[orderId];
+      if (!o) return;
+      activeInspectId = orderId;
+
+      document.getElementById('modalOrderCode').innerText = `#${o.id}`;
+      document.getElementById('modalBagImage').src = o.bagImage;
+      document.getElementById('modalBagTitle').innerText = o.bagTitle;
+      document.getElementById('modalCharmTitle').innerText = o.charmTitle;
+      document.getElementById('modalLaserText').innerText = o.laserText;
+      document.getElementById('modalSpec').innerText = o.spec;
+      document.getElementById('modalCustName').innerText = o.custName;
+      document.getElementById('modalCustPhone').innerText = o.custPhone;
+      document.getElementById('modalCustAddress').innerText = o.custAddress;
+      document.getElementById('modalPriceVal').innerText = o.priceVal;
+
+      document.getElementById('modalTelLink').href = `tel:${o.custPhone.replace(/[^0-9]/g, '')}`;
+      document.getElementById('modalZaloLink').href = `https://zalo.me/${o.custPhone.replace(/[^0-9]/g, '')}`;
+
+      const stageLabels = {
+        pending: '1. Chờ tiếp nhận',
+        crafting: '2. Thợ đang làm',
+        shipping: '3. Đang giao hàng',
+        completed: '4. Đã hoàn thành'
+      };
+      document.getElementById('modalStageBadge').innerText = stageLabels[o.stage] || o.stage;
+
+      const nextTexts = {
+        pending: '👉 Bấm: Bắt Đầu May & In 3D Cho Thợ',
+        crafting: '📦 Bấm: May Xong - Giao Cho Shipper',
+        shipping: '🎉 Bấm: Khách Đã Nhận & Thu Tiền',
+        completed: '✓ Đơn Hàng Đã Xong'
+      };
+      document.getElementById('modalNextBtn').innerText = nextTexts[o.stage] || 'Tiến bước';
+
+      document.getElementById('inspectModal').classList.remove('hidden');
+      document.getElementById('inspectModal').classList.add('flex');
+    }
+
+    function closeInspectModal() {
+      document.getElementById('inspectModal').classList.add('hidden');
+      document.getElementById('inspectModal').classList.remove('flex');
+      activeInspectId = null;
+    }
+
+    function modalAdvanceStep() {
+      if (!activeInspectId) return;
+      advanceOrder(activeInspectId);
+    }
+
+    // Switch Main Tabs
+    function switchTab(tabId) {
+      document.getElementById('section-orders').classList.add('hidden');
+      document.getElementById('section-inventory').classList.add('hidden');
+      document.getElementById('section-finance').classList.add('hidden');
+
+      document.getElementById('nav-btn-orders').className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#D8CEBE] hover:text-white hover:bg-white/5 transition-all flex items-center gap-2";
+      document.getElementById('nav-btn-inventory').className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#D8CEBE] hover:text-white hover:bg-white/5 transition-all flex items-center gap-2";
+      document.getElementById('nav-btn-finance').className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#D8CEBE] hover:text-white hover:bg-white/5 transition-all flex items-center gap-2";
+
+      if (tabId === 'orders') {
+        document.getElementById('section-orders').classList.remove('hidden');
+        document.getElementById('nav-btn-orders').className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#B85D43] text-white shadow-md transition-all flex items-center gap-2.5";
+      } else if (tabId === 'inventory') {
+        document.getElementById('section-inventory').classList.remove('hidden');
+        document.getElementById('nav-btn-inventory').className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#B85D43] text-white shadow-md transition-all flex items-center gap-2.5";
+      } else if (tabId === 'finance') {
+        document.getElementById('section-finance').classList.remove('hidden');
+        document.getElementById('nav-btn-finance').className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#B85D43] text-white shadow-md transition-all flex items-center gap-2.5";
+      }
+    }
+
+    // Chế độ chữ to cho người lớn tuổi
+    let isSenior = false;
+    function toggleSeniorMode() {
+      isSenior = !isSenior;
+      document.body.classList.toggle('senior-mode', isSenior);
+      const btnText = document.getElementById('senior-btn-text');
+      if (btnText) {
+        btnText.innerText = isSenior ? "Tắt Chữ To" : "Chế Độ Chữ To";
+      }
+      showToast(isSenior ? "Đã bật chế độ chữ to & nút bấm lớn!" : "Đã về chế độ bình thường");
+    }
+
+    // Tìm kiếm
+    function handleSearch(val) {
+      const q = val.toLowerCase().trim();
+      const clearBtn = document.getElementById('searchClearBtn');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !q);
+
+      const cards = document.querySelectorAll('.pipeline-card');
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        if (!q || text.includes(q)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function clearSearch() {
+      const inp = document.getElementById('searchInput');
+      if (inp) {
+        inp.value = '';
+        handleSearch('');
+      }
+    }
+
+    // Lọc theo loại đơn
+    function setFilterCategory(cat) {
+      const pills = document.querySelectorAll('.filter-pill');
+      pills.forEach(p => {
+        p.className = "filter-pill px-4 py-2.5 rounded-xl bg-brand-sand hover:bg-brand-cream border border-brand-border text-brand-wood transition-all cursor-pointer whitespace-nowrap";
+      });
+      const active = document.getElementById(`filter-${cat === 'ai-charm' ? 'ai' : cat}`);
+      if (active) {
+        active.className = "filter-pill px-4 py-2.5 rounded-xl bg-brand-wood text-white shadow-xs transition-all cursor-pointer whitespace-nowrap";
+      }
+    }
+
+    // Đổi view
+    function changeView(mode) {
+      if (mode === 'list') {
+        showToast("Đã chuyển sang chế độ cuộn danh sách lớn!");
+      }
+    }
+
+    function highlightColumn(colId) {
+      switchTab('orders');
+      const col = document.getElementById(colId);
+      if (col) {
+        col.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        col.classList.add('ring-4', 'ring-brand-terracotta');
+        setTimeout(() => col.classList.remove('ring-4', 'ring-brand-terracotta'), 1500);
+      }
+    }
+
+    // Modal tạo đơn nhanh
+    function openCreateModal() {
+      document.getElementById('createModal').classList.remove('hidden');
+      document.getElementById('createModal').classList.add('flex');
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.add('hidden');
+      document.getElementById('createModal').classList.remove('flex');
+    }
+
+    function handleQuickCreate(e) {
+      e.preventDefault();
+      const bag = document.getElementById('quickBag').value;
+      const name = document.getElementById('quickName').value;
+      const phone = document.getElementById('quickPhone').value;
+
+      closeCreateModal();
+      showToast(`Đã tạo đơn cho khách "${name}" (${phone}) thành công! Đơn đã vào Cột 1.`);
+    }
+
+    function quickAddInventory() {
+      showToast("Đã nhập thêm 5 chiếc túi thành phẩm mới may vào kho!");
+    }
+  </script>
+
+</body>
+</html>

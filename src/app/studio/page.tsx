@@ -32,6 +32,7 @@ import {
   Sliders,
   Eye,
   Download,
+  Loader2,
 } from "lucide-react";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
@@ -1413,6 +1414,17 @@ Key 3D printing & charm specs:
         if (d.motifName) setMotifName(d.motifName);
         if (d.story) setMotifStory(d.story);
         if (d.customText) setCustomText(d.customText);
+
+        // Tự động lưu bản vẽ móc khoá 2D AI đã vẽ lại từ ảnh khách
+        if (d.imageUrl) {
+          let finalImg = d.imageUrl;
+          try {
+            finalImg = await removeWhiteBackground(d.imageUrl);
+          } catch (bgErr) {
+            console.warn("Background removal notice:", bgErr);
+          }
+          setGeneratedImageUrl(finalImg);
+        }
       }
     } catch (err) {
       console.warn("AI photo analyze error:", err);
@@ -1799,77 +1811,6 @@ Key 3D printing & charm specs:
               </div>
             );
           })}
-        </div>
-
-        {/* 3. Tùy Biến Thêm: Chữ khắc laser, Dáng phôi, Màu men */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-[#E8E2D8]">
-          {/* Chữ khắc Laser */}
-          <div className="p-3 rounded-2xl bg-[#FAF7F2]/70 border border-[#E8E2D8] space-y-1.5">
-            <label className="text-xs font-semibold text-[#241B16] flex items-center justify-between">
-              <span>Chữ khắc Laser</span>
-              <span className="text-[10px] text-[#8C7A70] font-normal">Tối đa 15 ký tự</span>
-            </label>
-            <input
-              type="text"
-              maxLength={15}
-              value={customText}
-              onChange={(e) => setCustomText(e.target.value)}
-              placeholder="VD: Nét • 2026..."
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#E8E2D8] text-xs text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
-            />
-          </div>
-
-          {/* Dáng Phôi Móc Khoá */}
-          <div className="p-3 rounded-2xl bg-[#FAF7F2]/70 border border-[#E8E2D8] space-y-1.5">
-            <label className="text-xs font-semibold text-[#241B16]">
-              Dáng phôi móc khoá
-            </label>
-            <div className="grid grid-cols-5 gap-1">
-              {[
-                { id: "circle", label: "Tròn" },
-                { id: "square", label: "Vuông" },
-                { id: "teardrop", label: "Giọt" },
-                { id: "heart", label: "Tim" },
-                { id: "freeform", label: "Tự do" },
-              ].map((shape) => (
-                <button
-                  key={shape.id}
-                  type="button"
-                  onClick={() => setCustomShape(shape.id as any)}
-                  className={`py-1.5 rounded-lg text-[10px] font-semibold border transition-all cursor-pointer ${
-                    customShape === shape.id
-                      ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
-                      : "bg-white text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                  }`}
-                >
-                  {shape.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Màu men nung phối túi */}
-          <div className="p-3 rounded-2xl bg-[#FAF7F2]/70 border border-[#E8E2D8] space-y-1.5">
-            <label className="text-xs font-semibold text-[#241B16]">
-              Màu men nung
-            </label>
-            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-              {CERAMIC_PALETTE.map((pal) => (
-                <button
-                  key={pal.hex}
-                  type="button"
-                  onClick={() => setCustomColor(pal.hex)}
-                  title={pal.name}
-                  className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
-                    customColor === pal.hex
-                      ? "border-[#241B16] scale-110 shadow-xs ring-2 ring-[#B85D43]/30"
-                      : "border-white hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: pal.hex }}
-                />
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* 4. Xem trước Master Prompt Kỹ Thuật (Collapsible Accordion) */}
@@ -2889,76 +2830,6 @@ Key 3D printing & charm specs:
                                                   className="w-full px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs font-semibold text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
                                                 />
                                               </div>
-
-                                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                                {/* 1. Chữ khắc Laser */}
-                                                <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
-                                                  <label className="text-[11px] font-bold text-[#241B16] flex items-center justify-between">
-                                                    <span>Chữ khắc Laser</span>
-                                                    <span className="text-[9.5px] text-[#8C7A70] font-normal">Tối đa 15 ký tự</span>
-                                                  </label>
-                                                  <input
-                                                    type="text"
-                                                    maxLength={15}
-                                                    value={customText}
-                                                    onChange={(e) => setCustomText(e.target.value)}
-                                                    placeholder="VD: Nét • 2026..."
-                                                    className="w-full px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] text-xs text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43]"
-                                                  />
-                                                </div>
-
-                                                {/* 2. Dáng phôi móc khoá */}
-                                                <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
-                                                  <label className="text-[11px] font-bold text-[#241B16]">
-                                                    Dáng phôi móc khoá
-                                                  </label>
-                                                  <div className="grid grid-cols-5 gap-1 pt-0.5">
-                                                    {[
-                                                      { id: "circle", label: "Tròn" },
-                                                      { id: "square", label: "Vuông" },
-                                                      { id: "teardrop", label: "Giọt" },
-                                                      { id: "heart", label: "Tim" },
-                                                      { id: "freeform", label: "Tự do" },
-                                                    ].map((shape) => (
-                                                      <button
-                                                        key={shape.id}
-                                                        type="button"
-                                                        onClick={() => setCustomShape(shape.id as any)}
-                                                        className={`py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
-                                                          customShape === shape.id
-                                                            ? "bg-[#241B16] text-white border-[#241B16] shadow-xs"
-                                                            : "bg-[#FAF7F2] text-[#5E4D43] border-[#E8E2D8] hover:bg-[#F3ECE1]"
-                                                        }`}
-                                                      >
-                                                        {shape.label}
-                                                      </button>
-                                                    ))}
-                                                  </div>
-                                                </div>
-
-                                                {/* 3. Màu men nung */}
-                                                <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8] space-y-1">
-                                                  <label className="text-[11px] font-bold text-[#241B16]">
-                                                    Màu men nung
-                                                  </label>
-                                                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                                                    {CERAMIC_PALETTE.map((pal) => (
-                                                      <button
-                                                        key={pal.hex}
-                                                        type="button"
-                                                        onClick={() => setCustomColor(pal.hex)}
-                                                        title={pal.name}
-                                                        className={`w-5 h-5 rounded-full border-2 transition-all cursor-pointer ${
-                                                          customColor === pal.hex
-                                                            ? "border-[#241B16] scale-110 shadow-xs ring-2 ring-[#B85D43]/30"
-                                                            : "border-white hover:scale-105"
-                                                        }`}
-                                                        style={{ backgroundColor: pal.hex }}
-                                                      />
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              </div>
                                             </div>
 
                                             {/* Button tạo móc khoá trực tiếp, không cần kiểm tra lại */}
@@ -3143,64 +3014,33 @@ Key 3D printing & charm specs:
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
                                   <div className="sm:col-span-5 flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-[#FAF7F2] to-[#F3ECE1] border border-[#E8E2D8] shadow-inner relative">
                                     <div className="absolute top-2.5 left-3 text-[9px] uppercase tracking-wider font-semibold text-[#B85D43] bg-white/80 px-2 py-0.5 rounded-full border border-[#E8E2D8]">
-                                      Tạo hình Die-Cut tự do
+                                      {generatedImageUrl ? "Bản vẽ 2D độc bản" : "Tạo hình Die-Cut tự do"}
                                     </div>
 
                                     {/* Freestanding Die-Cut Charm Display (Phôi móc khoá thực tế) */}
                                     <div className="w-32 h-32 flex items-center justify-center relative my-2">
-                                      {customImageFile || generatedImageUrl ? (
+                                      {isAiSketching ? (
+                                        <div className="w-24 h-24 rounded-2xl bg-white/90 border-2 border-dashed border-[#B85D43]/40 flex flex-col items-center justify-center text-center p-2 shadow-sm">
+                                          <Loader2 className="w-6 h-6 text-[#B85D43] animate-spin mb-1" />
+                                          <span className="text-[9px] text-[#B85D43] font-medium leading-tight">AI đang vẽ lại phôi 2D...</span>
+                                        </div>
+                                      ) : generatedImageUrl || customImageFile ? (
                                         <div className="w-full h-full relative flex flex-col items-center justify-center">
                                           {/* Vòng móc kim loại phía trên (Keychain Ring) */}
-                                          <div className="w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent -mb-1 shadow-xs z-10" />
-                                          <div
-                                            className={`w-24 h-24 relative overflow-hidden p-1.5 bg-white border-2 border-[#E8E2D8] shadow-md flex items-center justify-center transition-all ${
-                                              customShape === "circle"
-                                                ? "rounded-full"
-                                                : customShape === "teardrop"
-                                                ? "rounded-t-full rounded-b-xl"
-                                                : customShape === "heart"
-                                                ? "rounded-3xl"
-                                                : customShape === "freeform"
-                                                ? "rounded-[22px_6px_22px_6px]"
-                                                : "rounded-2xl"
-                                            }`}
-                                          >
+                                          <div className="w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent -mb-1 shadow-xs z-10 shrink-0" />
+                                          <div className="w-24 h-24 relative flex items-center justify-center">
                                             <img
-                                              src={customImageFile || generatedImageUrl || ""}
+                                              src={generatedImageUrl || customImageFile || ""}
                                               alt={motifName || "Móc khoá 2D Nét"}
-                                              className={`w-full h-full object-cover select-none ${
-                                                customShape === "circle" ? "rounded-full" : "rounded-xl"
-                                              }`}
+                                              className="w-full h-full object-contain select-none drop-shadow-md"
                                             />
-                                            {customText && (
-                                              <span className="absolute bottom-1.5 text-[8.5px] font-mono tracking-tight text-white bg-black/75 px-1.5 py-0.5 rounded shadow">
-                                                {customText}
-                                              </span>
-                                            )}
                                           </div>
                                         </div>
                                       ) : (
-                                        <div
-                                          style={{ backgroundColor: customColor }}
-                                          className={`w-24 h-24 flex flex-col items-center justify-center text-white font-serif font-bold text-2xl drop-shadow-md relative border-2 border-white/80 shadow-md transition-all ${
-                                            customShape === "circle"
-                                              ? "rounded-full"
-                                              : customShape === "teardrop"
-                                              ? "rounded-t-full rounded-b-xl"
-                                              : customShape === "heart"
-                                              ? "rounded-3xl"
-                                              : customShape === "freeform"
-                                              ? "rounded-[22px_6px_22px_6px]"
-                                              : "rounded-2xl"
-                                          }`}
-                                        >
+                                        <div className="w-24 h-24 flex flex-col items-center justify-center text-[#B85D43] relative border-2 border-dashed border-[#B85D43]/40 rounded-2xl bg-white/60 shadow-xs">
                                           <div className="absolute -top-3 w-4 h-5 rounded-t-full border-2 border-[#D4AF37] bg-transparent shadow-xs" />
-                                          <span>{customText ? customText.slice(0, 3).toUpperCase() : "NÉT"}</span>
-                                          {customText && customText.length > 3 && (
-                                            <span className="text-[8.5px] font-mono font-normal tracking-wide text-white/90 mt-1 bg-black/30 px-1.5 py-0.5 rounded">
-                                              {customText}
-                                            </span>
-                                          )}
+                                          <Sparkles className="w-6 h-6 mb-1 text-[#B85D43]" />
+                                          <span className="text-[10px] font-semibold">Phôi Tự Do</span>
                                         </div>
                                       )}
                                     </div>
@@ -3227,20 +3067,14 @@ Key 3D printing & charm specs:
                                     )}
 
                                     {/* Thông số tinh gọn */}
-                                    <div className="grid grid-cols-3 gap-2 text-xs text-[#5E4D43]">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#5E4D43]">
                                       <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
-                                        <span className="text-[#8C7A70] text-[10.5px] block">Tên móc khoá:</span>
-                                        <strong className="text-[#B85D43] truncate block">{motifName || "Móc Khoá Độc Bản"}</strong>
+                                        <span className="text-[#8C7A70] text-[10.5px] block">Tên tác phẩm móc khoá:</span>
+                                        <strong className="text-[#B85D43] truncate block font-serif text-sm">{motifName || "Móc Khoá Độc Bản"}</strong>
                                       </div>
                                       <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
-                                        <span className="text-[#8C7A70] text-[10.5px] block">Khắc Laser:</span>
-                                        <strong className="text-[#241B16] truncate block">{customText ? `"${customText}"` : "Không khắc chữ"}</strong>
-                                      </div>
-                                      <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D8]">
-                                        <span className="text-[#8C7A70] text-[10.5px] block">Dáng phôi:</span>
-                                        <strong className="text-[#241B16] truncate block">
-                                          {customShape === "circle" ? "Tròn" : customShape === "square" ? "Vuông" : customShape === "teardrop" ? "Giọt nước" : customShape === "heart" ? "Trái tim" : "Tự do Die-Cut"}
-                                        </strong>
+                                        <span className="text-[#8C7A70] text-[10.5px] block">Tạo hình phôi:</span>
+                                        <strong className="text-[#241B16] truncate block font-medium">Die-Cut Tự Do Theo Nhân Vật</strong>
                                       </div>
                                     </div>
 
@@ -3301,7 +3135,7 @@ Key 3D printing & charm specs:
                               </span>
                             </div>
                             <div className="text-[11px] text-[#7A6F68] pt-1 border-t border-[#E8E2D8]">
-                              Ý tưởng: "{customIdea || "Charm độc bản"}" · Màu {customColor} · Khắc "{customText || "Theo yêu cầu"}"
+                              Ý tưởng: "{customIdea || motifName || "Charm độc bản"}" · Phôi móc khoá 2D Die-Cut độc bản
                             </div>
                           </div>
 

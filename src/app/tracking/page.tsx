@@ -456,6 +456,9 @@ function TrackingContent() {
                     <div className="w-full max-w-[260px]">
                       <NetBag2DCanvas
                         placedCharms={currentRequest.placedCharms}
+                        bagImageUrl={currentRequest.bagColor?.image || "/assets/products/bags/tuixach-xanh-la.png"}
+                        selectedColorHex={currentRequest.bagColor?.hex}
+                        selectedColorName={currentRequest.bagColor?.name}
                         onUpdateCharmPosition={() => {}}
                         onRemoveCharm={() => {}}
                       />

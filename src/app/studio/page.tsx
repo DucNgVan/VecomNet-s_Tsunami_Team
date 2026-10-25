@@ -1632,7 +1632,7 @@ Key 3D printing & charm specs:
   };
 
   // Submit Design Request / Đặt hàng bộ phối
-  const handleSubmitDesignRequest = (e: React.FormEvent) => {
+  const handleSubmitDesignRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalPhone = (customerPhone || customerContact).trim();
     if (!customerName.trim() || !finalPhone) {
@@ -1657,6 +1657,56 @@ Key 3D printing & charm specs:
       workshop_pickup: "Nhận trực tiếp tại xưởng Đà Nẵng",
     };
 
+    const hasCustom = Boolean(hasAppliedCustomToBag || aiCustomStep === 3 || customIdea.trim());
+
+    // Nếu ĐẶT HÀNG CÓ SẴN (chỉ có túi và charm có sẵn):
+    // Tự động trừ kho vào bộ sưu tập, tạo đơn hàng thành công, KHÔNG CẦN CHỜ DUYỆT!
+    if (!hasCustom) {
+      try {
+        const { deductInventoryForOrder } = await import("@/lib/supplyChainStorage");
+        const tempOrder: any = {
+          orderId: `ord-${newReqId}`,
+          orderCode: newReqId,
+          createdAt: new Date().toISOString(),
+          customer: {
+            fullName: customerName.trim(),
+            email: customerEmail.trim() || `${finalPhone}@nets.eco`,
+            phone: finalPhone,
+            address: customerAddress.trim(),
+            city: "Đà Nẵng",
+            dob: customerDob.trim() || undefined,
+          },
+          items: [
+            {
+              cartItemId: `item-bag-${Date.now()}`,
+              type: "custom_bag",
+              title: `${selectedBag.name} (${selectedColor.name})`,
+              price: baseBagPrice,
+              quantity: 1,
+              image: selectedColor?.image || selectedBag.image,
+              plasticOffsetKg: selectedBag.plasticOffsetKg || 1.6,
+              bagBaseId: selectedBag.id,
+              details: {
+                colorName: selectedColor.name,
+                charmsCount: placedCharms.length,
+                charmsList: placedCharms.map((c) => c.charm.vietnameseName || c.charm.name),
+              },
+            },
+          ],
+          subtotal: totalPriceNumber,
+          total: totalPriceNumber,
+          shippingFee: 0,
+          paymentMethod: "cod",
+          paymentStatus: "pending",
+          fulfillmentStatus: "received",
+          userId: user?.uid || undefined,
+        };
+        deductInventoryForOrder(tempOrder);
+      } catch (deductErr) {
+        console.warn("Deduct inventory notice:", deductErr);
+      }
+    }
+
     const newRequest: DesignRequest = {
       id: newReqId,
       createdAt: new Date().toISOString().replace("T", " ").slice(0, 16),
@@ -1677,8 +1727,8 @@ Key 3D printing & charm specs:
       bagColor: selectedColor,
       placedCharms,
       charmsTotal: standardCharmsTotal,
-      hasCustomCharm: hasAppliedCustomToBag || aiCustomStep === 3 || Boolean(customIdea.trim()),
-      customCharm: (hasAppliedCustomToBag || customIdea.trim())
+      hasCustomCharm: hasCustom,
+      customCharm: hasCustom
         ? {
             idea: customIdea.trim() || "Charm theo phác thảo",
             shape: customShape,
@@ -1700,13 +1750,15 @@ Key 3D printing & charm specs:
           }
         : undefined,
       baseTotal: totalPriceNumber,
-      status: "pending_review",
+      status: hasCustom ? "pending_review" : "confirmed",
       trackingEvents: [
         {
           time: new Date().toISOString().replace("T", " ").slice(0, 16),
-          status: "Đã gửi yêu cầu",
-          location: "Hệ thống Nét Studio",
-          description: "Yêu cầu thiết kế đã được tiếp nhận. Đội ngũ xưởng đang kiểm tra và chuẩn bị concept phác thảo.",
+          status: hasCustom ? "Đã gửi yêu cầu phác thảo" : "Đã xác nhận đơn hàng thành công",
+          location: "Hệ thống Nét Studio & Kho xưởng",
+          description: hasCustom
+            ? "Yêu cầu thiết kế charm độc bản đã được tiếp nhận. Đội ngũ xưởng đang kiểm tra và chuẩn bị concept phác thảo."
+            : "Đơn hàng đã được xác nhận trực tiếp, tồn kho đã tự động khấu trừ khỏi bộ sưu tập và đang tiến hành xuất xưởng.",
         },
       ],
       passportCode: `NET-BAG-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -2054,38 +2106,19 @@ Key 3D printing & charm specs:
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             {/* Left Column: Interactive Bag Canvas (2D / 3D Fallback) */}
             <div className="lg:col-span-5 flex flex-col items-center">
-              {/* Bag Model Selector (Mẫu Túi Trong Bộ Sưu Tập) - Đặt phía trên để người dùng dễ chọn */}
-              <div className="w-full max-w-[440px] mb-3.5 bg-[#FAF8F5] p-3 rounded-2xl border border-[#E8E2D8] shadow-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] uppercase tracking-wider text-[#7A6F68] font-bold">
-                      Bộ Sưu Tập Mẫu Túi
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-[#EFE9DF] text-[10px] font-bold text-[#5E4D43]">
-                      {availableBags.length} mẫu
-                    </span>
-                  </div>
-                  {selectedBag && (
-                    <span className="text-xs font-bold text-[#B85D43]">
-                      {formatVND(selectedBag.basePrice)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Danh sách các mẫu túi trong Bộ Sưu Tập (Ngang cuộn mượt mà) */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                  {availableBags.map((bag) => {
-                    const isSelected = selectedBag.id === bag.id;
-                    const thumbImg =
-                      bag.image ||
-                      bag.colors?.[0]?.image ||
-                      "/assets/products/bags/tuixach-xanh-la.png";
-
-                    return (
-                      <button
-                        key={bag.id}
-                        type="button"
-                        onClick={() => {
+              {/* Dropbox Chọn Mẫu Túi Nhỏ Gọn */}
+              <div className="w-full max-w-[440px] mb-3 bg-[#FAF8F5] px-3.5 py-2.5 rounded-2xl border border-[#E8E2D8] shadow-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <label htmlFor="bag-select-dropdown" className="text-[11px] uppercase tracking-wider text-[#7A6F68] font-bold shrink-0">
+                    Mẫu Túi:
+                  </label>
+                  <div className="relative flex-1 min-w-0">
+                    <select
+                      id="bag-select-dropdown"
+                      value={selectedBag?.id}
+                      onChange={(e) => {
+                        const bag = availableBags.find((b) => b.id === e.target.value);
+                        if (bag) {
                           setSelectedBag(bag);
                           const bagColors =
                             bag.colors && bag.colors.length > 0
@@ -2101,37 +2134,24 @@ Key 3D printing & charm specs:
                           } else {
                             setSelectedColor(bagColors[0]);
                           }
-                        }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-all shrink-0 cursor-pointer ${
-                          isSelected
-                            ? "bg-white border-[#B85D43] shadow-xs ring-1 ring-[#B85D43]/30"
-                            : "bg-white/60 border-[#E8E2D8] hover:bg-white hover:border-[#D6CCC0]"
-                        }`}
-                      >
-                        <img
-                          src={thumbImg}
-                          alt={bag.name}
-                          className="w-8 h-8 object-contain rounded-md shrink-0 bg-slate-50 border border-slate-100"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <span
-                            className={`text-xs font-bold whitespace-nowrap truncate max-w-[130px] ${
-                              isSelected ? "text-[#1A130F]" : "text-[#5E4D43]"
-                            }`}
-                          >
-                            {bag.name}
-                          </span>
-                          <span className="text-[10px] text-[#7A6F68]">
-                            {bag.colors?.length || 5} màu · {formatVND(bag.basePrice)}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <Check className="w-3.5 h-3.5 text-[#B85D43] stroke-[3] ml-1 shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
+                        }
+                      }}
+                      className="w-full appearance-none bg-white border border-[#E8E2D8] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-[#1A130F] focus:outline-none focus:ring-1 focus:ring-[#B85D43] cursor-pointer truncate shadow-2xs"
+                    >
+                      {availableBags.map((bag) => (
+                        <option key={bag.id} value={bag.id}>
+                          {bag.name} ({bag.colors?.length || 5} màu) — {formatVND(bag.basePrice)}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#7A6F68] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
+                {selectedBag && (
+                  <span className="text-xs font-bold text-[#B85D43] shrink-0">
+                    {formatVND(selectedBag.basePrice)}
+                  </span>
+                )}
               </div>
 
               {/* 3D / 2D Canvas */}
@@ -3740,7 +3760,11 @@ Key 3D printing & charm specs:
                           <span>Đang lưu đơn hàng...</span>
                         ) : (
                           <>
-                            <span>Xác nhận đặt hàng bộ phối</span>
+                            <span>
+                              {hasAppliedCustomToBag || aiCustomStep === 3 || customIdea.trim()
+                                ? "Gửi yêu cầu thiết kế charm độc bản & Chờ báo giá"
+                                : "Xác nhận đặt hàng & Thanh toán (Tự động trừ kho)"}
+                            </span>
                             <ArrowRight className="w-4 h-4" />
                           </>
                         )}

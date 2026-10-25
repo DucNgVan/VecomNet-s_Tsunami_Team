@@ -10,6 +10,7 @@ export type RequestStatus =
   | "pending_review"       // Chờ tiếp nhận
   | "concept_sent"         // Đã gửi concept & báo giá
   | "approved"             // Khách đã duyệt thiết kế & giá
+  | "confirmed"            // Đã xác nhận đơn hàng có sẵn (không cần duyệt)
   | "revision_requested"   // Khách yêu cầu chỉnh sửa
   | "in_production"        // Đang chế tác xưởng
   | "shipping"             // Đang vận chuyển

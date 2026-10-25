@@ -589,6 +589,31 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                           <span>3D</span>
                         </button>
                       )}
+                      {/* Nút Highlight Trang Chủ */}
+                      {!["charm", "combo"].includes(prod.category) && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const newStatus = !prod.isHighlighted;
+                            await onSaveProduct({ ...prod, isHighlighted: newStatus });
+                            if (newStatus) {
+                              for (const other of products) {
+                                if (other.id !== prod.id && other.isHighlighted) {
+                                  await onSaveProduct({ ...other, isHighlighted: false });
+                                }
+                              }
+                            }
+                          }}
+                          className={`px-2 py-1.5 rounded-xl font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-colors border ${
+                            prod.isHighlighted
+                              ? "bg-amber-500 border-amber-600 text-white shadow-xs"
+                              : "bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100"
+                          }`}
+                          title={prod.isHighlighted ? "Đang chiếu 3D trên Trang Chủ" : "Bấm để chọn mẫu túi này chiếu 3D trên Trang Chủ"}
+                        >
+                          <span>{prod.isHighlighted ? "★ Trang Chủ" : "☆ Chiếu Trang Chủ"}</span>
+                        </button>
+                      )}
                     </div>
                     <button
                       onClick={() => onDeleteProduct(prod.id)}
@@ -832,88 +857,91 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                 />
               </div>
 
-              {/* Upload Ảnh */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Hình Ảnh Sản Phẩm (Cloudinary CDN Tối Ưu)</span>
-                  {isUploadingImage && (
-                    <span className="text-teal-600 font-mono text-[10px]">
-                      {imageProgress}% Đang tải...
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProductImageUpload}
-                  className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-                />
-                <input
-                  type="text"
-                  value={productForm.imageUrl}
-                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                  placeholder="URL ảnh hoặc chọn file để tự động upload"
-                  className="w-full p-2 rounded-lg border border-slate-200 text-[11px] bg-white font-mono"
-                />
-                {productForm.imageUrl && (
-                  <div className="flex items-center gap-2 p-2 rounded-xl bg-teal-50/60 border border-teal-100">
-                    <img
-                      src={productForm.imageUrl}
-                      alt="Xem trước ảnh"
-                      className="w-10 h-10 rounded-lg object-contain bg-white border border-teal-200 shrink-0 p-0.5"
+              {/* Upload Ảnh & 3D (Chỉ hiển thị cho phụ kiện Charm & Combo, Túi xách dùng cấu hình từng màu bên dưới để tránh trùng lặp) */}
+              {(productForm.category === "charm" || productForm.category === "combo") && (
+                <>
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label className="font-bold text-slate-700 flex items-center justify-between">
+                      <span>Hình Ảnh Sản Phẩm (Cloudinary CDN Tối Ưu)</span>
+                      {isUploadingImage && (
+                        <span className="text-teal-600 font-mono text-[10px]">
+                          {imageProgress}% Đang tải...
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProductImageUpload}
+                      className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
                     />
-                    <span className="text-[10px] text-teal-800 font-mono truncate flex-1">
-                      {productForm.imageUrl}
-                    </span>
+                    <input
+                      type="text"
+                      value={productForm.imageUrl}
+                      onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                      placeholder="URL ảnh hoặc chọn file để tự động upload"
+                      className="w-full p-2 rounded-lg border border-slate-200 text-[11px] bg-white font-mono"
+                    />
+                    {productForm.imageUrl && (
+                      <div className="flex items-center gap-2 p-2 rounded-xl bg-teal-50/60 border border-teal-100">
+                        <img
+                          src={productForm.imageUrl}
+                          alt="Xem trước ảnh"
+                          className="w-10 h-10 rounded-lg object-contain bg-white border border-teal-200 shrink-0 p-0.5"
+                        />
+                        <span className="text-[10px] text-teal-800 font-mono truncate flex-1">
+                          {productForm.imageUrl}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Upload 3D Model */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Mô Hình 3D (.glb / .gltf - Cloudinary CDN Tối Ưu)</span>
-                  {isUploadingModel && (
-                    <span className="text-indigo-600 font-mono text-[10px]">
-                      {modelProgress}% Đang tải...
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="file"
-                  accept=".glb,.gltf"
-                  onChange={handleProductModelUpload}
-                  className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                />
-                <input
-                  type="text"
-                  value={productForm.model3dUrl}
-                  onChange={(e) => setProductForm({ ...productForm, model3dUrl: e.target.value })}
-                  placeholder="/assets/models/tuixach.glb hoặc URL 3D cloud"
-                  className="w-full p-2 rounded-lg border border-slate-200 text-[11px] bg-white font-mono"
-                />
-                {productForm.model3dUrl && (
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/60 border border-indigo-100">
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="text-[10px] text-indigo-800 font-mono truncate max-w-[200px]">
-                        {productForm.model3dUrl}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPreview3dModel({
-                          name: productForm.name || "Mô hình xem trước",
-                          url: productForm.model3dUrl,
-                        })
-                      }
-                      className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold shrink-0 cursor-pointer shadow-sm"
-                    >
-                      Xem Thử 3D
-                    </button>
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label className="font-bold text-slate-700 flex items-center justify-between">
+                      <span>Mô Hình 3D (.glb / .gltf - Cloudinary CDN Tối Ưu)</span>
+                      {isUploadingModel && (
+                        <span className="text-indigo-600 font-mono text-[10px]">
+                          {modelProgress}% Đang tải...
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="file"
+                      accept=".glb,.gltf"
+                      onChange={handleProductModelUpload}
+                      className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                    />
+                    <input
+                      type="text"
+                      value={productForm.model3dUrl}
+                      onChange={(e) => setProductForm({ ...productForm, model3dUrl: e.target.value })}
+                      placeholder="/assets/models/caurongcharm.glb hoặc URL 3D cloud"
+                      className="w-full p-2 rounded-lg border border-slate-200 text-[11px] bg-white font-mono"
+                    />
+                    {productForm.model3dUrl && (
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/60 border border-indigo-100">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-[10px] text-indigo-800 font-mono truncate max-w-[200px]">
+                            {productForm.model3dUrl}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreview3dModel({
+                              name: productForm.name || "Mô hình xem trước",
+                              url: productForm.model3dUrl,
+                            })
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold shrink-0 cursor-pointer shadow-sm"
+                        >
+                          Xem Thử 3D
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
 
               {/* Cấu Hình Bộ Màu Sắc Của Túi (Hiển thị cho dòng túi xách) */}
               {productForm.category !== "charm" && productForm.category !== "combo" && (

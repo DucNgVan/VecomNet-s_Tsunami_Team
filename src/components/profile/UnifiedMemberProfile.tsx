@@ -592,16 +592,6 @@ export const UnifiedMemberProfile: React.FC = () => {
 
           <div className="flex items-center flex-wrap gap-2.5">
             <button
-              onClick={handleRecalculateImpact}
-              disabled={isRecalculating}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[#5E4D43] text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Tính lại tác động môi trường từ đơn hàng và túi độc bản"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#7A6F68] ${isRecalculating ? "animate-spin" : ""}`} />
-              <span>{isRecalculating ? "Đang tính..." : "Cập nhật tác động"}</span>
-            </button>
-
-            <button
               onClick={() => setIsEditingInfo(!isEditingInfo)}
               className="px-3.5 py-2 rounded-xl bg-white border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[#5E4D43] text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
@@ -625,17 +615,6 @@ export const UnifiedMemberProfile: React.FC = () => {
               <span>Vào Nét Studio</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
-
-            <button
-              onClick={async () => {
-                await logout();
-                showToast("Đã đăng xuất tài khoản an toàn.", "info");
-              }}
-              className="p-2.5 rounded-xl border border-[#E8E2D8] bg-white text-[#7A6F68] hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors cursor-pointer"
-              title="Đăng xuất"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
@@ -729,31 +708,6 @@ export const UnifiedMemberProfile: React.FC = () => {
             </motion.form>
           )}
         </AnimatePresence>
-
-        {/* ========================================================= */}
-        {/* FILTER PILLS (ONE UNIFIED PAGE - NO NAVIGATION HOPS)       */}
-        {/* ========================================================= */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-          {[
-            { id: "all", label: "Tất cả thông tin" },
-            { id: "eco", label: "Hồ sơ môi trường" },
-            { id: "bags", label: `Túi đã định danh (${customerBags.length})` },
-            { id: "orders", label: `Đơn hàng & Chế tác (${customerOrders.length + designRequests.length})` },
-            { id: "account", label: "Địa chỉ giao nhận" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSection(tab.id as ProfileActiveSection)}
-              className={`px-4 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                activeSection === tab.id
-                  ? "bg-[#241B16] text-white font-medium shadow-xs"
-                  : "bg-white border border-[#E8E2D8] text-[#5E4D43] hover:text-[#241B16] hover:bg-[#F3ECE1]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
 
         {/* ========================================================= */}
         {/* SECTION 1: HỒ SƠ BẢO VỆ MÔI TRƯỜNG (ESG DASHBOARD)        */}

@@ -158,6 +158,9 @@ export const StoryPassportView: React.FC<StoryPassportViewProps> = ({
           <div className="lg:col-span-5 flex flex-col items-center space-y-6">
             <NetBag2DCanvas
               placedCharms={passportData.charms}
+              bagImageUrl={linkedRequest?.bagColor?.image || "/assets/products/bags/tuixach-xanh-la.png"}
+              selectedColorHex={linkedRequest?.bagColor?.hex || "#3d8b85"}
+              selectedColorName={linkedRequest?.bagColor?.name || "Xanh Lá"}
               onUpdateCharmPosition={() => {}}
               onRemoveCharm={() => {}}
             />

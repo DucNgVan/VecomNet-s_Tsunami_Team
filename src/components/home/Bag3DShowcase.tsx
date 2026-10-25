@@ -64,10 +64,12 @@ export const Bag3DShowcase: React.FC = () => {
                 p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : "/assets/models/tuixach-xanh-la.glb",
               stockCount: Number(p.stockCount) || 0,
               inStock: Boolean(p.inStock && Number(p.stockCount) > 0),
+              isHighlighted: Boolean(p.isHighlighted),
             }));
           if (liveBags.length > 0) {
             setAllBags(liveBags);
-            setSelectedBag(liveBags[0]);
+            const highlighted = liveBags.find((b: any) => b.isHighlighted);
+            setSelectedBag(highlighted || liveBags[0]);
           } else {
             setAllBags([]);
             setSelectedBag(null);

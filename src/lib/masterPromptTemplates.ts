@@ -275,7 +275,7 @@ export function buildMaster2DKeychainPrompt(
       const fur = !isNegativeOrEmpty(f1) ? `with ${f1}` : "";
       const acc = !isNegativeOrEmpty(f2) ? `, wearing ${f2}` : "";
       const act = !isNegativeOrEmpty(f3) ? `, ${f3}` : "";
-      subjectDescription = `an adorable chibi ${pet} ${fur}${acc}${act}`.replace(/\s+/g, " ").trim();
+      subjectDescription = `an ultra-kawaii chibi cartoon ${pet} ${fur}${acc}${act}, chubby round fluffy body, big glossy sparkling anime eyes with catchlights, rosy blushing cheeks, joyful friendly smile`.replace(/\s+/g, " ").trim();
       break;
     }
     case "flora": {

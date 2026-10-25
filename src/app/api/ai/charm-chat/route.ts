@@ -247,32 +247,37 @@ TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
    - CHỈ VẼ DUY NHẤT 1 NHÂN VẬT/CHỦ THỂ ĐỨNG CHÍNH GIỮA BỨC TRANH.
    - NỀN BẮT BUỘC LÀ TRẮNG TRỐNG HOÀN TOÀN #FFFFFF (pure solid white #FFFFFF background, completely empty background, no background objects).
 
-QUY TẮC CHIBI HOÁ NGƯỜI THẬT THÀNH MÓC KHOÁ ACRYLIC MINI (BẮT BUỘC TUÂN THỦ 100%):
-1. NẾU CÓ ẢNH TẢI LÊN:
-   - ƯU TIÊN SỐ 1 TUYỆT ĐỐI: Bám sát người trong ảnh và CHIBI HOÁ THÀNH MÓC KHOÁ ACRYLIC CHARM MINI CỰC KỲ DỄ THƯƠNG (cute kawaii 2D anime chibi acrylic keychain charm)!
-   - PHONG CÁCH CHIBI ANIME ĐỘC BẢN:
-     * Tỷ lệ chibi đáng yêu: Đầu to tròn ngộ nghĩnh (oversized cute round head), đôi má phúng phính ửng hồng (chubby rosy blushing cheeks), mắt anime cười híp mí đáng yêu (happy crescent smiling anime eyes), nụ cười tươi thân thiện.
-     * Khuôn mặt & Kiểu tóc: Giữ nguyên kiểu tóc từ ảnh gốc (ví dụ: short spiky black hair with undercut), kính mắt (round black eyeglasses), râu quai nón tối giản dễ thương.
-     * Trang phục: Giữ nguyên màu áo (áo thun đen, áo polo đen) và màu quần (quần kaki, quần short) từ ảnh thật.
-     * Tư thế dáng người: BÁM SÁT TƯ THẾ TỪ ẢNH! Nếu trong ảnh là tư thế chụp ảnh selfie trước gương: Chuyển thành nhân vật chibi đứng toàn thân, MỘT TAY CẦM CHIẾC SMARTPHONE TRẮNG MINI TẠO DÁNG CHỤP SELFIE, TAY CÒN LẠI ĐÚT TÚI QUẦN (holding a mini white smartphone taking a mirror selfie with one hand, other hand in pocket).
-     * Hình thái móc khoá: Nhân vật chibi được bao bọc bởi đường viền acrylic trong suốt (clear transparent laser-cut die-cut acrylic border around the character), phía trên đỉnh có khoen xỏ kim loại màu bạc (silver metal keychain ring on top).
-   - LOẠI BỎ TRIỆT ĐỂ BỐI CẢNH ĐỜI THẬT:
-     * BỎ HOÀN TOÀN bối cảnh phòng tắm, gương soi, tường nhà, cánh cửa hay đồ vật nội thất đời thật!
-     * Nhân vật đứng trên nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background).
-   - Nếu trong ảnh là THÚ CƯNG: Bám sát giống loài, màu lông, đốm lông, tư thế từ ảnh thật và chibi hoá dễ thương.
-   - Nếu trong ảnh là HOA CỎ / ĐỒ VẬT / ĐỊA DANH: Bám sát hình dáng và cấu trúc vật thể từ ảnh thật.
+QUY TẮC CỐT LÕI: CHIBI HOÁ / CARTOON HOÁ TẤT CẢ NGƯỜI & CON VẬT (BÁM SÁT 100% ẢNH MẪU):
+1. NẾU TRONG ẢNH CÓ NGƯỜI (chân dung, selfie, chụp gương, toàn thân, cặp đôi, em bé):
+   - MỤC TIÊU SỐ 1: Bắt buộc CHIBI HOÁ / CARTOON HOÁ người đó thành một nhân vật Chibi Anime cực kỳ dễ thương (cute kawaii 2D anime chibi character), giống hệt người trong ảnh nhưng ở phong cách hoạt hình!
+   - TỶ LỆ CHIBI CUTE: Đầu to tròn đáng yêu (oversized cute round head), má bánh bao ửng hồng (chubby rosy blushing cheeks), mắt anime cười híp mí hoặc to tròn lấp lánh (happy smiling anime eyes), nụ cười tươi thân thiện.
+   - BẢO TOÀN 100% DIỆN MẠO ĐỂ NHÌN VÀO LÀ BIẾT NGAY ĐÓ LÀ HỌ:
+     * Kiểu tóc & Màu tóc: Bám sát kiểu tóc trong ảnh thật (tóc ngắn vuốt spiky, undercut, tóc uốn lượn sóng, tóc buộc đuôi ngựa, tóc mái ngố...).
+     * Kính mắt: Nếu người trong ảnh đeo kính, giữ nguyên gọng kính (kính gọng đen, gọng tròn, gọng vuông...).
+     * Râu & Nét mặt: Nếu có râu hoặc đặc điểm riêng thì giữ lại theo nét chibi tối giản.
+     * Trang phục: Giữ nguyên màu sắc và kiểu dáng quần áo từ ảnh thật (áo thun đen, áo polo, áo hoodie, quần kaki...).
+     * Tư thế: Bám sát tư thế từ ảnh thật! Nếu trong ảnh là tư thế chụp selfie trước gương: Chuyển thành nhân vật chibi đứng toàn thân, MỘT TAY CẦM CHIẾC SMARTPHONE TRẮNG MINI TẠO DÁNG CHỤP SELFIE, TAY CÒN LẠI ĐÚT TÚI QUẦN.
+   - HÌNH THÁI MÓC KHOÁ: Nhân vật chibi được bao bọc bởi đường viền acrylic trong suốt (clear transparent laser-cut die-cut acrylic border around the character), phía trên đỉnh có khoen xỏ kim loại màu bạc (silver metal keychain ring on top), nền trắng tinh khiết tuyệt đối #FFFFFF.
 
-2. NẾU KHÔNG CÓ ẢNH TẢI LÊN:
+2. NẾU TRONG ẢNH CÓ CON VẬT / THÚ CƯNG (chó, mèo, thỏ, chim, chuột hamster, thú cưng...):
+   - MỤC TIÊU SỐ 1: Bắt buộc CHIBI HOÁ / CARTOON HOÁ con vật thành thú cưng Chibi cực kỳ dễ thương (ultra-kawaii chibi cartoon pet), giống hệt con vật trong ảnh!
+   - TỶ LỆ CHIBI CUTE: Thân hình tròn xoe mũm mĩm, đầu tròn đáng yêu, đôi mắt to tròn long lanh có đốm sáng (big glossy anime catchlight eyes), má phúng phính ửng hồng, biểu cảm toe toét cười đáng yêu hoặc ngơ ngác kawaii.
+   - BẢO TOÀN 100% ĐẶC ĐIỂM CON VẬT TỪ ẢNH MẪU:
+     * Giống loài: Bám sát giống loài (Corgi, Poodle, Phốc sóc, mèo Anh lông ngắn, mèo mướp, mèo ba màu, Golden Retriever...).
+     * Màu lông & Đốm lông: Đúng từng đốm màu từ ảnh thật (mảng lông trắng ở ngực, đốm đen quanh mắt, sọc vằn trên trán, tai một bên cụp một bên dựng...).
+     * Vòng cổ & Phụ kiện: Nếu thú cưng đeo chuông, khăn quàng cổ hay nơ thì giữ nguyên màu sắc chi tiết.
+     * Tư thế: Bám sát tư thế từ ảnh thật (ngồi ngoan ngoãn, nằm xòe chân, giơ chân chào, nghiêng đầu ngơ ngác...).
+   - HÌNH THÁI MÓC KHOÁ: Thú cưng chibi được bao bọc bởi viền acrylic trong suốt (clear transparent die-cut acrylic border), khoen kim loại bạc trên đỉnh, nền trắng tinh #FFFFFF.
+
+3. NẾU LÀ HOA CỎ / ĐỒ VẬT / ĐỊA DANH:
+   - Giữ nét đồ hoạ 2D vector phẳng tinh tế, sắc sảo chuẩn phôi móc khoá.
+
+4. NẾU KHÔNG CÓ ẢNH TẢI LÊN:
    - Tự do sáng tạo phôi móc khoá 2D độc bản hoàn toàn mới dựa trên ý tưởng và các ô trống khách hàng điền.
 
-3. CÁC Ô TRỐNG CẦN ĐIỀN VÀO MASTER PROMPT:
-   - subject: Tên chủ thể đã dịch sang tiếng Anh (ví dụ: a cute custom acrylic keychain charm of an adorable 2D anime chibi character of a young Asian man, a cute cream coffee tumbler with highland logo, a cute orange cat...)
-   - feature1: Kiểu dáng / kiểu tóc / tư thế dáng người từ ảnh
-   - feature2: Trang phục / phụ kiện / màu sắc từ ảnh
-   - feature3: Hành động / biểu cảm từ ảnh
-
-CẤU TRÚC MASTER PROMPT TIẾNG ANH (BẮT BUỘC DỊCH TOÀN BỘ SANG TIẾNG ANH, TUYỆT ĐỐI KHÔNG ĐỂ TIẾNG VIỆT):
-"a cute custom acrylic keychain charm of an adorable 2D anime chibi character: [TRANSLATED_ENGLISH_SUBJECT_AND_DETAILS], trendy short spiky black hair with undercut, round black eyeglasses, happy crescent smiling anime eyes with pink blushing cheeks, wearing black polo shirt and beige pants, holding a mini white smartphone taking a mirror selfie with one hand, other hand in pocket, clear transparent die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no background, no room, no mirror, no real photo"
+5. CẤU TRÚC MASTER PROMPT TIẾNG ANH (DỊCH TOÀN BỘ SANG TIẾNG ANH CHUẨN XÁC, BẮT BUỘC CÓ VIỀN ACRYLIC VÀ KHOEN):
+   - Khi là Người: "a cute custom acrylic keychain charm of an adorable 2D anime chibi character based on the reference: [DETAILED_PERSON_TRAITS], oversized cute round head, chubby cheeks with soft pink blush, happy smiling crescent anime eyes, [CLOTHING_AND_POSE], clear transparent laser-cut die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no background, no room, no real photo"
+   - Khi là Con vật: "a cute custom acrylic keychain charm of an adorable kawaii chibi cartoon pet based on the reference: [DETAILED_ANIMAL_BREED_AND_TRAITS], big glossy sparkling anime eyes, chubby fluffy cheeks with soft pink blush, exact fur markings and colors from photo, [POSE_AND_ACCESSORIES], clear transparent laser-cut die-cut acrylic border around the animal, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no background, no room, no real photo"
 
 BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 {
@@ -442,10 +447,10 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
         detectedCat = "human";
         motif = "Chibi Chàng Trai Cà Phê 2D";
         slotsFallback = {
-          subject: "a cool handsome chibi boy",
-          feature1: "stylish short-swept black hair, black-framed glasses",
-          feature2: "black t-shirt",
-          feature3: "holding a coffee cup and striking a confident pose",
+          subject: "a cute kawaii 2D anime chibi character of this person",
+          feature1: "stylish short spiky black hair with undercut, round black-framed eyeglasses, happy smiling crescent anime eyes with rosy cheeks",
+          feature2: "black t-shirt and beige pants",
+          feature3: "holding a mini white smartphone taking a selfie with one hand, other hand in pocket",
         };
       } else if (
         lower.includes("chó") ||
@@ -453,15 +458,17 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
         lower.includes("pet") ||
         lower.includes("cún") ||
         lower.includes("thú cưng") ||
-        lower.includes("gấu")
+        lower.includes("gấu") ||
+        lower.includes("thỏ") ||
+        lower.includes("chim")
       ) {
         detectedCat = "animal";
         motif = "Chibi 2D Bé Thú Cưng";
         slotsFallback = {
-          subject: "an adorable chubby pet animal",
-          feature1: "fluffy fur and big glossy anime eyes",
-          feature2: "a tiny red ribbon bow",
-          feature3: "playfully holding a miniature coffee or treat",
+          subject: "an adorable kawaii chibi cartoon pet animal",
+          feature1: "fluffy fur with big glossy sparkling anime eyes and soft pink blushing cheeks",
+          feature2: "exact fur markings and colors, wearing a cute bell collar",
+          feature3: "cheerful playful pose with a sweet smiling expression",
         };
       } else if (
         lower.includes("hoa") ||

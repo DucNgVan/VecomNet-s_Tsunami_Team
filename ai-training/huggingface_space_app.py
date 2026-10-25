@@ -38,11 +38,14 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
     
     # Chuẩn hoá prompt, tránh bị lặp từ khoá
     clean_p = prompt.replace("net_keychain,", "").replace("net_keychain", "").strip()
-    prefix_check = "a 2d flat die-cut acrylic keychain charm of"
-    if clean_p.lower().startswith(prefix_check):
-        clean_p = clean_p[len(prefix_check):].strip()
-    if clean_p.lower().startswith("a cute 2d flat die-cut acrylic keychain charm of"):
-        clean_p = clean_p[len("a cute 2d flat die-cut acrylic keychain charm of"):].strip()
+    for prefix in [
+        "a 2d flat die-cut acrylic keychain charm of",
+        "a cute 2d flat die-cut acrylic keychain charm of",
+        "a cute custom acrylic keychain charm of",
+        "a single isolated 2d flat die-cut acrylic charm of",
+    ]:
+        if clean_p.lower().startswith(prefix):
+            clean_p = clean_p[len(prefix):].strip()
 
     negative_prompt = (
         "mirror, mirror frame, bathroom, toilet, room, walls, door, interior, indoor background, "
@@ -61,11 +64,12 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
         init_img = init_img.resize((1024, 1024), Image.LANCZOS)
 
         img2img_prompt = (
-            f"net_keychain, single isolated 2D flat die-cut acrylic keychain charm, chibi character illustration of this person, {clean_p}, "
-            "exact same face features and body posture, same clothes, "
-            "bold clean black contour die-cut outline, vibrant flat colors, "
+            f"net_keychain, a cute custom acrylic keychain charm of {clean_p}, "
+            "adorable kawaii 2D chibi cartoon, exact same identifying features and colors from photo, "
+            "clear transparent laser-cut die-cut acrylic border around the character, silver metal keychain ring on top, "
+            "vibrant colors, "
             "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art, "
-            "no background, no mirror, no room, no phone"
+            "no background, no mirror, no room"
         )
 
         result = pipe_img2img(
@@ -77,11 +81,11 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
             num_inference_steps=28,
         ).images[0]
     else:
-        print("✏️ Chế độ Text-to-Image: Sinh ảnh phôi móc khoá 2D chuẩn nét...")
+        print("✏️ Chế độ Text-to-Image: Sinh ảnh phôi móc khoá chibi 2D chuẩn nét...")
         full_prompt = (
-            f"net_keychain, a single isolated 2D flat die-cut acrylic charm of {clean_p}, "
-            "centered single subject, clean bold black contour die-cut outline, "
-            "vibrant flat colors, "
+            f"net_keychain, a cute custom acrylic keychain charm of {clean_p}, "
+            "centered single subject, clear transparent laser-cut die-cut acrylic border, silver metal keychain ring on top, "
+            "vibrant colors, "
             "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art"
         )
         result = pipe(

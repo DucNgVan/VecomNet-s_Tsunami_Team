@@ -36,10 +36,10 @@ async function callLoraKeychainModel(
     headers["Authorization"] = `Bearer ${hfToken}`;
   }
 
-  // 1. Thử gọi qua giao thức Gradio 5/6 Call & SSE Stream
+  // 1. Thử gọi qua giao thức Gradio 5/6 Call & SSE Stream (giới hạn 12s tránh timeout serverless)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
       method: "POST",
@@ -163,14 +163,11 @@ async function callFallbackKeychainImage(prompt: string): Promise<string | null>
  */
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey =
+      process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Chưa cấu hình GEMINI_API_KEY trong hệ thống. Vui lòng kiểm tra file .env.local",
-        },
-        { status: 500 }
+      console.warn(
+        "[API Warning]: Chưa tìm thấy GEMINI_API_KEY trên môi trường host. Sẽ sử dụng bộ phân tích cục bộ và chuyển thẳng sang sinh ảnh."
       );
     }
 
@@ -327,50 +324,52 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 
     let parsedData: any = null;
 
-    for (const modelName of geminiModels) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-        const response = await fetch(geminiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: systemInstruction }],
+    if (apiKey) {
+      for (const modelName of geminiModels) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          const response = await fetch(geminiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-            contents,
-            generationConfig: {
-              responseMimeType: "application/json",
-              temperature: 0.65,
-              maxOutputTokens: 2500,
-              thinkingConfig: {
-                thinkingBudget: 0,
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: systemInstruction }],
               },
-            },
-          }),
-        });
+              contents,
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.65,
+                maxOutputTokens: 2500,
+                thinkingConfig: {
+                  thinkingBudget: 0,
+                },
+              },
+            }),
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawContent) {
-            const cleaned = rawContent
-              .replace(/^```json/i, "")
-              .replace(/^```/i, "")
-              .replace(/```$/i, "")
-              .trim();
-            parsedData = JSON.parse(cleaned);
-            if (parsedData && parsedData.masterPrompt) {
-              console.log(`[Gemini Cascade ${modelName} Success]:`, parsedData.motifName);
-              break;
+          if (response.ok) {
+            const data = await response.json();
+            const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawContent) {
+              const cleaned = rawContent
+                .replace(/^```json/i, "")
+                .replace(/^```/i, "")
+                .replace(/```$/i, "")
+                .trim();
+              parsedData = JSON.parse(cleaned);
+              if (parsedData && parsedData.masterPrompt) {
+                console.log(`[Gemini Cascade ${modelName} Success]:`, parsedData.motifName);
+                break;
+              }
             }
+          } else {
+            console.warn(`[Gemini Cascade ${modelName} Status != 200]:`, response.status);
           }
-        } else {
-          console.warn(`[Gemini Cascade ${modelName} Status != 200]:`, response.status);
+        } catch (apiErr) {
+          console.warn(`[Gemini Cascade ${modelName} Fetch Exception]:`, apiErr);
         }
-      } catch (apiErr) {
-        console.warn(`[Gemini Cascade ${modelName} Fetch Exception]:`, apiErr);
       }
     }
 

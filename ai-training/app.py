@@ -45,36 +45,40 @@ def generate_keychain(prompt: str, user_image: Optional[Image.Image] = None) -> 
         clean_p = clean_p[len("a cute 2d flat die-cut acrylic keychain charm of"):].strip()
 
     negative_prompt = (
+        "mirror, bathroom, toilet, room, walls, door, interior, indoor background, "
+        "holding phone, smartphone, camera, taking selfie, "
+        "real person, realistic photo, photograph, photorealistic, real human skin, 3d render, "
         "multiple items, multiple keychains, collage, grid, sheet, collection, extra objects, "
         "jacket sketches, surrounding clothes, floating accessories, background clutter, "
         "patterned background, split screen, frame, arch frame, yellow frame, hanging metal loops, key ring, "
-        "border, text, watermark, 3d render, "
-        "realistic photo, photorealistic, shadow on floor, grey background, gradient background, "
+        "border, text, watermark, "
+        "shadow on floor, grey background, gradient background, "
         "blurry, deformed, ugly, metal glare"
     )
 
     if user_image is not None:
-        print("🖼️ Chế độ Image-to-Image: Bám sát khuôn mặt, tư thế và dáng người từ ảnh gốc...")
+        print("🖼️ Chế độ Image-to-Image: Bám sát người và chuyển hoá thành móc khoá chibi...")
         init_img = user_image.convert("RGB")
         init_img = init_img.resize((1024, 1024), Image.LANCZOS)
 
         img2img_prompt = (
-            f"net_keychain, 2D flat die-cut acrylic charm, chibi illustration of this person, {clean_p}, "
-            "exact same face, exact same pose, exact same body posture, exact same clothing and hairstyle, "
-            "bold clean black contour die-cut outline, vibrant flat color blocks, "
-            "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art"
+            f"net_keychain, single isolated 2D flat die-cut acrylic keychain charm, chibi character illustration of this person, {clean_p}, "
+            "exact same face features and body posture, same clothes, "
+            "bold clean black contour die-cut outline, vibrant flat colors, "
+            "isolated on pure solid white #FFFFFF background, clean empty background, minimal vector sticker art, "
+            "no background, no mirror, no room, no phone"
         )
 
         result = pipe_img2img(
             prompt=img2img_prompt,
             negative_prompt=negative_prompt + ", deformed face, different pose, different clothing",
             image=init_img,
-            strength=0.60,
-            guidance_scale=8.0,
+            strength=0.82,
+            guidance_scale=8.5,
             num_inference_steps=28,
         ).images[0]
     else:
-        print("✏️ Chế độ Text-to-Image: Sinh ảnh mới 100% từ mô tả text...")
+        print("✏️ Chế độ Text-to-Image: Sinh ảnh phôi móc khoá 2D chuẩn nét...")
         full_prompt = (
             f"net_keychain, a single isolated 2D flat die-cut acrylic charm of {clean_p}, "
             "centered single subject, clean bold black contour die-cut outline, "

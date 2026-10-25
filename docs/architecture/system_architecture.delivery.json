@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "f3fe4bd1-e8aa-4d8e-89c0-dd41379d9369",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/3o/Documents/Study/Vecomnets/.archify/architecture-vecomnets-sysarch/candidate.json",
+  "output": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+  "specification": {
+    "sha256": "837e3d665f83041b0bab2fc0093ab10dd08a8b3f49acce957d2569691c6cfc5d",
+    "bytes": 9027
+  },
+  "artifact": {
+    "sha256": "6cd1f96d2cd3c71662078de1ef3391bb4287e439f66d61c476254615a517ad82",
+    "bytes": 877721
+  }
+}

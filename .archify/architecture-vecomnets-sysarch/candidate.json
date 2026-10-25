@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "VecomNet's System Architecture",
+    "subtitle": "E-Commerce, Recycled Ocean Net Bags, 2D AI Charm Generator & Digital Passport",
+    "output": "docs/architecture/system_architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "client_web",
+      "type": "external",
+      "label": "Web & Mobile Clients",
+      "sublabel": "Customer Browser",
+      "tag": "Next.js 14 Client App",
+      "pos": [40, 220],
+      "size": [150, 65]
+    },
+    {
+      "id": "admin_client",
+      "type": "external",
+      "label": "Admin Staff",
+      "sublabel": "Management Portal",
+      "tag": "Session Protected",
+      "pos": [40, 600],
+      "size": [150, 65]
+    },
+    {
+      "id": "edge_middleware",
+      "type": "security",
+      "label": "Edge Middleware",
+      "sublabel": "src/middleware.ts",
+      "tag": "Auth & Security Headers",
+      "pos": [250, 600],
+      "size": [160, 65]
+    },
+    {
+      "id": "charm_studio",
+      "type": "frontend",
+      "label": "2D Charm Studio",
+      "sublabel": "src/app/charm-studio",
+      "tag": "Live 2D Canvas & Slots",
+      "pos": [250, 110],
+      "size": [160, 65]
+    },
+    {
+      "id": "bag_customizer",
+      "type": "frontend",
+      "label": "3D Bag Customizer",
+      "sublabel": "src/app/customizer",
+      "tag": "Three.js / 2D Canvas",
+      "pos": [250, 220],
+      "size": [160, 65]
+    },
+    {
+      "id": "checkout_cart",
+      "type": "frontend",
+      "label": "Cart & Checkout",
+      "sublabel": "src/app/checkout",
+      "tag": "VietQR / PayOS Modal",
+      "pos": [250, 330],
+      "size": [160, 65]
+    },
+    {
+      "id": "passport_ui",
+      "type": "frontend",
+      "label": "Digital Passport UI",
+      "sublabel": "src/app/passport/[code]",
+      "tag": "Recycled Net Provenance",
+      "pos": [250, 720],
+      "size": [160, 65]
+    },
+    {
+      "id": "ai_controller",
+      "type": "backend",
+      "label": "AI Charm API",
+      "sublabel": "/api/ai/charm-chat",
+      "tag": "Prompt Orchestrator",
+      "pos": [490, 110],
+      "size": [160, 65]
+    },
+    {
+      "id": "order_controller",
+      "type": "backend",
+      "label": "Order & Catalog API",
+      "sublabel": "/api/orders, /api/products",
+      "tag": "MVC Controller",
+      "pos": [490, 330],
+      "size": [160, 65]
+    },
+    {
+      "id": "payment_controller",
+      "type": "backend",
+      "label": "Payment Controller",
+      "sublabel": "/api/payment/*",
+      "tag": "HMAC Verification",
+      "pos": [490, 480],
+      "size": [160, 65]
+    },
+    {
+      "id": "order_service",
+      "type": "backend",
+      "label": "Order Service",
+      "sublabel": "src/be/services/orderService",
+      "tag": "Business Logic",
+      "pos": [720, 330],
+      "size": [160, 65]
+    },
+    {
+      "id": "payment_service",
+      "type": "backend",
+      "label": "Payment Service",
+      "sublabel": "src/be/services/paymentService",
+      "tag": "PayOS & Webhook Handler",
+      "pos": [720, 480],
+      "size": [160, 65]
+    },
+    {
+      "id": "passport_service",
+      "type": "backend",
+      "label": "Passport Service",
+      "sublabel": "src/be/services/passportService",
+      "tag": "Batch Tracking",
+      "pos": [720, 720],
+      "size": [160, 65]
+    },
+    {
+      "id": "cloudinary_cdn",
+      "type": "cloud",
+      "label": "Cloudinary CDN",
+      "sublabel": "Media Asset Storage",
+      "tag": "Direct Upload & Cache",
+      "pos": [950, 0],
+      "size": [170, 65]
+    },
+    {
+      "id": "gemini_vision",
+      "type": "cloud",
+      "label": "Google Gemini Vision",
+      "sublabel": "gemini-2.5-flash",
+      "tag": "Attribute Extractor",
+      "pos": [950, 110],
+      "size": [170, 65]
+    },
+    {
+      "id": "hf_zerogpu",
+      "type": "cloud",
+      "label": "Hugging Face ZeroGPU",
+      "sublabel": "SDXL + LoRA net_keychain",
+      "tag": "2D Keychain Generator",
+      "pos": [950, 220],
+      "size": [170, 65]
+    },
+    {
+      "id": "firestore_db",
+      "type": "database",
+      "label": "Google Cloud Firestore",
+      "sublabel": "src/be/config/firebase.ts",
+      "tag": "Orders & Passports",
+      "pos": [950, 360],
+      "size": [170, 65]
+    },
+    {
+      "id": "payos_vietqr",
+      "type": "external",
+      "label": "PayOS / VietQR",
+      "sublabel": "National Banking Gateway",
+      "tag": "Automated Reconciliation",
+      "pos": [950, 480],
+      "size": [170, 65]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Next.js 14 Fullstack Application (Edge & Node Runtimes)",
+      "wraps": [
+        "edge_middleware",
+        "charm_studio",
+        "bag_customizer",
+        "checkout_cart",
+        "passport_ui",
+        "ai_controller",
+        "order_controller",
+        "payment_controller",
+        "order_service",
+        "passport_service",
+        "payment_service"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Admin & Financial Security Boundary",
+      "wraps": [
+        "admin_client",
+        "edge_middleware",
+        "payment_controller",
+        "payment_service"
+      ]
+    }
+  ],
+  "connections": [
+    { "id": "user-to-studio", "from": "client_web", "to": "charm_studio", "label": "Design Charm" },
+    { "id": "user-to-bag", "from": "client_web", "to": "bag_customizer", "label": "3D Preview" },
+    { "id": "user-to-checkout", "from": "client_web", "to": "checkout_cart", "label": "Checkout" },
+    { "id": "user-to-passport", "from": "client_web", "to": "passport_ui", "label": "Scan QR" },
+    { "id": "admin-to-edge", "from": "admin_client", "to": "edge_middleware", "label": "HTTPS Session", "variant": "security" },
+    { "id": "edge-to-payment-ctrl", "from": "edge_middleware", "to": "payment_controller", "label": "Authorized Admin", "variant": "security" },
+    { "id": "studio-to-ai-ctrl", "from": "charm_studio", "to": "ai_controller", "label": "POST /api/ai/charm-chat", "variant": "emphasis" },
+    { "id": "checkout-to-order-ctrl", "from": "checkout_cart", "to": "order_controller", "label": "Create Order" },
+    { "id": "order-ctrl-to-payment-ctrl", "from": "order_controller", "to": "payment_controller", "label": "Generate QR", "variant": "security" },
+    { "id": "ai-to-cloudinary", "from": "ai_controller", "to": "cloudinary_cdn", "label": "Upload Asset", "variant": "dashed" },
+    { "id": "ai-to-gemini", "from": "ai_controller", "to": "gemini_vision", "label": "Extract Features" },
+    { "id": "ai-to-hf", "from": "ai_controller", "to": "hf_zerogpu", "label": "Render 2D Charm", "variant": "emphasis" },
+    { "id": "order-ctrl-to-service", "from": "order_controller", "to": "order_service", "label": "Invoke Service" },
+    { "id": "payment-ctrl-to-service", "from": "payment_controller", "to": "payment_service", "label": "Validate HMAC", "variant": "security" },
+    { "id": "passport-ui-to-service", "from": "passport_ui", "to": "passport_service", "label": "Get Provenance" },
+    { "id": "order-service-to-db", "from": "order_service", "to": "firestore_db", "label": "Read/Write" },
+    { "id": "passport-service-to-db", "from": "passport_service", "to": "firestore_db", "label": "Verify Batch" },
+    { "id": "payment-service-to-payos", "from": "payment_service", "to": "payos_vietqr", "label": "Webhook / QR" },
+    { "id": "payment-to-order", "from": "payment_service", "to": "order_service", "label": "Mark as Paid", "variant": "emphasis", "fromSide": "top", "toSide": "bottom" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend & 3D Interactive Layer",
+      "items": [
+        "Next.js 14 App Router with React 18 & Tailwind CSS",
+        "Three.js canvas for interactive 3D ocean net bag preview",
+        "2D Charm Studio with guided slots and instant BFS background removal"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Dual AI Co-Creation Engine",
+      "items": [
+        "Google Gemini 2.5 Flash Vision extracts subject features (hair, glasses, outfit, pose) while removing background clutter",
+        "Hugging Face ZeroGPU SDXL with fine-tuned net_keychain LoRA generates 100% clean 2D acrylic charms on pure white background",
+        "Pollinations.ai automatic fallback when ZeroGPU quota is exhausted"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Security & Digital Passport",
+      "items": [
+        "Edge Middleware guards /admin and /api/admin/* with SHA-256 HttpOnly session cookies",
+        "PayOS Webhook validates HMAC-SHA256 signature to prevent payment tampering",
+        "Digital Passport links physical bag QR code to Firestore batch data proving ocean plastic recycling origin"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Persistence & Vietnamese Banking",
+      "items": [
+        "Google Cloud Firestore stores orders, products, manufacturing batches, and passports",
+        "VietQR & PayOS integration generates dynamic banking QR codes with automated real-time status updates"
+      ]
+    }
+  ]
+}

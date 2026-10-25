@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/3o/Documents/Study/Vecomnets/.archify/architecture-vecomnets-sysarch/candidate.json",
+    "sha256": "837e3d665f83041b0bab2fc0093ab10dd08a8b3f49acce957d2569691c6cfc5d",
+    "bytes": 9027
+  },
+  "artifact": {
+    "path": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+    "sha256": "6cd1f96d2cd3c71662078de1ef3391bb4287e439f66d61c476254615a517ad82",
+    "bytes": 877721
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.finalize.json",
+    "summaryReceipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.finalize-summary.json",
+    "browserCheckReceipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-25T10:16:29.639Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2502,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "passport-service-to-db",
+            "from": "passport_service",
+            "to": "firestore_db",
+            "label": "Verify Batch",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "bends": 4,
+          "stretch": 1.332
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "passport_service → firestore_db needs 4 bends: move node passport_service or firestore_db so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

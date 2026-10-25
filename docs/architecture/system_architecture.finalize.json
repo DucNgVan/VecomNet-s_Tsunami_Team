@@ -1,0 +1,1022 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-10-25T10:17:37.842Z",
+  "specification": {
+    "path": "/Users/3o/Documents/Study/Vecomnets/.archify/architecture-vecomnets-sysarch/candidate.json",
+    "sha256": "837e3d665f83041b0bab2fc0093ab10dd08a8b3f49acce957d2569691c6cfc5d",
+    "bytes": 9027
+  },
+  "artifact": {
+    "path": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+    "sha256": "6cd1f96d2cd3c71662078de1ef3391bb4287e439f66d61c476254615a517ad82",
+    "bytes": 877721
+  },
+  "stages": {
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "/usr/local/bin/node",
+        "/Users/3o/.gemini/config/plugins/antigravity-skills-manager/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/Users/3o/Documents/Study/Vecomnets/.archify/architecture-vecomnets-sysarch/candidate.json",
+        "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "837e3d665f83041b0bab2fc0093ab10dd08a8b3f49acce957d2569691c6cfc5d",
+          "bytes": 9027
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 227,
+      "command": [
+        "/usr/local/bin/node",
+        "/Users/3o/.gemini/config/plugins/antigravity-skills-manager/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/Users/3o/Documents/Study/Vecomnets/.archify/architecture-vecomnets-sysarch/candidate.json",
+        "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "f3fe4bd1-e8aa-4d8e-89c0-dd41379d9369",
+        "ok": true,
+        "command": "deliver",
+        "type": "architecture",
+        "input": "/Users/3o/Documents/Study/Vecomnets/.archify/architecture-vecomnets-sysarch/candidate.json",
+        "output": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+        "specification": {
+          "sha256": "837e3d665f83041b0bab2fc0093ab10dd08a8b3f49acce957d2569691c6cfc5d",
+          "bytes": 9027
+        },
+        "artifact": {
+          "sha256": "6cd1f96d2cd3c71662078de1ef3391bb4287e439f66d61c476254615a517ad82",
+          "bytes": 877721
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 84,
+      "command": [
+        "/usr/local/bin/node",
+        "/Users/3o/.gemini/config/plugins/antigravity-skills-manager/skills/archify/bin/archify.mjs",
+        "check",
+        "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+        "artifact": {
+          "sha256": "6cd1f96d2cd3c71662078de1ef3391bb4287e439f66d61c476254615a517ad82",
+          "bytes": 877721
+        },
+        "checks": [
+          {
+            "name": "single_svg",
+            "ok": true,
+            "details": [
+              "found 1 <svg> block(s)"
+            ]
+          },
+          {
+            "name": "finite_svg",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "orthogonal_arrows",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "label_route_clearance",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_crossings",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_corridors",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "container_border_runs",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "route_rhythm",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "legend_clearance",
+            "ok": true,
+            "details": []
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "metrics": {
+            "properCrossings": 0,
+            "resolvedCrossovers": 0,
+            "ambiguousCorridors": 0,
+            "arrowheadCollisions": 0,
+            "containerBorderRuns": 0,
+            "labelRouteClearanceIssues": 0,
+            "labelCanvasOverflowIssues": 0,
+            "minLabelRouteClearance": 23.1,
+            "desktopReadabilityIssues": 0,
+            "viewportHeightIssues": 0,
+            "minProjectedNodeTextPx": 6.397248495270851,
+            "maxBends": 4,
+            "routesOverSuggestedBends": 1,
+            "maxStretch": 1.332,
+            "routesOverSuggestedStretch": 0,
+            "minSegmentPx": 24,
+            "minInteriorSegmentPx": 88,
+            "shortSegmentCount": 0,
+            "shortEndpointSegmentCount": 0,
+            "shortInteriorSegmentCount": 0,
+            "microSegmentCount": 0
+          },
+          "suggestedLimits": {
+            "bendsPerRelationship": 2,
+            "stretch": 1.35,
+            "segmentPx": 16,
+            "microSegmentPx": 8
+          },
+          "routeReview": {
+            "crossings": [],
+            "detours": [
+              {
+                "relationship": {
+                  "id": "passport-service-to-db",
+                  "from": "passport_service",
+                  "to": "firestore_db",
+                  "label": "Verify Batch",
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
+                },
+                "bends": 4,
+                "stretch": 1.332
+              }
+            ]
+          },
+          "leadingSpace": {
+            "measured": true,
+            "emptyTopPx": 0,
+            "emptyTopRatio": 0,
+            "occupiedTop": 0,
+            "viewBoxTop": 0,
+            "canvasHeight": 873,
+            "typicalNodeHeight": 65,
+            "reviewSuggested": false
+          },
+          "desktopReadability": {
+            "budgetBasis": "legacy-930",
+            "readerContract": "declared-wide-v1",
+            "availableDiagramWidth": 930,
+            "actualBudgetPx": 930,
+            "limit": "legacy",
+            "requestedTargetPx": 7.5,
+            "requestedTargetMet": false,
+            "hardFloorPx": 6,
+            "hardFloorMet": true,
+            "minimumOwner": {
+              "kind": "edge",
+              "id": "user-to-studio",
+              "from": "client_web",
+              "to": "charm_studio"
+            },
+            "minimumSourceTextPx": 8,
+            "minimumProjectedTextPx": 6.397248495270851,
+            "semanticTextCount": 57
+          },
+          "issues": []
+        },
+        "provenance": "current",
+        "deliveryReceiptId": "f3fe4bd1-e8aa-4d8e-89c0-dd41379d9369"
+      }
+    },
+    "browser-check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 2098,
+      "command": [
+        "/usr/local/bin/node",
+        "/Users/3o/.gemini/config/plugins/antigravity-skills-manager/skills/archify/bin/archify.mjs",
+        "browser-check",
+        "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+        "--json",
+        "--require-provenance"
+      ],
+      "execution": "in-process",
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "browser-check",
+        "evidenceKind": "automated-browser",
+        "status": "pass",
+        "visualReview": "not-requested",
+        "provenance": "current",
+        "deliveryReceiptId": "f3fe4bd1-e8aa-4d8e-89c0-dd41379d9369",
+        "artifact": {
+          "path": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.html",
+          "sha256": "6cd1f96d2cd3c71662078de1ef3391bb4287e439f66d61c476254615a517ad82",
+          "bytes": 877721
+        },
+        "state": {
+          "detail": "read",
+          "motion": "still"
+        },
+        "chrome": {
+          "status": "available",
+          "executable": "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+        },
+        "diagnostics": [],
+        "containment": {
+          "status": "pass",
+          "policy": "fit-or-reader-declared-readable-vertical-scroll",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 977,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1107,
+              "diagramWidth": 1077,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 808,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.4084264832330184,
+              "minimumProjectedNonEdgeTextPx": 7.501031814273431,
+              "minimumProjectedEdgeTextPx": 7.4084264832330184,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1043,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1107,
+              "diagramWidth": 1077,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 808,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.4084264832330184,
+              "minimumProjectedNonEdgeTextPx": 7.501031814273431,
+              "minimumProjectedEdgeTextPx": 7.4084264832330184,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1141,
+              "diagramWidth": 1111,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.642304385210662,
+              "minimumProjectedNonEdgeTextPx": 7.737833190025794,
+              "minimumProjectedEdgeTextPx": 7.642304385210662,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1457,
+              "diagramWidth": 1407,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 1056,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 8.1,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "themeStates": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            }
+          ]
+        },
+        "readability": {
+          "status": "pass",
+          "minimumProjectedNodeTextPx": 6,
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 977,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1107,
+              "diagramWidth": 1077,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 808,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.4084264832330184,
+              "minimumProjectedNonEdgeTextPx": 7.501031814273431,
+              "minimumProjectedEdgeTextPx": 7.4084264832330184,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1043,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1107,
+              "diagramWidth": 1077,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 808,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.4084264832330184,
+              "minimumProjectedNonEdgeTextPx": 7.501031814273431,
+              "minimumProjectedEdgeTextPx": 7.4084264832330184,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1141,
+              "diagramWidth": 1111,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.642304385210662,
+              "minimumProjectedNonEdgeTextPx": 7.737833190025794,
+              "minimumProjectedEdgeTextPx": 7.642304385210662,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1457,
+              "diagramWidth": 1407,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 1056,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 8.1,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "viewerChrome": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 977,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1107,
+              "diagramWidth": 1077,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 808,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.4084264832330184,
+              "minimumProjectedNonEdgeTextPx": 7.501031814273431,
+              "minimumProjectedEdgeTextPx": 7.4084264832330184,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1043,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1107,
+              "diagramWidth": 1077,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 808,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.4084264832330184,
+              "minimumProjectedNonEdgeTextPx": 7.501031814273431,
+              "minimumProjectedEdgeTextPx": 7.4084264832330184,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1141,
+              "diagramWidth": 1111,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 7.642304385210662,
+              "minimumProjectedNonEdgeTextPx": 7.737833190025794,
+              "minimumProjectedEdgeTextPx": 7.642304385210662,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1457,
+              "diagramWidth": 1407,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 1056,
+                "cardsPx": 0,
+                "viewBoxHeight": 873
+              },
+              "viewBoxWidth": 1163,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 8.1,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Design Charm",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "user-to-studio",
+                "from": "client_web",
+                "to": "charm_studio"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "captures": {
+          "status": "not-requested",
+          "screenshots": [],
+          "contactSheet": null
+        },
+        "sidecars": {
+          "receipt": "system_architecture.browser-check.json",
+          "files": []
+        }
+      }
+    }
+  },
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "diagnostics": [],
+  "evidence": {
+    "receipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.finalize.json",
+    "summaryReceipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.finalize-summary.json",
+    "browserCheckReceipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/system_architecture.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "finishedAt": "2026-10-25T10:17:40.344Z",
+  "durationMs": 2502,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-25T10:16:29.639Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

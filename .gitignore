@@ -13,7 +13,8 @@
 # Production
 /build
 
-# Misc
+# Local uploads
+/public/assets/uploads/
 .DS_Store
 *.pem
 *.safetensors

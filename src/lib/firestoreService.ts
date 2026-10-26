@@ -791,6 +791,55 @@ export async function getProductsFromFirestore(): Promise<any[]> {
   return Array.from(productMap.values());
 }
 
+export async function getProductByIdFromFirestore(id: string): Promise<any | null> {
+  if (!id) return null;
+
+  // 1. Tìm trong Cloud Firestore
+  try {
+    const docRef = doc(db, "products", id);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() };
+    }
+  } catch (err: any) {
+    console.warn("Firestore getProductById notice:", err?.message || err);
+  }
+
+  // 2. Tìm qua Server API
+  if (typeof window !== "undefined") {
+    try {
+      const res = await fetch(`/api/products/${id}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Tìm trong LocalStorage cache
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("net_custom_products_v1");
+      if (raw) {
+        const list: any[] = JSON.parse(raw);
+        const found = list.find((p) => p && String(p.id) === String(id));
+        if (found) return found;
+      }
+    } catch {}
+  }
+
+  // 4. Tìm trong danh sách toàn bộ sản phẩm
+  try {
+    const all = await getProductsFromFirestore();
+    const item = all.find((p) => p && String(p.id) === String(id));
+    if (item) return item;
+  } catch {}
+
+  return null;
+}
+
 export async function saveProductToFirestore(product: any): Promise<boolean> {
   const localProductsKey = "net_custom_products_v1";
   const cleanProduct = JSON.parse(JSON.stringify(product));

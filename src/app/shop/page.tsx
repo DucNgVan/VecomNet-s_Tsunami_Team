@@ -10,8 +10,6 @@ import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
 import { ShoppingBag, Sparkles, RotateCw, PlusCircle, AlertCircle, ChevronDown } from "lucide-react";
 import { BagBase, Charm, ProductCombo } from "@/types";
-import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
-import { BagCard3D } from "@/components/3d/BagCard3D";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 import {
@@ -457,13 +455,13 @@ export default function ShopPage() {
                             transition={{ duration: 0.5, delay: idx * 0.1 }}
                             className="h-full p-6 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_20px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_40px_rgba(11,30,59,0.12)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
                           >
-                            <div
-                              onClick={() => setSelectedDetailItem({ type: "combo", data: combo })}
-                              className="cursor-pointer"
+                            <Link
+                              href={`/shop/${combo.id}`}
+                              className="block cursor-pointer"
                             >
                               <div className="flex items-center justify-between mb-4">
                                 {combo.badge && (
-                                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FAF7F2] text-[#B85D43] border border-[#E8E2D8]">
                                     {combo.badge}
                                   </span>
                                 )}
@@ -483,24 +481,16 @@ export default function ShopPage() {
                                 </div>
                               </div>
 
-                              <div className="w-full aspect-[4/3] rounded-2xl mb-4 bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col items-center justify-center border border-slate-200/70 overflow-hidden relative group-hover:border-sky-300 transition-colors">
-                                {combo.bagBase?.model3dUrl ? (
-                                  <BagCard3D
-                                    modelUrl={combo.bagBase.model3dUrl}
-                                    color={combo.color?.hex || "#0c2340"}
-                                    glowColor={combo.color?.glowHex || "#38bdf8"}
-                                    isInteractive={false}
-                                  />
-                                ) : (
-                                  <img
-                                    src={combo.image || "/assets/products/tote-blue.png"}
-                                    alt={combo.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                )}
+                              <div className="w-full aspect-[4/3] rounded-2xl mb-4 bg-gradient-to-b from-[#F7F4EE] to-[#EFEAE1] flex flex-col items-center justify-center border border-[#E8E2D8] overflow-hidden relative group-hover:border-[#B85D43]/60 transition-all p-3">
+                                <img
+                                  src={combo.image || "/assets/products/combo-voyager.png"}
+                                  alt={combo.name}
+                                  className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-500"
+                                  loading="lazy"
+                                />
                                 {combo.includedCharms && combo.includedCharms.length > 0 && (
-                                  <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/90 shadow-sm text-xs pointer-events-none">
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase mr-1">
+                                  <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-[#E8E2D8] shadow-xs text-xs pointer-events-none">
+                                    <span className="text-[10px] text-[#7A6F68] font-bold uppercase mr-1">
                                       Kèm {combo.includedCharms.length} charm:
                                     </span>
                                     {combo.includedCharms.map((c) => (
@@ -512,41 +502,39 @@ export default function ShopPage() {
                                 )}
                               </div>
 
-                              <h3 className="font-serif text-lg font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
+                              <h3 className="font-serif text-lg font-bold text-[#241B16] group-hover:text-[#B85D43] transition-colors">
                                 {combo.name}
                               </h3>
-                              <p className="text-xs text-slate-600 mt-1 line-clamp-2">{combo.tagline}</p>
-                              <div className="text-[11px] text-sky-700 font-bold mt-1.5 hover:underline">
-                                Xem chi tiết & xoay 3D ↗
+                              <p className="text-xs text-[#5E4D43] mt-1 line-clamp-2">{combo.tagline}</p>
+                              <div className="text-[11px] text-[#B85D43] font-bold mt-1.5 hover:underline">
+                                Xem chi tiết sản phẩm ↗
                               </div>
-                            </div>
+                            </Link>
 
-                            <div className="mt-5 pt-3.5 border-t border-slate-100">
+                            <div className="mt-5 pt-3.5 border-t border-[#E8E2D8]">
                               <div className="flex items-baseline justify-between mb-3">
-                                <span className="text-lg font-bold text-[#0b1e3b]">
+                                <span className="text-lg font-bold text-[#241B16]">
                                   {formatVND(combo.price)}
                                 </span>
-                                <span className="text-xs text-slate-400 line-through">
+                                <span className="text-xs text-[#7A6F68] line-through">
                                   {formatVND(combo.originalPrice)}
                                 </span>
                               </div>
 
                               <div className="grid grid-cols-2 gap-2">
-                                <GlassButton
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => setSelectedDetailItem({ type: "combo", data: combo })}
-                                  className="w-full text-xs cursor-pointer"
-                                  icon={<RotateCw className="w-3.5 h-3.5 text-sky-700" />}
+                                <Link
+                                  href={`/shop/${combo.id}`}
+                                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-white hover:bg-[#FAF7F2] text-[#5E4D43] border border-[#E8E2D8] shadow-xs transition-colors cursor-pointer"
                                 >
-                                  Chi Tiết
-                                </GlassButton>
+                                  <RotateCw className="w-3.5 h-3.5 text-[#B85D43]" />
+                                  <span>Chi Tiết</span>
+                                </Link>
                                 <GlassButton
                                   variant={isComboAvailable ? "primary" : "secondary"}
                                   size="sm"
                                   disabled={!isComboAvailable}
                                   onClick={() => handleAddCombo(combo)}
-                                  className={`w-full text-xs shadow-sm cursor-pointer ${
+                                  className={`w-full text-xs shadow-xs cursor-pointer ${
                                     !isComboAvailable ? "opacity-60 cursor-not-allowed" : ""
                                   }`}
                                   icon={<ShoppingBag className="w-3.5 h-3.5" />}
@@ -603,12 +591,12 @@ export default function ShopPage() {
                             transition={{ duration: 0.5, delay: idx * 0.08 }}
                             className="h-full p-5 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-[0_16px_32px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
                           >
-                            <div
-                              onClick={() => setSelectedDetailItem({ type: "bag", data: bag })}
-                              className="cursor-pointer"
+                            <Link
+                              href={`/shop/${bag.id}`}
+                              className="block cursor-pointer"
                             >
                               <div className="flex items-center justify-between mb-3">
-                                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                                <span className="text-[10px] uppercase tracking-wider font-bold text-[#7A6F68]">
                                   {bag.modelType?.toUpperCase()}
                                 </span>
                                 <div className="flex items-center gap-1.5">
@@ -627,68 +615,58 @@ export default function ShopPage() {
                                 </div>
                               </div>
 
-                              <div className="w-full aspect-square rounded-2xl mb-4 bg-slate-50 border border-slate-200/70 flex flex-col items-center justify-center relative overflow-hidden group-hover:border-sky-300 transition-colors">
-                                {bag.model3dUrl ? (
-                                  <BagCard3D
-                                    modelUrl={bag.model3dUrl}
-                                    color={bag.colors?.[0]?.hex || "#0c2340"}
-                                    glowColor={bag.colors?.[0]?.glowHex || "#38bdf8"}
-                                    isInteractive={false}
-                                  />
-                                ) : (
-                                  <img
-                                    src={bag.image || "/assets/products/tote-blue.png"}
-                                    alt={bag.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                )}
-                                <div className="absolute bottom-2 inset-x-3 flex items-center justify-between bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200/80 shadow-xs pointer-events-none">
-                                  <span className="text-[10px] text-slate-600 font-bold">
+                              <div className="w-full aspect-square rounded-2xl mb-4 bg-gradient-to-b from-[#F7F4EE] to-[#EFEAE1] border border-[#E8E2D8] flex flex-col items-center justify-center relative overflow-hidden group-hover:border-[#B85D43]/60 transition-all p-3">
+                                <img
+                                  src={bag.image || "/assets/products/bags/tuixach-xanh-la.png"}
+                                  alt={bag.name}
+                                  className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-500"
+                                  loading="lazy"
+                                />
+                                <div className="absolute bottom-2 inset-x-3 flex items-center justify-between bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#E8E2D8] shadow-xs pointer-events-none">
+                                  <span className="text-[10px] text-[#5E4D43] font-bold">
                                     {bag.dimensions}
                                   </span>
-                                  <span className="text-[10px] text-sky-700 font-bold">
+                                  <span className="text-[10px] text-[#B85D43] font-bold">
                                     {bag.capacity}
                                   </span>
                                 </div>
                               </div>
 
-                              <h3 className="font-serif text-base font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors">
+                              <h3 className="font-serif text-base font-bold text-[#241B16] group-hover:text-[#B85D43] transition-colors">
                                 {bag.name}
                               </h3>
-                              <p className="text-xs text-slate-600 mt-1 line-clamp-2 font-medium">
+                              <p className="text-xs text-[#5E4D43] mt-1 line-clamp-2 font-medium">
                                 {bag.tagline}
                               </p>
-                              <div className="text-[11px] text-sky-700 font-bold mt-1 hover:underline">
-                                Xem chi tiết thông số ↗
+                              <div className="text-[11px] text-[#B85D43] font-bold mt-1 hover:underline">
+                                Xem chi tiết sản phẩm ↗
                               </div>
-                            </div>
+                            </Link>
 
-                            <div className="mt-4 pt-3 border-t border-slate-100">
+                            <div className="mt-4 pt-3 border-t border-[#E8E2D8]">
                               <div className="flex items-baseline justify-between mb-3">
-                                <span className="text-base font-bold text-[#0b1e3b]">
+                                <span className="text-base font-bold text-[#241B16]">
                                   {formatVND(bag.basePrice)}
                                 </span>
-                                <span className="text-[11px] text-slate-600 font-semibold">
+                                <span className="text-[11px] text-[#7A6F68] font-semibold">
                                   {bag.maxCharms} mắt neo
                                 </span>
                               </div>
 
                               <div className="grid grid-cols-2 gap-2">
-                                <GlassButton
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => setSelectedDetailItem({ type: "bag", data: bag })}
-                                  className="w-full text-xs cursor-pointer"
-                                  icon={<RotateCw className="w-3.5 h-3.5 text-sky-700" />}
+                                <Link
+                                  href={`/shop/${bag.id}`}
+                                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-white hover:bg-[#FAF7F2] text-[#5E4D43] border border-[#E8E2D8] shadow-xs transition-colors cursor-pointer"
                                 >
-                                  Chi Tiết
-                                </GlassButton>
+                                  <RotateCw className="w-3.5 h-3.5 text-[#B85D43]" />
+                                  <span>Chi Tiết</span>
+                                </Link>
                                 <GlassButton
                                   variant={isAvailable ? "primary" : "secondary"}
                                   size="sm"
                                   disabled={!isAvailable}
                                   onClick={() => handleAddBag(bag)}
-                                  className={`w-full text-xs shadow-sm cursor-pointer ${
+                                  className={`w-full text-xs shadow-xs cursor-pointer ${
                                     !isAvailable ? "opacity-60 cursor-not-allowed" : ""
                                   }`}
                                   icon={<ShoppingBag className="w-3.5 h-3.5" />}
@@ -745,34 +723,20 @@ export default function ShopPage() {
                             transition={{ duration: 0.4, delay: idx * 0.05 }}
                             className="h-full p-4 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_2px_12px_rgba(11,30,59,0.03)] hover:shadow-[0_12px_24px_rgba(11,30,59,0.08)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
                           >
-                            <div
-                              onClick={() => setSelectedDetailItem({ type: "charm", data: charm })}
-                              className="cursor-pointer"
+                            <Link
+                              href={`/shop/${charm.id}`}
+                              className="block cursor-pointer"
                             >
-                              <div className="w-full aspect-square rounded-2xl mb-3 border border-slate-200 shadow-sm relative overflow-hidden bg-slate-50 flex items-center justify-center group-hover:border-sky-300 transition-colors">
-                                {charm.model3dUrl ? (
-                                  <CharmCanvas3D
-                                    modelUrl={charm.model3dUrl}
-                                    color={charm.color}
-                                    glowColor={charm.glowColor}
-                                    isInteractive={false}
-                                  />
-                                ) : charm.image ? (
+                              <div className="w-full aspect-square rounded-2xl mb-3 border border-[#E8E2D8] shadow-xs relative overflow-hidden bg-gradient-to-b from-[#F7F4EE] to-[#EFEAE1] flex items-center justify-center group-hover:border-[#B85D43]/60 transition-all p-2.5">
+                                {charm.image ? (
                                   <img
                                     src={charm.image}
                                     alt={charm.name}
-                                    className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                                    className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-500"
+                                    loading="lazy"
                                   />
                                 ) : (
-                                  <span className="text-4xl">{charm.symbol || "✨"}</span>
-                                )}
-                                {charm.model3dUrl && (
-                                  <div className="absolute top-2 left-2 pointer-events-none">
-                                    <span className="px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-[9px] font-bold text-sky-800 shadow-xs flex items-center gap-1">
-                                      <Sparkles className="w-2.5 h-2.5 text-sky-600" />
-                                      <span>3D {charm.symbol}</span>
-                                    </span>
-                                  </div>
+                                  <span className="text-4xl filter drop-shadow">{charm.symbol || "✨"}</span>
                                 )}
                                 {!isCharmAvailable && (
                                   <div className="absolute top-2 right-2 pointer-events-none">
@@ -783,16 +747,16 @@ export default function ShopPage() {
                                 )}
                               </div>
 
-                              <h4 className="font-serif text-sm font-bold text-[#0b1e3b] group-hover:text-sky-700 transition-colors line-clamp-1">
+                              <h4 className="font-serif text-sm font-bold text-[#241B16] group-hover:text-[#B85D43] transition-colors line-clamp-1">
                                 {charm.vietnameseName}
                               </h4>
-                              <p className="text-[11px] text-slate-600 line-clamp-1 mt-0.5 font-medium">
+                              <p className="text-[11px] text-[#7A6F68] line-clamp-1 mt-0.5 font-medium">
                                 {charm.material}
                               </p>
-                              <div className="text-[10px] text-sky-700 font-bold mt-1 hover:underline">
+                              <div className="text-[10px] text-[#B85D43] font-bold mt-1 hover:underline">
                                 Xem chi tiết ↗
                               </div>
-                            </div>
+                            </Link>
 
                             <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
                               <span className="text-xs sm:text-sm font-bold text-[#0b1e3b]">

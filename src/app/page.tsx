@@ -124,10 +124,10 @@ export default function HomePage() {
               TỪ BIỂN CẢ · ĐẾN KÝ ỨC RIÊNG
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-6xl lg:text-[68px] leading-[1.12] text-[#241B16] font-normal tracking-tight">
+            <h1 className="font-serif text-4xl sm:text-6xl lg:text-[68px] leading-[1.2] sm:leading-[1.18] text-[#241B16] font-normal tracking-tight">
               Mang theo một{" "}
               <span className="italic font-serif text-[#B85D43]">nét</span>{" "}
-              Đà Nẵng.
+              <span className="block mt-1.5 sm:mt-2.5">Đà Nẵng.</span>
             </h1>
 
             <p className="text-base sm:text-lg text-[#5E4D43] leading-relaxed max-w-lg font-light">

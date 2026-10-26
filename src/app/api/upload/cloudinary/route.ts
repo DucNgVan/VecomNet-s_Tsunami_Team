@@ -59,45 +59,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Fallback lưu vào thư mục public/assets/uploads nếu chưa điền CLOUDINARY_API_KEY
-    const timestamp = Date.now();
-    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    try {
-      const uploadDir = path.join(process.cwd(), "public", "assets", "uploads");
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      const localFilename = `${timestamp}_${cleanName}`;
-      const localFilePath = path.join(uploadDir, localFilename);
-      fs.writeFileSync(localFilePath, buffer);
-
-      return NextResponse.json({
-        success: true,
-        url: `/assets/uploads/${localFilename}`,
-        provider: "local-fallback",
-        warning:
-          cldResult.error ||
-          "Chưa cấu hình CLOUDINARY_API_KEY / SECRET, đã lưu tạm vào máy chủ cục bộ.",
-      });
-    } catch (fsErr: any) {
-      console.warn("[Cloudinary API Fallback Error]:", fsErr);
-    }
-
-    // 3. Fallback an toàn ảnh Base64 nếu file nhỏ dưới 400KB
-    if (buffer.length <= 400 * 1024) {
-      return NextResponse.json({
-        success: true,
-        url: `data:${file.type};base64,${buffer.toString("base64")}`,
-        provider: "base64",
-      });
-    }
-
+    // Nếu Cloudinary thất bại, trả về lỗi trực tiếp để Admin biết cấu hình hoặc kiểm tra credentials
+    // Tuyệt đối KHÔNG lưu đường dẫn cục bộ (/assets/uploads) vì trên Vercel file cục bộ sẽ bị lỗi 404
     return NextResponse.json(
       {
         success: false,
         error:
           cldResult.error ||
-          "Không thể upload hình ảnh lên Cloudinary. Vui lòng kiểm tra CLOUDINARY_API_KEY và CLOUDINARY_API_SECRET.",
+          "Không thể upload file lên Cloudinary. Vui lòng kiểm tra CLOUDINARY_API_KEY và CLOUDINARY_API_SECRET.",
       },
       { status: 500 }
     );

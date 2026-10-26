@@ -293,6 +293,53 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           (err) => {
             console.warn("Bag GLTF Load fallback:", err);
             if (!isSubscribed) return;
+
+            // Nếu modelUrl tải thất bại (ví dụ đường dẫn 404), tự động chuyển sang mô hình 3D chuẩn có sẵn trong /assets/models/
+            const colorName = (selectedColor?.name || "").toLowerCase();
+            const defaultModel = colorName.includes("dương")
+              ? "/assets/models/tuixach-xanh-duong.glb"
+              : colorName.includes("hồng")
+              ? "/assets/models/tuixach-hong.glb"
+              : colorName.includes("tía") || colorName.includes("đỏ")
+              ? "/assets/models/tuixach-do-tia.glb"
+              : colorName.includes("đen")
+              ? "/assets/models/tuixach-den.glb"
+              : "/assets/models/tuixach-xanh-la.glb";
+
+            if (activeModelUrl !== defaultModel) {
+              console.log("[BagCanvas3D] Đang tải mô hình 3D chuẩn thay thế:", defaultModel);
+              loader.load(
+                defaultModel,
+                (fallbackGltf) => {
+                  if (!isSubscribed) return;
+                  modelContainer.clear();
+                  const sceneObj = fallbackGltf.scene;
+                  const box = new THREE.Box3().setFromObject(sceneObj);
+                  const center = box.getCenter(new THREE.Vector3());
+                  const size = box.getSize(new THREE.Vector3());
+                  sceneObj.position.x = -center.x;
+                  sceneObj.position.y = -center.y;
+                  sceneObj.position.z = -center.z;
+                  const wrapper = new THREE.Group();
+                  wrapper.add(sceneObj);
+                  const maxDim = Math.max(size.x, size.y, size.z);
+                  const scale = maxDim > 0 ? 3.5 / maxDim : 1;
+                  wrapper.scale.setScalar(scale);
+                  if (size.z > size.x) wrapper.rotation.y = -Math.PI / 2;
+                  modelContainer.add(wrapper);
+                  setIsGlbActive(true);
+                  setIsLoadingModel(false);
+                },
+                undefined,
+                () => {
+                  buildProceduralFallback();
+                  setIsGlbActive(false);
+                  setIsLoadingModel(false);
+                }
+              );
+              return;
+            }
+
             buildProceduralFallback();
             setIsGlbActive(false);
             setIsLoadingModel(false);

@@ -2106,54 +2106,6 @@ Key 3D printing & charm specs:
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             {/* Left Column: Interactive Bag Canvas (2D / 3D Fallback) */}
             <div className="lg:col-span-5 flex flex-col items-center">
-              {/* Dropbox Chọn Mẫu Túi Nhỏ Gọn */}
-              <div className="w-full max-w-[440px] mb-3 bg-[#FAF8F5] px-3.5 py-2.5 rounded-2xl border border-[#E8E2D8] shadow-xs flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <label htmlFor="bag-select-dropdown" className="text-[11px] uppercase tracking-wider text-[#7A6F68] font-bold shrink-0">
-                    Mẫu Túi:
-                  </label>
-                  <div className="relative flex-1 min-w-0">
-                    <select
-                      id="bag-select-dropdown"
-                      value={selectedBag?.id}
-                      onChange={(e) => {
-                        const bag = availableBags.find((b) => b.id === e.target.value);
-                        if (bag) {
-                          setSelectedBag(bag);
-                          const bagColors =
-                            bag.colors && bag.colors.length > 0
-                              ? bag.colors
-                              : BAG_COLORS;
-                          const matchingColor = bagColors.find(
-                            (c) =>
-                              c.id === selectedColor.id ||
-                              c.hex?.toLowerCase() === selectedColor.hex?.toLowerCase()
-                          );
-                          if (matchingColor) {
-                            setSelectedColor(matchingColor);
-                          } else {
-                            setSelectedColor(bagColors[0]);
-                          }
-                        }
-                      }}
-                      className="w-full appearance-none bg-white border border-[#E8E2D8] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-[#1A130F] focus:outline-none focus:ring-1 focus:ring-[#B85D43] cursor-pointer truncate shadow-2xs"
-                    >
-                      {availableBags.map((bag) => (
-                        <option key={bag.id} value={bag.id}>
-                          {bag.name} ({bag.colors?.length || 5} màu) — {formatVND(bag.basePrice)}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#7A6F68] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-                {selectedBag && (
-                  <span className="text-xs font-bold text-[#B85D43] shrink-0">
-                    {formatVND(selectedBag.basePrice)}
-                  </span>
-                )}
-              </div>
-
               {/* 3D / 2D Canvas */}
               {is3DMode ? (
                 <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 shadow-sm relative border border-[#E8E2D8] overflow-hidden">
@@ -2201,6 +2153,54 @@ Key 3D printing & charm specs:
                 />
               )}
 
+              {/* Dropbox Chọn Mẫu Túi Nhỏ Gọn (Đưa lên trên thanh màu) */}
+              <div className="mt-4 w-full max-w-[440px] bg-[#FAF8F5] px-3.5 py-2.5 rounded-2xl border border-[#E8E2D8] shadow-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <label htmlFor="bag-select-dropdown" className="text-[11px] uppercase tracking-wider text-[#7A6F68] font-bold shrink-0">
+                    Mẫu Túi:
+                  </label>
+                  <div className="relative flex-1 min-w-0">
+                    <select
+                      id="bag-select-dropdown"
+                      value={selectedBag?.id}
+                      onChange={(e) => {
+                        const bag = availableBags.find((b) => b.id === e.target.value);
+                        if (bag) {
+                          setSelectedBag(bag);
+                          const bagColors =
+                            bag.colors && bag.colors.length > 0
+                              ? bag.colors
+                              : BAG_COLORS;
+                          const matchingColor = bagColors.find(
+                            (c) =>
+                              c.id === selectedColor.id ||
+                              c.hex?.toLowerCase() === selectedColor.hex?.toLowerCase()
+                          );
+                          if (matchingColor) {
+                            setSelectedColor(matchingColor);
+                          } else {
+                            setSelectedColor(bagColors[0]);
+                          }
+                        }
+                      }}
+                      className="w-full appearance-none bg-white border border-[#E8E2D8] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-[#1A130F] focus:outline-none focus:ring-1 focus:ring-[#B85D43] cursor-pointer truncate shadow-2xs"
+                    >
+                      {availableBags.map((bag) => (
+                        <option key={bag.id} value={bag.id}>
+                          {bag.name} ({bag.colors?.length || 5} màu) — {formatVND(bag.basePrice)}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#7A6F68] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+                {selectedBag && (
+                  <span className="text-xs font-bold text-[#B85D43] shrink-0">
+                    {formatVND(selectedBag.basePrice)}
+                  </span>
+                )}
+              </div>
+
               {/* Dynamic Bag Colors Selector Bar (Đồng bộ với mẫu túi đang chọn) */}
               {(() => {
                 const currentBagColors =
@@ -2209,7 +2209,7 @@ Key 3D printing & charm specs:
                     : BAG_COLORS;
 
                 return (
-                  <div className="mt-4 w-full max-w-[440px] bg-[#FAF8F5] p-3.5 rounded-2xl border border-[#E8E2D8] shadow-xs flex items-center justify-between gap-3">
+                  <div className="mt-2.5 w-full max-w-[440px] bg-[#FAF8F5] p-3.5 rounded-2xl border border-[#E8E2D8] shadow-xs flex items-center justify-between gap-3">
                     <div className="flex flex-col min-w-0">
                       <span className="text-[10px] uppercase tracking-wider text-[#7A6F68] font-bold truncate">
                         {currentBagColors.length} Màu Của {selectedBag.name}

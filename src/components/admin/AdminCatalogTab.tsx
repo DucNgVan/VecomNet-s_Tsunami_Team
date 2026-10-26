@@ -108,6 +108,7 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
     idx: number;
     type: "image" | "model";
   } | null>(null);
+  const [colorUploadProgress, setColorUploadProgress] = useState<number>(0);
 
   const handleOpenAddProduct = () => {
     setEditingProductId(null);
@@ -206,9 +207,10 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
       return;
     }
     setUploadingColorIndex({ idx: index, type });
+    setColorUploadProgress(0);
     try {
       const folder = type === "image" ? "products" : "models";
-      const res = await uploadToCloudinary(file, folder);
+      const res = await uploadToCloudinary(file, folder, (pct) => setColorUploadProgress(pct));
       setProductForm((prev) => {
         const nextColors = [...prev.colors];
         if (type === "image") {
@@ -898,9 +900,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
 
                   <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                     <label className="font-bold text-slate-700 flex items-center justify-between">
-                      <span>Mô Hình 3D (.glb / .gltf - Cloudinary CDN Tối Ưu)</span>
+                      <span>Mô Hình 3D (.glb / .gltf - Tối đa 100MB)</span>
                       {isUploadingModel && (
-                        <span className="text-indigo-600 font-mono text-[10px]">
+                        <span className="text-indigo-600 font-mono text-[10px] font-bold animate-pulse">
                           {modelProgress}% Đang tải...
                         </span>
                       )}
@@ -1088,7 +1090,9 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                               <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium">
                                 <span>Ảnh 2D màu này:</span>
                                 {uploadingColorIndex?.idx === cIdx && uploadingColorIndex?.type === "image" && (
-                                  <span className="text-teal-600 font-mono">Đang tải...</span>
+                                  <span className="text-teal-600 font-mono font-bold animate-pulse">
+                                    {colorUploadProgress}% Đang tải...
+                                  </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1.5">
@@ -1129,9 +1133,11 @@ export const AdminCatalogTab: React.FC<AdminCatalogTabProps> = ({
                             {/* 3D Model for this color */}
                             <div className="space-y-1">
                               <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                                <span>File 3D (.glb) màu này:</span>
+                                <span>File 3D (.glb tối đa 100MB) màu này:</span>
                                 {uploadingColorIndex?.idx === cIdx && uploadingColorIndex?.type === "model" && (
-                                  <span className="text-indigo-600 font-mono">Đang tải...</span>
+                                  <span className="text-indigo-600 font-mono font-bold animate-pulse">
+                                    {colorUploadProgress}% Đang tải...
+                                  </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1.5">

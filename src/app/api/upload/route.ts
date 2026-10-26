@@ -16,10 +16,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Không tìm thấy file tải lên" }, { status: 400 });
     }
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // Giới hạn tối đa 10MB
+    const is3dModel =
+      file.name.toLowerCase().endsWith(".glb") ||
+      file.name.toLowerCase().endsWith(".gltf") ||
+      file.type === "model/gltf-binary" ||
+      folder === "models";
+
+    const MAX_FILE_SIZE = is3dModel ? 100 * 1024 * 1024 : 20 * 1024 * 1024; // 100MB cho mô hình 3D, 20MB cho hình ảnh
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { success: false, error: "Dung lượng file vượt quá giới hạn cho phép (Tối đa 10MB)." },
+        {
+          success: false,
+          error: `Dung lượng file vượt quá giới hạn cho phép (Tối đa ${is3dModel ? "100MB" : "20MB"}).`,
+        },
         { status: 400 }
       );
     }

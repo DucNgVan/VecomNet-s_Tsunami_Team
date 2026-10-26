@@ -15,8 +15,8 @@ export async function uploadProductFile(
   folder: "images" | "models",
   onProgress?: UploadProgressCallback
 ): Promise<string> {
-  // 1. Kiểm tra kích thước file
-  const maxSizeBytes = folder === "images" ? 15 * 1024 * 1024 : 50 * 1024 * 1024;
+  // 1. Kiểm tra kích thước file (Tối đa 100MB cho mô hình 3D, 20MB cho hình ảnh)
+  const maxSizeBytes = folder === "images" ? 20 * 1024 * 1024 : 100 * 1024 * 1024;
   if (file.size > maxSizeBytes) {
     throw new Error(
       `File quá lớn! Kích thước tối đa cho ${folder === "images" ? "ảnh" : "mô hình 3D"} là ${

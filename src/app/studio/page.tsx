@@ -65,214 +65,28 @@ const CERAMIC_PALETTE = [
   { name: "Men Ngọc Bích", hex: "#059669" },
 ];
 
-// 6 Đà Nẵng signature charms
-const READY_CHARMS: Charm[] = [
-  {
-    id: "charm-wave",
-    name: "Sóng Mỹ Khê",
-    vietnameseName: "Sóng Mỹ Khê",
-    category: "marine",
-    price: 25000,
-    plasticOffsetGrams: 150,
-    material: "Nhựa lưới ép men xanh",
-    description: "Nhịp sóng và những buổi sớm bên bờ biển Mỹ Khê.",
-    color: "#60a5fa",
-    glowColor: "rgba(96, 165, 250, 0.4)",
-    symbol: "≈",
-    iconName: "waves",
-    model3dUrl: "/assets/models/caurongcharm.glb",
-  },
-  {
-    id: "charm-dragon",
-    name: "Cầu Rồng",
-    vietnameseName: "Cầu Rồng",
-    category: "special",
-    price: 25000,
-    plasticOffsetGrams: 200,
-    material: "Đồng thau khảm xà cừ",
-    description: "Biểu tượng rồng vàng vươn mình ra biển lớn.",
-    color: "#d97706",
-    glowColor: "rgba(217, 119, 6, 0.4)",
-    symbol: "♜",
-    iconName: "castle",
-    model3dUrl: "/assets/models/caurongcharm.glb",
-  },
-  {
-    id: "charm-sontra",
-    name: "Sơn Trà",
-    vietnameseName: "Sơn Trà",
-    category: "marine",
-    price: 25000,
-    plasticOffsetGrams: 180,
-    material: "Hợp kim kẽm tái chế men xanh rêu",
-    description: "Bán đảo Sơn Trà – nơi rừng nguyên sinh gặp biển.",
-    color: "#15803d",
-    glowColor: "rgba(21, 128, 61, 0.4)",
-    symbol: "△",
-    iconName: "mountain",
-    model3dUrl: "/assets/models/caurongcharm.glb",
-  },
-  {
-    id: "charm-vooc",
-    name: "Voọc chà vá",
-    vietnameseName: "Voọc chà vá",
-    category: "special",
-    price: 25000,
-    plasticOffsetGrams: 160,
-    material: "Pha lê rác biển ép nung",
-    description: "Nữ hoàng linh trưởng trên đỉnh Sơn Trà bình yên.",
-    color: "#b45309",
-    glowColor: "rgba(180, 83, 9, 0.4)",
-    symbol: "✱",
-    iconName: "flower",
-    model3dUrl: "/assets/models/caurongcharm.glb",
-  },
-  {
-    id: "charm-sun",
-    name: "Mặt trời",
-    vietnameseName: "Mặt trời",
-    category: "celestial",
-    price: 25000,
-    plasticOffsetGrams: 150,
-    material: "Đồng tái sinh men vàng",
-    description: "Một buổi bình minh và khởi đầu mới bên biển.",
-    color: "#eab308",
-    glowColor: "rgba(234, 179, 8, 0.4)",
-    symbol: "☼",
-    iconName: "sun",
-    model3dUrl: "/assets/models/caurongcharm.glb",
-  },
-  {
-    id: "charm-heart",
-    name: "Dấu yêu",
-    vietnameseName: "Dấu yêu",
-    category: "special",
-    price: 25000,
-    plasticOffsetGrams: 140,
-    material: "Đồng nung men gốm hồng",
-    description: "Kỷ niệm lưu giữ giữa người thương và biển cả.",
-    color: "#be185d",
-    glowColor: "rgba(190, 24, 93, 0.4)",
-    symbol: "♡",
-    iconName: "heart",
-    model3dUrl: "/assets/models/caurongcharm.glb",
-  },
-];
-
-// Các địa điểm đặc trưng tại Đà Nẵng (Hỗ trợ người dùng chọn nhiều)
-const DANANG_LOCATIONS = [
-  {
-    id: "mykhe",
-    name: "Biển Mỹ Khê",
-    tagline: "Sóng êm & bãi cát trắng mịn sớm mai",
-    charmIds: ["charm-wave"],
-    icon: "🌊",
-  },
-  {
-    id: "sontra",
-    name: "Bán đảo Sơn Trà",
-    tagline: "Rừng nguyên sinh & Voọc chà vá",
-    charmIds: ["charm-sontra", "charm-vooc"],
-    icon: "🐒",
-  },
-  {
-    id: "dragon_bridge",
-    name: "Cầu Rồng Sông Hàn",
-    tagline: "Rồng vàng vươn mình & đêm phun lửa",
-    charmIds: ["charm-dragon"],
-    icon: "🌉",
-  },
-  {
-    id: "haivan",
-    name: "Đèo Hải Vân & Nam Ô",
-    tagline: "Hùng quan đệ nhất & rạn rêu xanh",
-    charmIds: ["charm-wave", "charm-sun"],
-    icon: "🌅",
-  },
-  {
-    id: "ngu_hanh_son",
-    name: "Ngũ Hành Sơn",
-    tagline: "Non nước kỳ vĩ & men gốm di sản",
-    charmIds: ["charm-sontra", "charm-sun"],
-    icon: "⛰️",
-  },
-  {
-    id: "tho_quang",
-    name: "Làng chài Thọ Quang",
-    tagline: "Thuyền thúng rạng đông & nhịp sống duyên hải",
-    charmIds: ["charm-wave", "charm-heart"],
-    icon: "⛵",
-  },
-];
-
-// Các kỷ niệm & cảm xúc (Hỗ trợ người dùng chọn nhiều)
-const JOURNEY_EMOTIONS = [
-  {
-    id: "peace",
-    label: "Bình yên & thư thái",
-    desc: "An yên ngắm sóng biển sớm mai",
-    charmIds: ["charm-wave", "charm-sontra"],
-    icon: "🌿",
-  },
-  {
-    id: "love",
-    label: "Tình cảm gắn kết",
-    desc: "Kỷ niệm bên người thương & gia đình",
-    charmIds: ["charm-heart"],
-    icon: "❤️",
-  },
-  {
-    id: "adventure",
-    label: "Khám phá & năng lượng",
-    desc: "Nhiệt huyết tuổi trẻ & trải nghiệm mới",
-    charmIds: ["charm-dragon"],
-    icon: "🏄",
-  },
-  {
-    id: "nature",
-    label: "Bảo vệ thiên nhiên",
-    desc: "Yêu biển sạch & nữ hoàng linh trưởng",
-    charmIds: ["charm-vooc"],
-    icon: "🕊️",
-  },
-  {
-    id: "sunrise",
-    label: "Bình minh & hy vọng",
-    desc: "Khởi đầu tươi sáng bên bờ đại dương",
-    charmIds: ["charm-sun"],
-    icon: "☼",
-  },
-  {
-    id: "heritage",
-    label: "Ký ức văn hóa",
-    desc: "Di sản làng nghề & ký ức xứ Quảng",
-    charmIds: ["charm-dragon", "charm-sontra"],
-    icon: "🏛️",
-  },
-];
-
 function NetStudioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const partnerQuery = searchParams.get("partner") || "";
 
-  // Studio Mode Tabs: "ready" (Charm có sẵn & Chuyến đi Đà Nẵng) | "ai_custom" (Sáng tạo charm riêng cùng AI)
+  // Studio Mode Tabs: "ready" (Charm có sẵn từ kho) | "ai_custom" (Sáng tạo charm riêng cùng AI)
   const [activeTab, setActiveTab] = useState<"ready" | "ai_custom">("ready");
-  const [readySubTab, setReadySubTab] = useState<"single_charms" | "journey_presets">("single_charms");
 
   // Flow Step: "design" | "review" | "success"
   const [flowStep, setFlowStep] = useState<"design" | "review" | "success">("design");
 
-  // Bag State from Firestore Collection (fallback to BAG_BASES)
+  // Bag & Charm State from Firestore Live Database
   const [availableBags, setAvailableBags] = useState<BagBase[]>(BAG_BASES);
   const [selectedBag, setSelectedBag] = useState<BagBase>(BAG_BASES[0]);
   const [selectedColor, setSelectedColor] = useState<BagMeshColor>(BAG_COLORS[0]);
+  const [availableCharms, setAvailableCharms] = useState<Charm[]>([]);
   const [isLoadingBags, setIsLoadingBags] = useState(true);
   const [is3DMode, setIs3DMode] = useState(true); // Default directly to interactive 3D view
 
   const baseBagPrice = selectedBag?.basePrice || 1250000;
 
-  // Tải danh mục mẫu túi từ bộ sưu tập do Admin đăng trên Firestore
+  // Tải danh mục mẫu túi & charm từ bộ sưu tập do Admin đăng trên Firestore
   useEffect(() => {
     async function loadBagCollection() {
       try {
@@ -337,6 +151,33 @@ function NetStudioContent() {
               setSelectedColor(liveBags[0].colors[0]);
             }
           }
+
+          // Trích xuất charm có sẵn thực tế từ Firestore
+          const liveCharms: Charm[] = dbProducts
+            .filter((p: any) => p && p.isActive !== false && p.category === "charm")
+            .map((p: any) => ({
+              id: String(p.id),
+              name: p.name || "Charm Biển Sâu",
+              vietnameseName: p.vietnameseName || p.name || "Charm Thủy Tinh Biển",
+              category: p.charmCategory || "marine",
+              price: Number(p.basePrice || p.price) || 180000,
+              plasticOffsetGrams:
+                Number(p.plasticOffsetGrams) ||
+                (p.plasticOffsetKg ? Math.round(Number(p.plasticOffsetKg) * 1000) : 350),
+              material: p.material || "Thủy tinh biển & cước lưới tái sinh",
+              description: p.description || "Phụ kiện charm độc bản đúc thủ công.",
+              color: p.color || "#38bdf8",
+              glowColor: p.glowColor || "rgba(56, 189, 248, 0.4)",
+              symbol: p.symbol || "✨",
+              iconName: p.iconName || "Sparkles",
+              model3dUrl: p.model3dUrl && p.model3dUrl.trim() !== "" ? p.model3dUrl : undefined,
+              image: p.imageUrl || p.image || "",
+              inStock: p.inStock !== false && (Number(p.stockCount) >= 0 ? Number(p.stockCount) > 0 : true),
+              stockCount: Number(p.stockCount) >= 0 ? Number(p.stockCount) : 10,
+            }));
+          setAvailableCharms(liveCharms);
+        } else {
+          setAvailableCharms([]);
         }
       } catch (err) {
         console.warn("Lỗi tải danh mục túi từ Firestore, sử dụng danh mục mẫu chuẩn:", err);
@@ -348,37 +189,12 @@ function NetStudioContent() {
     loadBagCollection();
   }, []);
 
-  // Placed Charms on Bag (default with Wave and Sun matching mockups)
-  const [placedCharms, setPlacedCharms] = useState<PlacedCharm[]>([
-    {
-      instanceId: "placed-wave-default",
-      charmId: "charm-wave",
-      anchorId: "a1",
-      x: 35,
-      y: 45,
-      rotation: 0,
-      charm: READY_CHARMS[0],
-    },
-    {
-      instanceId: "placed-sun-default",
-      charmId: "charm-sun",
-      anchorId: "a2",
-      x: 65,
-      y: 56,
-      rotation: 0,
-      charm: READY_CHARMS[4],
-    },
-  ]);
-  const [selectedCharmInstanceId, setSelectedCharmInstanceId] = useState<string | null>(
-    "placed-wave-default"
-  );
+  // Placed Charms on Bag (Khởi tạo túi sạch 0 charm)
+  const [placedCharms, setPlacedCharms] = useState<PlacedCharm[]>([]);
+  const [selectedCharmInstanceId, setSelectedCharmInstanceId] = useState<string | null>(null);
 
   // User Profile from Authentication
   const { user, userProfile } = useAuth();
-
-  // Tab 1 Sub-feature: Chuyến đi Đà Nẵng (Địa điểm & Cảm xúc/Kỷ niệm chọn nhiều)
-  const [selectedLocations, setSelectedLocations] = useState<string[]>(["mykhe"]);
-  const [selectedEmotions, setSelectedEmotions] = useState<string[]>(["peace", "sunrise"]);
 
   // Tab 2: Sáng Tạo Charm Riêng Cùng AI (3 Bước: 1. Chat & Upload -> 2. Sketch 2D lên túi -> 3. Nộp duyệt & Báo giá)
   const [aiCustomStep, setAiCustomStep] = useState<1 | 2 | 3>(1);
@@ -568,77 +384,6 @@ function NetStudioContent() {
     setPlacedCharms((prev) =>
       prev.map((c) => (c.instanceId === instanceId ? { ...c, x, y } : c))
     );
-  };
-
-  // Dynamic charm application based on selected locations and emotions (multi-select)
-  const applyJournalSelectionsToBag = (
-    locations: string[],
-    emotions: string[]
-  ) => {
-    const matchedCharmIdSet = new Set<string>();
-
-    locations.forEach((locId) => {
-      const loc = DANANG_LOCATIONS.find((l) => l.id === locId);
-      loc?.charmIds.forEach((id) => matchedCharmIdSet.add(id));
-    });
-
-    emotions.forEach((emoId) => {
-      const emo = JOURNEY_EMOTIONS.find((e) => e.id === emoId);
-      emo?.charmIds.forEach((id) => matchedCharmIdSet.add(id));
-    });
-
-    // Default to at least wave + sun if empty
-    if (matchedCharmIdSet.size === 0) {
-      matchedCharmIdSet.add("charm-wave");
-      matchedCharmIdSet.add("charm-sun");
-    }
-
-    const matchedCharms = READY_CHARMS.filter((c) =>
-      matchedCharmIdSet.has(c.id)
-    ).slice(0, 5); // Max 5 charms for aesthetic balance
-
-    const coordsMap: Record<number, Array<{ x: number; y: number }>> = {
-      1: [{ x: 50, y: 52 }],
-      2: [{ x: 38, y: 46 }, { x: 62, y: 56 }],
-      3: [{ x: 35, y: 45 }, { x: 65, y: 48 }, { x: 50, y: 62 }],
-      4: [{ x: 35, y: 42 }, { x: 65, y: 45 }, { x: 38, y: 62 }, { x: 62, y: 65 }],
-      5: [{ x: 35, y: 40 }, { x: 65, y: 42 }, { x: 50, y: 52 }, { x: 36, y: 65 }, { x: 64, y: 66 }],
-    };
-
-    const coords = coordsMap[matchedCharms.length] || coordsMap[3];
-
-    const newPlaced: PlacedCharm[] = matchedCharms.map((charm, i) => ({
-      instanceId: `journey-${charm.id}-${Date.now()}-${i}`,
-      charmId: charm.id,
-      anchorId: `a-journey-${i}`,
-      x: coords[i]?.x || 50,
-      y: coords[i]?.y || 50,
-      rotation: 0,
-      charm,
-    }));
-
-    setPlacedCharms(newPlaced);
-    setSelectedCharmInstanceId(newPlaced[0]?.instanceId || null);
-  };
-
-  const handleToggleLocation = (locId: string) => {
-    setSelectedLocations((prev) => {
-      const next = prev.includes(locId)
-        ? prev.length > 1 ? prev.filter((id) => id !== locId) : prev
-        : [...prev, locId];
-      applyJournalSelectionsToBag(next, selectedEmotions);
-      return next;
-    });
-  };
-
-  const handleToggleEmotion = (emoId: string) => {
-    setSelectedEmotions((prev) => {
-      const next = prev.includes(emoId)
-        ? prev.length > 1 ? prev.filter((id) => id !== emoId) : prev
-        : [...prev, emoId];
-      applyJournalSelectionsToBag(selectedLocations, next);
-      return next;
-    });
   };
 
   // Handle Chat Message submission to Nét AI Stylist (Google Gemini 2.5 API)
@@ -2296,278 +2041,102 @@ Key 3D printing & charm specs:
                     </button>
                   </div>
 
-                  {/* TAB 1: PHỐI CHARM CÓ SẴN HOẶC THEO CHUYẾN ĐI ĐÀ NẴNG */}
+                  {/* TAB 1: PHỐI CHARM CÓ SẴN TỪ KHO XƯỞNG */}
                   {activeTab === "ready" && (
                     <div className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-8 space-y-6 shadow-xs">
-                      {/* Sub-tab switcher - Compact on Mobile */}
-                      <div className="p-1 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] grid grid-cols-2 gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setReadySubTab("single_charms")}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                            readySubTab === "single_charms"
-                              ? "bg-white text-[#241B16] shadow-xs"
-                              : "text-[#7A6F68] hover:text-[#241B16]"
-                          }`}
-                        >
-                          <Layers className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">Tự chọn charm</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReadySubTab("journey_presets")}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                            readySubTab === "journey_presets"
-                              ? "bg-white text-[#241B16] shadow-xs"
-                              : "text-[#7A6F68] hover:text-[#241B16]"
-                          }`}
-                        >
-                          <Compass className="w-3.5 h-3.5 text-[#B85D43] shrink-0" />
-                          <span className="truncate">Theo chuyến đi</span>
-                        </button>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="font-serif text-xl sm:text-2xl text-[#241B16]">
+                            Bộ sưu tập charm có sẵn
+                          </h2>
+                          <p className="text-xs text-[#7A6F68] mt-0.5">
+                            Các mẫu charm chế tác từ thủy tinh biển và cước tái sinh độc bản NÉT
+                          </p>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E8E2D8] text-xs font-semibold text-[#7A6F68]">
+                          {placedCharms.length} charm đã gắn
+                        </span>
                       </div>
 
-                      {readySubTab === "single_charms" ? (
-                        <>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h2 className="font-serif text-xl sm:text-2xl text-[#241B16]">
-                                Chọn dấu ấn Đà Nẵng của bạn
-                              </h2>
-                              <p className="text-xs text-[#7A6F68] mt-0.5">
-                                Các charm đúc từ nhựa lưới biển tái chế & đồng thau
-                              </p>
-                            </div>
-                            <span className="px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E8E2D8] text-xs font-semibold text-[#7A6F68]">
-                              {placedCharms.length} charm
-                            </span>
+                      {availableCharms.length === 0 ? (
+                        <div className="text-center py-10 px-4 rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-3.5">
+                          <div className="w-12 h-12 rounded-2xl bg-white border border-[#E8E2D8] text-[#B85D43] flex items-center justify-center mx-auto shadow-2xs">
+                            <Sparkles className="w-6 h-6" />
                           </div>
-
-                          {/* Ready Charms Grid */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {READY_CHARMS.map((charm) => {
-                              const isAlreadyOnBag = placedCharms.some(
-                                (c) => c.charm.id === charm.id
-                              );
-                              return (
-                                <div
-                                  key={charm.id}
-                                  className="p-3.5 rounded-2xl border border-[#E8E2D8] hover:border-[#D6CDBF] bg-[#FAF7F2]/60 flex items-center justify-between transition-all"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div
-                                      style={{ backgroundColor: charm.color }}
-                                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-xs border border-white/60"
-                                    >
-                                      <span>{charm.symbol}</span>
-                                    </div>
-                                    <div>
-                                      <div className="text-xs sm:text-sm font-semibold text-[#241B16]">
-                                        {charm.vietnameseName}
-                                      </div>
-                                      <div className="text-[11px] text-[#7A6F68]">
-                                        +{charm.price.toLocaleString("vi-VN")} đ
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <button
-                                    onClick={() => handleAddReadyCharm(charm)}
-                                    className="w-8 h-8 rounded-full border border-[#D6CDBF] bg-white hover:bg-[#B85D43] hover:border-[#B85D43] hover:text-white text-[#5E4D43] flex items-center justify-center transition-all cursor-pointer"
-                                    title="Gắn charm lên túi"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </>
-                      ) : (
-                        /* JOURNEY BASED CUSTOMIZATION - CÂU HỎI & CHỌN ĐỊA ĐIỂM + CẢM XÚC (CHỌN NHIỀU) */
-                        <div className="space-y-6">
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] tracking-[0.2em] uppercase text-[#B85D43] font-semibold flex items-center gap-1.5">
-                                <Compass className="w-3.5 h-3.5" />
-                                <span>HÀNH TRÌNH ĐÀ NẴNG</span>
-                              </span>
-                              <span className="text-[11px] text-[#7A6F68] font-medium">
-                                {placedCharms.length}/6 charm trên túi
-                              </span>
-                            </div>
-                            <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-1">
-                              Phối charm theo chuyến đi của bạn
-                            </h2>
-                            <p className="text-xs text-[#7A6F68] mt-1 leading-relaxed">
-                              Chọn địa điểm bạn yêu thích và những kỷ niệm hoặc cảm xúc muốn lưu giữ. Các charm tương ứng sẽ tự động gắn lên chiếc túi Nét của bạn.
+                          <div className="space-y-1">
+                            <h3 className="font-serif text-lg font-bold text-[#241B16]">
+                              Chưa Có Charm Trong Kho Xưởng
+                            </h3>
+                            <p className="text-xs text-[#7A6F68] max-w-sm mx-auto leading-relaxed">
+                              Bộ sưu tập charm hiện đang trống (dữ liệu đã được làm mới về 0). Bạn có thể tự sáng tạo mẫu charm độc bản với AI hoặc thêm charm mới tại trang Quản Trị.
                             </p>
                           </div>
-
-                          {/* CÂU HỎI 1: ĐỊA ĐIỂM YÊU THÍCH TẠI ĐÀ NẴNG */}
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs sm:text-sm font-semibold text-[#241B16] flex items-center gap-1.5">
-                                <span className="w-5 h-5 rounded-full bg-[#B85D43] text-white text-[11px] font-bold flex items-center justify-center">
-                                  1
-                                </span>
-                                <span>Địa điểm bạn ấn tượng & yêu thích nhất ở Đà Nẵng:</span>
-                              </label>
-                              <span className="text-[11px] text-[#7A6F68]">
-                                (Có thể chọn nhiều)
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                              {DANANG_LOCATIONS.map((loc) => {
-                                const isSelected = selectedLocations.includes(loc.id);
-                                return (
-                                  <button
-                                    key={loc.id}
-                                    type="button"
-                                    onClick={() => handleToggleLocation(loc.id)}
-                                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 relative ${
-                                      isSelected
-                                        ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/30 shadow-xs"
-                                        : "bg-white border-[#E8E2D8] hover:border-[#D6CDBF] hover:bg-[#FAF7F2]/50"
-                                    }`}
-                                  >
-                                    <span className="text-2xl shrink-0 p-1.5 rounded-xl bg-white border border-[#E8E2D8]">
-                                      {loc.icon}
-                                    </span>
-                                    <div className="flex-1 min-w-0 pr-4">
-                                      <div className="text-xs font-semibold text-[#241B16] truncate">
-                                        {loc.name}
-                                      </div>
-                                      <div className="text-[11px] text-[#7A6F68] line-clamp-1 mt-0.5">
-                                        {loc.tagline}
-                                      </div>
-                                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                                        {READY_CHARMS.filter((c) =>
-                                          loc.charmIds.includes(c.id)
-                                        ).map((c) => (
-                                          <span
-                                            key={c.id}
-                                            className="px-1.5 py-0.5 rounded text-[10px] bg-white border border-[#E8E2D8] text-[#5E4D43] flex items-center gap-1"
-                                          >
-                                            <span
-                                              className="w-1.5 h-1.5 rounded-full"
-                                              style={{ backgroundColor: c.color }}
-                                            />
-                                            {c.vietnameseName}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    {/* Selection Check Indicator */}
-                                    <div
-                                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
-                                        isSelected
-                                          ? "bg-[#B85D43] border-[#B85D43] text-white"
-                                          : "border-[#D6CDBF] bg-white text-transparent"
-                                      }`}
-                                    >
-                                      <Check className="w-3.5 h-3.5" />
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* CÂU HỎI 2: KỶ NIỆM HOẶC CẢM XÚC MUỐN LƯU GIỮ (CHỌN NHIỀU) */}
-                          <div className="space-y-3 pt-3 border-t border-[#E8E2D8]">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs sm:text-sm font-semibold text-[#241B16] flex items-center gap-1.5">
-                                <span className="w-5 h-5 rounded-full bg-[#B85D43] text-white text-[11px] font-bold flex items-center justify-center">
-                                  2
-                                </span>
-                                <span>Kỷ niệm hoặc cảm xúc bạn muốn lưu giữ:</span>
-                              </label>
-                              <span className="text-[11px] font-semibold text-[#B85D43] bg-[#B85D43]/10 px-2 py-0.5 rounded-full">
-                                ✓ Chọn được nhiều
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                              {JOURNEY_EMOTIONS.map((emo) => {
-                                const isSelected = selectedEmotions.includes(emo.id);
-                                return (
-                                  <button
-                                    key={emo.id}
-                                    type="button"
-                                    onClick={() => handleToggleEmotion(emo.id)}
-                                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 relative ${
-                                      isSelected
-                                        ? "bg-[#FAF7F2] border-[#B85D43] ring-1 ring-[#B85D43]/30 shadow-xs"
-                                        : "bg-white border-[#E8E2D8] hover:border-[#D6CDBF] hover:bg-[#FAF7F2]/50"
-                                    }`}
-                                  >
-                                    <span className="text-2xl shrink-0 p-1.5 rounded-xl bg-white border border-[#E8E2D8]">
-                                      {emo.icon}
-                                    </span>
-                                    <div className="flex-1 min-w-0 pr-4">
-                                      <div className="text-xs font-semibold text-[#241B16]">
-                                        {emo.label}
-                                      </div>
-                                      <div className="text-[11px] text-[#7A6F68] line-clamp-1 mt-0.5">
-                                        {emo.desc}
-                                      </div>
-                                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                                        {READY_CHARMS.filter((c) =>
-                                          emo.charmIds.includes(c.id)
-                                        ).map((c) => (
-                                          <span
-                                            key={c.id}
-                                            className="px-1.5 py-0.5 rounded text-[10px] bg-white border border-[#E8E2D8] text-[#5E4D43] flex items-center gap-1"
-                                          >
-                                            <span
-                                              className="w-1.5 h-1.5 rounded-full"
-                                              style={{ backgroundColor: c.color }}
-                                            />
-                                            {c.vietnameseName}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    {/* Multi-select Checkbox */}
-                                    <div
-                                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
-                                        isSelected
-                                          ? "bg-[#B85D43] border-[#B85D43] text-white"
-                                          : "border-[#D6CDBF] bg-white text-transparent"
-                                      }`}
-                                    >
-                                      <Check className="w-3.5 h-3.5" />
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Dynamic bag sync feedback banner */}
-                          <div className="p-3.5 rounded-2xl bg-[#F0EDE6] border border-[#E8E2D8] flex items-center justify-between text-xs text-[#5E4D43]">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">✨</span>
-                              <span>
-                                Đã gắn <strong>{placedCharms.length} charm</strong> lên túi tương ứng với địa điểm & cảm xúc bạn chọn.
-                              </span>
-                            </div>
+                          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
                             <button
                               type="button"
-                              onClick={() => {
-                                setSelectedLocations(["mykhe"]);
-                                setSelectedEmotions(["peace"]);
-                                applyJournalSelectionsToBag(["mykhe"], ["peace"]);
-                              }}
-                              className="text-[11px] text-[#B85D43] hover:underline font-medium cursor-pointer"
+                              onClick={() => setActiveTab("ai_custom")}
+                              className="px-5 py-2.5 rounded-xl bg-[#B85D43] text-white text-xs font-bold hover:bg-[#A24E36] transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
                             >
-                              Đặt lại mặc định
+                              <Wand2 className="w-4 h-4" />
+                              <span>Tự Sáng Tạo Charm Riêng Cùng AI →</span>
                             </button>
+                            <Link
+                              href="/admin?tab=catalog"
+                              className="px-4 py-2.5 rounded-xl bg-white text-[#5E4D43] border border-[#E8E2D8] text-xs font-semibold hover:bg-[#FAF7F2] transition-colors shadow-2xs"
+                            >
+                              Quản Trị Thêm Charm
+                            </Link>
                           </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {availableCharms.map((charm) => {
+                            const isAlreadyOnBag = placedCharms.some(
+                              (c) => c.charm.id === charm.id
+                            );
+                            return (
+                              <div
+                                key={charm.id}
+                                className="p-3.5 rounded-2xl border border-[#E8E2D8] hover:border-[#D6CDBF] bg-[#FAF7F2]/60 flex items-center justify-between transition-all"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {charm.image ? (
+                                    <div className="w-10 h-10 rounded-xl bg-white border border-[#E8E2D8] flex items-center justify-center overflow-hidden p-1 shadow-2xs">
+                                      <img
+                                        src={charm.image}
+                                        alt={charm.vietnameseName || charm.name}
+                                        className="w-full h-full object-contain"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div
+                                      style={{ backgroundColor: charm.color || "#38bdf8" }}
+                                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-xs border border-white/60"
+                                    >
+                                      <span>{charm.symbol || "✨"}</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="text-xs sm:text-sm font-semibold text-[#241B16]">
+                                      {charm.vietnameseName || charm.name}
+                                    </div>
+                                    <div className="text-[11px] text-[#7A6F68]">
+                                      +{charm.price.toLocaleString("vi-VN")} đ
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddReadyCharm(charm)}
+                                  className="w-8 h-8 rounded-full border border-[#D6CDBF] bg-white hover:bg-[#B85D43] hover:border-[#B85D43] hover:text-white text-[#5E4D43] flex items-center justify-center transition-all cursor-pointer"
+                                  title="Gắn charm lên túi"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
 

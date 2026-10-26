@@ -429,7 +429,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       }
     }, [selectedColor]);
 
-    // Dynamic 3D Charms Placement on Bag
+    // Dynamic 3D Charms Placement on Bag (Supports 3D models GLB, Custom AI Charms, and 2D Image Charms)
     useEffect(() => {
       const container = charmsContainerRef.current;
       if (!container) return;
@@ -438,72 +438,215 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       if (!placedCharms || placedCharms.length === 0) return;
 
       let isCurrent = true;
-      const loader = createConfiguredGLTFLoader();
-      const charmUrl = "/assets/models/caurongcharm.glb";
+      const gltfLoader = createConfiguredGLTFLoader();
+      const textureLoader = new THREE.TextureLoader();
 
-      loader.load(
-        charmUrl,
-        (gltf) => {
-          if (!isCurrent) return;
-          container.clear();
-          const baseScene = gltf.scene;
+      // Shared luxury brass/gold hardware material for frames, eyelets and clips
+      const goldHardwareMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(0xd4af37), // Polished brass / artisan gold
+        metalness: 0.88,
+        roughness: 0.22,
+        envMapIntensity: 1.2,
+      });
 
-          placedCharms.forEach((placed, idx) => {
-            const charmInstance = baseScene.clone(true);
-            const box = new THREE.Box3().setFromObject(charmInstance);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
+      // Helper to render high-fidelity physical 3D keychain pendant with image/symbol
+      const renderPendantCharm = (
+        placed: PlacedCharm,
+        parentGroup: THREE.Group
+      ) => {
+        const charmImg = placed.charm.image;
+        const charmColor = placed.charm.color || "#B85D43";
+        const discRadius = 0.25;
+        const discThickness = 0.035;
 
-            charmInstance.position.x = -center.x;
-            charmInstance.position.y = -center.y;
-            charmInstance.position.z = -center.z;
+        const pendant = new THREE.Group();
 
-            // Orient charm upright: flip 180° around X axis so dragon head faces up and outward (not upside down)
-            charmInstance.rotation.x = Math.PI;
+        // 1. Hanging Clasp Hardware (hooks onto tote bag mesh)
+        // Top eyelet loop
+        const eyeletGeo = new THREE.TorusGeometry(0.042, 0.008, 12, 24);
+        const eyeletMesh = new THREE.Mesh(eyeletGeo, goldHardwareMat);
+        eyeletMesh.position.set(0, discRadius + 0.03, 0);
+        eyeletMesh.castShadow = true;
+        pendant.add(eyeletMesh);
 
-            const wrapper = new THREE.Group();
-            wrapper.add(charmInstance);
+        // Suspension link / clip hook hooking onto bag net
+        const clipGeo = new THREE.TorusGeometry(0.032, 0.006, 12, 20);
+        const clipMesh = new THREE.Mesh(clipGeo, goldHardwareMat);
+        clipMesh.position.set(0, discRadius + 0.07, 0);
+        clipMesh.rotation.y = Math.PI / 2;
+        clipMesh.castShadow = true;
+        pendant.add(clipMesh);
 
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const targetDim = 0.52;
-            const scale = maxDim > 0 ? targetDim / maxDim : 1;
-            wrapper.scale.setScalar(scale);
+        // 2. Beveled Metallic Gold Frame / Rim
+        const frameGeo = new THREE.TorusGeometry(discRadius, 0.015, 16, 40);
+        const frameMesh = new THREE.Mesh(frameGeo, goldHardwareMat);
+        frameMesh.position.z = discThickness / 2 + 0.002;
+        frameMesh.castShadow = true;
+        pendant.add(frameMesh);
 
-            // Enhance charm materials with metalness and color
-            charmInstance.traverse((child) => {
-              if ((child as THREE.Mesh).isMesh) {
-                const m = child as THREE.Mesh;
-                m.castShadow = true;
-                if (m.material) {
-                  const origMat = m.material as THREE.MeshStandardMaterial;
-                  const clonedMat = origMat.clone();
-                  if (placed.charm.color) {
-                    try {
-                      clonedMat.color = new THREE.Color(placed.charm.color);
-                      clonedMat.metalness = 0.8;
-                      clonedMat.roughness = 0.25;
-                    } catch {}
-                  }
-                  m.material = clonedMat;
-                }
-              }
-            });
+        // 3. Medallion Base Body (Cylinder back & rim)
+        const cylinderGeo = new THREE.CylinderGeometry(discRadius, discRadius, discThickness, 36);
+        cylinderGeo.rotateX(Math.PI / 2);
 
-            // Map 2D percentage coordinates to 3D surface space
-            const posX = ((placed.x - 50) / 50) * 1.15;
-            const posY = -((placed.y - 50) / 50) * 1.25 - 0.15;
-            const posZ = 0.72; // Front surface of tote facing camera
+        const rimMaterial = goldHardwareMat;
+        const backMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(charmColor),
+          metalness: 0.35,
+          roughness: 0.45,
+          side: THREE.DoubleSide,
+        });
+        const baseMesh = new THREE.Mesh(cylinderGeo, [rimMaterial, rimMaterial, backMaterial]);
+        baseMesh.castShadow = true;
+        baseMesh.receiveShadow = true;
+        pendant.add(baseMesh);
 
-            wrapper.position.set(posX, posY, posZ);
-            wrapper.rotation.z = (placed.rotation || 0) * (Math.PI / 180) + ((idx % 2 === 0 ? 1 : -1) * 0.05);
-            container.add(wrapper);
+        // 4. Front Face Artwork (CircleGeometry with crystal resin clearcoat)
+        const frontGeo = new THREE.CircleGeometry(discRadius * 0.96, 36);
+
+        if (charmImg) {
+          const frontMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            roughness: 0.1,
+            metalness: 0.05,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.08,
+            transparent: true,
+            side: THREE.DoubleSide,
           });
-        },
-        undefined,
-        (err) => {
-          console.warn("Failed to load 3D charm for bag:", err);
+
+          textureLoader.load(
+            charmImg,
+            (tex) => {
+              if (!isCurrent) return;
+              tex.colorSpace = THREE.SRGBColorSpace;
+              tex.generateMipmaps = true;
+              tex.minFilter = THREE.LinearMipmapLinearFilter;
+              frontMaterial.map = tex;
+              frontMaterial.needsUpdate = true;
+            },
+            undefined,
+            () => {
+              // Texture fallback
+              frontMaterial.color.set(charmColor);
+            }
+          );
+
+          const frontMesh = new THREE.Mesh(frontGeo, frontMaterial);
+          frontMesh.position.z = discThickness / 2 + 0.003;
+          frontMesh.castShadow = true;
+          frontMesh.receiveShadow = true;
+          pendant.add(frontMesh);
+        } else {
+          // Procedural monogram enamel disc
+          const canvas = document.createElement("canvas");
+          canvas.width = 256;
+          canvas.height = 256;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.fillStyle = charmColor;
+            ctx.beginPath();
+            ctx.arc(128, 128, 124, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#FAF7F2";
+            ctx.font = "bold 96px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(placed.charm.symbol || "★", 128, 130);
+          }
+          const canvasTex = new THREE.CanvasTexture(canvas);
+          canvasTex.colorSpace = THREE.SRGBColorSpace;
+
+          const frontMaterial = new THREE.MeshPhysicalMaterial({
+            map: canvasTex,
+            roughness: 0.15,
+            metalness: 0.1,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
+            side: THREE.DoubleSide,
+          });
+
+          const frontMesh = new THREE.Mesh(frontGeo, frontMaterial);
+          frontMesh.position.z = discThickness / 2 + 0.003;
+          frontMesh.castShadow = true;
+          pendant.add(frontMesh);
         }
-      );
+
+        parentGroup.add(pendant);
+      };
+
+      placedCharms.forEach((placed, idx) => {
+        // Map 2D percentage coordinates to 3D surface space on tote bag
+        const posX = ((placed.x - 50) / 50) * 1.15;
+        const posY = -((placed.y - 50) / 50) * 1.25 - 0.15;
+        const posZ = 0.74; // Sits nicely against the front woven net surface
+
+        const charmGroup = new THREE.Group();
+        charmGroup.position.set(posX, posY, posZ);
+        charmGroup.rotation.z =
+          (placed.rotation || 0) * (Math.PI / 180) +
+          (idx % 2 === 0 ? 1 : -1) * 0.04;
+
+        container.add(charmGroup);
+
+        // Case 1: 3D GLTF Model available
+        if (placed.charm.model3dUrl) {
+          gltfLoader.load(
+            placed.charm.model3dUrl,
+            (gltf) => {
+              if (!isCurrent) return;
+              const charmInstance = gltf.scene.clone(true);
+              const box = new THREE.Box3().setFromObject(charmInstance);
+              const center = box.getCenter(new THREE.Vector3());
+              const size = box.getSize(new THREE.Vector3());
+
+              charmInstance.position.x = -center.x;
+              charmInstance.position.y = -center.y;
+              charmInstance.position.z = -center.z;
+
+              // Orient charm upright
+              charmInstance.rotation.x = Math.PI;
+
+              const wrapper = new THREE.Group();
+              wrapper.add(charmInstance);
+
+              const maxDim = Math.max(size.x, size.y, size.z);
+              const targetDim = 0.52;
+              const scale = maxDim > 0 ? targetDim / maxDim : 1;
+              wrapper.scale.setScalar(scale);
+
+              charmInstance.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                  const m = child as THREE.Mesh;
+                  m.castShadow = true;
+                  if (m.material) {
+                    const origMat = m.material as THREE.MeshStandardMaterial;
+                    const clonedMat = origMat.clone();
+                    if (placed.charm.color) {
+                      try {
+                        clonedMat.color = new THREE.Color(placed.charm.color);
+                        clonedMat.metalness = 0.8;
+                        clonedMat.roughness = 0.25;
+                      } catch {}
+                    }
+                    m.material = clonedMat;
+                  }
+                }
+              });
+
+              charmGroup.add(wrapper);
+            },
+            undefined,
+            (err) => {
+              console.warn("Failed to load 3D GLTF charm, fallback to 3D pendant:", err);
+              renderPendantCharm(placed, charmGroup);
+            }
+          );
+        } else {
+          // Case 2 & 3: Custom Charm with Image or Procedural Pendant
+          renderPendantCharm(placed, charmGroup);
+        }
+      });
 
       return () => {
         isCurrent = false;

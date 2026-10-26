@@ -358,7 +358,7 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   )}
 
                   {/* Custom Keychain Charm (Hiển thị phôi móc khoá 2D Die-Cut độc bản) */}
-                  {isCustom && (customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl) ? (
+                  {isCustom && (customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl || placed.charm.image) ? (
                     <div
                       className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center relative transition-transform ${
                         isSelected ? "scale-115 drop-shadow-[0_0_12px_rgba(184,93,67,0.9)]" : "drop-shadow-lg"
@@ -366,8 +366,8 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                     >
                       <div className="w-full h-full flex items-center justify-center p-0.5 relative">
                         <img
-                          src={customCharmVisual.imageUrl || customCharmVisual.referenceImageUrl}
-                          alt="Móc khoá 2D Nét"
+                          src={customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl || placed.charm.image}
+                          alt={placed.charm.vietnameseName || "Móc khoá 2D Nét"}
                           className="w-full h-full object-contain select-none pointer-events-none drop-shadow-md"
                         />
                       </div>
@@ -401,6 +401,12 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                           src={customCharmVisual.referenceImageUrl}
                           alt="Custom Sketch"
                           className="w-full h-full object-cover"
+                        />
+                      ) : placed.charm.image ? (
+                        <img
+                          src={placed.charm.image}
+                          alt={placed.charm.vietnameseName}
+                          className="w-full h-full object-contain p-1"
                         />
                       ) : (
                         <span className="text-lg sm:text-xl font-bold leading-none select-none drop-shadow-xs">

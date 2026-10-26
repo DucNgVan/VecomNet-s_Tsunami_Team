@@ -519,6 +519,7 @@ function NetStudioContent() {
             },
           },
         ]);
+        return finalDisplayImg;
       } else {
         throw new Error(resData.error || "Không nhận được phản hồi từ AI");
       }
@@ -740,6 +741,10 @@ Key 3D printing & charm specs:
           },
         },
       ]);
+
+      const fallbackImg = `data:image/svg+xml;utf8,${encodeURIComponent(fallbackSvg)}`;
+      setGeneratedImageUrl(fallbackImg);
+      return fallbackImg;
     }
   };
 
@@ -1191,8 +1196,10 @@ Key 3D printing & charm specs:
     const sentence = `${s}${f1}${f2}${f3}`.trim();
 
     try {
-      await handleSendChatMessage(sentence, currentSlots, activeCat);
-      handlePlaceCustomOnBag();
+      const createdImg = await handleSendChatMessage(sentence, currentSlots, activeCat);
+      handlePlaceCustomOnBag(undefined, undefined, undefined, createdImg || undefined);
+      // Đính thẳng lên mô hình 3D và tự động kích hoạt chế độ xem 3D xoay 360 độ
+      setIs3DMode(true);
     } finally {
       setIsAiSketching(false);
     }
@@ -1322,25 +1329,29 @@ Key 3D printing & charm specs:
   const handlePlaceCustomOnBag = (
     overrideShape?: "circle" | "square" | "teardrop" | "heart" | "freeform",
     overrideColor?: string,
-    overrideText?: string
+    overrideText?: string,
+    overrideImage?: string
   ) => {
     const shapeToUse = overrideShape || customShape;
     const colorToUse = overrideColor || customColor;
     const textToUse = overrideText !== undefined ? overrideText : customText;
+    const imgToUse = overrideImage || generatedImageUrl || customImageFile || "";
+    const charmDisplayName = motifName || (textToUse ? `Charm "${textToUse}"` : "Charm AI độc bản");
 
     const customCharmObj: Charm = {
       id: "custom-charm-ai",
-      name: "Charm AI độc bản",
-      vietnameseName: textToUse ? `Charm "${textToUse}"` : "Charm AI độc bản",
+      name: charmDisplayName,
+      vietnameseName: charmDisplayName,
       category: "special",
       price: 0,
       plasticOffsetGrams: 200,
       material: "Nhựa lưới biển tái sinh ép nhiệt / Viền đồng thau chống gỉ",
-      description: customIdea || "Charm độc bản phác thảo bởi AI theo câu chuyện Đà Nẵng của bạn.",
+      description: customIdea || motifStory || "Charm độc bản phác thảo bởi AI theo câu chuyện Đà Nẵng của bạn.",
       color: colorToUse,
       glowColor: "rgba(184, 93, 67, 0.4)",
       symbol: textToUse ? textToUse.slice(0, 2).toUpperCase() : "★",
       iconName: "sparkles",
+      image: imgToUse,
     };
 
     const newPlaced: PlacedCharm = {
@@ -1361,6 +1372,28 @@ Key 3D printing & charm specs:
     setHasAppliedCustomToBag(true);
   };
 
+  // Tự động đồng bộ ảnh charm cá nhân lên danh sách charm đã đính trên túi (cả 2D & 3D)
+  useEffect(() => {
+    const activeImg = generatedImageUrl || customImageFile;
+    if (activeImg) {
+      setPlacedCharms((prev) =>
+        prev.map((item) =>
+          item.charm.id.includes("custom")
+            ? {
+                ...item,
+                charm: {
+                  ...item.charm,
+                  image: activeImg,
+                  name: motifName || item.charm.name,
+                  vietnameseName: motifName || item.charm.vietnameseName,
+                },
+              }
+            : item
+        )
+      );
+    }
+  }, [generatedImageUrl, customImageFile, motifName]);
+
   // Move directly to Step 2 with AI Sketching
   const handleProceedToStep2Sketch = async () => {
     // Nếu chưa có SVG hoặc Image từ AI, tự động gọi handleGenerateFromSlots
@@ -1370,6 +1403,7 @@ Key 3D printing & charm specs:
       setIsAiSketching(true);
       setAiCustomStep(2);
       handlePlaceCustomOnBag();
+      setIs3DMode(true);
       setTimeout(() => {
         setIsAiSketching(false);
       }, 300);
@@ -2806,10 +2840,25 @@ Key 3D printing & charm specs:
                                       Charm "{motifName || "Móc Khoá Của Bạn"}"
                                     </h3>
                                   </div>
-                                  <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700 flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-2xs">
-                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                    <span>Đã gắn lên túi</span>
-                                  </span>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => setIs3DMode(!is3DMode)}
+                                      className={`px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                                        is3DMode
+                                          ? "bg-[#B85D43] text-white border border-[#B85D43]"
+                                          : "bg-white text-[#5E4D43] border border-[#E8E2D8] hover:border-[#B85D43]"
+                                      }`}
+                                      title={is3DMode ? "Đang xem trên mô hình 3D, bấm để chuyển về 2D" : "Bấm để xoay ngắm trên mô hình túi 3D"}
+                                    >
+                                      <RotateCw className="w-3.5 h-3.5" />
+                                      <span>{is3DMode ? "Đang xem 3D (Về 2D)" : "Xoay ngắm trên túi 3D"}</span>
+                                    </button>
+                                    <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700 flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-2xs">
+                                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                      <span>Đã gắn lên túi</span>
+                                    </span>
+                                  </div>
                                 </div>
 
                                 {/* Visual Charm Representation in Sketch */}
@@ -2875,7 +2924,15 @@ Key 3D printing & charm specs:
                                       </div>
                                     </div>
 
-                                    <div className="pt-1 flex items-center gap-2">
+                                    <div className="pt-1 flex flex-wrap items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setIs3DMode(!is3DMode)}
+                                        className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#E8E2D8] text-[#5E4D43] hover:text-[#B85D43] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                                      >
+                                        <RotateCw className="w-3.5 h-3.5" />
+                                        <span>{is3DMode ? "Xem túi 2D" : "Xoay 360° trên túi 3D"}</span>
+                                      </button>
                                       {generatedImageUrl && (
                                         <a
                                           href={generatedImageUrl}

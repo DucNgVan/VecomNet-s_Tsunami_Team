@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { createConfiguredGLTFLoader } from "@/lib/gltfLoader";
 import { Loader2, RotateCw } from "lucide-react";
 
 interface CharmCanvas3DProps {
@@ -266,7 +266,7 @@ export const CharmCanvas3D: React.FC<CharmCanvas3DProps> = ({
       });
     } else {
       isCharmLoading = true;
-      const loader = new GLTFLoader();
+      const loader = createConfiguredGLTFLoader();
       loader.load(
         modelUrl,
         (gltf) => {

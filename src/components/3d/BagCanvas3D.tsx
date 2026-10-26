@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { createConfiguredGLTFLoader } from "@/lib/gltfLoader";
 import { BagBase, BagMeshColor, PlacedCharm } from "@/types";
 import { Loader2 } from "lucide-react";
 
@@ -234,7 +234,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         setIsGlbActive(true);
         setIsLoadingModel(false);
       } else if (activeModelUrl) {
-        const loader = new GLTFLoader();
+        const loader = createConfiguredGLTFLoader();
         loader.load(
           activeModelUrl,
           (gltf) => {
@@ -438,7 +438,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       if (!placedCharms || placedCharms.length === 0) return;
 
       let isCurrent = true;
-      const loader = new GLTFLoader();
+      const loader = createConfiguredGLTFLoader();
       const charmUrl = "/assets/models/caurongcharm.glb";
 
       loader.load(

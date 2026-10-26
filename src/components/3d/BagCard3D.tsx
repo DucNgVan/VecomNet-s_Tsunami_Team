@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { createConfiguredGLTFLoader } from "@/lib/gltfLoader";
 import { Loader2, RotateCw } from "lucide-react";
 
 interface BagCard3DProps {
@@ -276,7 +276,7 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       bagLoadCallbacksMap.set(modelUrl, cbs);
     } else {
       bagLoadingUrls.add(modelUrl);
-      const loader = new GLTFLoader();
+      const loader = createConfiguredGLTFLoader();
       loader.load(
         modelUrl,
         (gltf) => {

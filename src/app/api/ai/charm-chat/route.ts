@@ -22,8 +22,8 @@ interface ChatRequestPayload {
 }
 
 /**
- * Gọi mô hình LoRA SDXL trên Hugging Face Spaces (Zero-GPU Gradio 5/6 SSE API hoặc REST fallback)
- * Ưu tiên gọi Hugging Face Space cho đến khi báo hết GPU hoặc gặp lỗi
+ * Gọi mô hình LoRA SDXL trên Hugging Face Spaces qua chuẩn Gradio 5/6 API
+ * Luôn ưu tiên gọi mô hình riêng cho đến khi Hugging Face báo hết GPU hoặc gặp lỗi
  */
 async function callLoraKeychainModel(
   baseUrl: string,
@@ -37,130 +37,129 @@ async function callLoraKeychainModel(
     headers["Authorization"] = `Bearer ${hfToken}`;
   }
 
-  // 1. ƯU TIÊN SỐ 1: Gọi trực tiếp FastAPI REST endpoint /api/generate-keychain (hỗ trợ cả có ảnh gốc hoặc text-only)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s cho ZeroGPU
-    const bodyPayload: any = { prompt };
-    if (imageBase64) bodyPayload.imageBase64 = imageBase64;
+    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55s cho ZeroGPU nạp model và sinh ảnh
 
-    const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(bodyPayload),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    if (aiRes.ok) {
-      const aiJson = await aiRes.json();
-      if (aiJson.imageUrl) {
-        console.log("[Hugging Face Space] Tạo ảnh móc khoá thành công từ /api/generate-keychain!");
-        return aiJson.imageUrl;
+    // 1. Chuẩn bị dữ liệu hình ảnh đầu vào nếu người dùng có tải ảnh tham chiếu
+    let userImageArg: any = null;
+    if (imageBase64) {
+      try {
+        let cleanBase64 = imageBase64;
+        let mimeType = "image/png";
+        if (imageBase64.includes(";base64,")) {
+          const parts = imageBase64.split(";base64,");
+          cleanBase64 = parts[1];
+          mimeType = parts[0].replace("data:", "") || "image/png";
+        }
+
+        const buffer = Buffer.from(cleanBase64, "base64");
+        const formData = new FormData();
+        const blob = new Blob([buffer], { type: mimeType });
+        formData.append("files", blob, "user_ref.png");
+
+        const uploadHeaders: Record<string, string> = {};
+        if (hfToken) uploadHeaders["Authorization"] = `Bearer ${hfToken}`;
+
+        const uploadRes = await fetch(`${cleanBase}/gradio_api/upload`, {
+          method: "POST",
+          headers: uploadHeaders,
+          body: formData,
+          signal: controller.signal,
+        });
+
+        if (uploadRes.ok) {
+          const uploadedPaths = await uploadRes.json();
+          if (Array.isArray(uploadedPaths) && uploadedPaths[0]) {
+            userImageArg = {
+              path: uploadedPaths[0],
+              meta: { _type: "gradio.FileData" },
+            };
+          }
+        }
+      } catch (uploadErr) {
+        console.warn("[Gradio Upload Notice]:", uploadErr);
+        userImageArg = { url: imageBase64 };
       }
-    } else {
-      console.warn(`[Hugging Face Space Status ${aiRes.status}]:`, await aiRes.text().catch(() => ""));
     }
-  } catch (restErr) {
-    console.warn("[Hugging Face Space REST Warning]:", restErr);
-  }
 
-  // 2. Dự phòng giao thức Gradio 5/6 Call & SSE Stream
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
-
+    // 2. Kích hoạt Endpoint Gradio /generate_keychain
     const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
       method: "POST",
       headers,
       body: JSON.stringify({
-        data: [prompt, imageBase64 ? { url: imageBase64 } : null],
+        data: [prompt, userImageArg],
       }),
       signal: controller.signal,
     });
 
-    if (initRes.ok) {
-      const initData = await initRes.json();
-      const eventId = initData.event_id;
+    if (!initRes.ok) {
+      const errText = await initRes.text().catch(() => "");
+      console.warn(`[Hugging Face Space Status ${initRes.status}]:`, errText);
+      clearTimeout(timeoutId);
+      return null;
+    }
 
-      if (eventId) {
-        const streamRes = await fetch(
-          `${cleanBase}/gradio_api/call/generate_keychain/${eventId}`,
-          { headers, signal: controller.signal }
-        );
+    const initData = await initRes.json();
+    const eventId = initData.event_id;
+    if (!eventId) {
+      clearTimeout(timeoutId);
+      return null;
+    }
 
-        if (streamRes.ok && streamRes.body) {
-          const reader = streamRes.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
+    // 3. Đọc SSE Stream chờ hoàn tất quá trình sinh ảnh
+    const streamRes = await fetch(
+      `${cleanBase}/gradio_api/call/generate_keychain/${eventId}`,
+      { headers, signal: controller.signal }
+    );
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
+    if (streamRes.ok && streamRes.body) {
+      const reader = streamRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-            const lines = buffer.split("\n");
-            for (let i = 0; i < lines.length; i++) {
-              if (lines[i].startsWith("event: complete")) {
-                const nextLine = lines[i + 1] || "";
-                if (nextLine.startsWith("data: ")) {
-                  clearTimeout(timeoutId);
-                  const rawData = nextLine.replace("data: ", "").trim();
-                  const parsed = JSON.parse(rawData);
-                  const fileObj = Array.isArray(parsed) ? parsed[0] : parsed;
-                  const remoteUrl = fileObj?.url;
-                  if (remoteUrl) {
-                    try {
-                      const imgFetch = await fetch(remoteUrl);
-                      if (imgFetch.ok) {
-                        const arrayBuf = await imgFetch.arrayBuffer();
-                        const b64 = Buffer.from(arrayBuf).toString("base64");
-                        const mime = imgFetch.headers.get("content-type") || "image/webp";
-                        return `data:${mime};base64,${b64}`;
-                      }
-                    } catch (fetchErr) {
-                      console.warn("Could not convert image to base64, using remote URL:", fetchErr);
-                    }
-                    return remoteUrl;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.startsWith("event: complete")) {
+            const nextLine = lines[i + 1] || "";
+            if (nextLine.startsWith("data: ")) {
+              clearTimeout(timeoutId);
+              const rawData = nextLine.replace("data: ", "").trim();
+              const parsed = JSON.parse(rawData);
+              const fileObj = Array.isArray(parsed) ? parsed[0] : parsed;
+              const remoteUrl = fileObj?.url;
+              if (remoteUrl) {
+                try {
+                  const imgFetch = await fetch(remoteUrl);
+                  if (imgFetch.ok) {
+                    const arrayBuf = await imgFetch.arrayBuffer();
+                    const b64 = Buffer.from(arrayBuf).toString("base64");
+                    const mime = imgFetch.headers.get("content-type") || "image/webp";
+                    return `data:${mime};base64,${b64}`;
                   }
+                } catch (fetchErr) {
+                  console.warn("Could not convert image to base64, using remote URL:", fetchErr);
                 }
-              } else if (lines[i].startsWith("event: error")) {
-                clearTimeout(timeoutId);
-                console.warn("[Gradio SSE Error Event]:", lines[i + 1] || "");
-                break;
+                return remoteUrl;
               }
             }
+          } else if (line.startsWith("event: error")) {
+            clearTimeout(timeoutId);
+            console.warn("[Hugging Face Space ZeroGPU Quota/Error]:", lines[i + 1] || "");
+            return null;
           }
         }
       }
     }
     clearTimeout(timeoutId);
   } catch (gradioErr) {
-    console.warn("[Gradio API Warning]:", gradioErr);
-  }
-
-  // 3. Fallback cuối cùng cho trường hợp Text-to-Image qua REST endpoint
-  if (!imageBase64) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000);
-      const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          prompt,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (aiRes.ok) {
-        const aiJson = await aiRes.json();
-        if (aiJson.imageUrl) {
-          return aiJson.imageUrl;
-        }
-      }
-    } catch (customErr) {
-      console.warn("[Custom Endpoint Warning]:", customErr);
-    }
+    console.warn("[Hugging Face Space Connection Exception]:", gradioErr);
   }
 
   return null;

@@ -351,29 +351,28 @@ export default function ShopPage() {
         </div>
 
         {/* Desktop Filter Tabs Bar */}
-        <div className="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="hidden sm:flex items-center justify-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
           {filterTabs.map((tab) => {
             const isActive = filterCategory === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setFilterCategory(tab.id as any)}
-                className={`relative px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
+                className={`relative px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
                   isActive
-                    ? "text-white bg-[#B85D43] shadow-xs scale-105"
+                    ? "bg-[#B85D43] text-white shadow-xs"
                     : "bg-white hover:bg-[#FAF7F2] text-[#5E4D43] border border-[#E8E2D8] shadow-xs"
                 }`}
               >
-                <span className="relative z-10 flex items-center gap-2">
-                  {isActive && <Sparkles className="w-3.5 h-3.5 text-cyan-300 animate-spin" />}
-                  <span>{tab.label}</span>
-                  <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full font-mono ${
-                      isActive ? "bg-sky-400/20 text-sky-200" : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
+                <span>{tab.label}</span>
+                <span
+                  className={`text-[11px] min-w-[20px] h-5 px-1.5 rounded-full font-bold flex items-center justify-center transition-colors ${
+                    isActive
+                      ? "bg-black/15 text-white"
+                      : "bg-[#EFE9DF] text-[#7A6F68]"
+                  }`}
+                >
+                  {tab.count}
                 </span>
               </button>
             );

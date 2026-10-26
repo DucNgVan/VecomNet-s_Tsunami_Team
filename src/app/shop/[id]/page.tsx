@@ -27,6 +27,7 @@ import { BagBase, BagMeshColor, Charm, ProductCombo, ManufacturedBagItem } from 
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/ToastNotification";
 import { formatVND, formatKg } from "@/lib/utils";
+import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
 import { BagCard3D } from "@/components/3d/BagCard3D";
 import { CharmCanvas3D } from "@/components/3d/CharmCanvas3D";
 import { getManufacturedItems } from "@/lib/supplyChainStorage";
@@ -277,6 +278,32 @@ export default function ProductDetailPage() {
     rawProduct.model3dUrl ||
     "/assets/models/tuixach-xanh-la.glb";
 
+  const bagBaseObject: BagBase = useMemo(() => ({
+    id: rawProduct?.id || "custom-bag",
+    name: productName,
+    tagline: rawProduct?.tagline || "",
+    description: rawProduct?.description || "",
+    basePrice: productPrice,
+    plasticOffsetKg: plasticKg,
+    dimensions,
+    capacity,
+    colors: availableColors,
+    anchorPoints: rawProduct?.anchorPoints || [
+      { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+      { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+      { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+      { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+    ],
+    maxCharms,
+    modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(rawProduct?.category)
+      ? rawProduct?.category
+      : "tote") as any,
+    image: current2dImage,
+    model3dUrl: current3dModelUrl,
+    stockCount,
+    inStock: isAvailable,
+  }), [rawProduct, productName, productPrice, plasticKg, dimensions, capacity, availableColors, current2dImage, current3dModelUrl, stockCount, isAvailable, maxCharms]);
+
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241B16]">
       {/* Top Breadcrumb & Actions Bar */}
@@ -321,111 +348,109 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
           {/* ========================================================= */}
-          {/* LEFT: 2D Crisp Showcase & 3D Interactive Viewport         */}
+          {/* LEFT: Arch Showcase (Mẫu vòm cong atelier Studio)         */}
           {/* ========================================================= */}
-          <div className="lg:col-span-7 flex flex-col gap-4">
-            <div className="relative w-full aspect-[4/3] sm:aspect-[1/1] md:aspect-[4/3] rounded-3xl bg-gradient-to-b from-[#F7F4EE] to-[#EFEAE1] border border-[#E8E2D8] shadow-sm overflow-hidden flex items-center justify-center p-6">
+          <div className="lg:col-span-6 flex flex-col items-center">
+            
+            {/* The Signature Arch Vault Canvas */}
+            <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 shadow-sm relative border border-[#E8E2D8] overflow-hidden flex flex-col items-center justify-center mx-auto">
               
-              {/* Badge & View Switcher in Corner */}
-              <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/90 backdrop-blur-md text-[#B85D43] border border-[#E8E2D8] shadow-xs">
+              {/* Badges in top corners */}
+              <div className="absolute top-6 inset-x-6 z-20 flex items-center justify-between pointer-events-none">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-md text-[#B85D43] border border-[#E8E2D8] shadow-xs">
                   {isCombo ? "Bộ Phối Độc Bản" : isCharm ? "Charm Biển Sâu" : "Phôi Túi Lưới NÉT"}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
                   -{formatKg(plasticKg)} rác biển
                 </span>
               </div>
 
-              {/* 2D / 3D Toggle Buttons (if 3D model exists) */}
-              {has3dModel && (
-                <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-white/90 backdrop-blur-md p-1 rounded-2xl border border-[#E8E2D8] shadow-xs">
+              {/* Floating Pill Switcher Button at Bottom (Khớp 100% mẫu screenshot) */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
+                {viewMode === "3d" ? (
                   <button
+                    type="button"
                     onClick={() => setViewMode("photo")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      viewMode === "photo"
-                        ? "bg-[#B85D43] text-white shadow-xs"
-                        : "text-[#7A6F68] hover:text-[#241B16]"
-                    }`}
+                    className="px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                   >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Ảnh 2D</span>
+                    <span>Trở về bản phối 2D</span>
                   </button>
+                ) : has3dModel ? (
                   <button
+                    type="button"
                     onClick={() => setViewMode("3d")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      viewMode === "3d"
-                        ? "bg-[#B85D43] text-white shadow-xs"
-                        : "text-[#7A6F68] hover:text-[#241B16]"
-                    }`}
+                    className="px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                   >
-                    <RotateCw className="w-3.5 h-3.5" />
-                    <span>Xoay 3D</span>
+                    <RotateCw className="w-3.5 h-3.5 text-[#B85D43]" />
+                    <span>Xem mô hình 3D 360°</span>
                   </button>
+                ) : null}
+              </div>
+
+              {/* Product Display inside the Arch */}
+              {viewMode === "3d" && has3dModel ? (
+                <div className="w-full h-full relative">
+                  {isCharm ? (
+                    <CharmCanvas3D
+                      modelUrl={current3dModelUrl}
+                      color={rawProduct.color || "#38bdf8"}
+                      glowColor={rawProduct.glowColor || "rgba(56, 189, 248, 0.4)"}
+                      isInteractive={true}
+                    />
+                  ) : (
+                    <BagCanvas3D
+                      bagBase={bagBaseObject}
+                      selectedColor={selectedColor}
+                      placedCharms={isCombo && Array.isArray(rawProduct.includedCharms) ? rawProduct.includedCharms : []}
+                      modelUrl={current3dModelUrl}
+                      isInteractive={true}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img
+                    src={current2dImage}
+                    alt={productName}
+                    className="max-w-full max-h-full object-contain filter drop-shadow-xl transition-transform duration-500 hover:scale-105"
+                    loading="eager"
+                  />
                 </div>
               )}
-
-              {/* View Display */}
-              <div className="w-full h-full flex items-center justify-center">
-                {viewMode === "3d" && has3dModel ? (
-                  <div className="w-full h-full relative">
-                    {isCharm ? (
-                      <CharmCanvas3D
-                        modelUrl={current3dModelUrl}
-                        color={rawProduct.color || "#38bdf8"}
-                        glowColor={rawProduct.glowColor || "rgba(56, 189, 248, 0.4)"}
-                        isInteractive={true}
-                      />
-                    ) : (
-                      <BagCard3D
-                        modelUrl={current3dModelUrl}
-                        color={selectedColor.hex}
-                        glowColor={selectedColor.glowHex}
-                        isInteractive={true}
-                      />
-                    )}
-                    <div className="absolute bottom-3 inset-x-4 flex items-center justify-center pointer-events-none">
-                      <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-medium text-[#7A6F68] border border-[#E8E2D8] shadow-xs">
-                        ✦ Kéo chuột hoặc chạm để xoay 360° và cuộn để thu phóng
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center p-4">
-                    <img
-                      src={current2dImage}
-                      alt={productName}
-                      className="max-w-full max-h-full object-contain filter drop-shadow-xl transition-transform duration-500 hover:scale-105"
-                      loading="eager"
-                    />
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Color Swatch Thumbnails for Bags */}
-            {isBag && availableColors.length > 1 && (
-              <div className="bg-white p-4 rounded-2xl border border-[#E8E2D8] shadow-xs flex flex-col gap-2.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#7A6F68]">
-                  Chọn Sắc Màu Lưới Biển ({availableColors.length} màu bản quyền):
-                </span>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {availableColors.map((col) => {
-                    const isSelected = selectedColor.id === col.id;
+            {/* Dynamic Bag Colors Selector Bar (Đồng bộ với mẫu túi đang chọn - Khớp 100% screenshot) */}
+            {isBag && availableColors.length > 0 && (
+              <div className="mt-4 w-full max-w-[440px] bg-[#FAF8F5] p-3.5 sm:p-4 rounded-2xl border border-[#E8E2D8] shadow-xs flex items-center justify-between gap-3">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-[#7A6F68] font-bold truncate">
+                    {availableColors.length} MÀU CỦA {productName.toUpperCase()}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-[#1A130F] truncate">
+                    {selectedColor.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {availableColors.map((c) => {
+                    const isSelected =
+                      selectedColor.id === c.id ||
+                      selectedColor.hex?.toLowerCase() === c.hex?.toLowerCase();
                     return (
                       <button
-                        key={col.id}
-                        onClick={() => setSelectedColor(col)}
-                        className={`group flex items-center gap-2.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        key={c.id || c.hex}
+                        type="button"
+                        onClick={() => setSelectedColor(c)}
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all relative flex items-center justify-center cursor-pointer shadow-xs ${
                           isSelected
-                            ? "border-[#B85D43] bg-[#FAF7F2] text-[#B85D43] shadow-xs ring-1 ring-[#B85D43]"
-                            : "border-[#E8E2D8] bg-white text-[#5E4D43] hover:border-[#B85D43]/40"
+                            ? "ring-2 ring-[#B85D43] ring-offset-2 scale-110"
+                            : "opacity-80 hover:opacity-100 hover:scale-105"
                         }`}
+                        style={{ backgroundColor: c.hex }}
+                        title={`Màu ${c.name} (${c.hex})`}
                       >
-                        <span
-                          className="w-4 h-4 rounded-full border border-black/15 shadow-inner"
-                          style={{ backgroundColor: col.hex }}
-                        />
-                        <span>{col.name}</span>
+                        {isSelected && (
+                          <Check className="w-3.5 h-3.5 text-white drop-shadow-md stroke-[3]" />
+                        )}
                       </button>
                     );
                   })}
@@ -434,35 +459,21 @@ export default function ProductDetailPage() {
             )}
 
             {/* Environmental & Craft Integrity Highlights */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-2xl bg-white border border-[#E8E2D8] flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-[#241B16]">100% Sợi Cước Tái Sinh</span>
-                  <span className="text-[10px] text-[#7A6F68]">Ngư trường Đà Nẵng</span>
-                </div>
+            <div className="mt-4 w-full max-w-[440px] grid grid-cols-3 gap-2.5">
+              <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                <span className="text-[10px] font-bold text-[#241B16] leading-tight">100% Cước Tái Sinh</span>
+                <span className="text-[9px] text-[#7A6F68]">Biển Đà Nẵng</span>
               </div>
-
-              <div className="p-3.5 rounded-2xl bg-white border border-[#E8E2D8] flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-[#241B16]">Đan Tay Làng Nghề</span>
-                  <span className="text-[10px] text-[#7A6F68]">18-24 giờ thủ công</span>
-                </div>
+              <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                <Sparkles className="w-4 h-4 text-amber-700" />
+                <span className="text-[10px] font-bold text-[#241B16] leading-tight">Đan Tay Nghệ Nhân</span>
+                <span className="text-[9px] text-[#7A6F68]">18-24 giờ thủ công</span>
               </div>
-
-              <div className="p-3.5 rounded-2xl bg-white border border-[#E8E2D8] flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
-                  <Compass className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-[#241B16]">Định Danh Passport</span>
-                  <span className="text-[10px] text-[#7A6F68]">Mã truy vết độc bản</span>
-                </div>
+              <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                <Compass className="w-4 h-4 text-sky-700" />
+                <span className="text-[10px] font-bold text-[#241B16] leading-tight">Passport Định Danh</span>
+                <span className="text-[9px] text-[#7A6F68]">Mã số mẻ lưới</span>
               </div>
             </div>
           </div>
@@ -470,7 +481,7 @@ export default function ProductDetailPage() {
           {/* ========================================================= */}
           {/* RIGHT: Product Specs, Pricing, & Action CTAs              */}
           {/* ========================================================= */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+          <div className="lg:col-span-6 flex flex-col gap-6">
             
             {/* Header info */}
             <div className="space-y-2">

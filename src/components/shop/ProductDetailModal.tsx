@@ -165,9 +165,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
           {/* Modal Body: Two Column Responsive */}
           <div className="p-5 sm:p-7 overflow-y-auto space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
               {/* Left Column: 3D Preview Stage */}
-              <div className="md:col-span-6 flex flex-col items-center">
+              <div className="md:col-span-6 flex flex-col h-full">
                 {has3dModel && imageUrl && (
                   <div className="flex items-center gap-1 self-start mb-2.5 p-1 rounded-xl bg-slate-100 border border-slate-200/60 text-xs font-semibold">
                     <button
@@ -197,7 +197,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                 )}
 
-                <div className="w-full aspect-square rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200/90 relative overflow-hidden flex items-center justify-center shadow-inner">
+                <div className="w-full flex-1 min-h-[420px] sm:min-h-[480px] md:min-h-[520px] rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200/90 relative overflow-hidden flex items-center justify-center shadow-inner">
                   {(!has3dModel || viewMode === "photo") && activeImageUrl ? (
                     <div className="w-full h-full p-4 flex items-center justify-center">
                       <CloudinaryImage

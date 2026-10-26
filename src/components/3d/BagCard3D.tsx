@@ -69,11 +69,13 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
     let isSubscribed = true;
     const width = container.clientWidth || 280;
     const height = container.clientHeight || 240;
+    const aspect = width / height;
 
     // 1. Scene & Camera Setup
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 50);
-    camera.position.set(0, 0.15, 6.2);
+    const camera = new THREE.PerspectiveCamera(40, aspect, 0.1, 50);
+    const initialCamZ = aspect < 1 ? 6.2 / Math.min(1, Math.max(0.72, aspect)) : 6.2;
+    camera.position.set(0, 0.15, initialCamZ);
 
     // 2. High-Performance WebGL Renderer
     let renderer: THREE.WebGLRenderer;
@@ -169,11 +171,19 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       if (!container || !renderer) return;
       const w = container.clientWidth || 280;
       const h = container.clientHeight || 240;
-      camera.aspect = w / h;
+      const asp = w / h;
+      camera.aspect = asp;
+      const camZ = asp < 1 ? 6.2 / Math.min(1, Math.max(0.72, asp)) : 6.2;
+      camera.position.set(0, 0.15, camZ);
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
     window.addEventListener("resize", handleResize);
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(container);
 
     // 5. Interactive render loop Setup (ALWAYS declared & ready BEFORE loading/mounting model)
     const startInteractiveLoop = () => {
@@ -309,6 +319,7 @@ export const BagCard3D: React.FC<BagCard3DProps> = ({
       window.removeEventListener("touchend", onMouseUp);
       dom.removeEventListener("webglcontextlost", handleContextLost);
       window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       if (animId !== null) cancelAnimationFrame(animId);
 
       try {

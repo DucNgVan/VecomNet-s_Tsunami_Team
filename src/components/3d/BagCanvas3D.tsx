@@ -449,69 +449,47 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         envMapIntensity: 1.2,
       });
 
-      // Helper to render high-fidelity physical 3D keychain pendant with image/symbol
+      // Helper to render high-fidelity physical 3D die-cut keychain (No outer frame/coin, contoured to subject)
       const renderPendantCharm = (
         placed: PlacedCharm,
         parentGroup: THREE.Group
       ) => {
         const charmImg = placed.charm.image;
         const charmColor = placed.charm.color || "#B85D43";
-        const discRadius = 0.25;
-        const discThickness = 0.035;
+        const charmSize = 0.52;
 
         const pendant = new THREE.Group();
 
-        // 1. Hanging Clasp Hardware (hooks onto tote bag mesh)
-        // Top eyelet loop
-        const eyeletGeo = new THREE.TorusGeometry(0.042, 0.008, 12, 24);
+        // 1. Hanging Clasp Hardware (hooks onto tote bag mesh at top of charm)
+        // Top eyelet loop on the head of the die-cut character
+        const eyeletGeo = new THREE.TorusGeometry(0.03, 0.006, 12, 24);
         const eyeletMesh = new THREE.Mesh(eyeletGeo, goldHardwareMat);
-        eyeletMesh.position.set(0, discRadius + 0.03, 0);
+        eyeletMesh.position.set(0, charmSize * 0.44, 0.005);
         eyeletMesh.castShadow = true;
         pendant.add(eyeletMesh);
 
         // Suspension link / clip hook hooking onto bag net
-        const clipGeo = new THREE.TorusGeometry(0.032, 0.006, 12, 20);
+        const clipGeo = new THREE.TorusGeometry(0.022, 0.005, 12, 20);
         const clipMesh = new THREE.Mesh(clipGeo, goldHardwareMat);
-        clipMesh.position.set(0, discRadius + 0.07, 0);
+        clipMesh.position.set(0, charmSize * 0.44 + 0.032, 0);
         clipMesh.rotation.y = Math.PI / 2;
         clipMesh.castShadow = true;
         pendant.add(clipMesh);
 
-        // 2. Beveled Metallic Gold Frame / Rim
-        const frameGeo = new THREE.TorusGeometry(discRadius, 0.015, 16, 40);
-        const frameMesh = new THREE.Mesh(frameGeo, goldHardwareMat);
-        frameMesh.position.z = discThickness / 2 + 0.002;
-        frameMesh.castShadow = true;
-        pendant.add(frameMesh);
-
-        // 3. Medallion Base Body (Cylinder back & rim)
-        const cylinderGeo = new THREE.CylinderGeometry(discRadius, discRadius, discThickness, 36);
-        cylinderGeo.rotateX(Math.PI / 2);
-
-        const rimMaterial = goldHardwareMat;
-        const backMaterial = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(charmColor),
-          metalness: 0.35,
-          roughness: 0.45,
-          side: THREE.DoubleSide,
-        });
-        const baseMesh = new THREE.Mesh(cylinderGeo, [rimMaterial, rimMaterial, backMaterial]);
-        baseMesh.castShadow = true;
-        baseMesh.receiveShadow = true;
-        pendant.add(baseMesh);
-
-        // 4. Front Face Artwork (CircleGeometry with crystal resin clearcoat)
-        const frontGeo = new THREE.CircleGeometry(discRadius * 0.96, 36);
+        // 2. Pure DIE-CUT Charm (Contoured along subject, NO circular frame/coin)
+        const planeGeo = new THREE.PlaneGeometry(charmSize, charmSize);
 
         if (charmImg) {
           const frontMaterial = new THREE.MeshPhysicalMaterial({
             color: 0xffffff,
-            roughness: 0.1,
+            roughness: 0.12,
             metalness: 0.05,
             clearcoat: 1.0,
             clearcoatRoughness: 0.08,
             transparent: true,
+            alphaTest: 0.08, // Cut out all transparent pixels outside the character's contour
             side: THREE.DoubleSide,
+            depthWrite: true,
           });
 
           textureLoader.load(
@@ -526,18 +504,24 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             },
             undefined,
             () => {
-              // Texture fallback
               frontMaterial.color.set(charmColor);
             }
           );
 
-          const frontMesh = new THREE.Mesh(frontGeo, frontMaterial);
-          frontMesh.position.z = discThickness / 2 + 0.003;
+          // Front layer
+          const frontMesh = new THREE.Mesh(planeGeo, frontMaterial);
+          frontMesh.position.z = 0.005;
           frontMesh.castShadow = true;
           frontMesh.receiveShadow = true;
           pendant.add(frontMesh);
+
+          // Back layer (gives 3mm acrylic thickness feel in 3D without any outer frame)
+          const backMesh = new THREE.Mesh(planeGeo, frontMaterial);
+          backMesh.position.z = -0.005;
+          backMesh.castShadow = true;
+          pendant.add(backMesh);
         } else {
-          // Procedural monogram enamel disc
+          // Fallback procedural charm
           const canvas = document.createElement("canvas");
           canvas.width = 256;
           canvas.height = 256;
@@ -545,31 +529,30 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           if (ctx) {
             ctx.fillStyle = charmColor;
             ctx.beginPath();
-            ctx.arc(128, 128, 124, 0, Math.PI * 2);
+            ctx.roundRect(32, 32, 192, 192, 40);
             ctx.fill();
 
             ctx.fillStyle = "#FAF7F2";
             ctx.font = "bold 96px serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(placed.charm.symbol || "★", 128, 130);
+            ctx.fillText(placed.charm.symbol || "★", 128, 128);
           }
           const canvasTex = new THREE.CanvasTexture(canvas);
           canvasTex.colorSpace = THREE.SRGBColorSpace;
 
-          const frontMaterial = new THREE.MeshPhysicalMaterial({
+          const fallbackMat = new THREE.MeshPhysicalMaterial({
             map: canvasTex,
             roughness: 0.15,
             metalness: 0.1,
             clearcoat: 1.0,
-            clearcoatRoughness: 0.1,
+            transparent: true,
+            alphaTest: 0.05,
             side: THREE.DoubleSide,
           });
-
-          const frontMesh = new THREE.Mesh(frontGeo, frontMaterial);
-          frontMesh.position.z = discThickness / 2 + 0.003;
-          frontMesh.castShadow = true;
-          pendant.add(frontMesh);
+          const fallbackMesh = new THREE.Mesh(planeGeo, fallbackMat);
+          fallbackMesh.castShadow = true;
+          pendant.add(fallbackMesh);
         }
 
         parentGroup.add(pendant);
@@ -579,13 +562,19 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         // Map 2D percentage coordinates to 3D surface space on tote bag
         const posX = ((placed.x - 50) / 50) * 1.15;
         const posY = -((placed.y - 50) / 50) * 1.25 - 0.15;
-        const posZ = 0.74; // Sits nicely against the front woven net surface
+        
+        // Exact Z surface coordinate:
+        // Tote bag front face is at Z ~ 0.44 at center (posY = -0.15)
+        // Adaptive Z: tapers slightly from bottom (0.46) to top (0.40)
+        const baseZ = 0.44 - (posY * 0.08);
+        const posZ = Math.max(0.39, Math.min(0.47, baseZ));
 
         const charmGroup = new THREE.Group();
         charmGroup.position.set(posX, posY, posZ);
         charmGroup.rotation.z =
           (placed.rotation || 0) * (Math.PI / 180) +
           (idx % 2 === 0 ? 1 : -1) * 0.04;
+        charmGroup.rotation.x = -0.05; // Slight natural drape angle towards bag fabric
 
         container.add(charmGroup);
 

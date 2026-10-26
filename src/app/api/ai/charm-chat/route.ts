@@ -23,6 +23,7 @@ interface ChatRequestPayload {
 
 /**
  * Gọi mô hình LoRA SDXL trên Hugging Face Spaces (Zero-GPU Gradio 5/6 SSE API hoặc REST fallback)
+ * Ưu tiên gọi Hugging Face Space cho đến khi báo hết GPU hoặc gặp lỗi
  */
 async function callLoraKeychainModel(
   baseUrl: string,
@@ -36,36 +37,37 @@ async function callLoraKeychainModel(
     headers["Authorization"] = `Bearer ${hfToken}`;
   }
 
-  // 1. Nếu có ảnh gốc người dùng: Ưu tiên gọi thẳng REST endpoint /api/generate-keychain để nạp trực tiếp PIL Image cho Image-to-Image
-  if (imageBase64) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000);
-      const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          prompt,
-          imageBase64: imageBase64,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (aiRes.ok) {
-        const aiJson = await aiRes.json();
-        if (aiJson.imageUrl) {
-          return aiJson.imageUrl;
-        }
-      }
-    } catch (restErr) {
-      console.warn("[REST Image-to-Image Warning]:", restErr);
-    }
-  }
-
-  // 2. Thử gọi qua giao thức Gradio 5/6 Call & SSE Stream (Hỗ trợ cả Text2Img và Img2Img)
+  // 1. ƯU TIÊN SỐ 1: Gọi trực tiếp FastAPI REST endpoint /api/generate-keychain (hỗ trợ cả có ảnh gốc hoặc text-only)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s cho ZeroGPU
+    const bodyPayload: any = { prompt };
+    if (imageBase64) bodyPayload.imageBase64 = imageBase64;
+
+    const aiRes = await fetch(`${cleanBase}/api/generate-keychain`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(bodyPayload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (aiRes.ok) {
+      const aiJson = await aiRes.json();
+      if (aiJson.imageUrl) {
+        console.log("[Hugging Face Space] Tạo ảnh móc khoá thành công từ /api/generate-keychain!");
+        return aiJson.imageUrl;
+      }
+    } else {
+      console.warn(`[Hugging Face Space Status ${aiRes.status}]:`, await aiRes.text().catch(() => ""));
+    }
+  } catch (restErr) {
+    console.warn("[Hugging Face Space REST Warning]:", restErr);
+  }
+
+  // 2. Dự phòng giao thức Gradio 5/6 Call & SSE Stream
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
       method: "POST",
@@ -166,11 +168,13 @@ async function callLoraKeychainModel(
 
 /**
  * Sinh ảnh móc khoá 2D dự phòng khi Hugging Face ZeroGPU bận hoặc hết hạn mức
+ * Tuyệt đối không tạo khung tròn, chỉ lấy hình móc khoá bo viền theo chủ thể
  */
 async function callFallbackKeychainImage(prompt: string): Promise<string | null> {
   try {
+    const cleanPrompt = prompt.replace(/die-cut|acrylic|keychain|charm/gi, "").trim();
     const encoded = encodeURIComponent(
-      `a cute custom acrylic keychain charm of an adorable 2D anime chibi character: ${prompt}, clear transparent laser-cut die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no other objects, no background clutter, no collage`
+      `single cute 2D anime chibi die-cut keychain charm of ${cleanPrompt}, contoured silhouette outline cut to shape, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no frame, no circle, no border, no background clutter, no medallion`
     );
     const seed = Math.floor(Math.random() * 999999);
     const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${seed}`;
@@ -234,7 +238,7 @@ TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
 2. KHÔNG có bóng kim loại phản chiếu tả thực (no photorealistic metallic reflection).
 3. KHÔNG có nền dơ, KHÔNG đổ bóng gradient xám (no grey shadows, no background gradient).
 4. BẮT BUỘC nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background) để bóc nền trong suốt sạch sẽ.
-5. HÌNH DÁNG CHARM: Viền ngoài bo die-cut sắc nét (bold dark die-cut outline), mảng màu phẳng (flat color blocks), phong cách 2D vector / sticker chibi. TUYỆT ĐỐI KHÔNG vẽ thêm khoen xỏ, vòng kim loại hay khung vòm thừa trên đỉnh đầu (NO metal loops, NO key rings, NO arch frame).
+5. HÌNH DÁNG CHARM: TUYỆT ĐỐI KHÔNG TẠO KHUNG TRÒN, KHÔNG VẼ KHUNG VÒM, KHÔNG ĐẶT TRÊN MẶT ĐĨA/XU/HUY HIỆU (NO circular frame, NO round border, NO coin, NO medallion plate, NO picture frame). Bản vẽ BẮT BUỘC LÀ PHÔI MÓC KHOÁ DIE-CUT BO VIỀN SÁT THEO ĐƯỜNG NÉT CHỦ THỂ (die-cut contour directly along the subject silhouette). Viền ngoài bo die-cut sắc nét (bold dark die-cut outline), mảng màu phẳng (flat color blocks), phong cách 2D vector / sticker chibi. TUYỆT ĐỐI KHÔNG vẽ thêm khung bao quanh.
 6. BẮT BUỘC DỊCH TOÀN BỘ CÁC Ô ĐIỀN CỦA KHÁCH TỪ TIẾNG VIỆT SANG TIẾNG ANH ĐỒ HOẠ CHUẨN XÁC TRONG masterPrompt (Tuyệt đối không để nguyên cụm từ tiếng Việt trong masterPrompt vì model sinh ảnh chỉ hiểu tiếng Anh).
 7. ĐỐI VỚI VẬT THỂ (OBJECT), ĐỊA DANH (LANDMARK), HOA CỎ (FLORA) HOẶC KHI KHÁCH NÓI "KHÔNG" / BỎ QUA:
    - TUYỆT ĐỐI KHÔNG TỰ Ý THÊM NÉT MẶT, MẮT CƯỜI HAY MÁ HỒNG (NO smiling eyes, NO blushing cheeks, NO anime cartoon face on inanimate objects).
@@ -533,17 +537,20 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     }
 
     // BƯỚC 2: CHUẨN HOÁ PHÔI MÓC KHOÁ 2D THỦ CÔNG
-    // 1. Thử gọi mô hình LoRA SDXL chuyên biệt trên Hugging Face Spaces
+    // 1. ƯU TIÊN SỐ 1: Gọi mô hình LoRA SDXL chuyên biệt trên Hugging Face Spaces của Nét Studio
     const customAiEndpoint =
       process.env.CUSTOM_AI_API_URL ||
       "https://ducnv1792005-nets-ecommerce.hf.space";
     if (customAiEndpoint && parsedData.masterPrompt) {
       try {
+        console.log(`[Hugging Face Space] Đang gửi yêu cầu tới mô hình riêng: ${customAiEndpoint}`);
         const loraImageUrl = await callLoraKeychainModel(
           customAiEndpoint,
-          parsedData.masterPrompt
+          parsedData.masterPrompt,
+          imageBase64
         );
         if (loraImageUrl) {
+          console.log("[Hugging Face Space] Tạo ảnh móc khoá thành công từ mô hình LoRA SDXL!");
           parsedData.imageUrl = loraImageUrl;
           parsedData.imageProvider = "net-keychain-lora";
         }
@@ -552,8 +559,9 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
       }
     }
 
-    // 2. Dự phòng AI tức thì: Nếu Hugging Face ZeroGPU đang bận hoặc quá tải quota, sinh phôi 2D tự động
+    // 2. Dự phòng AI tức thì: CHỈ KHI Hugging Face Space bị lỗi hoặc hết hạn mức GPU
     if (!parsedData.imageUrl && parsedData.masterPrompt) {
+      console.warn("[Hugging Face Space không phản hồi hoặc hết GPU -> Kích hoạt fallback 2D]");
       try {
         const fallbackTarget =
           parsedData.featuresExtracted?.subject ||

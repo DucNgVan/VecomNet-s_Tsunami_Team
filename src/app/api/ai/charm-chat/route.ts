@@ -28,10 +28,11 @@ interface ChatRequestPayload {
 async function callLoraKeychainModel(
   baseUrl: string,
   prompt: string,
-  imageBase64?: string
+  imageBase64?: string,
+  token?: string
 ): Promise<string | null> {
   const cleanBase = baseUrl.replace(/\/$/, "");
-  const hfToken = process.env.HF_TOKEN;
+  const hfToken = token || process.env.HF_TOKEN;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (hfToken) {
     headers["Authorization"] = `Bearer ${hfToken}`;
@@ -39,63 +40,23 @@ async function callLoraKeychainModel(
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55s cho ZeroGPU nạp model và sinh ảnh
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s cho ZeroGPU nạp model và sinh ảnh
 
-    // 1. Chuẩn bị dữ liệu hình ảnh đầu vào nếu người dùng có tải ảnh tham chiếu
-    let userImageArg: any = null;
-    if (imageBase64) {
-      try {
-        let cleanBase64 = imageBase64;
-        let mimeType = "image/png";
-        if (imageBase64.includes(";base64,")) {
-          const parts = imageBase64.split(";base64,");
-          cleanBase64 = parts[1];
-          mimeType = parts[0].replace("data:", "") || "image/png";
-        }
-
-        const buffer = Buffer.from(cleanBase64, "base64");
-        const formData = new FormData();
-        const blob = new Blob([buffer], { type: mimeType });
-        formData.append("files", blob, "user_ref.png");
-
-        const uploadHeaders: Record<string, string> = {};
-        if (hfToken) uploadHeaders["Authorization"] = `Bearer ${hfToken}`;
-
-        const uploadRes = await fetch(`${cleanBase}/gradio_api/upload`, {
-          method: "POST",
-          headers: uploadHeaders,
-          body: formData,
-          signal: controller.signal,
-        });
-
-        if (uploadRes.ok) {
-          const uploadedPaths = await uploadRes.json();
-          if (Array.isArray(uploadedPaths) && uploadedPaths[0]) {
-            userImageArg = {
-              path: uploadedPaths[0],
-              meta: { _type: "gradio.FileData" },
-            };
-          }
-        }
-      } catch (uploadErr) {
-        console.warn("[Gradio Upload Notice]:", uploadErr);
-        userImageArg = { url: imageBase64 };
-      }
-    }
-
-    // 2. Kích hoạt Endpoint Gradio /generate_keychain
+    // 1. Kích hoạt Endpoint Gradio /generate_keychain
+    // Truyền [prompt, null] để SDXL LoRA chạy Text-to-Image với Master Prompt chuyên biệt
+    // (tránh tình trạng img2img trực tiếp lên ảnh người thật sinh ra tranh chân dung thay vì phôi móc khoá)
     const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
       method: "POST",
       headers,
       body: JSON.stringify({
-        data: [prompt, userImageArg],
+        data: [prompt, null],
       }),
       signal: controller.signal,
     });
 
     if (!initRes.ok) {
       const errText = await initRes.text().catch(() => "");
-      console.warn(`[Hugging Face Space Status ${initRes.status}]:`, errText);
+      console.warn(`[Hugging Face Space ${cleanBase} Status ${initRes.status}]:`, errText);
       clearTimeout(timeoutId);
       return null;
     }
@@ -107,7 +68,7 @@ async function callLoraKeychainModel(
       return null;
     }
 
-    // 3. Đọc SSE Stream chờ hoàn tất quá trình sinh ảnh
+    // 2. Đọc SSE Stream chờ hoàn tất quá trình sinh ảnh
     const streamRes = await fetch(
       `${cleanBase}/gradio_api/call/generate_keychain/${eventId}`,
       { headers, signal: controller.signal }
@@ -136,7 +97,7 @@ async function callLoraKeychainModel(
               const remoteUrl = fileObj?.url;
               if (remoteUrl) {
                 try {
-                  const imgFetch = await fetch(remoteUrl);
+                  const imgFetch = await fetch(remoteUrl, { headers });
                   if (imgFetch.ok) {
                     const arrayBuf = await imgFetch.arrayBuffer();
                     const b64 = Buffer.from(arrayBuf).toString("base64");
@@ -151,7 +112,7 @@ async function callLoraKeychainModel(
             }
           } else if (line.startsWith("event: error")) {
             clearTimeout(timeoutId);
-            console.warn("[Hugging Face Space ZeroGPU Quota/Error]:", lines[i + 1] || "");
+            console.warn(`[Hugging Face Space ${cleanBase} ZeroGPU Quota/Error]:`, lines[i + 1] || "");
             return null;
           }
         }
@@ -159,7 +120,7 @@ async function callLoraKeychainModel(
     }
     clearTimeout(timeoutId);
   } catch (gradioErr) {
-    console.warn("[Hugging Face Space Connection Exception]:", gradioErr);
+    console.warn(`[Hugging Face Space ${cleanBase} Connection Exception]:`, gradioErr);
   }
 
   return null;
@@ -537,24 +498,41 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
 
     // BƯỚC 2: CHUẨN HOÁ PHÔI MÓC KHOÁ 2D THỦ CÔNG
     // 1. ƯU TIÊN SỐ 1: Gọi mô hình LoRA SDXL chuyên biệt trên Hugging Face Spaces của Nét Studio
-    const customAiEndpoint =
-      process.env.CUSTOM_AI_API_URL ||
-      "https://ducnv1792005-nets-ecommerce.hf.space";
-    if (customAiEndpoint && parsedData.masterPrompt) {
-      try {
-        console.log(`[Hugging Face Space] Đang gửi yêu cầu tới mô hình riêng: ${customAiEndpoint}`);
-        const loraImageUrl = await callLoraKeychainModel(
-          customAiEndpoint,
-          parsedData.masterPrompt,
-          imageBase64
-        );
-        if (loraImageUrl) {
-          console.log("[Hugging Face Space] Tạo ảnh móc khoá thành công từ mô hình LoRA SDXL!");
-          parsedData.imageUrl = loraImageUrl;
-          parsedData.imageProvider = "net-keychain-lora";
+    // Hệ thống hỗ trợ đa endpoint: Thử Space người dùng cấu hình (ducksiao/Nets_AI_Gen),
+    // nếu space bị dừng hoặc lỗi thì lập tức chuyển sang Space ZeroGPU đang hoạt động (ducnv1792005/Nets_ECommerce)
+    const spaceEndpoints = [
+      {
+        name: "ducksiao/Nets_AI_Gen",
+        url: process.env.CUSTOM_AI_API_URL || "https://ducksiao-nets-ai-gen.hf.space",
+        token: process.env.HF_TOKEN,
+      },
+      {
+        name: "ducnv1792005/Nets_ECommerce",
+        url: process.env.SECONDARY_AI_API_URL || "https://ducnv1792005-nets-ecommerce.hf.space",
+        token: process.env.SECONDARY_HF_TOKEN,
+      },
+    ];
+
+    if (parsedData.masterPrompt) {
+      for (const space of spaceEndpoints) {
+        if (!space.url) continue;
+        try {
+          console.log(`[Hugging Face Space] Thử gọi mô hình tại: ${space.name} (${space.url})`);
+          const loraImageUrl = await callLoraKeychainModel(
+            space.url,
+            parsedData.masterPrompt,
+            imageBase64,
+            space.token
+          );
+          if (loraImageUrl) {
+            console.log(`[Hugging Face Space] Tạo ảnh móc khoá thành công từ: ${space.name}!`);
+            parsedData.imageUrl = loraImageUrl;
+            parsedData.imageProvider = "net-keychain-lora";
+            break;
+          }
+        } catch (loraErr) {
+          console.warn(`[Custom LoRA Endpoint ${space.name} Warning]:`, loraErr);
         }
-      } catch (loraErr) {
-        console.warn("[Custom LoRA Endpoint Warning]:", loraErr);
       }
     }
 

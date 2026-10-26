@@ -127,31 +127,6 @@ async function callLoraKeychainModel(
 }
 
 /**
- * Sinh ảnh móc khoá 2D dự phòng khi Hugging Face ZeroGPU bận hoặc hết hạn mức
- * Tuyệt đối không tạo khung tròn, chỉ lấy hình móc khoá bo viền theo chủ thể
- */
-async function callFallbackKeychainImage(prompt: string): Promise<string | null> {
-  try {
-    const cleanPrompt = prompt.replace(/die-cut|acrylic|keychain|charm/gi, "").trim();
-    const encoded = encodeURIComponent(
-      `single cute 2D anime chibi die-cut keychain charm of ${cleanPrompt}, contoured silhouette outline cut to shape, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no frame, no circle, no border, no background clutter, no medallion`
-    );
-    const seed = Math.floor(Math.random() * 999999);
-    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${seed}`;
-    const res = await fetch(url);
-    if (res.ok) {
-      const buf = await res.arrayBuffer();
-      const b64 = Buffer.from(buf).toString("base64");
-      const mime = res.headers.get("content-type") || "image/jpeg";
-      return `data:${mime};base64,${b64}`;
-    }
-  } catch (err) {
-    console.warn("[Fallback Image Error]:", err);
-  }
-  return null;
-}
-
-/**
  * NÉT STUDIO 2D KEYCHAIN DESIGN AGENT
  * Phân tích yêu cầu, tư vấn phong cách, trích xuất đặc trưng nhận dạng
  * và chuẩn hoá phôi móc khoá thủ công 2D cho nghệ nhân xưởng chế tác.
@@ -536,26 +511,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
       }
     }
 
-    // 2. Dự phòng AI tức thì: CHỈ KHI Hugging Face Space bị lỗi hoặc hết hạn mức GPU
-    if (!parsedData.imageUrl && parsedData.masterPrompt) {
-      console.warn("[Hugging Face Space không phản hồi hoặc hết GPU -> Kích hoạt fallback 2D]");
-      try {
-        const fallbackTarget =
-          parsedData.featuresExtracted?.subject ||
-          parsedData.motifName ||
-          userPrompt ||
-          "acrylic charm";
-        const fallbackImg = await callFallbackKeychainImage(fallbackTarget);
-        if (fallbackImg) {
-          parsedData.imageUrl = fallbackImg;
-          parsedData.imageProvider = "keychain-ai-fallback";
-        }
-      } catch (fallbackErr) {
-        console.warn("[Fallback AI Warning]:", fallbackErr);
-      }
-    }
-
-    // 3. Dự phòng cấp cuối: Nếu không tạo được ảnh AI, hiển thị phôi nghệ nhân (không gán ảnh gốc vào imageUrl để tránh bị nhầm ảnh chụp với bản vẽ 2D)
+    // 2. Dự phòng cấp cuối: Nếu các mô hình Hugging Face đều tạm bận hoặc hết GPU, hiển thị phôi phác thảo nghệ nhân
     if (!parsedData.imageUrl) {
       parsedData.imageUrl = null;
       parsedData.imageProvider = "artisan-badge";

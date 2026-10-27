@@ -4,11 +4,13 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } f
 import * as THREE from "three";
 import { createConfiguredGLTFLoader } from "@/lib/gltfLoader";
 import { BagBase, BagMeshColor, PlacedCharm } from "@/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 export interface BagCanvas3DHandle {
   captureSnapshot: () => string | null;
   resetView: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
 }
 
 interface BagCanvas3DProps {
@@ -53,9 +55,33 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
     const [isGlbActive, setIsGlbActive] = useState<boolean>(false);
     const [hasWebGlError, setHasWebGlError] = useState<boolean>(false);
 
+    // Camera & Zoom constants and refs
+    const DEFAULT_CAMERA_Z = 5.2;
+    const MIN_CAMERA_Z = 3.2;
+    const MAX_CAMERA_Z = 7.5;
+    const targetCameraZRef = useRef<number>(DEFAULT_CAMERA_Z);
+    const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+
     // Rotation state refs to allow imperative reset and smooth dampening
     const targetRotYRef = useRef<number>(0);
     const targetRotXRef = useRef<number>(0);
+
+    const handleZoomIn = () => {
+      targetCameraZRef.current = Math.max(MIN_CAMERA_Z, targetCameraZRef.current - 0.7);
+    };
+
+    const handleZoomOut = () => {
+      targetCameraZRef.current = Math.min(MAX_CAMERA_Z, targetCameraZRef.current + 0.7);
+    };
+
+    const handleResetView = () => {
+      targetRotYRef.current = 0;
+      targetRotXRef.current = 0;
+      targetCameraZRef.current = DEFAULT_CAMERA_Z;
+      if (bagGroupRef.current) {
+        bagGroupRef.current.rotation.set(0, 0, 0);
+      }
+    };
 
     // Expose imperative methods to parent
     useImperativeHandle(ref, () => ({
@@ -67,13 +93,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           return null;
         }
       },
-      resetView: () => {
-        targetRotYRef.current = 0;
-        targetRotXRef.current = 0;
-        if (bagGroupRef.current) {
-          bagGroupRef.current.rotation.set(0, 0, 0);
-        }
-      },
+      resetView: handleResetView,
+      zoomIn: handleZoomIn,
+      zoomOut: handleZoomOut,
     }));
 
     useEffect(() => {
@@ -104,13 +126,14 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       sceneRef.current = scene;
 
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-      camera.position.set(0, 0.2, 7.2);
+      camera.position.set(0, 0.1, DEFAULT_CAMERA_Z);
+      cameraRef.current = camera;
 
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2.5));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.NeutralToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      renderer.toneMappingExposure = 1.05;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       rendererRef.current = renderer;
@@ -258,7 +281,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
             // Auto-scale to fit canvas viewport nicely
             const maxDim = Math.max(size.x, size.y, size.z);
-            const targetSize = 3.5;
+            const targetSize = 4.3;
             const scale = maxDim > 0 ? targetSize / maxDim : 1;
             glbWrapper.scale.setScalar(scale);
 
@@ -267,7 +290,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
               glbWrapper.rotation.y = -Math.PI / 2;
             }
 
-            // Material enhancements: preserve authored PBR textures and matte fabric surface
+            // Material enhancements: preserve authored PBR textures with crisp anisotropic filtering
             loadedScene.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) {
                 const m = child as THREE.Mesh;
@@ -276,10 +299,15 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
                 if (m.material) {
                   const mat = m.material as THREE.MeshStandardMaterial;
                   mat.side = THREE.DoubleSide;
-                  // Respect authored fabric roughness - avoid overriding to artificial glossy shine
-                  mat.roughness = 1.0;
-                  mat.metalness = 0.0;
-                  mat.envMapIntensity = 0.6;
+                  mat.roughness = 0.95;
+                  mat.metalness = 0.05;
+                  mat.envMapIntensity = 0.8;
+                  if (mat.map) {
+                    mat.map.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 16);
+                    mat.map.generateMipmaps = true;
+                    mat.map.minFilter = THREE.LinearMipmapLinearFilter;
+                    mat.map.needsUpdate = true;
+                  }
                 }
               }
             });
@@ -323,7 +351,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
                   const wrapper = new THREE.Group();
                   wrapper.add(sceneObj);
                   const maxDim = Math.max(size.x, size.y, size.z);
-                  const scale = maxDim > 0 ? 3.5 / maxDim : 1;
+                  const scale = maxDim > 0 ? 4.3 / maxDim : 1;
                   wrapper.scale.setScalar(scale);
                   if (size.z > size.x) wrapper.rotation.y = -Math.PI / 2;
                   modelContainer.add(wrapper);
@@ -377,29 +405,64 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         isDragging = false;
       };
 
-      // Double-click to snap back to direct front view
+      // Double-click to snap back to direct front view and reset zoom
       const onDoubleClick = () => {
         targetRotYRef.current = 0;
         targetRotXRef.current = 0;
+        targetCameraZRef.current = DEFAULT_CAMERA_Z;
       };
 
-      // Touch interactions for mobile
+      // Mouse wheel zoom
+      const onWheel = (e: WheelEvent) => {
+        if (!isInteractive) return;
+        e.preventDefault();
+        targetCameraZRef.current = Math.max(
+          MIN_CAMERA_Z,
+          Math.min(MAX_CAMERA_Z, targetCameraZRef.current + e.deltaY * 0.003)
+        );
+      };
+
+      // Touch interactions for mobile (supports 1-finger rotate & 2-finger pinch zoom)
+      let touchStartDist = 0;
+      let initialCameraZ = DEFAULT_CAMERA_Z;
+
+      const getTouchDist = (touches: TouchList) => {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      };
+
       const onTouchStart = (e: TouchEvent) => {
         if (!isInteractive || e.touches.length === 0) return;
-        isDragging = true;
-        prevMouseX = e.touches[0].clientX;
-        prevMouseY = e.touches[0].clientY;
+        if (e.touches.length === 1) {
+          isDragging = true;
+          prevMouseX = e.touches[0].clientX;
+          prevMouseY = e.touches[0].clientY;
+        } else if (e.touches.length >= 2) {
+          isDragging = false;
+          touchStartDist = getTouchDist(e.touches);
+          initialCameraZ = targetCameraZRef.current;
+        }
       };
 
       const onTouchMove = (e: TouchEvent) => {
-        if (!isInteractive || !isDragging || e.touches.length === 0) return;
-        const deltaX = e.touches[0].clientX - prevMouseX;
-        const deltaY = e.touches[0].clientY - prevMouseY;
-        prevMouseX = e.touches[0].clientX;
-        prevMouseY = e.touches[0].clientY;
+        if (!isInteractive || e.touches.length === 0) return;
+        if (e.touches.length === 1 && isDragging) {
+          const deltaX = e.touches[0].clientX - prevMouseX;
+          const deltaY = e.touches[0].clientY - prevMouseY;
+          prevMouseX = e.touches[0].clientX;
+          prevMouseY = e.touches[0].clientY;
 
-        targetRotYRef.current += deltaX * 0.01;
-        targetRotXRef.current = Math.max(-0.45, Math.min(0.45, targetRotXRef.current + deltaY * 0.007));
+          targetRotYRef.current += deltaX * 0.01;
+          targetRotXRef.current = Math.max(-0.45, Math.min(0.45, targetRotXRef.current + deltaY * 0.007));
+        } else if (e.touches.length >= 2 && touchStartDist > 0) {
+          const currentDist = getTouchDist(e.touches);
+          const ratio = touchStartDist / Math.max(currentDist, 1);
+          targetCameraZRef.current = Math.max(
+            MIN_CAMERA_Z,
+            Math.min(MAX_CAMERA_Z, initialCameraZ * ratio)
+          );
+        }
       };
 
       const dom = renderer.domElement;
@@ -407,6 +470,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
       dom.addEventListener("dblclick", onDoubleClick);
+      dom.addEventListener("wheel", onWheel, { passive: false });
 
       dom.addEventListener("touchstart", onTouchStart, { passive: true });
       window.addEventListener("touchmove", onTouchMove, { passive: true });
@@ -432,6 +496,11 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
         const elapsedTime = clock.getElapsedTime();
 
+        // Smooth camera zoom dampening
+        if (camera) {
+          camera.position.z += (targetCameraZRef.current - camera.position.z) * 0.12;
+        }
+
         if (bagRoot) {
           // Subtle ambient breathing sway around front view (keeps front face facing user)
           const ambientSwayY = isDragging ? 0 : Math.sin(elapsedTime * 0.8) * 0.04;
@@ -456,6 +525,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
         dom.removeEventListener("dblclick", onDoubleClick);
+        dom.removeEventListener("wheel", onWheel);
         dom.removeEventListener("touchstart", onTouchStart);
         window.removeEventListener("touchmove", onTouchMove);
         window.removeEventListener("touchend", onMouseUp);
@@ -552,6 +622,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
               tex.colorSpace = THREE.SRGBColorSpace;
               tex.generateMipmaps = true;
               tex.minFilter = THREE.LinearMipmapLinearFilter;
+              if (rendererRef.current) {
+                tex.anisotropy = Math.min(rendererRef.current.capabilities.getMaxAnisotropy(), 16);
+              }
               frontMaterial.map = tex;
               frontMaterial.needsUpdate = true;
             },
@@ -777,6 +850,40 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             <span className="text-xs font-bold text-[#5E4D43] uppercase tracking-wider">
               Đang Nạp Mô Hình 3D...
             </span>
+          </div>
+        )}
+
+        {/* Floating Zoom & View Controls */}
+        {isInteractive && !hasWebGlError && (
+          <div className="absolute top-4 right-4 z-20 flex flex-col items-center gap-1.5 p-1 bg-white/95 backdrop-blur-md border border-[#E8E2D8] rounded-2xl shadow-sm">
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              title="Phóng to"
+              aria-label="Phóng to mô hình"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#5E4D43] hover:text-[#B85D43] hover:bg-[#FAF7F2] active:scale-95 transition-all cursor-pointer"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              title="Thu nhỏ"
+              aria-label="Thu nhỏ mô hình"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#5E4D43] hover:text-[#B85D43] hover:bg-[#FAF7F2] active:scale-95 transition-all cursor-pointer"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <div className="w-4 h-px bg-[#E8E2D8] my-0.5" />
+            <button
+              type="button"
+              onClick={handleResetView}
+              title="Đặt lại góc nhìn & độ phóng đại"
+              aria-label="Đặt lại góc nhìn và độ phóng đại"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#5E4D43] hover:text-[#B85D43] hover:bg-[#FAF7F2] active:scale-95 transition-all cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 

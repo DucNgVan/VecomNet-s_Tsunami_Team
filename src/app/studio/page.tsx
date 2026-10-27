@@ -1887,7 +1887,7 @@ Key 3D printing & charm specs:
             <div className="lg:col-span-5 flex flex-col items-center">
               {/* 3D / 2D Canvas */}
               {is3DMode ? (
-                <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 shadow-sm relative border border-[#E8E2D8] overflow-hidden">
+                <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-2 sm:p-3 shadow-sm relative border border-[#E8E2D8] overflow-hidden">
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
                     <button
                       type="button"

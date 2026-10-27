@@ -43,14 +43,41 @@ async function callLoraKeychainModel(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s cho ZeroGPU nạp model và sinh ảnh
 
-    // 1. Kích hoạt Endpoint Gradio /generate_keychain
-    // Truyền [prompt, null] để SDXL LoRA chạy Text-to-Image với Master Prompt chuyên biệt
-    // (tránh tình trạng img2img trực tiếp lên ảnh người thật sinh ra tranh chân dung thay vì phôi móc khoá)
+    // 1. Tinh gọn prompt chuyên biệt cho SDXL LoRA net_keychain:
+    // Loại bỏ các đoạn văn phủ định ("NO COLLAGE", "NO 3D...") vốn khiến SDXL hiểu lầm và vẽ tranh ghép
+    let loraPrompt = prompt
+      .replace(/^A single isolated 2D flat vector illustration of\s*/i, "")
+      .replace(/^a cute custom 2D die-cut acrylic keychain charm\s*,?\s*/i, "")
+      .replace(/^single cute 2D anime chibi die-cut acrylic keychain charm\s*,?\s*/i, "")
+      .replace(/for a keychain charm\./gi, "")
+      .replace(/The design must be.*$/gi, "")
+      .replace(/Flat solid colors.*$/gi, "")
+      .replace(/NO 3D RENDERING.*$/gi, "")
+      .replace(/NO CLUTTERED.*$/gi, "")
+      .replace(/NO COLLAGE.*$/gi, "")
+      .replace(/isolated on pure solid white.*$/gi, "")
+      .replace(/Crafted with recycled.*$/gi, "")
+      .replace(/The charm is a compact.*$/gi, "")
+      .replace(/with a small metallic.*$/gi, "")
+      .replace(/The Ao Dai should be.*$/gi, "")
+      .replace(/Specify color.*$/gi, "")
+      .replace(/clean flat vector.*$/gi, "")
+      .replace(/no background.*$/gi, "")
+      .trim();
+
+    loraPrompt = loraPrompt.replace(/[,.;\s]+$/, "");
+    if (!loraPrompt || loraPrompt.length < 5) {
+      loraPrompt = "cute anime chibi character";
+    }
+
+    const focusedPrompt = `(single solo keychain charm:1.4), ${loraPrompt}, (only one subject:1.3), centered`;
+
+    // 2. Kích hoạt Endpoint Gradio /generate_keychain
     const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
       method: "POST",
       headers,
       body: JSON.stringify({
-        data: [prompt, null],
+        data: [focusedPrompt, null],
       }),
       signal: controller.signal,
     });
@@ -617,14 +644,9 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ THEO SCHEMA:
     // 1. ƯU TIÊN SỐ 1: FLUX.1 SCHNELL ENGINE (Mô hình AI thế hệ mới, tốc độ 2-3s, chuẩn die-cut, không hao quota cá nhân)
     const spaceEndpoints = [
       {
-        name: "ducksiao/Nets_AI_Gen",
-        url: process.env.CUSTOM_AI_API_URL || "https://ducksiao-nets-ai-gen.hf.space",
-        token: process.env.HF_TOKEN,
-      },
-      {
         name: "ducnv1792005/Nets_ECommerce",
         url: process.env.SECONDARY_AI_API_URL || "https://ducnv1792005-nets-ecommerce.hf.space",
-        token: process.env.SECONDARY_HF_TOKEN,
+        token: process.env.SECONDARY_HF_TOKEN || process.env.HF_TOKEN,
       },
     ];
 

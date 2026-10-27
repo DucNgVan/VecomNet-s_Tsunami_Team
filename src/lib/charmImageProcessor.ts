@@ -118,13 +118,13 @@ export async function removeWhiteBackground(
             Math.pow(g - cornerG, 2) +
             Math.pow(b - cornerB, 2)
           );
-          if (dist < 55) return true;
+          if (dist < 65) return true;
 
           // 3. Nền xám/be trung tính có độ sáng tương đồng với nền biên
-          const isNeutral = Math.abs(r - g) < 22 && Math.abs(g - b) < 22;
+          const isNeutral = Math.abs(r - g) < 25 && Math.abs(g - b) < 25;
           const cornerBright = (cornerR + cornerG + cornerB) / 3;
           const pixelBright = (r + g + b) / 3;
-          if (isNeutral && pixelBright >= 160 && Math.abs(pixelBright - cornerBright) < 40) {
+          if (isNeutral && pixelBright >= 90 && Math.abs(pixelBright - cornerBright) < 45) {
             return true;
           }
 

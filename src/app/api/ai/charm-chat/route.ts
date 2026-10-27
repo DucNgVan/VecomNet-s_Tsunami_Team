@@ -127,6 +127,104 @@ async function callLoraKeychainModel(
 }
 
 /**
+ * Fallback 1: FLUX.1 Schnell trên Hugging Face Spaces (Black Forest Labs)
+ * Mô hình AI thế hệ mới tốc độ cao (4 bước inference ~2s), hoàn toàn miễn phí qua HF Token.
+ * Tự động kích hoạt khi các Space LoRA cá nhân hết hạn ngạch ZeroGPU trong ngày hoặc bị tạm dừng.
+ */
+async function callFluxSchnellModel(
+  prompt: string,
+  token?: string
+): Promise<string | null> {
+  const cleanBase = "https://black-forest-labs-flux-1-schnell.hf.space";
+  const hfToken = token || process.env.HF_TOKEN || process.env.SECONDARY_HF_TOKEN;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (hfToken) {
+    headers["Authorization"] = `Bearer ${hfToken}`;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+
+    // Tham số gọi FLUX.1 Schnell: [prompt, seed=0, randomize_seed=true, width=512, height=512, num_inference_steps=4]
+    const initRes = await fetch(`${cleanBase}/gradio_api/call/infer`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        data: [prompt, 0, true, 512, 512, 4],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!initRes.ok) {
+      clearTimeout(timeoutId);
+      return null;
+    }
+
+    const initData = await initRes.json();
+    const eventId = initData.event_id;
+    if (!eventId) {
+      clearTimeout(timeoutId);
+      return null;
+    }
+
+    const streamRes = await fetch(
+      `${cleanBase}/gradio_api/call/infer/${eventId}`,
+      { headers, signal: controller.signal }
+    );
+
+    if (streamRes.ok && streamRes.body) {
+      const reader = streamRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.startsWith("event: complete")) {
+            const nextLine = lines[i + 1] || "";
+            if (nextLine.startsWith("data: ")) {
+              clearTimeout(timeoutId);
+              const rawData = nextLine.replace("data: ", "").trim();
+              const parsed = JSON.parse(rawData);
+              const fileObj = Array.isArray(parsed) ? parsed[0] : parsed;
+              const remoteUrl = fileObj?.url;
+              if (remoteUrl) {
+                try {
+                  const imgFetch = await fetch(remoteUrl, { headers });
+                  if (imgFetch.ok) {
+                    const arrayBuf = await imgFetch.arrayBuffer();
+                    const b64 = Buffer.from(arrayBuf).toString("base64");
+                    const mime = imgFetch.headers.get("content-type") || "image/webp";
+                    return `data:${mime};base64,${b64}`;
+                  }
+                } catch (fetchErr) {
+                  console.warn("Could not convert FLUX image to base64, using remote URL:", fetchErr);
+                }
+                return remoteUrl;
+              }
+            }
+          } else if (line.startsWith("event: error")) {
+            clearTimeout(timeoutId);
+            console.warn("[FLUX.1 Schnell Fallback Quota/Error]:", lines[i + 1] || "");
+            return null;
+          }
+        }
+      }
+    }
+    clearTimeout(timeoutId);
+  } catch (err) {
+    console.warn("[FLUX.1 Schnell Fallback Exception]:", err);
+  }
+  return null;
+}
+
+/**
  * NÉT STUDIO 2D KEYCHAIN DESIGN AGENT
  * Phân tích yêu cầu, tư vấn phong cách, trích xuất đặc trưng nhận dạng
  * và chuẩn hoá phôi móc khoá thủ công 2D cho nghệ nhân xưởng chế tác.
@@ -488,6 +586,14 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
       },
     ];
 
+    if (process.env.TERTIARY_AI_API_URL) {
+      spaceEndpoints.push({
+        name: "Backup Space 3",
+        url: process.env.TERTIARY_AI_API_URL,
+        token: process.env.TERTIARY_HF_TOKEN || process.env.HF_TOKEN,
+      });
+    }
+
     if (parsedData.masterPrompt) {
       for (const space of spaceEndpoints) {
         if (!space.url) continue;
@@ -509,9 +615,31 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
           console.warn(`[Custom LoRA Endpoint ${space.name} Warning]:`, loraErr);
         }
       }
+
+      // 2. FALLBACK 1: FLUX.1 SCHNELL (MÔ HÌNH AI TẠO ẢNH DỰ PHÒNG THẾ HỆ MỚI)
+      // Nếu tất cả Space LoRA cá nhân đều tạm dừng hoặc hết hạn ngạch ZeroGPU trong ngày,
+      // tự động gọi sang FLUX.1 Schnell (miễn phí, tốc độ 2-3s, không hao hụt GPU cá nhân, chuẩn die-cut không khung)
+      if (!parsedData.imageUrl) {
+        try {
+          console.log("[Fallback 1: FLUX.1 Schnell] Đang kích hoạt mô hình AI tạo ảnh dự phòng...");
+          const fluxImageUrl = await callFluxSchnellModel(
+            parsedData.masterPrompt,
+            process.env.HF_TOKEN || process.env.SECONDARY_HF_TOKEN
+          );
+          if (fluxImageUrl) {
+            console.log("[Fallback 1: FLUX.1 Schnell] Sinh ảnh charm thành công từ FLUX.1!");
+            parsedData.imageUrl = fluxImageUrl;
+            parsedData.imageProvider = "flux-schnell";
+          }
+        } catch (fluxErr) {
+          console.warn("[Fallback 1: FLUX.1 Schnell Exception]:", fluxErr);
+        }
+      }
     }
 
-    // 2. Dự phòng cấp cuối: Nếu các mô hình Hugging Face đều tạm bận hoặc hết GPU, hiển thị phôi phác thảo nghệ nhân
+    // 3. FALLBACK 2 (CHỐT CHẶN AN TOÀN NGHỆ NHÂN): 
+    // Nếu toàn bộ mô hình AI bên ngoài đều gián đoạn, chuyển sang Phôi phác thảo Nghệ nhân Độc bản
+    // với màu sắc tương thích, chữ khắc laser cá nhân hoá và bản vẽ thông số ngàm chốt in 3D (4.5mm)
     if (!parsedData.imageUrl) {
       parsedData.imageUrl = null;
       parsedData.imageProvider = "artisan-badge";

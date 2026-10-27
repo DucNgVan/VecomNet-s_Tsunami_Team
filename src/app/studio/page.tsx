@@ -258,10 +258,16 @@ function NetStudioContent() {
     object: { subject: "", feature1: "", feature2: "", feature3: "" },
     freeform: { subject: "", feature1: "", feature2: "", feature3: "" },
   });
-  // Interactive Conversational Interview State Machine (Client-side simulation without calling API until finished)
-  type InterviewStep = "category" | "subject" | "feature1" | "feature2" | "feature3" | "naming" | "ready";
-  const [interviewStep, setInterviewStep] = useState<InterviewStep>("category");
+  // Interactive Conversational Interview with Gemini & Dynamic Suggestion Chips
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const [dynamicSuggestionChips, setDynamicSuggestionChips] = useState<string[]>([
+    "Chân dung Chibi bạn bè",
+    "Bé thú cưng đáng yêu",
+    "Biểu tượng biển Đà Nẵng",
+    "Hoa sen men ngọc",
+    "🎨 Phác thảo ngay (3x3cm)",
+  ]);
 
   const [chatLog, setChatLog] = useState<
     Array<{
@@ -270,6 +276,8 @@ function NetStudioContent() {
       text: string;
       time: string;
       imageUrl?: string;
+      imageProvider?: string;
+      masterPrompt?: string;
       isSummary?: boolean;
       summaryData?: {
         categoryName: string;
@@ -284,7 +292,7 @@ function NetStudioContent() {
     {
       id: "ai-welcome-init",
       sender: "ai",
-      text: "Chào bạn! Mình là Nghệ nhân AI của Nét Studio 🌿.\n\nMình sẽ cùng bạn trò chuyện để lên ý tưởng chi tiết cho chiếc móc khoá 2D độc bản để các nghệ nhân lấy làm khuôn mẫu in 3D thực tế nhé!\n\nĐầu tiên, bạn muốn chiếc móc khoá mang hình ảnh về chủ đề gì nào?",
+      text: "Chào bạn! Mình là Nghệ nhân AI của Nét Studio 🌿.\n\nMình sẽ cùng bạn trò chuyện để lên ý tưởng cho chiếc móc khoá 2D chuẩn kích thước 3x3cm đính lên túi lưới tái sinh nhé!\n\nBạn đang ấp ủ ý tưởng về hình ảnh, nhân vật hay kỷ niệm nào?",
       time: "Vừa xong",
     },
   ]);
@@ -781,16 +789,22 @@ Key 3D printing & charm specs:
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatLog, isAiThinking]);
 
-  // Reset cuộc hội thoại giả lập về bước đầu tiên
+  // Reset cuộc trò chuyện về trạng thái ban đầu
   const handleResetInterview = () => {
-    setInterviewStep("category");
     setChatLog([
       {
         id: `ai-init-${Date.now()}`,
         sender: "ai",
-        text: "Chào bạn! Mình là Nghệ nhân AI của Nét Studio 🌿.\n\nMình sẽ cùng bạn trò chuyện để lên ý tưởng chi tiết cho chiếc móc khoá 2D độc bản để các nghệ nhân lấy làm khuôn mẫu in 3D thực tế nhé!\n\nĐầu tiên, bạn muốn chiếc móc khoá mang hình ảnh về chủ đề gì nào?",
+        text: "Chào bạn! Mình là Nghệ nhân AI của Nét Studio 🌿.\n\nMình sẽ cùng bạn trò chuyện để lên ý tưởng chi tiết cho chiếc móc khoá 2D độc bản (chuẩn kích thước charm 3cm x 3cm) nhé!\n\nBạn đã có ý tưởng móc khoá nào trong đầu chưa, hoặc bạn muốn phác thảo về chủ đề gì?",
         time: "Vừa xong",
       },
+    ]);
+    setDynamicSuggestionChips([
+      "Chân dung Chibi bạn bè",
+      "Bé thú cưng đáng yêu",
+      "Biểu tượng biển Đà Nẵng",
+      "Hoa sen men ngọc",
+      "🎨 Phác thảo ngay (3x3cm)",
     ]);
     setThemeSlots({
       human: { subject: "", feature1: "", feature2: "", feature3: "" },
@@ -804,405 +818,155 @@ Key 3D printing & charm specs:
     setUploadedDocName(null);
   };
 
-  // Helper kiểm tra câu trả lời có mang hàm ý từ chối / bỏ qua biểu cảm hay không
-  const isNegativeResponse = (val: string) => {
-    const clean = val.trim().toLowerCase();
-    return (
-      clean === "" ||
-      /^(không|k|ko|bỏ qua|none|no|không có|để nguyên|trống|không cần|không biểu cảm|không có biểu cảm|không có mặt cười|mặc định)$/i.test(
-        clean
-      )
-    );
-  };
-
-  // Danh sách các chip gợi ý phản hồi nhanh theo từng bước trò chuyện
-  const getCurrentStepChips = (): Array<{ label: string; value: string }> => {
-    if (interviewStep === "category") {
-      return [
-        { label: "👤 Con người / Chân dung", value: "human" },
-        { label: "🐾 Thú cưng / Động vật", value: "animal" },
-        { label: "🌸 Hoa cỏ thiên nhiên", value: "flora" },
-        { label: "🌉 Địa danh Đà Nẵng", value: "landmark" },
-        { label: "☕ Đồ vật kỷ niệm", value: "object" },
-        { label: "✨ Ý tưởng tự do", value: "freeform" },
-      ];
-    }
-    if (interviewStep === "subject") {
-      const map: Record<CharmThemeCategory, string[]> = {
-        human: ["Chàng trai trẻ cá tính", "Cô gái tóc ngắn năng động", "Em bé phúng phính", "Cặp đôi du lịch"],
-        animal: ["Chú cún Poodle nâu", "Bé mèo múp míp", "Rùa biển Sơn Trà", "Linh vật Voọc Chà Vá"],
-        flora: ["Hoa sen hồng men ngọc", "Hoa muống biển Mỹ Khê", "Cành san hô biển", "Cây xương rồng nhỏ"],
-        landmark: ["Cầu Rồng Đà Nẵng", "Cầu Vàng bàn tay Bà Nà", "Ngọn Hải Đăng Tiên Sa", "Bãi biển Mỹ Khê"],
-        object: ["Bình cà phê highland", "Ly cà phê phin sữa đá", "Chiếc xe máy Vespa cổ", "Máy ảnh vintage"],
-        freeform: ["Trái đất xanh đội nón lá", "Chiếc túi lưới ôm mầm cây", "Mặt trời đeo kính râm", "Ngôi sao biển may mắn"],
-      };
-      return (map[selectedThemeCategory] || map.object).map((c) => ({ label: c, value: c }));
-    }
-    if (interviewStep === "feature1") {
-      const map: Record<CharmThemeCategory, string[]> = {
-        human: ["Tóc short quiff vuốt dựng", "Tóc dài uốn xoăn nhẹ", "Đeo kính gọng to", "Bỏ qua / Mặc định"],
-        animal: ["Lông xoăn vàng xù", "Lông cam sọc trắng", "Mắt to tròn long lanh", "Bỏ qua / Mặc định"],
-        object: ["Nắp đậy kim loại", "Thân bình bo tròn", "Phin nhôm nhỏ giọt", "Bỏ qua / Cơ bản"],
-        flora: ["Cánh hoa nở bung đều", "Cánh hoa uốn lượn tự nhiên", "Dáng tròn mềm mại", "Bỏ qua / Cơ bản"],
-        landmark: ["Thân rồng uốn lượn mini", "Đôi bàn tay rêu phong", "Tháp sọc trắng đỏ", "Bỏ qua / Cơ bản"],
-        freeform: ["Dáng tròn xoe dễ thương", "Viền ngoài sắc nét", "Bỏ qua / Cơ bản"],
-      };
-      return (map[selectedThemeCategory] || map.object).map((c) => ({ label: c, value: c }));
-    }
-    if (interviewStep === "feature2") {
-      const map: Record<CharmThemeCategory, string[]> = {
-        human: ["Áo phông đen cổ tròn", "Sơ mi trắng thanh lịch", "Váy hoa vàng rực rỡ", "Áo hoodie trẻ trung"],
-        animal: ["Đeo nơ đỏ chuông vàng", "Đội mũ len mini", "Quàng khăn ấm", "Không cần phụ kiện"],
-        object: ["Màu kem ấm áp", "Nâu cà phê và sữa đặc", "Màu men lam Hội An", "Màu nguyên bản như ảnh"],
-        flora: ["Men hồng phấn chuyển sắc", "Tím pastel viền đồng thau", "Xanh ngọc bích ánh vàng", "Màu tự nhiên"],
-        landmark: ["Vàng rực rỡ ánh kim", "Đầu rồng phun lửa", "Sọc trắng đỏ nổi bật", "Màu tự nhiên"],
-        freeform: ["Tone xanh đại dương Nét", "Vàng cam ấm áp", "Hồng pastel", "Màu tương phản"],
-      };
-      return (map[selectedThemeCategory] || map.object).map((c) => ({ label: c, value: c }));
-    }
-    if (interviewStep === "feature3") {
-      if (selectedThemeCategory === "object" || selectedThemeCategory === "landmark" || selectedThemeCategory === "flora") {
-        return [
-          { label: "🚫 Không cần / Để nguyên bản", value: "Không cần / Để nguyên bản" },
-          { label: "Không có mặt cười hay biểu cảm", value: "Không có mặt cười" },
-          { label: "Thêm giọt cà phê nhỏ", value: "Thêm giọt cà phê nhỏ" },
-          { label: "Kèm logo nhỏ", value: "Kèm logo nhỏ" },
-        ];
-      }
-      if (selectedThemeCategory === "human") {
-        return [
-          { label: "Tay cầm ly cà phê sữa đá", value: "Tay cầm ly cà phê sữa đá" },
-          { label: "Vẫy tay chào thân thiện", value: "Vẫy tay chào thân thiện" },
-          { label: "Tay đút túi quần tự tin", value: "Tay đút túi quần tự tin" },
-          { label: "Không cần thêm gì", value: "Không cần thêm gì" },
-        ];
-      }
-      if (selectedThemeCategory === "animal") {
-        return [
-          { label: "Hai chân trước ôm ly trà sữa", value: "Hai chân trước ôm ly trà sữa" },
-          { label: "Gặm chiếc bánh quy nhỏ", value: "Gặm chiếc bánh quy nhỏ" },
-          { label: "Ngồi ngoan vẫy đuôi", value: "Ngồi ngoan vẫy đuôi" },
-          { label: "Không cần thêm gì", value: "Không cần thêm gì" },
-        ];
-      }
-      return [
-        { label: "Mang thông điệp yêu biển", value: "Mang thông điệp yêu biển" },
-        { label: "Đính nơ nhỏ may mắn", value: "Đính nơ nhỏ may mắn" },
-        { label: "Không cần thêm gì", value: "Không cần thêm gì" },
-      ];
-    }
-    if (interviewStep === "naming") {
-      const currentSub = themeSlots[selectedThemeCategory].subject || "Móc Khoá";
-      return [
-        { label: `🏷️ Charm "${currentSub}"`, value: `Charm ${currentSub}` },
-        { label: `💖 Bé ${currentSub}`, value: `Bé ${currentSub}` },
-        { label: `✨ Kỷ niệm ${currentSub}`, value: `Kỷ niệm ${currentSub}` },
-        { label: `🌿 Nét • ${currentSub}`, value: `Nét • ${currentSub}` },
-      ];
-    }
-    return [];
-  };
-
-  // Bộ xử lý hội thoại giả lập AI - Không gọi API thật cho đến khi hoàn thành
-  const processAiInterview = (text: string, imageBase64?: string) => {
-    const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-    const aiMsgId = `ai-${Date.now()}`;
-
-    if (imageBase64) {
-      setCustomImageFile(imageBase64);
-    }
-
-    if (interviewStep === "category") {
-      const lower = text.toLowerCase();
-      let cat: CharmThemeCategory = "object";
-      if (lower.includes("người") || lower.includes("chân dung") || lower.includes("bạn nam") || lower.includes("bạn nữ") || lower.includes("human")) {
-        cat = "human";
-      } else if (lower.includes("thú") || lower.includes("chó") || lower.includes("mèo") || lower.includes("pet") || lower.includes("animal")) {
-        cat = "animal";
-      } else if (lower.includes("hoa") || lower.includes("lá") || lower.includes("cây") || lower.includes("sen") || lower.includes("flora")) {
-        cat = "flora";
-      } else if (lower.includes("cầu") || lower.includes("hải đăng") || lower.includes("địa danh") || lower.includes("cảnh") || lower.includes("landmark")) {
-        cat = "landmark";
-      } else if (lower.includes("tự do") || lower.includes("khác") || lower.includes("freeform")) {
-        cat = "freeform";
-      } else {
-        cat = "object";
-      }
-
-      setSelectedThemeCategory(cat);
-      setInterviewStep("subject");
-
-      const questionMap: Record<CharmThemeCategory, string> = {
-        human: "Tuyệt vời! Bạn muốn vẽ chân dung ai nào? (Ví dụ: Chàng trai năng động, cô gái tóc ngắn, em bé đáng yêu, hoặc bạn có thể gửi ảnh chân dung cho mình nhé!)",
-        animal: "Dễ thương quá! Đó là bé thú cưng nào vậy bạn? (Ví dụ: Chú cún Poodle, Bé mèo múp míp, Rùa biển Sơn Trà...)",
-        flora: "Nhẹ nhàng và thanh lịch! Bạn thích loài hoa hoặc cây cỏ nào? (Ví dụ: Hoa sen hồng, Hoa muống biển Mỹ Khê...)",
-        landmark: "Thật ý nghĩa! Bạn muốn lưu giữ biểu tượng địa danh nào ở Đà Nẵng?",
-        object: "Độc đáo quá! Bạn muốn làm móc khoá hình đồ vật gì nào? (Ví dụ: Bình nước highland, Ly cà phê phin, Xe máy Vespa, Máy ảnh vintage...)",
-        freeform: "Thú vị đấy! Hãy chia sẻ ý tưởng biểu tượng tự do mà bạn muốn tạo nhé:",
-      };
-
-      setChatLog((prev) => [
-        ...prev,
-        {
-          id: aiMsgId,
-          sender: "ai",
-          text: questionMap[cat],
-          time,
-        },
-      ]);
-      return;
-    }
-
-    if (interviewStep === "subject") {
-      const subject = text || "Đồ vật kỷ niệm";
-      setThemeSlots((prev) => ({
-        ...prev,
-        [selectedThemeCategory]: {
-          ...prev[selectedThemeCategory],
-          subject,
-        },
-      }));
-      setInterviewStep("feature1");
-
-      let promptText = "";
-      if (selectedThemeCategory === "human") {
-        promptText = `Dễ thương quá! "${subject}" có kiểu tóc, khuôn mặt hay phụ kiện nhận diện gì đặc biệt không bạn?`;
-      } else if (selectedThemeCategory === "animal") {
-        promptText = `Bé "${subject}" có đặc điểm gì đặc biệt ở bộ lông hay dáng dấp không?`;
-      } else if (selectedThemeCategory === "object") {
-        promptText = `Mẫu "${subject}" khi lên móc khoá 2D sẽ rất ấn tượng! Chiếc này có kiểu dáng, nắp đậy hay nét tạo hình nào bạn muốn xưởng nhấn mạnh không?`;
-      } else if (selectedThemeCategory === "flora") {
-        promptText = `Cánh hoa hay hình thể của "${subject}" bạn muốn tạo hình như thế nào?`;
-      } else if (selectedThemeCategory === "landmark") {
-        promptText = `Đường nét tạo hình của "${subject}" bạn muốn nhấn mạnh ở đâu?`;
-      } else {
-        promptText = `Chi tiết hình dáng nhận diện của "${subject}" bạn muốn tạo là gì?`;
-      }
-
-      setChatLog((prev) => [
-        ...prev,
-        {
-          id: aiMsgId,
-          sender: "ai",
-          text: promptText,
-          time,
-        },
-      ]);
-      return;
-    }
-
-    if (interviewStep === "feature1") {
-      const isNeg = isNegativeResponse(text);
-      const feature1 = isNeg ? "" : text;
-      setThemeSlots((prev) => ({
-        ...prev,
-        [selectedThemeCategory]: {
-          ...prev[selectedThemeCategory],
-          feature1,
-        },
-      }));
-      setInterviewStep("feature2");
-
-      let promptText = "";
-      if (selectedThemeCategory === "human") {
-        promptText = "Về trang phục và màu sắc, bạn muốn bạn ấy mặc gì nào?";
-      } else if (selectedThemeCategory === "animal") {
-        promptText = "Bé có đeo phụ kiện hay mặc áo gì đáng yêu không nè?";
-      } else if (selectedThemeCategory === "object") {
-        promptText = "Về màu sắc và chất liệu hoàn thiện, bạn muốn phối tông màu chủ đạo nào?";
-      } else if (selectedThemeCategory === "flora") {
-        promptText = "Bạn muốn phối màu sắc men gốm nào cho cánh hoa?";
-      } else if (selectedThemeCategory === "landmark") {
-        promptText = "Tông màu hoặc hiệu ứng ánh sáng bạn muốn thể hiện là gì?";
-      } else {
-        promptText = "Tông màu chủ đạo bạn muốn phối cho móc khoá là gì?";
-      }
-
-      setChatLog((prev) => [
-        ...prev,
-        {
-          id: aiMsgId,
-          sender: "ai",
-          text: promptText,
-          time,
-        },
-      ]);
-      return;
-    }
-
-    if (interviewStep === "feature2") {
-      const isNeg = isNegativeResponse(text);
-      const feature2 = isNeg ? "" : text;
-      setThemeSlots((prev) => ({
-        ...prev,
-        [selectedThemeCategory]: {
-          ...prev[selectedThemeCategory],
-          feature2,
-        },
-      }));
-      setInterviewStep("feature3");
-
-      let promptText = "";
-      if (selectedThemeCategory === "object" || selectedThemeCategory === "landmark" || selectedThemeCategory === "flora") {
-        promptText = `Về chi tiết hoặc nét mặt biểu cảm, bạn có muốn thêm gì không?\n\n(Lưu ý: Nếu bạn muốn đồ vật/cảnh quan giữ nét tối giản, chân thực, KHÔNG có mặt cười hay biểu cảm hoạt hình, bạn cứ bấm "Không có biểu cảm / Để nguyên bản" nhé!)`;
-      } else if (selectedThemeCategory === "human") {
-        promptText = `Bạn có muốn nhân vật cầm theo món đồ gì hoặc tạo dáng vui nhộn không? (Nếu không cần, bạn có thể bấm "Không cần thêm")`;
-      } else if (selectedThemeCategory === "animal") {
-        promptText = `Bạn có muốn bé cưng cầm theo món đồ gì hoặc có hành động đáng yêu nào không?`;
-      } else {
-        promptText = `Bạn có muốn thêm thông điệp hay chi tiết điểm xuyết nào không?`;
-      }
-
-      setChatLog((prev) => [
-        ...prev,
-        {
-          id: aiMsgId,
-          sender: "ai",
-          text: promptText,
-          time,
-        },
-      ]);
-      return;
-    }
-
-    if (interviewStep === "feature3") {
-      const isNeg = isNegativeResponse(text);
-      const feature3 = isNeg ? "" : text;
-
-      const current = themeSlots[selectedThemeCategory];
-      const finalSlots: SlotValues = {
-        subject: current.subject,
-        feature1: current.feature1,
-        feature2: current.feature2,
-        feature3: feature3,
-      };
-
-      setThemeSlots((prev) => ({
-        ...prev,
-        [selectedThemeCategory]: finalSlots,
-      }));
-
-      setInterviewStep("naming");
-
-      const ackText = isNeg
-        ? "Dạ vâng! Mình đã ghi nhận: Giữ nguyên thiết kế tối giản, chân thực, HOÀN TOÀN KHÔNG có mặt cười hay biểu cảm hoạt hình thừa 🌿."
-        : `Đã ghi nhận chi tiết: "${feature3}"!`;
-
-      setChatLog((prev) => [
-        ...prev,
-        {
-          id: `ai-ack-${Date.now()}`,
-          sender: "ai",
-          text: ackText,
-          time,
-        },
-        {
-          id: aiMsgId,
-          sender: "ai",
-          text: `Câu hỏi cuối cùng: Bạn muốn đặt tên cho chiếc móc khoá độc bản này là gì nào? 🏷️\n(Ví dụ: "Bé Cún Miu", "Chibi Nam Cà Phê", "Kỷ Niệm Nét 2026"... hoặc bấm chọn gợi ý nhanh bên dưới nhé!)`,
-          time,
-        },
-      ]);
-      return;
-    }
-
-    if (interviewStep === "naming") {
-      const current = themeSlots[selectedThemeCategory];
-      const chosenName = text.trim() || current.subject || "Móc Khoá Của Bạn";
-      setMotifName(chosenName);
-      setCustomIdea(chosenName);
-      setInterviewStep("ready");
-
-      const themeNameMap: Record<CharmThemeCategory, string> = {
-        human: "Con người / Chân dung",
-        animal: "Thú cưng / Động vật",
-        flora: "Hoa cỏ / Thiên nhiên",
-        landmark: "Cảnh quan / Địa danh Đà Nẵng",
-        object: "Đồ vật kỷ niệm",
-        freeform: "Ý tưởng tự do",
-      };
-
-      setChatLog((prev) => [
-        ...prev,
-        {
-          id: `ai-name-ack-${Date.now()}`,
-          sender: "ai",
-          text: `Tên móc khoá "${chosenName}" nghe thật ý nghĩa và độc đáo! ✨`,
-          time,
-        },
-        {
-          id: `ai-summary-${Date.now()}`,
-          sender: "ai",
-          text: "✨ Toàn bộ dữ liệu thiết kế đã được thu thập hoàn tất! Dưới đây là thông số chuẩn bị chuyển cho xưởng in 3D và gắn trực tiếp lên túi:",
-          time,
-          isSummary: true,
-          summaryData: {
-            categoryName: themeNameMap[selectedThemeCategory],
-            subject: current.subject || "Đồ vật độc bản",
-            feature1: current.feature1 || "Kiểu dáng cơ bản",
-            feature2: current.feature2 || "Màu sắc nguyên bản",
-            feature3: current.feature3 || "Cơ bản",
-            hasPhoto: Boolean(customImageFile),
-          },
-        },
-      ]);
-      return;
-    }
-  };
-
-  // Người dùng gửi tin nhắn trong luồng trò chuyện giả lập
-  const handleConversationalUserMessage = (userText: string, imageBase64?: string) => {
+  // Người dùng gửi tin nhắn trò chuyện THẬT với Nghệ nhân AI Gemini
+  const handleConversationalUserMessage = async (
+    userText: string,
+    imageBase64Input?: string,
+    forceGen: boolean = false
+  ) => {
     const text = userText.trim();
-    if (!text && !imageBase64) return;
+    const imgData = imageBase64Input || customImageFile;
+    if (!text && !imgData && !forceGen) return;
 
     const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     const userMsgId = `user-${Date.now()}`;
 
-    setChatLog((prev) => [
-      ...prev,
-      {
-        id: userMsgId,
-        sender: "user",
-        text: text || "Đã gửi ảnh mẫu tham chiếu",
-        time,
-        imageUrl: imageBase64 || undefined,
-      },
-    ]);
+    if (text || imgData) {
+      setChatLog((prev) => [
+        ...prev,
+        {
+          id: userMsgId,
+          sender: "user",
+          text: text || "Đã gửi ảnh mẫu tham chiếu",
+          time,
+          imageUrl: imgData || undefined,
+        },
+      ]);
+    }
 
     setIsAiThinking(true);
-    setTimeout(() => {
-      setIsAiThinking(false);
-      processAiInterview(text, imageBase64);
-    }, 350);
-  };
-
-  // KÍCH HOẠT API THẬT DUY NHẤT 1 LẦN KHI ĐÃ THU THẬP ĐỦ DỮ LIỆU
-  const handleTriggerRealGeneration = async () => {
-    setIsAiSketching(true);
-    setAiCustomStep(2); // Chuyển sang Bước 2 ngay để hiển thị màn hình chờ tạo tác phẩm
-    const activeCat = selectedThemeCategory;
-    const currentSlots = themeSlots[activeCat];
-
-    if (!motifName) {
-      const defaultName = currentSlots.subject || "Móc Khoá Của Bạn";
-      setMotifName(defaultName);
-      setCustomIdea(defaultName);
-    }
-
-    const s = currentSlots.subject || "Đồ vật độc bản";
-    const f1 = currentSlots.feature1 ? `, ${currentSlots.feature1}` : "";
-    const f2 = currentSlots.feature2 ? `, ${currentSlots.feature2}` : "";
-    const f3 = currentSlots.feature3 ? `, ${currentSlots.feature3}` : "";
-    const sentence = `${s}${f1}${f2}${f3}`.trim();
 
     try {
-      const createdImg = await handleSendChatMessage(sentence, currentSlots, activeCat);
-      handlePlaceCustomOnBag(undefined, undefined, undefined, createdImg || undefined);
-      // Đính thẳng lên mô hình 3D và tự động kích hoạt chế độ xem 3D xoay 360 độ
-      setIs3DMode(true);
+      const activeCat = selectedThemeCategory;
+      const currentSlots = themeSlots[activeCat];
+      const historyPayload = chatLog.slice(-6).map((m) => ({
+        sender: m.sender,
+        text: m.text,
+      }));
+
+      const res = await fetch("/api/ai/charm-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: text,
+          imageBase64: imgData || undefined,
+          history: historyPayload,
+          bagColor: selectedColor.hex,
+          bagColorName: selectedColor.name,
+          forceGenerate: forceGen,
+          slots: currentSlots,
+          category: activeCat,
+        }),
+      });
+
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        const d = resData.data;
+
+        if (d.motifName) {
+          setMotifName(d.motifName);
+          setCustomIdea(d.motifName);
+        }
+        if (d.story) setMotifStory(d.story);
+        if (d.recommendedColor) setCustomColor(d.recommendedColor);
+
+        // Cập nhật features nhận diện được
+        if (d.featuresExtracted) {
+          const cat = (d.subjectCategory as CharmThemeCategory) || activeCat;
+          if (cat in themeSlots) {
+            setSelectedThemeCategory(cat);
+            setThemeSlots((prev) => ({
+              ...prev,
+              [cat]: {
+                subject: d.featuresExtracted.subject || prev[cat].subject,
+                feature1: d.featuresExtracted.feature1 || prev[cat].feature1,
+                feature2: d.featuresExtracted.feature2 || prev[cat].feature2,
+                feature3: d.featuresExtracted.feature3 || prev[cat].feature3,
+              },
+            }));
+          }
+        }
+
+        // Cập nhật gợi ý câu hỏi từ Gemini
+        if (Array.isArray(d.suggestedNextQuestions) && d.suggestedNextQuestions.length > 0) {
+          setDynamicSuggestionChips(d.suggestedNextQuestions);
+        }
+
+        // Pha 1: Gemini đang trò chuyện tư vấn
+        if (!d.readyToGenerate && !d.imageUrl) {
+          setChatLog((prev) => [
+            ...prev,
+            {
+              id: `ai-${Date.now()}`,
+              sender: "ai",
+              text: d.replyText,
+              time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+            },
+          ]);
+        } else {
+          // Pha 2: Đã kích hoạt sinh ảnh phôi 3x3cm
+          setIsAiSketching(true);
+          setAiCustomStep(2); // Chuyển sang bước chiêm ngưỡng tác phẩm
+          let finalDisplayImg = d.imageUrl;
+          if (d.imageUrl && typeof window !== "undefined") {
+            try {
+              finalDisplayImg = await removeWhiteBackground(d.imageUrl);
+            } catch (bgErr) {
+              console.warn("Background removal notice:", bgErr);
+            }
+          }
+          setGeneratedImageUrl(finalDisplayImg);
+
+          setChatLog((prev) => [
+            ...prev,
+            {
+              id: `ai-${Date.now()}`,
+              sender: "ai",
+              text:
+                d.replyText ||
+                "Nghệ nhân AI đã hoàn thiện bản phác thảo móc khoá 2D chuẩn 3x3cm cho bạn! ✨",
+              time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+              imageUrl: finalDisplayImg,
+              imageProvider: d.imageProvider,
+              masterPrompt: d.masterPrompt,
+            },
+          ]);
+
+          if (finalDisplayImg) {
+            handlePlaceCustomOnBag(undefined, undefined, undefined, finalDisplayImg);
+            setIs3DMode(true);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Conversational chat error:", err);
     } finally {
+      setIsAiThinking(false);
       setIsAiSketching(false);
     }
+  };
+
+  // KÍCH HOẠT VẼ NGAY THEO Ý TƯỞNG ĐÃ THU THẬP
+  const handleTriggerRealGeneration = async () => {
+    setIsAiSketching(true);
+    const activeCat = selectedThemeCategory;
+    const currentSlots = themeSlots[activeCat];
+    const ideaSummary = currentSlots.subject || motifName || customIdea || "Móc khoá độc bản Nét 3x3cm";
+    await handleConversationalUserMessage(
+      `Hãy bắt đầu vẽ phác thảo móc khoá 3x3cm: ${ideaSummary}`,
+      customImageFile || undefined,
+      true
+    );
   };
 
   // Alias tương thích ngược
@@ -2732,24 +2496,45 @@ Key 3D printing & charm specs:
                                 </div>
 
                                 {/* Quick Suggestion Chips Bar */}
-                                {interviewStep !== "ready" && (
-                                  <div className="px-4 py-2 bg-[#FAF7F2] border-t border-[#E8E2D8] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
-                                    <span className="text-[10.5px] text-[#8C7A70] font-medium shrink-0 mr-1 flex items-center gap-1">
-                                      <Sparkles className="w-3 h-3 text-[#B85D43]" />
-                                      Gợi ý:
-                                    </span>
-                                    {getCurrentStepChips().map((chip) => (
+                                <div className="px-4 py-2 bg-[#FAF7F2] border-t border-[#E8E2D8] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+                                  <span className="text-[10.5px] text-[#8C7A70] font-medium shrink-0 mr-1 flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3 text-[#B85D43]" />
+                                    Gợi ý:
+                                  </span>
+                                  {dynamicSuggestionChips.map((chip) => {
+                                    const isDrawAction = chip.includes("Phác thảo") || chip.includes("Vẽ") || chip.includes("Tạo hình");
+                                    return (
                                       <button
-                                        key={chip.value}
+                                        key={chip}
                                         type="button"
-                                        onClick={() => handleConversationalUserMessage(chip.value)}
-                                        className="px-2.5 py-1 rounded-full bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-xs text-[#5E4D43] font-medium transition-all shrink-0 cursor-pointer shadow-2xs whitespace-nowrap active:scale-95"
+                                        onClick={() => {
+                                          if (isDrawAction) {
+                                            handleTriggerRealGeneration();
+                                          } else {
+                                            handleConversationalUserMessage(chip);
+                                          }
+                                        }}
+                                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all shrink-0 cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 flex items-center gap-1 ${
+                                          isDrawAction
+                                            ? "bg-[#B85D43] text-white border border-[#B85D43] hover:bg-[#9E4F39]"
+                                            : "bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-[#5E4D43]"
+                                        }`}
                                       >
-                                        {chip.label}
+                                        {chip}
                                       </button>
-                                    ))}
-                                  </div>
-                                )}
+                                    );
+                                  })}
+                                  {!dynamicSuggestionChips.some((c) => c.includes("Vẽ") || c.includes("Phác thảo")) && (
+                                    <button
+                                      type="button"
+                                      onClick={handleTriggerRealGeneration}
+                                      className="px-2.5 py-1 rounded-full bg-[#B85D43] hover:bg-[#9E4F39] text-white border border-[#B85D43] text-xs font-semibold transition-all shrink-0 cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 flex items-center gap-1"
+                                    >
+                                      <Sparkles className="w-3 h-3 text-white" />
+                                      🎨 Vẽ ngay (3x3cm)
+                                    </button>
+                                  )}
+                                </div>
 
                                 {/* Input Bar */}
                                 <div className="p-3 bg-white border-t border-[#E8E2D8] shrink-0">
@@ -2787,21 +2572,7 @@ Key 3D printing & charm specs:
                                       type="text"
                                       value={chatInputText}
                                       onChange={(e) => setChatInputText(e.target.value)}
-                                      placeholder={
-                                        interviewStep === "category"
-                                          ? "Nhập chủ đề bạn muốn làm móc khoá (hoặc bấm gợi ý bên trên)..."
-                                          : interviewStep === "subject"
-                                          ? "Nhập tên đồ vật / con người / thú cưng cụ thể..."
-                                          : interviewStep === "feature1"
-                                          ? "Nhập kiểu dáng / chi tiết nhận diện (hoặc bấm 'Bỏ qua')..."
-                                          : interviewStep === "feature2"
-                                          ? "Nhập màu sắc / phong cách mong muốn..."
-                                          : interviewStep === "feature3"
-                                          ? "Nhập điểm nhấn (hoặc bấm 'Không cần biểu cảm')..."
-                                          : interviewStep === "naming"
-                                          ? "Nhập tên cho chiếc móc khoá (hoặc bấm gợi ý bên trên)..."
-                                          : "Nhập tin nhắn..."
-                                      }
+                                      placeholder="Nhắn tin với Nghệ nhân AI hoặc yêu cầu vẽ móc khoá (3x3cm)..."
                                       className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs sm:text-sm text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
                                     />
 
@@ -2907,7 +2678,7 @@ Key 3D printing & charm specs:
 
                                     <div className="flex items-center gap-2 mt-2">
                                       <span className="text-[10px] text-[#7A6F68] font-mono bg-white px-2 py-0.5 rounded-md border border-[#E8E2D8]">
-                                        Quy chuẩn: ~4.5cm x 4.5cm
+                                        Quy chuẩn: ~3cm x 3cm
                                       </span>
                                       <span className="text-[10px] text-[#B85D43] font-semibold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
                                         Phôi Móc Khoá 2D

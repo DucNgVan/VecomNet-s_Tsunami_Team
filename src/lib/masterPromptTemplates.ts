@@ -314,6 +314,6 @@ export function buildMaster2DKeychainPrompt(
     }
   }
 
-  // Khung sườn kỹ thuật 2D Acrylic Keychain chuẩn xưởng chế tác
-  return `a cute custom acrylic keychain charm of an adorable 2D anime chibi character: ${subjectDescription}, clear transparent laser-cut die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, clean vector sticker art, no other objects, no background clutter, no collage`;
+  // Khung sườn kỹ thuật 2D Keychain chuẩn xưởng chế tác NÉT Studio (Kích thước chuẩn 3x3cm, có khoen xỏ phía trên, 100% tiếng Anh)
+  return `a cute custom 2D die-cut acrylic keychain charm, compact 3cm x 3cm miniature size (30mm x 30mm proportion), featuring ${subjectDescription}, small metallic keychain hanging ring hole on top edge for bag attachment, crafted with recycled ocean plastic and sea glass enamel, clear laser-cut acrylic contour edge, clean flat vector sticker art, isolated on pure solid white #FFFFFF background, no background scenery, no gradient, no drop shadow, no floor, no watermark, sharp focus, single object centered`;
 }

@@ -19,6 +19,7 @@ interface ChatRequestPayload {
   bagColorName?: string;
   category?: CharmThemeCategory | "auto";
   slots?: SlotValues;
+  forceGenerate?: boolean; // Bắt buộc sinh ảnh ngay (khi người dùng bấm nút "Phác thảo ngay")
 }
 
 /**
@@ -278,79 +279,70 @@ export async function POST(req: NextRequest) {
 
     // NGƯỜI DÙNG CUNG CẤP Ô TRỐNG, Ý TƯỞNG HOẶC ẢNH MẪU:
     // DÙNG GEMINI FLASH-LITE ĐỂ PHÂN TÍCH, DỊCH SANG TIẾNG ANH & THIẾT KẾ MASTER PROMPT MÓC KHOÁ 2D
-    const systemInstruction = `Bạn là Nghệ nhân Thiết kế Đồ họa 2D & Giám đốc Sáng tạo của Nét Studio — thương hiệu túi lưới tái chế đại dương và móc khoá độc bản tại Đà Nẵng.
+    const systemInstruction = `Bạn là "Nghệ nhân AI NÉT Studio" — chuyên gia tư vấn thiết kế đồ họa 2D & nghệ nhân chế tác móc khoá độc bản thủ công từ lưới đánh cá tái sinh đại dương tại vịnh Đà Nẵng.
 
-MỤC TIÊU CỐT LÕI (CỰC KỲ QUAN TRỌNG):
-Tạo ra BẢN VẼ MÓC KHOÁ 2D PHẲNG (2D FLAT ACRYLIC / ENAMEL KEYCHAIN CHARM) ĐỘC BẢN, SẮC NÉT, ĐÚNG NGHĨA LÀ MỘT CHIẾC MÓC KHOÁ THỰC TẾ.
-Bản vẽ 2D này sẽ là bản thảo kỹ thuật trực tiếp để các NGHỆ NHÂN CỦA NÉT STUDIO lấy làm khuôn mẫu, dùng phần mềm CAD đùn khối (extrude) và in ra sản phẩm móc khoá thực tế bằng MÁY IN 3D.
+PHONG CÁCH GIAO TIẾP:
+- Giọng văn ấm áp, tinh tế, lịch thiệp, mang đậm hơi thở đại dương và tinh thần thủ công làng nghề Việt Nam.
+- Trò chuyện THỰC SỰ với người dùng bằng tiếng Việt tự nhiên, lắng nghe, khơi gợi cảm hứng và đồng hành cùng khách hàng.
 
-TUYỆT ĐỐI TRÁNH NHỮNG LỖI SAU:
-1. KHÔNG render 3D tả thực, KHÔNG vẽ đồ vật nổi khối như chụp ảnh studio.
-2. KHÔNG có bóng kim loại phản chiếu tả thực (no photorealistic metallic reflection).
-3. KHÔNG có nền dơ, KHÔNG đổ bóng gradient xám (no grey shadows, no background gradient).
-4. BẮT BUỘC nền trắng tinh khiết tuyệt đối #FFFFFF (isolated on pure solid white #FFFFFF background) để bóc nền trong suốt sạch sẽ.
-5. HÌNH DÁNG CHARM: TUYỆT ĐỐI KHÔNG TẠO KHUNG TRÒN, KHÔNG VẼ KHUNG VÒM, KHÔNG ĐẶT TRÊN MẶT ĐĨA/XU/HUY HIỆU (NO circular frame, NO round border, NO coin, NO medallion plate, NO picture frame). Bản vẽ BẮT BUỘC LÀ PHÔI MÓC KHOÁ DIE-CUT BO VIỀN SÁT THEO ĐƯỜNG NÉT CHỦ THỂ (die-cut contour directly along the subject silhouette). Viền ngoài bo die-cut sắc nét (bold dark die-cut outline), mảng màu phẳng (flat color blocks), phong cách 2D vector / sticker chibi. TUYỆT ĐỐI KHÔNG vẽ thêm khung bao quanh.
-6. BẮT BUỘC DỊCH TOÀN BỘ CÁC Ô ĐIỀN CỦA KHÁCH TỪ TIẾNG VIỆT SANG TIẾNG ANH ĐỒ HOẠ CHUẨN XÁC TRONG masterPrompt (Tuyệt đối không để nguyên cụm từ tiếng Việt trong masterPrompt vì model sinh ảnh chỉ hiểu tiếng Anh).
-7. ĐỐI VỚI VẬT THỂ (OBJECT), ĐỊA DANH (LANDMARK), HOA CỎ (FLORA) HOẶC KHI KHÁCH NÓI "KHÔNG" / BỎ QUA:
-   - TUYỆT ĐỐI KHÔNG TỰ Ý THÊM NÉT MẶT, MẮT CƯỜI HAY MÁ HỒNG (NO smiling eyes, NO blushing cheeks, NO anime cartoon face on inanimate objects).
-   - Chỉ thêm biểu cảm khuôn mặt nếu khách ĐÍCH DANH yêu cầu "có mặt cười", "mặt chibi".
-   - Nếu khách chọn "không", "bỏ qua", "không có", hoặc để trống feature3, hãy giữ nguyên dáng vẻ chân thực, tinh tế, tối giản của vật thể!
-8. TUYỆT ĐỐI CHỈ VẼ DUY NHẤT 1 CHIẾC MÓC KHOÁ Ở CHÍNH GIỮA (SINGLE ISOLATED CHARM ONLY - CỰC KỲ QUAN TRỌNG):
-   - KHÔNG ĐƯỢC VẼ NHIỀU ĐỒ VẬT, KHÔNG VẼ BỘ SƯU TẬP (NO multiple items, NO duplicate keychains, NO collection, NO sticker sheet).
-   - TUYỆT ĐỐI KHÔNG VẼ TRANH GHÉP, KHÔNG CHIA Ô LƯỚI (NO collage, NO grid, NO split screen).
-   - TUYỆT ĐỐI KHÔNG VẼ THÊM ÁO KHOÁC, QUẦN ÁO HAY PHỤ KIỆN LƠ LỬNG XUNG QUANH (NO extra jackets, NO floating clothes, NO surrounding accessories, NO floating sketches).
-   - CHỈ VẼ DUY NHẤT 1 NHÂN VẬT/CHỦ THỂ ĐỨNG CHÍNH GIỮA BỨC TRANH.
-   - NỀN BẮT BUỘC LÀ TRẮNG TRỐNG HOÀN TOÀN #FFFFFF (pure solid white #FFFFFF background, completely empty background, no background objects).
+QUY TẮC PHÂN LOẠI HAI PHA (CỰC KỲ QUAN TRỌNG):
+1. PHA 1: HỘI THOẠI & THU THẬP Ý TƯỞNG (readyToGenerate: false)
+- Khi nào:
+  + Người dùng mới bắt đầu chào hỏi ("xin chào", "hi", "tôi muốn làm móc khoá"...).
+  + Ý tưởng còn chung chung hoặc đang hỏi tư vấn ("mình muốn làm quà tặng bạn", "bạn có ý tưởng gì không", "vẽ con mèo"...).
+  + Người dùng chưa nói rõ phong cách, màu sắc hoặc chi tiết nhận dạng.
+  + forceGenerate !== true và chưa có ảnh tải lên (imageBase64).
+- Hành động:
+  + Trả lời trò chuyện tự nhiên, khen ngợi và truyền cảm hứng về câu chuyện tái sinh rác lưới biển.
+  + Đặt 1 câu hỏi gợi ý thật tự nhiên để khách chia sẻ thêm (Ví dụ: bé mèo lông màu gì, bạn muốn phong cách chibi ngộ nghĩnh hay thanh lịch, có muốn khắc tên hay chữ kỷ niệm không...).
+  + Cung cấp 2-3 gợi ý trả lời nhanh trong mảng "suggestedNextQuestions" để người dùng bấm chọn nhanh.
+  + ĐẶT "readyToGenerate": false.
 
-QUY TẮC CỐT LÕI: CHIBI HOÁ / CARTOON HOÁ TẤT CẢ NGƯỜI & CON VẬT (BÁM SÁT 100% ẢNH MẪU):
-1. NẾU TRONG ẢNH CÓ NGƯỜI (chân dung, selfie, chụp gương, toàn thân, cặp đôi, em bé):
-   - MỤC TIÊU SỐ 1: Bắt buộc CHIBI HOÁ / CARTOON HOÁ người đó thành một nhân vật Chibi Anime cực kỳ dễ thương (cute kawaii 2D anime chibi character), giống hệt người trong ảnh nhưng ở phong cách hoạt hình!
-   - TỶ LỆ CHIBI CUTE: Đầu to tròn đáng yêu (oversized cute round head), má bánh bao ửng hồng (chubby rosy blushing cheeks), mắt anime cười híp mí hoặc to tròn lấp lánh (happy smiling anime eyes), nụ cười tươi thân thiện.
-   - BẢO TOÀN 100% DIỆN MẠO ĐỂ NHÌN VÀO LÀ BIẾT NGAY ĐÓ LÀ HỌ:
-     * Kiểu tóc & Màu tóc: Bám sát kiểu tóc trong ảnh thật (tóc ngắn vuốt spiky, undercut, tóc uốn lượn sóng, tóc buộc đuôi ngựa, tóc mái ngố...).
-     * Kính mắt: Nếu người trong ảnh đeo kính, giữ nguyên gọng kính (kính gọng đen, gọng tròn, gọng vuông...).
-     * Râu & Nét mặt: Nếu có râu hoặc đặc điểm riêng thì giữ lại theo nét chibi tối giản.
-     * Trang phục: Giữ nguyên màu sắc và kiểu dáng quần áo từ ảnh thật (áo thun đen, áo polo, áo hoodie, quần kaki...).
-     * Tư thế: Bám sát tư thế từ ảnh thật! Nếu trong ảnh là tư thế chụp selfie trước gương: Chuyển thành nhân vật chibi đứng toàn thân, MỘT TAY CẦM CHIẾC SMARTPHONE TRẮNG MINI TẠO DÁNG CHỤP SELFIE, TAY CÒN LẠI ĐÚT TÚI QUẦN.
-   - HÌNH THÁI MÓC KHOÁ: Nhân vật chibi được bao bọc bởi đường viền acrylic trong suốt (clear transparent laser-cut die-cut acrylic border around the character), phía trên đỉnh có khoen xỏ kim loại màu bạc (silver metal keychain ring on top), nền trắng tinh khiết tuyệt đối #FFFFFF.
+2. PHA 2: KÍCH HOẠT VẼ PHÁC THẢO 3X3CM (readyToGenerate: true)
+- Khi nào:
+  + Người dùng yêu cầu vẽ / tạo hình: có các từ khoá như "vẽ đi", "tạo hình cho tôi", "phác thảo đi", "bắt đầu vẽ", "ok rồi", "xem mẫu", "vẽ thử", "tạo ngay", "vẽ ngay"...
+  + HOẶC ý tưởng đã khá đầy đủ (đã biết chủ thể và ít nhất 1-2 đặc điểm chi tiết / màu sắc).
+  + HOẶC người dùng đã gửi ảnh mẫu tham chiếu (imageBase64).
+  + HOẶC có cờ forceGenerate: true.
+- Hành động:
+  + "replyText": Lời hào hứng xác nhận ý tưởng tuyệt vời, thông báo Nghệ nhân đang bắt tay phác thảo bản vẽ móc khoá 2D chuẩn kích thước 3x3cm cho khách!
+  + ĐẶT "readyToGenerate": true.
+  + BẮT BUỘC TỔNG HỢP VÀ DỊCH TOÀN BỘ SANG TIẾNG ANH trong "masterPrompt".
 
-2. NẾU TRONG ẢNH CÓ CON VẬT / THÚ CƯNG (chó, mèo, thỏ, chim, chuột hamster, thú cưng...):
-   - MỤC TIÊU SỐ 1: Bắt buộc CHIBI HOÁ / CARTOON HOÁ con vật thành thú cưng Chibi cực kỳ dễ thương (ultra-kawaii chibi cartoon pet), giống hệt con vật trong ảnh!
-   - TỶ LỆ CHIBI CUTE: Thân hình tròn xoe mũm mĩm, đầu tròn đáng yêu, đôi mắt to tròn long lanh có đốm sáng (big glossy anime catchlight eyes), má phúng phính ửng hồng, biểu cảm toe toét cười đáng yêu hoặc ngơ ngác kawaii.
-   - BẢO TOÀN 100% ĐẶC ĐIỂM CON VẬT TỪ ẢNH MẪU:
-     * Giống loài: Bám sát giống loài (Corgi, Poodle, Phốc sóc, mèo Anh lông ngắn, mèo mướp, mèo ba màu, Golden Retriever...).
-     * Màu lông & Đốm lông: Đúng từng đốm màu từ ảnh thật (mảng lông trắng ở ngực, đốm đen quanh mắt, sọc vằn trên trán, tai một bên cụp một bên dựng...).
-     * Vòng cổ & Phụ kiện: Nếu thú cưng đeo chuông, khăn quàng cổ hay nơ thì giữ nguyên màu sắc chi tiết.
-     * Tư thế: Bám sát tư thế từ ảnh thật (ngồi ngoan ngoãn, nằm xòe chân, giơ chân chào, nghiêng đầu ngơ ngác...).
-   - HÌNH THÁI MÓC KHOÁ: Thú cưng chibi được bao bọc bởi viền acrylic trong suốt (clear transparent die-cut acrylic border), khoen kim loại bạc trên đỉnh, nền trắng tinh #FFFFFF.
+3. QUY TẮC BẮT BUỘC VỀ MASTER PROMPT (CHO BƯỚC VẼ ẢNH):
+- BẮT BUỘC 100% TIẾNG ANH (Không để sót từ tiếng Việt nào vì mô hình AI tạo ảnh chỉ hiểu tiếng Anh).
+- KÍCH THƯỚC CHUẨN: 3cm x 3cm (compact 3cm x 3cm miniature size, 30mm x 30mm proportion).
+- ĐẶC TRƯNG MÓC KHOÁ NÉT:
+  + Phôi 2D Die-cut acrylic/ceramic enamel, đường viền ngoài sắc nét (sharp die-cut contour outline).
+  + Có một lỗ xỏ / khoen móc kim loại màu bạc ở mép đỉnh trên (small metallic keychain hanging ring hole on top edge) để xỏ vào mắt lưới túi.
+  + Nền trắng tinh khiết tuyệt đối: "isolated on pure solid white #FFFFFF background, clean flat vector sticker art, no background scenery, no gradients, no shadows, no floor, no watermark, single object centered".
+  + Vật liệu: "crafted with recycled ocean marine plastic and sea glass enamel".
+- VỚI NGƯỜI & CON VẬT:
+  + Luôn vẽ Chibi Anime đáng yêu (cute kawaii 2D anime chibi character / ultra-kawaii chibi cartoon pet, oversized cute round head, chubby rosy blushing cheeks, happy anime catchlight eyes).
+  + Bám sát kiểu tóc, trang phục, màu lông, phụ kiện từ mô tả hoặc ảnh mẫu.
+- VỚI ĐỒ VẬT / ĐỊA DANH / HOA CỎ:
+  + Nét vẽ phẳng 2D tinh tế, tối giản, sang trọng.
+  + TUYỆT ĐỐI KHÔNG tự ý thêm mắt cười hay má hồng nếu người dùng không yêu cầu.
 
-3. NẾU LÀ HOA CỎ / ĐỒ VẬT / ĐỊA DANH:
-   - Giữ nét đồ hoạ 2D vector phẳng tinh tế, sắc sảo chuẩn phôi móc khoá.
-
-4. NẾU KHÔNG CÓ ẢNH TẢI LÊN:
-   - Tự do sáng tạo phôi móc khoá 2D độc bản hoàn toàn mới dựa trên ý tưởng và các ô trống khách hàng điền.
-
-5. CẤU TRÚC MASTER PROMPT TIẾNG ANH (DỊCH TOÀN BỘ SANG TIẾNG ANH CHUẨN XÁC, BẮT BUỘC CÓ VIỀN ACRYLIC VÀ KHOEN):
-   - Khi là Người: "a cute custom acrylic keychain charm of an adorable 2D anime chibi character based on the reference: [DETAILED_PERSON_TRAITS], oversized cute round head, chubby cheeks with soft pink blush, happy smiling crescent anime eyes, [CLOTHING_AND_POSE], clear transparent laser-cut die-cut acrylic border around the character, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no background, no room, no real photo"
-   - Khi là Con vật: "a cute custom acrylic keychain charm of an adorable kawaii chibi cartoon pet based on the reference: [DETAILED_ANIMAL_BREED_AND_TRAITS], big glossy sparkling anime eyes, chubby fluffy cheeks with soft pink blush, exact fur markings and colors from photo, [POSE_AND_ACCESSORIES], clear transparent laser-cut die-cut acrylic border around the animal, silver metal keychain ring on top, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no background, no room, no real photo"
-
-BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
+BẮT BUỘC TRẢ VỀ JSON HỢP LỆ THEO SCHEMA:
 {
-  "subjectCategory": "human" | "animal" | "flora" | "landmark" | "object" | "freeform",
-  "replyText": "Lời tư vấn phong cách ấm áp tiếng Việt, phân tích các nét nhận diện và giải thích bản vẽ phác thảo 2D sẵn sàng chuyển giao cho xưởng in 3D...",
-  "motifName": "Tên móc khoá tiếng Việt ngắn gọn, dễ thương (Ví dụ: Chibi Chàng Trai Cà Phê 2D / Bình Nước Highland Kawaii 2D)",
-  "story": "Ý nghĩa nhân văn 2 câu ngắn kết nối tình yêu đại dương và dấu ấn chuyến đi...",
-  "masterPrompt": "Đoạn Master Prompt bằng tiếng Anh chuẩn 2D flat keychain theo đúng cấu trúc ở trên...",
+  "readyToGenerate": true,
+  "replyText": "Lời trò chuyện tiếng Việt tự nhiên của Nghệ nhân...",
+  "suggestedNextQuestions": ["Gợi ý 1", "Gợi ý 2", "Gợi ý 3"],
+  "subjectCategory": "human",
+  "motifName": "Tên móc khoá tiếng Việt ngắn gọn...",
+  "story": "Ý nghĩa nhân văn 2 câu ngắn kết nối đại dương và kỷ niệm...",
+  "masterPrompt": "Master Prompt 100% tiếng Anh chuẩn 3x3cm...",
   "featuresExtracted": {
     "subject": "Tên chủ thể tiếng Việt",
-    "feature1": "Chi tiết tóc / lông / cánh hoa / kiểu dáng...",
-    "feature2": "Trang phục / màu sắc...",
-    "feature3": "Hành động / biểu cảm kawaii / phụ kiện đi kèm..."
+    "feature1": "Chi tiết nhận diện 1",
+    "feature2": "Màu sắc / trang phục",
+    "feature3": "Hành động / điểm nhấn"
   },
   "recommendedColor": "${selectedColorHex}",
   "pinSpecs": {
+    "dimensions": "3cm x 3cm",
     "diameterMm": 4.5,
-    "heightMm": 4.0,
     "eyeletHoleMm": 3.0,
     "type": "snap_mount_grid"
   }
@@ -475,122 +467,175 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     }
 
     // Nếu tất cả model Gemini đều bị lỗi kết nối hoặc quota, dùng bộ phân tích thông minh chuẩn xác
-    if (!parsedData || !parsedData.masterPrompt) {
+    if (!parsedData || !parsedData.replyText) {
       const lower = userPrompt.toLowerCase();
-      let detectedCat: CharmThemeCategory = "human";
-      let motif = "Chàng Trai Chibi 2D Cá Tính";
-      let slotsFallback: SlotValues = {
-        subject: "chàng trai",
-        feature1: "tóc đen rẽ ngôi vuốt dựng, kính gọng to",
-        feature2: "áo phông đen cổ tròn",
-        feature3: "cầm ly cà phê sữa đá tạo dáng",
-      };
+      const isShortGreeting =
+        (lower.includes("chào") ||
+          lower.includes("hi") ||
+          lower.includes("hello") ||
+          lower.length < 8) &&
+        !imageBase64 &&
+        !body.forceGenerate &&
+        !body.slots?.subject;
 
-      const isPerson =
-        lower.includes("chàng trai") ||
-        lower.includes("cô gái") ||
-        lower.includes("bạn nam") ||
-        lower.includes("bạn nữ") ||
-        lower.includes("em bé") ||
-        lower.includes("người") ||
-        lower.includes("boy") ||
-        lower.includes("girl") ||
-        lower.includes("selfie") ||
-        Boolean(imageBase64);
-
-      if (isPerson) {
-        detectedCat = "human";
-        motif = "Chibi Chàng Trai Cà Phê 2D";
-        slotsFallback = {
-          subject: "a cute kawaii 2D anime chibi character of this person",
-          feature1: "stylish short spiky black hair with undercut, round black-framed eyeglasses, happy smiling crescent anime eyes with rosy cheeks",
-          feature2: "black t-shirt and beige pants",
-          feature3: "holding a mini white smartphone taking a selfie with one hand, other hand in pocket",
-        };
-      } else if (
-        lower.includes("chó") ||
-        lower.includes("mèo") ||
-        lower.includes("pet") ||
-        lower.includes("cún") ||
-        lower.includes("thú cưng") ||
-        lower.includes("gấu") ||
-        lower.includes("thỏ") ||
-        lower.includes("chim")
-      ) {
-        detectedCat = "animal";
-        motif = "Chibi 2D Bé Thú Cưng";
-        slotsFallback = {
-          subject: "an adorable kawaii chibi cartoon pet animal",
-          feature1: "fluffy fur with big glossy sparkling anime eyes and soft pink blushing cheeks",
-          feature2: "exact fur markings and colors, wearing a cute bell collar",
-          feature3: "cheerful playful pose with a sweet smiling expression",
-        };
-      } else if (
-        lower.includes("hoa") ||
-        lower.includes("sen") ||
-        lower.includes("cúc") ||
-        lower.includes("lá") ||
-        lower.includes("cây")
-      ) {
-        detectedCat = "flora";
-        motif = "Hoa Ngọc 2D Biển Xanh";
-        slotsFallback = {
-          subject: "a blooming lotus flower",
-          feature1: "smooth rounded graphic petals",
-          feature2: "vibrant ceramic enamel colors",
-          feature3: "tiny golden stamens and dewdrops",
-        };
-      } else if (
-        lower.includes("cầu") ||
-        lower.includes("hải đăng") ||
-        lower.includes("biển") ||
-        lower.includes("núi")
-      ) {
-        detectedCat = "landmark";
-        motif = "Biểu Tượng 2D Kỷ Niệm Nét";
-        slotsFallback = {
-          subject: "Da Nang Dragon Bridge",
-          feature1: "stylized curved dragon body",
-          feature2: "bright yellow enamel colors",
-          feature3: "miniature wave splashes",
+      if (isShortGreeting) {
+        parsedData = {
+          readyToGenerate: false,
+          replyText:
+            "Chào bạn! Mình là Nghệ nhân AI của Nét Studio 🌿.\n\nMình sẽ cùng bạn trò chuyện để lên ý tưởng cho chiếc móc khoá 2D chuẩn kích thước 3x3cm đính lên túi lưới tái sinh nhé! Bạn đang ấp ủ hình ảnh hay câu chuyện nào?",
+          suggestedNextQuestions: [
+            "Chân dung Chibi bạn bè",
+            "Bé thú cưng đáng yêu",
+            "Biểu tượng biển Đà Nẵng",
+            "🎨 Phác thảo ngay (3x3cm)",
+          ],
+          featuresExtracted: {
+            subject: "",
+            feature1: "",
+            feature2: "",
+            feature3: "",
+          },
+          recommendedColor: selectedColorHex,
         };
       } else {
-        detectedCat = "object";
-        motif = "Đồ Vật 2D Kỷ Niệm";
-        slotsFallback = {
-          subject: "a Vietnamese coffee phin",
-          feature1: "vintage aluminum phin dropping coffee",
-          feature2: "retro enamel colors",
-          feature3: "", // Giữ nguyên bản, không tự động thêm nét mặt
+        let detectedCat: CharmThemeCategory = "human";
+        let motif = "Chàng Trai Chibi 2D Cá Tính";
+        let slotsFallback: SlotValues = {
+          subject: "chàng trai",
+          feature1: "tóc đen rẽ ngôi vuốt dựng, kính gọng to",
+          feature2: "áo phông đen cổ tròn",
+          feature3: "cầm ly cà phê sữa đá tạo dáng",
+        };
+
+        const isPerson =
+          lower.includes("chàng trai") ||
+          lower.includes("cô gái") ||
+          lower.includes("bạn nam") ||
+          lower.includes("bạn nữ") ||
+          lower.includes("em bé") ||
+          lower.includes("người") ||
+          lower.includes("boy") ||
+          lower.includes("girl") ||
+          lower.includes("selfie") ||
+          Boolean(imageBase64);
+
+        if (isPerson) {
+          detectedCat = "human";
+          motif = "Chibi Chàng Trai Cà Phê 2D";
+          slotsFallback = {
+            subject: "a cute kawaii 2D anime chibi character of this person",
+            feature1: "stylish short spiky black hair with undercut, round black-framed eyeglasses, happy smiling crescent anime eyes with rosy cheeks",
+            feature2: "black t-shirt and beige pants",
+            feature3: "holding a mini white smartphone taking a selfie with one hand, other hand in pocket",
+          };
+        } else if (
+          lower.includes("chó") ||
+          lower.includes("mèo") ||
+          lower.includes("pet") ||
+          lower.includes("cún") ||
+          lower.includes("thú cưng") ||
+          lower.includes("gấu") ||
+          lower.includes("thỏ") ||
+          lower.includes("chim")
+        ) {
+          detectedCat = "animal";
+          motif = "Chibi 2D Bé Thú Cưng";
+          slotsFallback = {
+            subject: "an adorable kawaii chibi cartoon pet animal",
+            feature1: "fluffy fur with big glossy sparkling anime eyes and soft pink blushing cheeks",
+            feature2: "exact fur markings and colors, wearing a cute bell collar",
+            feature3: "cheerful playful pose with a sweet smiling expression",
+          };
+        } else if (
+          lower.includes("hoa") ||
+          lower.includes("sen") ||
+          lower.includes("cúc") ||
+          lower.includes("lá") ||
+          lower.includes("cây")
+        ) {
+          detectedCat = "flora";
+          motif = "Hoa Ngọc 2D Biển Xanh";
+          slotsFallback = {
+            subject: "a blooming lotus flower",
+            feature1: "smooth rounded graphic petals",
+            feature2: "vibrant ceramic enamel colors",
+            feature3: "tiny golden stamens and dewdrops",
+          };
+        } else if (
+          lower.includes("cầu") ||
+          lower.includes("hải đăng") ||
+          lower.includes("biển") ||
+          lower.includes("núi")
+        ) {
+          detectedCat = "landmark";
+          motif = "Biểu Tượng 2D Kỷ Niệm Nét";
+          slotsFallback = {
+            subject: "Da Nang Dragon Bridge",
+            feature1: "stylized curved dragon body",
+            feature2: "bright yellow enamel colors",
+            feature3: "miniature wave splashes",
+          };
+        } else {
+          detectedCat = "object";
+          motif = "Đồ Vật 2D Kỷ Niệm";
+          slotsFallback = {
+            subject: "a Vietnamese coffee phin",
+            feature1: "vintage aluminum phin dropping coffee",
+            feature2: "retro enamel colors",
+            feature3: "",
+          };
+        }
+
+        const generatedMasterPrompt = buildMaster2DKeychainPrompt(
+          detectedCat,
+          slotsFallback
+        );
+
+        parsedData = {
+          readyToGenerate: true,
+          subjectCategory: detectedCat,
+          replyText: `Nghệ nhân AI NÉT Studio đã tiếp nhận ý tưởng "${userPrompt}" và đang chuẩn bị phác thảo bản vẽ móc khoá 2D chuẩn kích thước 3x3cm cho bạn! ✨`,
+          suggestedNextQuestions: ["Xem bản vẽ phác thảo", "Đổi màu sắc", "Thêm chữ khắc"],
+          motifName: motif,
+          story: "Mỗi bản vẽ 2D là một tác phẩm khởi đầu độc bản, lưu giữ ký ức tươi đẹp và hành trình bảo vệ đại dương.",
+          masterPrompt: generatedMasterPrompt,
+          featuresExtracted: slotsFallback,
+          recommendedColor: selectedColorHex,
+          pinSpecs: {
+            dimensions: "3cm x 3cm",
+            diameterMm: 4.5,
+            heightMm: 4.0,
+            eyeletHoleMm: 3.0,
+            type: "snap_mount_grid",
+          },
         };
       }
-
-      const generatedMasterPrompt = buildMaster2DKeychainPrompt(
-        detectedCat,
-        slotsFallback
-      );
-
-      parsedData = {
-        subjectCategory: detectedCat,
-        replyText: `Nét 2D Keychain Agent đã tiếp nhận ý tưởng "${userPrompt}" của bạn và lắp ghép vào khung Master Template 2D chuẩn xưởng chế tác!`,
-        motifName: motif,
-        story: "Mỗi bản vẽ 2D là một tác phẩm khởi đầu độc bản, lưu giữ ký ức tươi đẹp và hành trình bảo vệ đại dương.",
-        masterPrompt: generatedMasterPrompt,
-        featuresExtracted: slotsFallback,
-        recommendedColor: selectedColorHex,
-        pinSpecs: {
-          diameterMm: 4.5,
-          heightMm: 4.0,
-          eyeletHoleMm: 3.0,
-          type: "snap_mount_grid",
-        },
-      };
     }
 
-    // BƯỚC 2: CHUẨN HOÁ PHÔI MÓC KHOÁ 2D THỦ CÔNG
-    // 1. ƯU TIÊN SỐ 1: Gọi mô hình LoRA SDXL chuyên biệt trên Hugging Face Spaces của Nét Studio
-    // Hệ thống hỗ trợ đa endpoint: Thử Space người dùng cấu hình (ducksiao/Nets_AI_Gen),
-    // nếu space bị dừng hoặc lỗi thì lập tức chuyển sang Space ZeroGPU đang hoạt động (ducnv1792005/Nets_ECommerce)
+    // NẾU GEMINI XÁC ĐỊNH CHƯA ĐỦ THÔNG TIN VÀ CHƯA CÓ YÊU CẦU VẼ NGAY
+    if (!parsedData.readyToGenerate && !body.forceGenerate && !imageBase64) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          readyToGenerate: false,
+          replyText:
+            parsedData.replyText ||
+            "Chào bạn! Bạn muốn thiết kế chiếc móc khoá mang hình ảnh gì nào?",
+          suggestedNextQuestions: parsedData.suggestedNextQuestions || [
+            "Chân dung Chibi bạn bè",
+            "Bé thú cưng đáng yêu",
+            "Biểu tượng biển Đà Nẵng",
+            "🎨 Phác thảo ngay (3x3cm)",
+          ],
+          featuresExtracted: parsedData.featuresExtracted,
+          subjectCategory: parsedData.subjectCategory || "freeform",
+          motifName: parsedData.motifName || "Móc Khoá Tùy Biến",
+        },
+      });
+    }
+
+    // BƯỚC 2: TIẾN HÀNH SINH ẢNH PHÔI MÓC KHOÁ 2D THỦ CÔNG
+    // 1. ƯU TIÊN SỐ 1: FLUX.1 SCHNELL ENGINE (Mô hình AI thế hệ mới, tốc độ 2-3s, chuẩn die-cut, không hao quota cá nhân)
     const spaceEndpoints = [
       {
         name: "ducksiao/Nets_AI_Gen",
@@ -613,50 +658,80 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     }
 
     if (parsedData.masterPrompt) {
-      for (const space of spaceEndpoints) {
-        if (!space.url) continue;
-        try {
-          console.log(`[Hugging Face Space] Thử gọi mô hình tại: ${space.name} (${space.url})`);
-          const loraImageUrl = await callLoraKeychainModel(
-            space.url,
-            parsedData.masterPrompt,
-            imageBase64,
-            space.token
-          );
-          if (loraImageUrl) {
-            console.log(`[Hugging Face Space] Tạo ảnh móc khoá thành công từ: ${space.name}!`);
-            parsedData.imageUrl = loraImageUrl;
-            parsedData.imageProvider = "net-keychain-lora";
-            break;
+      // 1. FLUX.1 lên trước
+      try {
+        console.log("[Rank 1: FLUX.1 Schnell] Đang sinh ảnh qua mô hình FLUX.1...");
+        const fluxImageUrl = await callFluxSchnellModel(parsedData.masterPrompt);
+        if (fluxImageUrl) {
+          console.log("[Rank 1: FLUX.1 Schnell] Sinh ảnh charm thành công từ FLUX.1!");
+          parsedData.imageUrl = fluxImageUrl;
+          parsedData.imageProvider = "flux-schnell";
+        }
+      } catch (fluxErr) {
+        console.warn("[Rank 1: FLUX.1 Schnell Exception]:", fluxErr);
+      }
+
+      // 2. FALLBACK 2: LORA SDXL TRÊN HUGGING FACE SPACES CỦA NÉT STUDIO
+      if (!parsedData.imageUrl) {
+        console.log("[Rank 2: LoRA SDXL Spaces] Đang kích hoạt mô hình LoRA SDXL dự phòng...");
+        for (const space of spaceEndpoints) {
+          if (!space.url) continue;
+          try {
+            console.log(`[Hugging Face Space] Thử gọi mô hình tại: ${space.name} (${space.url})`);
+            const loraImageUrl = await callLoraKeychainModel(
+              space.url,
+              parsedData.masterPrompt,
+              imageBase64,
+              space.token
+            );
+            if (loraImageUrl) {
+              console.log(`[Rank 2: LoRA SDXL] Tạo ảnh móc khoá thành công từ: ${space.name}!`);
+              parsedData.imageUrl = loraImageUrl;
+              parsedData.imageProvider = "net-keychain-lora";
+              break;
+            }
+          } catch (loraErr) {
+            console.warn(`[Custom LoRA Endpoint ${space.name} Warning]:`, loraErr);
           }
-        } catch (loraErr) {
-          console.warn(`[Custom LoRA Endpoint ${space.name} Warning]:`, loraErr);
         }
       }
 
-      // 2. FALLBACK 1: FLUX.1 SCHNELL (MÔ HÌNH AI TẠO ẢNH DỰ PHÒNG THẾ HỆ MỚI)
-      // Nếu tất cả Space LoRA cá nhân đều tạm dừng hoặc hết hạn ngạch ZeroGPU trong ngày,
-      // tự động gọi sang FLUX.1 Schnell (miễn phí, tốc độ 2-3s, không hao hụt GPU cá nhân, chuẩn die-cut không khung)
+      // 3. FALLBACK 3: POLLINATIONS FLUX/SDXL & PHÔI NGHỆ NHÂN NÉT
       if (!parsedData.imageUrl) {
         try {
-          console.log("[Fallback 1: FLUX.1 Schnell] Đang kích hoạt mô hình AI tạo ảnh dự phòng...");
-          const fluxImageUrl = await callFluxSchnellModel(
-            parsedData.masterPrompt
+          const encoded = encodeURIComponent(
+            `single cute 2D anime chibi die-cut acrylic keychain charm, 3cm x 3cm, ${parsedData.masterPrompt.replace(/die-cut|acrylic|keychain|charm/gi, "")}, small metallic keychain hanging ring hole on top, isolated on pure solid white #FFFFFF background, minimal flat vector sticker art, no frame, no shadow`
           );
-          if (fluxImageUrl) {
-            console.log("[Fallback 1: FLUX.1 Schnell] Sinh ảnh charm thành công từ FLUX.1!");
-            parsedData.imageUrl = fluxImageUrl;
-            parsedData.imageProvider = "flux-schnell";
+          const fallbackUrl = `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&model=flux&nologo=true`;
+          const res = await fetch(fallbackUrl, { signal: AbortSignal.timeout(12000) });
+          if (res.ok) {
+            const buf = await res.arrayBuffer();
+            const b64 = Buffer.from(buf).toString("base64");
+            const mime = res.headers.get("content-type") || "image/png";
+            parsedData.imageUrl = `data:${mime};base64,${b64}`;
+            parsedData.imageProvider = "flux-pollinations";
           }
-        } catch (fluxErr) {
-          console.warn("[Fallback 1: FLUX.1 Schnell Exception]:", fluxErr);
+        } catch (err) {
+          console.warn("[Fallback 3 Exception]:", err);
         }
       }
     }
 
-    // 3. FALLBACK 2 (CHỐT CHẶN AN TOÀN NGHỆ NHÂN): 
-    // Nếu toàn bộ mô hình AI bên ngoài đều gián đoạn, chuyển sang Phôi phác thảo Nghệ nhân Độc bản
-    // với màu sắc tương thích, chữ khắc laser cá nhân hoá và bản vẽ thông số ngàm chốt in 3D (4.5mm)
+    // Đảm bảo ảnh luôn ở dạng Base64 data: URL để chống triệt để lỗi CORS Tainted Canvas
+    if (parsedData.imageUrl && parsedData.imageUrl.startsWith("http")) {
+      try {
+        const imgFetch = await fetch(parsedData.imageUrl);
+        if (imgFetch.ok) {
+          const arrayBuf = await imgFetch.arrayBuffer();
+          const b64 = Buffer.from(arrayBuf).toString("base64");
+          const mime = imgFetch.headers.get("content-type") || "image/png";
+          parsedData.imageUrl = `data:${mime};base64,${b64}`;
+        }
+      } catch (convErr) {
+        console.warn("Could not convert remote URL to base64 on server:", convErr);
+      }
+    }
+
     if (!parsedData.imageUrl) {
       parsedData.imageUrl = null;
       parsedData.imageProvider = "artisan-badge";
@@ -664,6 +739,8 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
     if (imageBase64) {
       parsedData.referenceImageUrl = imageBase64;
     }
+
+    parsedData.readyToGenerate = true;
 
     return NextResponse.json({
       success: true,

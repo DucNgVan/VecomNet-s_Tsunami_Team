@@ -1,13 +1,15 @@
 /**
  * Charm Image Processor
- * Utility to process 3D generated keychain charm images:
- * - Flood-fill BFS background removal (makes pure white/solid background transparent)
- * - Safe protection for inner white pixels (eyes, white clothes, teeth)
+ * Utility to process 2D/3D generated keychain charm images:
+ * - Smart multi-stage Flood-fill BFS background removal (transparent PNG cutout)
+ * - Safe protection for inner subject pixels
+ * - Anti-aliasing edge defringing (cleans white halos)
+ * - CORS-safe via Blob URL conversion
  */
 
-export function removeWhiteBackground(
+export async function removeWhiteBackground(
   imageUrl: string,
-  threshold: number = 235
+  threshold: number = 220
 ): Promise<string> {
   if (
     typeof window === "undefined" ||
@@ -18,9 +20,36 @@ export function removeWhiteBackground(
     return Promise.resolve(imageUrl);
   }
 
+  // Chuyển đổi remote HTTP URL thành Blob URL để chống lỗi CORS Tainted Canvas
+  let safeSrc = imageUrl;
+  let objectUrlToRevoke: string | null = null;
+  if (!imageUrl.startsWith("data:") && !imageUrl.startsWith("blob:")) {
+    try {
+      const res = await fetch(imageUrl, { mode: "cors" });
+      if (res.ok) {
+        const blob = await res.blob();
+        objectUrlToRevoke = URL.createObjectURL(blob);
+        safeSrc = objectUrlToRevoke;
+      }
+    } catch (fetchErr) {
+      // Tiếp tục dùng URL gốc nếu fetch thất bại
+      console.warn("[removeWhiteBackground CORS fetch notice]:", fetchErr);
+    }
+  }
+
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
+
+    const cleanup = () => {
+      if (objectUrlToRevoke) {
+        try {
+          URL.revokeObjectURL(objectUrlToRevoke);
+        } catch {
+          // ignore
+        }
+      }
+    };
 
     img.onload = () => {
       try {
@@ -32,6 +61,7 @@ export function removeWhiteBackground(
 
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (!ctx) {
+          cleanup();
           resolve(imageUrl);
           return;
         }
@@ -40,60 +70,71 @@ export function removeWhiteBackground(
         const imgData = ctx.getImageData(0, 0, width, height);
         const data = imgData.data;
 
-        // BFS Flood-fill from borders to clear only outer background
-        const visited = new Uint8Array(width * height);
-        const queue: number[] = [];
-
-        // Lấy mẫu 6 điểm biên/góc để nhận diện chính xác màu nền thực tế (trắng, xám nhạt, be, kem...)
-        const sampleCorners = [
+        // Lấy mẫu nhiều điểm xung quanh viền ngoài để tìm chính xác màu nền
+        const samplePoints = [
           0,
+          Math.floor(width / 4),
+          Math.floor(width / 2),
+          Math.floor((3 * width) / 4),
           width - 1,
           (height - 1) * width,
-          height * width - 1,
-          Math.floor(width / 2),
+          (height - 1) * width + Math.floor(width / 4),
           (height - 1) * width + Math.floor(width / 2),
+          (height - 1) * width + Math.floor((3 * width) / 4),
+          height * width - 1,
+          Math.floor(height / 2) * width,
+          Math.floor(height / 2) * width + width - 1,
         ];
-        let cornerR = 0,
-          cornerG = 0,
-          cornerB = 0;
-        for (const c of sampleCorners) {
-          cornerR += data[c * 4];
-          cornerG += data[c * 4 + 1];
-          cornerB += data[c * 4 + 2];
+
+        let cornerR = 0;
+        let cornerG = 0;
+        let cornerB = 0;
+        let count = 0;
+
+        for (const p of samplePoints) {
+          if (p >= 0 && p < width * height) {
+            cornerR += data[p * 4];
+            cornerG += data[p * 4 + 1];
+            cornerB += data[p * 4 + 2];
+            count++;
+          }
         }
-        cornerR = Math.round(cornerR / sampleCorners.length);
-        cornerG = Math.round(cornerG / sampleCorners.length);
-        cornerB = Math.round(cornerB / sampleCorners.length);
+
+        cornerR = count > 0 ? Math.round(cornerR / count) : 255;
+        cornerG = count > 0 ? Math.round(cornerG / count) : 255;
+        cornerB = count > 0 ? Math.round(cornerB / count) : 255;
 
         function isBg(idx: number): boolean {
           const r = data[idx * 4];
           const g = data[idx * 4 + 1];
           const b = data[idx * 4 + 2];
 
-          // 1. Trắng hoặc sáng tuyệt đối (white / off-white)
-          if (r >= 220 && g >= 220 && b >= 220) return true;
+          // 1. Trắng sáng tuyệt đối (white / off-white)
+          if (r >= threshold && g >= threshold && b >= threshold) return true;
 
-          // 2. Trùng với tone màu nền phát hiện từ các góc ảnh (dung sai 60)
-          const diff =
-            Math.abs(r - cornerR) + Math.abs(g - cornerG) + Math.abs(b - cornerB);
-          if (diff < 60) return true;
+          // 2. Độ sai khác màu (Color Distance) so với màu nền biên mẫu
+          const dist = Math.sqrt(
+            Math.pow(r - cornerR, 2) +
+            Math.pow(g - cornerG, 2) +
+            Math.pow(b - cornerB, 2)
+          );
+          if (dist < 55) return true;
 
           // 3. Nền xám/be trung tính có độ sáng tương đồng với nền biên
-          const isNeutral = Math.abs(r - g) < 20 && Math.abs(g - b) < 20;
+          const isNeutral = Math.abs(r - g) < 22 && Math.abs(g - b) < 22;
           const cornerBright = (cornerR + cornerG + cornerB) / 3;
           const pixelBright = (r + g + b) / 3;
-          if (
-            isNeutral &&
-            pixelBright >= 140 &&
-            Math.abs(pixelBright - cornerBright) < 35
-          ) {
+          if (isNeutral && pixelBright >= 160 && Math.abs(pixelBright - cornerBright) < 40) {
             return true;
           }
 
           return false;
         }
 
-        // Top & bottom rows
+        const visited = new Uint8Array(width * height);
+        const queue: number[] = [];
+
+        // Hàng trên cùng & hàng dưới cùng
         for (let x = 0; x < width; x++) {
           const top = x;
           const bot = (height - 1) * width + x;
@@ -107,7 +148,7 @@ export function removeWhiteBackground(
           }
         }
 
-        // Left & right columns
+        // Cột bên trái & cột bên phải
         for (let y = 0; y < height; y++) {
           const left = y * width;
           const right = y * width + (width - 1);
@@ -121,15 +162,16 @@ export function removeWhiteBackground(
           }
         }
 
+        // BFS loang toàn bộ nền bên ngoài thành trong suốt (alpha = 0)
         let head = 0;
         while (head < queue.length) {
           const curr = queue[head++];
-          data[curr * 4 + 3] = 0; // Set alpha to transparent
+          data[curr * 4 + 3] = 0; // Alpha = 0
 
           const cx = curr % width;
           const cy = Math.floor(curr / width);
 
-          // 4 neighbors (up, down, left, right)
+          // 4 lân cận (trên, dưới, trái, phải)
           if (cx > 0) {
             const n = curr - 1;
             if (!visited[n] && isBg(n)) {
@@ -160,19 +202,49 @@ export function removeWhiteBackground(
           }
         }
 
+        // Khử viền trắng / lem màu (Anti-aliasing defringe)
+        for (let y = 1; y < height - 1; y++) {
+          for (let x = 1; x < width - 1; x++) {
+            const idx = y * width + x;
+            if (data[idx * 4 + 3] > 0) {
+              // Nếu là điểm ảnh sát cạnh điểm trong suốt
+              const hasTransNeighbor =
+                data[(idx - 1) * 4 + 3] === 0 ||
+                data[(idx + 1) * 4 + 3] === 0 ||
+                data[(idx - width) * 4 + 3] === 0 ||
+                data[(idx + width) * 4 + 3] === 0;
+
+              if (hasTransNeighbor) {
+                const r = data[idx * 4];
+                const g = data[idx * 4 + 1];
+                const b = data[idx * 4 + 2];
+                // Nếu điểm viền quá sáng (viền trắng sót lại do nén ảnh)
+                if (r > 200 && g > 200 && b > 200) {
+                  data[idx * 4 + 3] = 0;
+                } else if (r > 170 && g > 170 && b > 170) {
+                  data[idx * 4 + 3] = Math.round(data[idx * 4 + 3] * 0.4);
+                }
+              }
+            }
+          }
+        }
+
         ctx.putImageData(imgData, 0, 0);
         const transparentDataUrl = canvas.toDataURL("image/png");
+        cleanup();
         resolve(transparentDataUrl);
       } catch (err) {
         console.warn("[removeWhiteBackground Error]:", err);
+        cleanup();
         resolve(imageUrl);
       }
     };
 
     img.onerror = () => {
+      cleanup();
       resolve(imageUrl);
     };
 
-    img.src = imageUrl;
+    img.src = safeSrc;
   });
 }

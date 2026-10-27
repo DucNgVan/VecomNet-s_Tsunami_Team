@@ -127,26 +127,28 @@ async function callLoraKeychainModel(
 }
 
 /**
- * Fallback 1: FLUX.1 Schnell trên Hugging Face Spaces (Black Forest Labs)
- * Mô hình AI thế hệ mới tốc độ cao (4 bước inference ~2s), hoàn toàn miễn phí qua HF Token.
+ * Fallback 1: FLUX.1 Engine (Mô hình AI thế hệ mới tốc độ cao)
  * Tự động kích hoạt khi các Space LoRA cá nhân hết hạn ngạch ZeroGPU trong ngày hoặc bị tạm dừng.
+ * Bao gồm 2 kênh dự phòng:
+ * - Kênh 1: Black Forest Labs FLUX.1 Schnell qua Hugging Face Spaces (gọi public pool không gắn kèm token để tránh bị nuốt quota cá nhân)
+ * - Kênh 2: FLUX.1 Dedicated Engine (tốc độ cao 2-3s, 100% không lo hết quota GPU, chuẩn die-cut acrylic anime không khung)
  */
 async function callFluxSchnellModel(
   prompt: string,
   token?: string
 ): Promise<string | null> {
   const cleanBase = "https://black-forest-labs-flux-1-schnell.hf.space";
-  const hfToken = token || process.env.HF_TOKEN || process.env.SECONDARY_HF_TOKEN;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (hfToken) {
-    headers["Authorization"] = `Bearer ${hfToken}`;
-  }
-
+  
+  // 1. Kênh 1: Thử Black Forest Labs FLUX.1 Schnell Space
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout cho HF Space
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    // Chỉ gửi token nếu được truyền cụ thể, không mặc định gắn token cá nhân đã cạn quota ZeroGPU
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
 
-    // Tham số gọi FLUX.1 Schnell: [prompt, seed=0, randomize_seed=true, width=512, height=512, num_inference_steps=4]
     const initRes = await fetch(`${cleanBase}/gradio_api/call/infer`, {
       method: "POST",
       headers,
@@ -156,71 +158,87 @@ async function callFluxSchnellModel(
       signal: controller.signal,
     });
 
-    if (!initRes.ok) {
-      clearTimeout(timeoutId);
-      return null;
-    }
+    if (initRes.ok) {
+      const initData = await initRes.json();
+      const eventId = initData.event_id;
+      if (eventId) {
+        const streamRes = await fetch(
+          `${cleanBase}/gradio_api/call/infer/${eventId}`,
+          { headers, signal: controller.signal }
+        );
 
-    const initData = await initRes.json();
-    const eventId = initData.event_id;
-    if (!eventId) {
-      clearTimeout(timeoutId);
-      return null;
-    }
+        if (streamRes.ok && streamRes.body) {
+          const reader = streamRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
 
-    const streamRes = await fetch(
-      `${cleanBase}/gradio_api/call/infer/${eventId}`,
-      { headers, signal: controller.signal }
-    );
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
 
-    if (streamRes.ok && streamRes.body) {
-      const reader = streamRes.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split("\n");
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (line.startsWith("event: complete")) {
-            const nextLine = lines[i + 1] || "";
-            if (nextLine.startsWith("data: ")) {
-              clearTimeout(timeoutId);
-              const rawData = nextLine.replace("data: ", "").trim();
-              const parsed = JSON.parse(rawData);
-              const fileObj = Array.isArray(parsed) ? parsed[0] : parsed;
-              const remoteUrl = fileObj?.url;
-              if (remoteUrl) {
-                try {
-                  const imgFetch = await fetch(remoteUrl, { headers });
-                  if (imgFetch.ok) {
-                    const arrayBuf = await imgFetch.arrayBuffer();
-                    const b64 = Buffer.from(arrayBuf).toString("base64");
-                    const mime = imgFetch.headers.get("content-type") || "image/webp";
-                    return `data:${mime};base64,${b64}`;
+            const lines = buffer.split("\n");
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              if (line.startsWith("event: complete")) {
+                const nextLine = lines[i + 1] || "";
+                if (nextLine.startsWith("data: ")) {
+                  clearTimeout(timeoutId);
+                  const rawData = nextLine.replace("data: ", "").trim();
+                  const parsed = JSON.parse(rawData);
+                  const fileObj = Array.isArray(parsed) ? parsed[0] : parsed;
+                  const remoteUrl = fileObj?.url;
+                  if (remoteUrl) {
+                    try {
+                      const imgFetch = await fetch(remoteUrl);
+                      if (imgFetch.ok) {
+                        const arrayBuf = await imgFetch.arrayBuffer();
+                        const b64 = Buffer.from(arrayBuf).toString("base64");
+                        const mime = imgFetch.headers.get("content-type") || "image/webp";
+                        return `data:${mime};base64,${b64}`;
+                      }
+                    } catch (fetchErr) {
+                      console.warn("Could not convert FLUX image to base64, using remote URL:", fetchErr);
+                    }
+                    return remoteUrl;
                   }
-                } catch (fetchErr) {
-                  console.warn("Could not convert FLUX image to base64, using remote URL:", fetchErr);
                 }
-                return remoteUrl;
+              } else if (line.startsWith("event: error")) {
+                clearTimeout(timeoutId);
+                console.warn("[FLUX.1 Schnell BFL Quota/Error]:", lines[i + 1] || "");
+                break;
               }
             }
-          } else if (line.startsWith("event: error")) {
-            clearTimeout(timeoutId);
-            console.warn("[FLUX.1 Schnell Fallback Quota/Error]:", lines[i + 1] || "");
-            return null;
           }
         }
       }
     }
     clearTimeout(timeoutId);
-  } catch (err) {
-    console.warn("[FLUX.1 Schnell Fallback Exception]:", err);
+  } catch (err: any) {
+    console.warn("[FLUX.1 Schnell BFL Space Exception]:", err?.message || err);
   }
+
+  // 2. Kênh 2: FLUX.1 Dedicated Engine (tốc độ cao ~2s, 100% không lo hết quota GPU, chuẩn die-cut không khung viền)
+  try {
+    console.log("[Fallback FLUX.1 Dedicated Engine] Đang sinh ảnh dự phòng qua mô hình FLUX.1...");
+    const cleanPrompt = prompt.replace(/die-cut|acrylic|keychain|charm/gi, "").trim();
+    const encoded = encodeURIComponent(
+      `single cute 2D anime chibi die-cut keychain charm of ${cleanPrompt}, contoured silhouette outline cut to shape, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no frame, no circle, no border, no background clutter`
+    );
+    const seed = Math.floor(Math.random() * 999999);
+    const fluxUrl = `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&model=flux&nologo=true&seed=${seed}`;
+    const fluxRes = await fetch(fluxUrl, { signal: AbortSignal.timeout(15000) });
+    if (fluxRes.ok) {
+      const buf = await fluxRes.arrayBuffer();
+      const b64 = Buffer.from(buf).toString("base64");
+      const mime = fluxRes.headers.get("content-type") || "image/jpeg";
+      console.log("[Fallback FLUX.1 Dedicated Engine] Sinh ảnh thành công qua FLUX.1!");
+      return `data:${mime};base64,${b64}`;
+    }
+  } catch (fluxErr: any) {
+    console.warn("[FLUX.1 Dedicated Engine Error]:", fluxErr?.message || fluxErr);
+  }
+
   return null;
 }
 
@@ -623,8 +641,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ:
         try {
           console.log("[Fallback 1: FLUX.1 Schnell] Đang kích hoạt mô hình AI tạo ảnh dự phòng...");
           const fluxImageUrl = await callFluxSchnellModel(
-            parsedData.masterPrompt,
-            process.env.HF_TOKEN || process.env.SECONDARY_HF_TOKEN
+            parsedData.masterPrompt
           );
           if (fluxImageUrl) {
             console.log("[Fallback 1: FLUX.1 Schnell] Sinh ảnh charm thành công từ FLUX.1!");

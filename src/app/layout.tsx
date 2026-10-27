@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
-import { IntroProvider } from "@/context/IntroContext";
 import { Navbar } from "@/components/ui/Navbar";
 import { Footer } from "@/components/ui/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -42,22 +41,20 @@ export default function RootLayout({
         <ToastProvider>
           <AuthProvider>
             <CartProvider>
-              <IntroProvider>
-                {/* Subtle Global 3D Ambient Canvas */}
-                <OceanCanvas3D interactive={true} className="fixed inset-0 z-0 opacity-40 pointer-events-none" />
+              {/* Subtle Global 3D Ambient Canvas */}
+              <OceanCanvas3D interactive={true} className="fixed inset-0 z-0 opacity-40 pointer-events-none" />
 
-                {/* Floating Navigation */}
-                <Navbar />
+              {/* Floating Navigation */}
+              <Navbar />
 
-                {/* Side-over Cart Drawer */}
-                <CartDrawer />
+              {/* Side-over Cart Drawer */}
+              <CartDrawer />
 
-                {/* Main Content Area */}
-                <main className="flex-1 relative w-full overflow-x-hidden">{children}</main>
+              {/* Main Content Area */}
+              <main className="flex-1 relative w-full overflow-x-hidden">{children}</main>
 
-                {/* Global Footer */}
-                <Footer />
-              </IntroProvider>
+              {/* Global Footer */}
+              <Footer />
             </CartProvider>
           </AuthProvider>
         </ToastProvider>

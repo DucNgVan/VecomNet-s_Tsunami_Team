@@ -9,13 +9,13 @@ function QuizRedirect() {
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("mode", "ai");
-    router.replace(`/story?${params.toString()}`);
+    params.set("tab", "ai_custom");
+    router.replace(`/studio?${params.toString()}`);
   }, [router, searchParams]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-50 to-slate-50 text-slate-700">
-      Đang chuyển tiếp tới Your Story AI Quiz...
+    <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] text-[#7A6F68]">
+      Đang chuyển tiếp tới NÉT AI Stylist...
     </div>
   );
 }
@@ -24,8 +24,8 @@ export default function StoryQuizPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-sky-50 text-slate-700">
-          Đang nạp Your Story AI...
+        <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] text-[#7A6F68]">
+          Đang nạp NÉT Studio...
         </div>
       }
     >

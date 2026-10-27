@@ -34,35 +34,23 @@ Vecomnets/
 │   ├── app/                      # Next.js 14 App Router
 │   │   ├── layout.tsx            # Root Layout (Ambient 3D, Navbar, CartDrawer, Footer)
 │   │   ├── globals.css           # Bảng màu đại dương, hiệu ứng kính mờ & thanh cuộn
-│   │   ├── page.tsx              # Trang chủ (Hero Video, 3D Teaser, Combos, Story, QR)
+│   │   ├── page.tsx              # Trang chủ (3D-First Interactive Bag & Đà Nẵng Collection)
 │   │   ├── shop/                 # Cửa hàng (Lọc theo Combo, Phôi túi, Charm, Quick Add)
-│   │   ├── customizer/           # Nét Lab 3D Studio (Snap-to-Mesh 2D & Xoay 360° 3D)
-│   │   ├── story/                # Quy trình 4 bước tái sinh & Nghề dệt thủ công Việt Nam
-│   │   ├── traceability/         # Bản đồ cứu hộ biển, GPS và chứng chỉ số Batch ID
+│   │   ├── studio/               # Nét Studio (Phối charm có sẵn & Sáng tạo charm riêng AI)
+│   │   ├── passport/             # Story Passport & Hải đồ truy xuất nguồn gốc lô lưới
 │   │   ├── b2b/                  # Quà tặng doanh nghiệp & Máy tính chỉ số ESG
 │   │   ├── checkout/             # Thanh toán 1-page (VNPay, MoMo, VietQR, COD)
 │   │   ├── order-success/        # Xác nhận đơn hàng, QR Code truy xuất & tiến độ xưởng
-│   │   └── admin/                # Bảng điều khiển Xưởng Nét (Xem bản vẽ & cập nhật QC)
+│   │   └── admin/                # Bảng điều khiển Xưởng Nét (Catalog, Đơn hàng, Thiết kế AI)
 │   ├── components/
-│   │   ├── 3d/                   # Các module Three.js WebGL
-│   │   │   ├── OceanCanvas3D.tsx # Hiệu ứng hạt lân tinh & vortex sợi lưới
-│   │   │   └── BagCanvas3D.tsx   # Trình xem & xoay 3D túi gắn charm, xuất snapshot
-│   │   ├── customizer/           # Bộ công cụ tùy biến Nét Lab
-│   │   │   ├── NetGridCanvas.tsx # Canvas mắt lưới snap tự động khi kéo thả/chọn charm
-│   │   │   ├── CharmTray.tsx     # Khay phụ kiện charm thủy tinh phân loại theo chủ đề
-│   │   │   ├── BagSelector.tsx   # Chọn dáng phôi túi (Tote, Hobo, Bucket, Mini)
-│   │   │   ├── MeshColorSelector.tsx # Chọn màu sắc lưới (Abyss, Kelp, Coral, Pearl)
-│   │   │   ├── LivePriceCard.tsx # Tính giá thời gian thực & chỉ số cứu đại dương
-│   │   │   └── SnapshotModal.tsx # Xuất bản vẽ kỹ thuật gia công theo mã mắt lưới
-│   │   ├── cart/
-│   │   │   └── CartDrawer.tsx    # Ngăn trượt giỏ hàng kèm cấu hình charm tùy biến
-│   │   └── ui/                   # Hệ thống UI Phong cách Glasses (Glassmorphism)
-│   │       ├── GlassCard.tsx     # Thẻ kính mờ khúc xạ đa biến thể
-│   │       ├── GlassButton.tsx   # Nút bấm lân tinh ánh sáng
-│   │       ├── GlassBadge.tsx    # Huy hiệu sinh thái
-│   │       ├── Navbar.tsx        # Thanh điều hướng nổi
-│   │       └── Footer.tsx        # Chân trang & bộ đếm rác biển đã xử lý
+│   │   ├── 3d/                   # Các module Three.js WebGL (BagCanvas3D, BagCard3D, CharmCanvas3D, OceanCanvas3D)
+│   │   ├── studio/               # Studio Canvas (NetBag2DCanvas tương tác kéo thả)
+│   │   ├── admin/                # Bảng điều hành Xưởng NÉT (Catalog, Đơn hàng, Yêu cầu thiết kế AI)
+│   │   ├── cart/                 # Ngăn trượt giỏ hàng kèm cấu hình charm tùy biến (CartDrawer)
+│   │   ├── ocean/                # Hiệu ứng đại dương (OceanBackdrop, OceanFloatingCard)
+│   │   └── ui/                   # Hệ thống UI (Navbar, Footer, GlassCard, GlassButton, NetsIntroLoader)
 │   ├── context/
+│   │   ├── AuthContext.tsx       # Xác thực người dùng Firebase Auth
 │   │   └── CartContext.tsx       # Quản lý giỏ hàng và lưu trữ persistent LocalStorage
 │   ├── data/
 │   │   ├── products.ts           # Dữ liệu phôi túi, các loại charm & combo signature
@@ -117,9 +105,8 @@ npm start
 ```
 Truy cập ứng dụng tại: `http://localhost:3000`
 - Trang chủ: `http://localhost:3000/`
-- Nét Lab 3D: `http://localhost:3000/customizer`
+- Nét Studio: `http://localhost:3000/studio`
 - Cửa hàng: `http://localhost:3000/shop`
-- Hành trình tái sinh: `http://localhost:3000/story`
-- Bản đồ truy xuất: `http://localhost:3000/traceability`
+- Story Passport: `http://localhost:3000/passport`
 - Doanh nghiệp B2B: `http://localhost:3000/b2b`
 - Bảng điều khiển xưởng Nét (Admin): `http://localhost:3000/admin`

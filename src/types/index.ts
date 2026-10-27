@@ -139,23 +139,6 @@ export type TraceBatch = {
   createdAt?: string;
 };
 
-export type StoryQuizAnswer = {
-  vibe: string;
-  memory: string;
-  intention: string;
-};
-
-export type StoryQuizRecommendation = {
-  vibe: string;
-  memory: string;
-  intention: string;
-  title: string;
-  poeticDedication: string;
-  recommendedCharmIds: string[];
-  suggestedAnchors: { charmId: string; anchorId: string }[];
-  impactEstimateKg: number;
-};
-
 export type Order = {
   orderId: string;
   orderCode: string;

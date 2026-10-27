@@ -72,7 +72,7 @@ export const BAG_BASES: BagBase[] = [
     tagline: "Biểu tượng tái sinh đại dương, phong cách sang trọng thanh lịch",
     description:
       "Chiếc túi biểu tượng của NÉT, được đan thủ công từ 1.6kg lưới ma vớt tại vùng biển Nam Ô (Đà Nẵng). Đáy gia cố bằng da vi sợi sinh học (Bio-leather), khoang chứa rộng rãi để vừa laptop 15.6 inch.",
-    basePrice: 1250000,
+    basePrice: 250000,
     plasticOffsetKg: 1.6,
     dimensions: "38cm x 34cm x 12cm",
     capacity: "16 Lít",

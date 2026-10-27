@@ -84,7 +84,7 @@ function NetStudioContent() {
   const [isLoadingBags, setIsLoadingBags] = useState(true);
   const [is3DMode, setIs3DMode] = useState(true); // Default directly to interactive 3D view
 
-  const baseBagPrice = selectedBag?.basePrice || 1250000;
+  const baseBagPrice = selectedBag?.basePrice || 250000;
 
   // Tải danh mục mẫu túi & charm từ bộ sưu tập do Admin đăng trên Firestore
   useEffect(() => {
@@ -112,7 +112,7 @@ function NetStudioContent() {
                 name: p.name || "Túi Lưới Tái Sinh NÉT",
                 tagline: p.tagline || p.description || "Dệt thủ công từ lưới rác đại dương.",
                 description: p.description || "Dệt thủ công từ lưới rác đại dương.",
-                basePrice: Number(p.basePrice || p.price) || 1250000,
+                basePrice: Number(p.basePrice || p.price) || 250000,
                 plasticOffsetKg:
                   p.plasticOffsetKg ?? (p.plasticOffsetGrams ? p.plasticOffsetGrams / 1000 : 1.6),
                 dimensions: typeof p.dimensions === "string" ? p.dimensions : "38cm x 34cm x 12cm",
@@ -1948,6 +1948,7 @@ Key 3D printing & charm specs:
                   <div className="relative flex-1 min-w-0">
                     <select
                       id="bag-select-dropdown"
+                      disabled={isLoadingBags}
                       value={selectedBag?.id}
                       onChange={(e) => {
                         const bag = availableBags.find((b) => b.id === e.target.value);
@@ -1969,22 +1970,24 @@ Key 3D printing & charm specs:
                           }
                         }
                       }}
-                      className="w-full appearance-none bg-white border border-[#E8E2D8] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-[#1A130F] focus:outline-none focus:ring-1 focus:ring-[#B85D43] cursor-pointer truncate shadow-2xs"
+                      className={`w-full appearance-none bg-white border border-[#E8E2D8] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-[#1A130F] focus:outline-none focus:ring-1 focus:ring-[#B85D43] cursor-pointer truncate shadow-2xs transition-opacity ${isLoadingBags ? "opacity-60 cursor-wait" : ""}`}
                     >
                       {availableBags.map((bag) => (
                         <option key={bag.id} value={bag.id}>
-                          {bag.name} ({bag.colors?.length || 5} màu) — {formatVND(bag.basePrice)}
+                          {bag.name} ({bag.colors?.length || 5} màu) {!isLoadingBags ? `— ${formatVND(bag.basePrice)}` : ""}
                         </option>
                       ))}
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-[#7A6F68] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </div>
-                {selectedBag && (
+                {isLoadingBags ? (
+                  <span className="h-4 w-16 bg-[#E8E2D8] rounded-md animate-pulse blur-[0.5px] shrink-0" title="Đang đồng bộ giá..." />
+                ) : selectedBag ? (
                   <span className="text-xs font-bold text-[#B85D43] shrink-0">
                     {formatVND(selectedBag.basePrice)}
                   </span>
-                )}
+                ) : null}
               </div>
 
               {/* Dynamic Bag Colors Selector Bar (Đồng bộ với mẫu túi đang chọn) */}
@@ -2295,9 +2298,13 @@ Key 3D printing & charm specs:
                           <div className="text-[11px] text-[#7A6F68]">
                             Tổng ước tính
                           </div>
-                          <div className="text-xl sm:text-2xl font-serif font-bold text-[#241B16]">
-                            {totalPriceNumber.toLocaleString("vi-VN")} đ
-                          </div>
+                          {isLoadingBags ? (
+                            <div className="h-7 w-28 bg-[#E8E2D8]/80 rounded-lg animate-pulse blur-[0.5px] mt-1" />
+                          ) : (
+                            <div className="text-xl sm:text-2xl font-serif font-bold text-[#241B16]">
+                              {totalPriceNumber.toLocaleString("vi-VN")} đ
+                            </div>
+                          )}
                         </div>
 
                         <button
@@ -2987,7 +2994,11 @@ Key 3D printing & charm specs:
                             </span>
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-[#5E4D43]">{selectedBag?.name || "Túi Nét"} (Phôi chuẩn):</span>
-                              <span className="font-semibold text-[#241B16]">{formatVND(baseBagPrice)}</span>
+                              {isLoadingBags ? (
+                                <span className="h-4 w-16 bg-[#E8E2D8] rounded animate-pulse blur-[0.5px]" />
+                              ) : (
+                                <span className="font-semibold text-[#241B16]">{formatVND(baseBagPrice)}</span>
+                              )}
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-[#5E4D43]">Charm độc bản AI:</span>
@@ -3185,9 +3196,13 @@ Key 3D printing & charm specs:
                     </div>
 
                     <div className="text-right">
-                      <div className="font-serif text-2xl sm:text-3xl font-bold text-[#241B16]">
-                        {totalPriceNumber.toLocaleString("vi-VN")} đ
-                      </div>
+                      {isLoadingBags ? (
+                        <div className="h-8 w-32 bg-[#E8E2D8]/80 rounded-lg animate-pulse blur-[0.5px] ml-auto mb-1" />
+                      ) : (
+                        <div className="font-serif text-2xl sm:text-3xl font-bold text-[#241B16]">
+                          {totalPriceNumber.toLocaleString("vi-VN")} đ
+                        </div>
+                      )}
                       <div className="text-[11px] text-[#7A6F68]">
                         {hasAppliedCustomToBag || customIdea.trim()
                           ? "+ Charm riêng (Chờ báo giá)"

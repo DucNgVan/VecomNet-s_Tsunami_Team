@@ -8,59 +8,10 @@ import { NetsIntroLoader } from "@/components/ui/NetsIntroLoader";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
 import { BAG_BASES, BAG_COLORS } from "@/data/products";
-import { PlacedCharm } from "@/types";
 
 export default function HomePage() {
   const [showIntro, setShowIntro] = useState(false);
   const [hero3dMode, setHero3dMode] = useState(true);
-
-  // Showcase bag charms for hero
-  const heroCharms: PlacedCharm[] = [
-    {
-      instanceId: "hero-charm-1",
-      charmId: "charm-wave",
-      anchorId: "a1",
-      x: 35,
-      y: 45,
-      rotation: 0,
-      charm: {
-        id: "charm-wave",
-        name: "Sóng Mỹ Khê",
-        vietnameseName: "Sóng Mỹ Khê",
-        category: "marine",
-        price: 25000,
-        plasticOffsetGrams: 150,
-        material: "Nhựa lưới ép men xanh",
-        description: "Nhịp sóng và những buổi sớm bên bờ biển Mỹ Khê.",
-        color: "#60a5fa",
-        glowColor: "rgba(96, 165, 250, 0.4)",
-        symbol: "≈",
-        iconName: "waves",
-      },
-    },
-    {
-      instanceId: "hero-charm-2",
-      charmId: "charm-sun",
-      anchorId: "a2",
-      x: 65,
-      y: 56,
-      rotation: 0,
-      charm: {
-        id: "charm-sun",
-        name: "Mặt trời",
-        vietnameseName: "Mặt trời",
-        category: "celestial",
-        price: 25000,
-        plasticOffsetGrams: 150,
-        material: "Đồng tái sinh men vàng",
-        description: "Một buổi bình minh và khởi đầu mới bên biển.",
-        color: "#f59e0b",
-        glowColor: "rgba(245, 158, 11, 0.4)",
-        symbol: "☼",
-        iconName: "sun",
-      },
-    },
-  ];
 
   const collectionCharms = [
     {
@@ -174,13 +125,13 @@ export default function HomePage() {
                   <BagCanvas3D
                     bagBase={BAG_BASES[0]}
                     selectedColor={BAG_COLORS[0]}
-                    placedCharms={heroCharms}
+                    placedCharms={[]}
                     modelUrl={BAG_COLORS[0].model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
                   />
                 </div>
               ) : (
                 <NetBag2DCanvas
-                  placedCharms={heroCharms}
+                  placedCharms={[]}
                   onUpdateCharmPosition={() => {}}
                   onRemoveCharm={() => {}}
                   show3dToggle={true}

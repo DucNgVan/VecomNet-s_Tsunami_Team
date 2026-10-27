@@ -207,7 +207,7 @@ async function callFluxSchnellModel(
               } else if (line.startsWith("event: error")) {
                 clearTimeout(timeoutId);
                 console.warn("[FLUX.1 Schnell BFL Quota/Error]:", lines[i + 1] || "");
-                break;
+                return null;
               }
             }
           }
@@ -217,27 +217,6 @@ async function callFluxSchnellModel(
     clearTimeout(timeoutId);
   } catch (err: any) {
     console.warn("[FLUX.1 Schnell BFL Space Exception]:", err?.message || err);
-  }
-
-  // 2. Kênh 2: FLUX.1 Dedicated Engine (tốc độ cao ~2s, 100% không lo hết quota GPU, chuẩn die-cut không khung viền)
-  try {
-    console.log("[Fallback FLUX.1 Dedicated Engine] Đang sinh ảnh dự phòng qua mô hình FLUX.1...");
-    const cleanPrompt = prompt.replace(/die-cut|acrylic|keychain|charm/gi, "").trim();
-    const encoded = encodeURIComponent(
-      `single cute 2D anime chibi die-cut keychain charm of ${cleanPrompt}, contoured silhouette outline cut to shape, isolated on pure solid white #FFFFFF background, minimal vector sticker art, no frame, no circle, no border, no background clutter`
-    );
-    const seed = Math.floor(Math.random() * 999999);
-    const fluxUrl = `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&model=flux&nologo=true&seed=${seed}`;
-    const fluxRes = await fetch(fluxUrl, { signal: AbortSignal.timeout(15000) });
-    if (fluxRes.ok) {
-      const buf = await fluxRes.arrayBuffer();
-      const b64 = Buffer.from(buf).toString("base64");
-      const mime = fluxRes.headers.get("content-type") || "image/jpeg";
-      console.log("[Fallback FLUX.1 Dedicated Engine] Sinh ảnh thành công qua FLUX.1!");
-      return `data:${mime};base64,${b64}`;
-    }
-  } catch (fluxErr: any) {
-    console.warn("[FLUX.1 Dedicated Engine Error]:", fluxErr?.message || fluxErr);
   }
 
   return null;
@@ -661,7 +640,7 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ THEO SCHEMA:
       // 1. FLUX.1 lên trước
       try {
         console.log("[Rank 1: FLUX.1 Schnell] Đang sinh ảnh qua mô hình FLUX.1...");
-        const fluxImageUrl = await callFluxSchnellModel(parsedData.masterPrompt);
+        const fluxImageUrl = await callFluxSchnellModel(parsedData.masterPrompt, process.env.HF_TOKEN);
         if (fluxImageUrl) {
           console.log("[Rank 1: FLUX.1 Schnell] Sinh ảnh charm thành công từ FLUX.1!");
           parsedData.imageUrl = fluxImageUrl;

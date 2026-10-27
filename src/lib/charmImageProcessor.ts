@@ -229,6 +229,18 @@ export async function removeWhiteBackground(
           }
         }
 
+        // Loại bỏ triệt để các watermark/logo chữ ở rìa góc đáy ảnh (nằm ngoài phạm vi charm trung tâm)
+        const cornerWatermarkLimitY = height - Math.floor(height * 0.08); // 8% đáy ảnh
+        const cornerWatermarkLimitX = Math.floor(width * 0.35); // 35% góc dưới trái/phải
+        for (let y = cornerWatermarkLimitY; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (x < cornerWatermarkLimitX || x > width - cornerWatermarkLimitX) {
+              const idx = y * width + x;
+              data[idx * 4 + 3] = 0; // Đặt hoàn toàn trong suốt
+            }
+          }
+        }
+
         ctx.putImageData(imgData, 0, 0);
         const transparentDataUrl = canvas.toDataURL("image/png");
         cleanup();

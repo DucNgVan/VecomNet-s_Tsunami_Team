@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } f
 import * as THREE from "three";
 import { createConfiguredGLTFLoader } from "@/lib/gltfLoader";
 import { BagBase, BagMeshColor, PlacedCharm } from "@/types";
-import { Loader2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export interface BagCanvas3DHandle {
   captureSnapshot: () => string | null;
@@ -573,7 +573,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       ) => {
         const charmImg = placed.charm.image;
         const charmColor = placed.charm.color || "#B85D43";
-        const charmSize = 0.55;
+        const charmSize = 0.72;
 
         const pendant = new THREE.Group();
         pendant.renderOrder = 10;
@@ -850,40 +850,6 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             <span className="text-xs font-bold text-[#5E4D43] uppercase tracking-wider">
               Đang Nạp Mô Hình 3D...
             </span>
-          </div>
-        )}
-
-        {/* Floating Zoom & View Controls */}
-        {isInteractive && !hasWebGlError && (
-          <div className="absolute top-4 right-4 z-20 flex flex-col items-center gap-1.5 p-1 bg-white/95 backdrop-blur-md border border-[#E8E2D8] rounded-2xl shadow-sm">
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              title="Phóng to"
-              aria-label="Phóng to mô hình"
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#5E4D43] hover:text-[#B85D43] hover:bg-[#FAF7F2] active:scale-95 transition-all cursor-pointer"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              title="Thu nhỏ"
-              aria-label="Thu nhỏ mô hình"
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#5E4D43] hover:text-[#B85D43] hover:bg-[#FAF7F2] active:scale-95 transition-all cursor-pointer"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <div className="w-4 h-px bg-[#E8E2D8] my-0.5" />
-            <button
-              type="button"
-              onClick={handleResetView}
-              title="Đặt lại góc nhìn & độ phóng đại"
-              aria-label="Đặt lại góc nhìn và độ phóng đại"
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#5E4D43] hover:text-[#B85D43] hover:bg-[#FAF7F2] active:scale-95 transition-all cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
           </div>
         )}
 

@@ -1358,8 +1358,8 @@ Key 3D printing & charm specs:
       instanceId: "custom-instance-ai",
       charmId: customCharmObj.id,
       anchorId: `a-custom`,
-      x: 50,
-      y: 50,
+      x: 62,
+      y: 38,
       rotation: 0,
       charm: customCharmObj,
     };
@@ -1887,7 +1887,14 @@ Key 3D printing & charm specs:
             <div className="lg:col-span-5 flex flex-col items-center">
               {/* 3D / 2D Canvas */}
               {is3DMode ? (
-                <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-2 sm:p-3 shadow-sm relative border border-[#E8E2D8] overflow-hidden">
+                <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-2 sm:p-3 shadow-sm relative border border-[#E8E2D8] overflow-hidden flex flex-col items-center justify-between">
+                  {/* Top Arch Label */}
+                  <div className="pt-3 text-center z-20 pointer-events-none">
+                    <span className="text-[11px] sm:text-[12px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
+                      NETS STUDIO
+                    </span>
+                  </div>
+
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
                     <button
                       type="button"

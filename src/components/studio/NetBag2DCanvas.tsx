@@ -64,9 +64,9 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
     const rawX = ((clientX - rect.left) / rect.width) * 100;
     const rawY = ((clientY - rect.top) / rect.height) * 100;
 
-    // Constrain within the tote body safe boundary
-    const clampedX = Math.max(18, Math.min(82, Math.round(rawX)));
-    const clampedY = Math.max(20, Math.min(78, Math.round(rawY)));
+    // Constrain within the tote body and card safe boundary
+    const clampedX = Math.max(10, Math.min(90, Math.round(rawX)));
+    const clampedY = Math.max(12, Math.min(88, Math.round(rawY)));
 
     onUpdateCharmPosition(draggingId, clampedX, clampedY);
   };
@@ -85,8 +85,8 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
     if (!selectedCharmInstanceId) return;
     const target = placedCharms.find((c) => c.instanceId === selectedCharmInstanceId);
     if (!target) return;
-    const newX = Math.max(18, Math.min(82, target.x + dx));
-    const newY = Math.max(20, Math.min(78, target.y + dy));
+    const newX = Math.max(10, Math.min(90, target.x + dx));
+    const newY = Math.max(12, Math.min(88, target.y + dy));
     onUpdateCharmPosition(selectedCharmInstanceId, newX, newY);
   };
 
@@ -96,20 +96,9 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
       <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 flex flex-col items-center justify-between shadow-sm relative overflow-hidden select-none border border-[#E8E2D8]">
         {/* Top Arch Label */}
         <div className="pt-3 text-center">
-          <span className="text-[10px] sm:text-[11px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
-            TÚI LƯỚI & CHARM ĐÀ NẴNG
+          <span className="text-[11px] sm:text-[12px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
+            NETS STUDIO
           </span>
-          {selectedColorName && (
-            <div className="flex items-center justify-center gap-1.5 mt-0.5">
-              <span
-                className="w-2 h-2 rounded-full inline-block shadow-xs"
-                style={{ backgroundColor: selectedColorHex || "#489f92" }}
-              />
-              <span className="text-[11px] font-medium text-[#42342B]">
-                {selectedColorName}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* The Bag Container & Dropzone */}

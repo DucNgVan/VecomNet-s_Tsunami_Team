@@ -674,26 +674,6 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ THEO SCHEMA:
           }
         }
       }
-
-      // 3. FALLBACK 3: POLLINATIONS FLUX/SDXL & PHÔI NGHỆ NHÂN NÉT
-      if (!parsedData.imageUrl) {
-        try {
-          const encoded = encodeURIComponent(
-            `single cute 2D anime chibi die-cut acrylic keychain charm, 3cm x 3cm, ${parsedData.masterPrompt.replace(/die-cut|acrylic|keychain|charm/gi, "")}, small metallic keychain hanging ring hole on top, isolated on pure solid white #FFFFFF background, minimal flat vector sticker art, no frame, no shadow`
-          );
-          const fallbackUrl = `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&model=flux&nologo=true`;
-          const res = await fetch(fallbackUrl, { signal: AbortSignal.timeout(12000) });
-          if (res.ok) {
-            const buf = await res.arrayBuffer();
-            const b64 = Buffer.from(buf).toString("base64");
-            const mime = res.headers.get("content-type") || "image/png";
-            parsedData.imageUrl = `data:${mime};base64,${b64}`;
-            parsedData.imageProvider = "flux-pollinations";
-          }
-        } catch (err) {
-          console.warn("[Fallback 3 Exception]:", err);
-        }
-      }
     }
 
     // Đảm bảo ảnh luôn ở dạng Base64 data: URL để chống triệt để lỗi CORS Tainted Canvas

@@ -503,24 +503,27 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       ) => {
         const charmImg = placed.charm.image;
         const charmColor = placed.charm.color || "#B85D43";
-        const charmSize = 0.52;
+        const charmSize = 0.55;
 
         const pendant = new THREE.Group();
+        pendant.renderOrder = 10;
 
         // 1. Hanging Clasp Hardware (hooks onto tote bag mesh at top of charm)
         // Top eyelet loop on the head of the die-cut character
-        const eyeletGeo = new THREE.TorusGeometry(0.03, 0.006, 12, 24);
+        const eyeletGeo = new THREE.TorusGeometry(0.032, 0.007, 14, 28);
         const eyeletMesh = new THREE.Mesh(eyeletGeo, goldHardwareMat);
-        eyeletMesh.position.set(0, charmSize * 0.44, 0.005);
+        eyeletMesh.position.set(0, charmSize * 0.44, 0.006);
         eyeletMesh.castShadow = true;
+        eyeletMesh.renderOrder = 10;
         pendant.add(eyeletMesh);
 
         // Suspension link / clip hook hooking onto bag net
-        const clipGeo = new THREE.TorusGeometry(0.022, 0.005, 12, 20);
+        const clipGeo = new THREE.TorusGeometry(0.024, 0.006, 14, 24);
         const clipMesh = new THREE.Mesh(clipGeo, goldHardwareMat);
-        clipMesh.position.set(0, charmSize * 0.44 + 0.032, 0);
+        clipMesh.position.set(0, charmSize * 0.44 + 0.034, 0);
         clipMesh.rotation.y = Math.PI / 2;
         clipMesh.castShadow = true;
+        clipMesh.renderOrder = 10;
         pendant.add(clipMesh);
 
         // 2. Pure DIE-CUT Charm (Contoured along subject, NO circular frame/coin)
@@ -537,6 +540,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             alphaTest: 0.08, // Cut out all transparent pixels outside the character's contour
             side: THREE.DoubleSide,
             depthWrite: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
           });
 
           textureLoader.load(
@@ -557,15 +563,17 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
           // Front layer
           const frontMesh = new THREE.Mesh(planeGeo, frontMaterial);
-          frontMesh.position.z = 0.005;
+          frontMesh.position.z = 0.006;
           frontMesh.castShadow = true;
           frontMesh.receiveShadow = true;
+          frontMesh.renderOrder = 10;
           pendant.add(frontMesh);
 
           // Back layer (gives 3mm acrylic thickness feel in 3D without any outer frame)
           const backMesh = new THREE.Mesh(planeGeo, frontMaterial);
-          backMesh.position.z = -0.005;
+          backMesh.position.z = -0.006;
           backMesh.castShadow = true;
+          backMesh.renderOrder = 10;
           pendant.add(backMesh);
         } else {
           // Fallback procedural charm
@@ -596,32 +604,85 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             transparent: true,
             alphaTest: 0.05,
             side: THREE.DoubleSide,
+            depthWrite: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
           });
           const fallbackMesh = new THREE.Mesh(planeGeo, fallbackMat);
           fallbackMesh.castShadow = true;
+          fallbackMesh.renderOrder = 10;
           pendant.add(fallbackMesh);
         }
 
         parentGroup.add(pendant);
       };
 
-      placedCharms.forEach((placed, idx) => {
+      // Helper to compute exact surface position and drape orientation on the bag via Raycasting
+      const computeBagSurfacePlacement = (placed: PlacedCharm) => {
         // Map 2D percentage coordinates to 3D surface space on tote bag
         const posX = ((placed.x - 50) / 50) * 1.15;
         const posY = -((placed.y - 50) / 50) * 1.25 - 0.15;
-        
-        // Exact Z surface coordinate:
-        // Tote bag front face is at Z ~ 0.44 at center (posY = -0.15)
-        // Adaptive Z: tapers slightly from bottom (0.46) to top (0.40)
-        const baseZ = 0.44 - (posY * 0.08);
-        const posZ = Math.max(0.39, Math.min(0.47, baseZ));
+
+        let posZ = 0.52;
+        let drapeAngle = 0;
+        let hasHit = false;
+
+        const bagRoot = bagGroupRef.current;
+        const modelGroup = modelContainerRef.current;
+
+        if (bagRoot && modelGroup && modelGroup.children.length > 0) {
+          // Save current bag rotation and reset to neutral identity to align raycasting
+          const curRotX = bagRoot.rotation.x;
+          const curRotY = bagRoot.rotation.y;
+          const curRotZ = bagRoot.rotation.z;
+
+          bagRoot.rotation.set(0, 0, 0);
+          bagRoot.updateMatrixWorld(true);
+
+          const raycaster = new THREE.Raycaster();
+          raycaster.set(new THREE.Vector3(posX, posY, 5.0), new THREE.Vector3(0, 0, -1));
+          const hits = raycaster.intersectObjects(modelGroup.children, true);
+
+          if (hits.length > 0) {
+            // Find front-facing surface intersection (facing towards +Z)
+            const frontHit = hits.find((h) => h.face && h.face.normal.z > -0.1) || hits[0];
+            // Safe 4.5cm protrusion right in front of the bag mesh surface
+            posZ = frontHit.point.z + 0.045;
+            hasHit = true;
+
+            // Conform subtly to surface slope without ever pitching inward
+            if (frontHit.face?.normal) {
+              drapeAngle = Math.max(-0.01, Math.min(0.08, -frontHit.face.normal.y * 0.18));
+            }
+          }
+
+          // Restore bag rotation
+          bagRoot.rotation.set(curRotX, curRotY, curRotZ);
+          bagRoot.updateMatrixWorld(true);
+        }
+
+        // Geometric fallback if ray misses (e.g. model still initializing or placed near extreme edge)
+        if (!hasHit) {
+          const normY = (placed.y - 50) / 50; // -1 at top, +1 at bottom
+          // Tote bottom naturally bulges out to Z ~ 0.55
+          const estZ = 0.46 + normY * 0.09;
+          posZ = Math.max(0.44, Math.min(0.60, estZ)) + 0.045;
+        }
+
+        return { posX, posY, posZ, drapeAngle };
+      };
+
+      placedCharms.forEach((placed, idx) => {
+        const { posX, posY, posZ, drapeAngle } = computeBagSurfacePlacement(placed);
 
         const charmGroup = new THREE.Group();
         charmGroup.position.set(posX, posY, posZ);
         charmGroup.rotation.z =
           (placed.rotation || 0) * (Math.PI / 180) +
           (idx % 2 === 0 ? 1 : -1) * 0.04;
-        charmGroup.rotation.x = -0.05; // Slight natural drape angle towards bag fabric
+        charmGroup.rotation.x = drapeAngle;
+        charmGroup.renderOrder = 10;
 
         container.add(charmGroup);
 
@@ -647,7 +708,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
               wrapper.add(charmInstance);
 
               const maxDim = Math.max(size.x, size.y, size.z);
-              const targetDim = 0.52;
+              const targetDim = 0.55;
               const scale = maxDim > 0 ? targetDim / maxDim : 1;
               wrapper.scale.setScalar(scale);
 
@@ -655,6 +716,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
                 if ((child as THREE.Mesh).isMesh) {
                   const m = child as THREE.Mesh;
                   m.castShadow = true;
+                  m.renderOrder = 10;
                   if (m.material) {
                     const origMat = m.material as THREE.MeshStandardMaterial;
                     const clonedMat = origMat.clone();
@@ -687,7 +749,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       return () => {
         isCurrent = false;
       };
-    }, [placedCharms]);
+    }, [placedCharms, isGlbActive]);
 
     return (
       <div className={`relative w-full h-full min-h-[420px] select-none ${className}`}>

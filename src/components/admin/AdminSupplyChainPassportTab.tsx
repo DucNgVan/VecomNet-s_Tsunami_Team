@@ -372,20 +372,17 @@ export const AdminSupplyChainPassportTab: React.FC<AdminSupplyChainPassportTabPr
   return (
     <div className="space-y-4">
       {/* 1. Header & 4 Sub-Tabs (Req 11) */}
-      <div className="border-b border-[#E8E2D9] pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-          <div>
-            <h1 className="text-xl font-bold text-[#2A2521]">Chuỗi Cung Ứng Lưới & Passport</h1>
-            <p className="text-xs text-[#7A6E65]">
-              Liên kết chặt chẽ: Tiếp nhận lô ➔ Kho lưới ➔ Xuất may & Mã túi ➔ Cấp Passport.
-            </p>
-          </div>
-          <div className="flex gap-2">
+      <div className="border-b border-[#E2D8C7] pb-2">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h1 className="text-base sm:text-lg font-bold text-[#2A2521] tracking-tight">
+            Lưới & Passport
+          </h1>
+          <div className="flex items-center gap-2">
             {activeSubTab === "inbound" && (
               <button
                 type="button"
                 onClick={() => setShowInboundModal(true)}
-                className="px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors shadow-xs"
               >
                 + Nhận lô lưới
               </button>
@@ -394,7 +391,7 @@ export const AdminSupplyChainPassportTab: React.FC<AdminSupplyChainPassportTabPr
               <button
                 type="button"
                 onClick={() => setShowExportModal(true)}
-                className="px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors shadow-xs"
               >
                 + Xuất cho sản xuất
               </button>
@@ -403,50 +400,50 @@ export const AdminSupplyChainPassportTab: React.FC<AdminSupplyChainPassportTabPr
         </div>
 
         {/* 4 Tabs Điều Hướng (Req 11) */}
-        <div className="flex border-b border-[#E8E2D9] text-xs font-semibold">
+        <div className="flex border-b border-[#E2D8C7] text-xs font-medium">
           <button
             type="button"
             onClick={() => setActiveSubTab("inbound")}
-            className={`py-2 px-4 border-b-2 transition-colors ${
+            className={`py-2 px-3 border-b-2 transition-colors ${
               activeSubTab === "inbound"
-                ? "border-[#C85A32] text-[#C85A32] bg-white font-bold"
-                : "border-transparent text-[#7A6E65] hover:text-black"
+                ? "border-[#C85A32] text-[#C85A32] font-bold"
+                : "border-transparent text-[#7A6E65] hover:text-[#2A2521]"
             }`}
           >
-            1. Nhận & xử lý ({batches.length})
+            Nhận & xử lý ({batches.length})
           </button>
           <button
             type="button"
             onClick={() => setActiveSubTab("inventory")}
-            className={`py-2 px-4 border-b-2 transition-colors ${
+            className={`py-2 px-3 border-b-2 transition-colors ${
               activeSubTab === "inventory"
-                ? "border-[#C85A32] text-[#C85A32] bg-white font-bold"
-                : "border-transparent text-[#7A6E65] hover:text-black"
+                ? "border-[#C85A32] text-[#C85A32] font-bold"
+                : "border-transparent text-[#7A6E65] hover:text-[#2A2521]"
             }`}
           >
-            2. Kho lưới
+            Kho lưới
           </button>
           <button
             type="button"
             onClick={() => setActiveSubTab("production")}
-            className={`py-2 px-4 border-b-2 transition-colors ${
+            className={`py-2 px-3 border-b-2 transition-colors ${
               activeSubTab === "production"
-                ? "border-[#C85A32] text-[#C85A32] bg-white font-bold"
-                : "border-transparent text-[#7A6E65] hover:text-black"
+                ? "border-[#C85A32] text-[#C85A32] font-bold"
+                : "border-transparent text-[#7A6E65] hover:text-[#2A2521]"
             }`}
           >
-            3. Sản xuất & mã túi ({slips.length} phiếu)
+            Sản xuất & mã túi ({slips.length})
           </button>
           <button
             type="button"
             onClick={() => setActiveSubTab("passport")}
-            className={`py-2 px-4 border-b-2 transition-colors ${
+            className={`py-2 px-3 border-b-2 transition-colors ${
               activeSubTab === "passport"
-                ? "border-[#C85A32] text-[#C85A32] bg-white font-bold"
-                : "border-transparent text-[#7A6E65] hover:text-black"
+                ? "border-[#C85A32] text-[#C85A32] font-bold"
+                : "border-transparent text-[#7A6E65] hover:text-[#2A2521]"
             }`}
           >
-            4. Passport & QR ({serials.filter((s) => s.passport).length}/{serials.length})
+            Passport & QR ({serials.filter((s) => s.passport).length}/{serials.length})
           </button>
         </div>
       </div>

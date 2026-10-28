@@ -9,12 +9,12 @@ import {
   BagSerialItem,
   Partner,
   getAdminOrders,
-  saveAdminOrder,
   getAdminBatches,
   getAdminSlips,
   getAdminSerials,
   getAdminPartners,
   getAdminRole,
+  setAdminRole,
   AdminRole,
 } from "@/lib/adminDataStorage";
 import {
@@ -22,7 +22,7 @@ import {
   saveProductToFirestore,
   deleteProductFromFirestore,
 } from "@/lib/firestoreService";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminSidebar, ALLOWED_TABS_BY_ROLE } from "@/components/admin/AdminSidebar";
 import { AdminOverviewTab } from "@/components/admin/AdminOverviewTab";
 import { AdminOrdersTabRefactored } from "@/components/admin/AdminOrdersTabRefactored";
 import { AdminSupplyChainPassportTab } from "@/components/admin/AdminSupplyChainPassportTab";
@@ -34,38 +34,62 @@ function AdminPortalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 1. Menu dọc quản trị gồm: overview | orders | products | net-passport | partners (Req 1)
+  // 1. Phân quyền vai trò (Role State)
+  const [currentRole, setCurrentRole] = useState<AdminRole>(() => getAdminRole());
+
+  // 2. Tab State
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [orderFilterParam, setOrderFilterParam] = useState<string>("all");
   const [selectedOrderIdParam, setSelectedOrderIdParam] = useState<string | undefined>(undefined);
   const [supplyChainSubTab, setSupplyChainSubTab] = useState<"inbound" | "inventory" | "production" | "passport">("inbound");
 
-  // Sync tab with URL
+  // Xử lý chuyển đổi vai trò: Tự động đưa về tab hợp lệ nếu tab cũ bị giới hạn quyền
+  const handleRoleChange = (newRole: AdminRole) => {
+    setAdminRole(newRole);
+    setCurrentRole(newRole);
+    const allowed = ALLOWED_TABS_BY_ROLE[newRole] || ALLOWED_TABS_BY_ROLE.admin;
+    if (!allowed.includes(activeTab)) {
+      handleSelectTab("overview");
+    }
+  };
+
+  // Đồng bộ tab từ URL và kiểm soát phân quyền (Role Guard)
   useEffect(() => {
     const rawTab = searchParams.get("tab");
-    if (!rawTab) {
-      setActiveTab("overview");
-      return;
+    let target = "overview";
+    if (rawTab) {
+      if (["overview", "dashboard", "analytics"].includes(rawTab)) {
+        target = "overview";
+      } else if (["orders", "design-requests"].includes(rawTab)) {
+        target = "orders";
+      } else if (["products", "catalog"].includes(rawTab)) {
+        target = "products";
+      } else if (["net-passport", "supply-chain", "batches", "manufacturing"].includes(rawTab)) {
+        target = "net-passport";
+      } else if (["partners", "commission"].includes(rawTab)) {
+        target = "partners";
+      }
     }
-    if (["overview", "dashboard", "analytics"].includes(rawTab)) {
+
+    const allowed = ALLOWED_TABS_BY_ROLE[currentRole] || ALLOWED_TABS_BY_ROLE.admin;
+    if (allowed.includes(target)) {
+      setActiveTab(target);
+    } else {
       setActiveTab("overview");
-    } else if (["orders", "design-requests"].includes(rawTab)) {
-      setActiveTab("orders");
-    } else if (["products", "catalog"].includes(rawTab)) {
-      setActiveTab("products");
-    } else if (["net-passport", "supply-chain", "batches", "manufacturing"].includes(rawTab)) {
-      setActiveTab("net-passport");
-    } else if (["partners", "commission"].includes(rawTab)) {
-      setActiveTab("partners");
     }
-  }, [searchParams]);
+  }, [searchParams, currentRole]);
 
   const handleSelectTab = (tabId: string) => {
+    const allowed = ALLOWED_TABS_BY_ROLE[currentRole] || ALLOWED_TABS_BY_ROLE.admin;
+    if (!allowed.includes(tabId)) {
+      alert("Vai trò hiện tại của bạn không có quyền truy cập vào phân hệ này!");
+      return;
+    }
     setActiveTab(tabId);
     router.push(`/admin?tab=${tabId}`, { scroll: false });
   };
 
-  // 2. Auth Guard
+  // 3. Auth Guard
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean | null>(null);
   useEffect(() => {
     async function checkServerAuth() {
@@ -86,7 +110,7 @@ function AdminPortalContent() {
     checkServerAuth();
   }, [router]);
 
-  // 3. Shared Data States
+  // 4. Shared Data States
   const [orders, setOrders] = useState<AdminOrder[]>(() => getAdminOrders());
   const [batches, setBatches] = useState<RawNetBatch[]>(() => getAdminBatches());
   const [slips, setSlips] = useState<ProductionSlip[]>(() => getAdminSlips());
@@ -94,10 +118,10 @@ function AdminPortalContent() {
   const [partners, setPartners] = useState<Partner[]>(() => getAdminPartners());
   const [backendProducts, setBackendProducts] = useState<any[]>([]);
 
-  // Trạng thái lưu dữ liệu đám mây (Req 25)
+  // Trạng thái lưu dữ liệu đám mây
   const [syncStatus, setSyncStatus] = useState<"saved" | "syncing" | "error">("saved");
 
-  // Sandbox Modal State (Req 26)
+  // Sandbox Modal State
   const [showSandboxModal, setShowSandboxModal] = useState(false);
 
   // Fetch Firestore products
@@ -127,7 +151,7 @@ function AdminPortalContent() {
     fetchProducts();
   };
 
-  // Navigations from Overview clicks (Req 3)
+  // Navigations from Overview clicks
   const handleOverviewNavigateToOrders = (filterKey?: string, selectOrderId?: string) => {
     setOrderFilterParam(filterKey || "all");
     setSelectedOrderIdParam(selectOrderId);
@@ -162,23 +186,25 @@ function AdminPortalContent() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col md:flex-row font-sans text-[#2A2521]">
-      {/* 1. Menu Dọc Quản Trị (Req 1) */}
+      {/* 1. Menu Dọc Quản Trị - Tông màu Kem Đất Nung Sáng */}
       <AdminSidebar
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
+        currentRole={currentRole}
+        onRoleChange={handleRoleChange}
         onOpenSandbox={() => setShowSandboxModal(true)}
         pendingOrdersCount={pendingOrdersCount}
         quotesNeededCount={quotesNeededCount}
       />
 
-      {/* 2. Vùng Nội Dung Chính (Req 2: Tối giản, không quảng cáo, thao tác ngay) */}
+      {/* 2. Vùng Nội Dung Chính */}
       <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         {/* Top bar tối giản */}
-        <header className="h-12 bg-white border-b border-[#E8E2D9] px-4 sm:px-6 flex items-center justify-between">
+        <header className="h-11 bg-white border-b border-[#E2D8C7] px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-[#7A6E65]">
             <span>Cổng Quản Trị</span>
             <span>/</span>
-            <span className="font-semibold text-[#2A2521] capitalize">
+            <span className="font-semibold text-[#2A2521]">
               {activeTab === "overview"
                 ? "Tổng quan"
                 : activeTab === "orders"
@@ -192,10 +218,19 @@ function AdminPortalContent() {
           </div>
 
           <div className="flex items-center gap-3 text-xs">
-            {/* Trạng thái lưu đám mây (Req 25) */}
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+            {/* Tag vai trò đang xem */}
+            <span className="text-[10px] bg-[#F5F0E8] text-[#5A4E45] px-2 py-0.5 rounded border border-[#E2D8C7] font-semibold">
+              {currentRole === "admin"
+                ? "Quản trị viên"
+                : currentRole === "orders_staff"
+                ? "Phụ trách đơn hàng"
+                : "Thủ kho & xưởng"}
+            </span>
+
+            {/* Trạng thái lưu đám mây */}
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>{syncStatus === "syncing" ? "Đang đồng bộ..." : "Đã đồng bộ đám mây"}</span>
+              <span>{syncStatus === "syncing" ? "Đang đồng bộ..." : "Đã đồng bộ"}</span>
             </div>
 
             <button
@@ -209,8 +244,8 @@ function AdminPortalContent() {
           </div>
         </header>
 
-        {/* Nội dung theo Tab đang chọn */}
-        <div className="p-4 sm:p-6 flex-1">
+        {/* Nội dung theo Tab đang chọn - Được bảo vệ chặt chẽ bởi Role */}
+        <div className="p-4 sm:p-5 flex-1">
           {activeTab === "overview" && (
             <AdminOverviewTab
               orders={orders}
@@ -218,13 +253,14 @@ function AdminPortalContent() {
               slips={slips}
               serials={serials}
               products={backendProducts}
+              currentRole={currentRole}
               onNavigateToOrders={handleOverviewNavigateToOrders}
               onNavigateToProducts={() => handleSelectTab("products")}
               onNavigateToSupplyChain={handleOverviewNavigateToSupplyChain}
             />
           )}
 
-          {activeTab === "orders" && (
+          {activeTab === "orders" && ALLOWED_TABS_BY_ROLE[currentRole].includes("orders") && (
             <AdminOrdersTabRefactored
               orders={orders}
               partners={partners}
@@ -236,7 +272,7 @@ function AdminPortalContent() {
             />
           )}
 
-          {activeTab === "products" && (
+          {activeTab === "products" && ALLOWED_TABS_BY_ROLE[currentRole].includes("products") && (
             <AdminCatalogTabRefactored
               products={backendProducts}
               onSaveProduct={async (p) => {
@@ -252,7 +288,7 @@ function AdminPortalContent() {
             />
           )}
 
-          {activeTab === "net-passport" && (
+          {activeTab === "net-passport" && ALLOWED_TABS_BY_ROLE[currentRole].includes("net-passport") && (
             <AdminSupplyChainPassportTab
               batches={batches}
               slips={slips}
@@ -264,7 +300,7 @@ function AdminPortalContent() {
             />
           )}
 
-          {activeTab === "partners" && (
+          {activeTab === "partners" && ALLOWED_TABS_BY_ROLE[currentRole].includes("partners") && (
             <AdminPartnersTab
               partners={partners}
               orders={orders}
@@ -274,7 +310,7 @@ function AdminPortalContent() {
         </div>
       </main>
 
-      {/* 3. Modal Khu Vực Thử Nghiệm / Sandbox (Req 26) */}
+      {/* 3. Modal Khu Vực Thử Nghiệm / Sandbox */}
       <AdminSandboxModal
         isOpen={showSandboxModal}
         onClose={() => setShowSandboxModal(false)}

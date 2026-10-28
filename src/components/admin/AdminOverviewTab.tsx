@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { AdminOrder, RawNetBatch, ProductionSlip, BagSerialItem } from "@/lib/adminDataStorage";
+import { AdminOrder, RawNetBatch, ProductionSlip, BagSerialItem, AdminRole } from "@/lib/adminDataStorage";
 import { formatVND, formatKg } from "@/lib/utils";
 
 interface AdminOverviewTabProps {
@@ -10,6 +10,7 @@ interface AdminOverviewTabProps {
   slips: ProductionSlip[];
   serials: BagSerialItem[];
   products: any[];
+  currentRole?: AdminRole;
   onNavigateToOrders: (filterKey?: string, selectOrderId?: string) => void;
   onNavigateToProducts: () => void;
   onNavigateToSupplyChain: (subTab?: "inbound" | "inventory" | "production" | "passport", selectId?: string) => void;
@@ -21,6 +22,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   slips,
   serials,
   products,
+  currentRole = "admin",
   onNavigateToOrders,
   onNavigateToProducts,
   onNavigateToSupplyChain,
@@ -71,7 +73,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
     };
   }, [batches, slips, serials]);
 
-  // 3. Danh sách việc cần làm ngay (Actionable Tasks) (Req 3)
+  // 3. Danh sách việc cần làm được lọc theo đúng quyền hạn nhiệm vụ của Role (Req Role-based)
   const actionTasks = useMemo(() => {
     const list: {
       id: string;
@@ -81,198 +83,237 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       tagColor: string;
       actionText: string;
       onClick: () => void;
+      category: "orders" | "warehouse";
     }[] = [];
 
-    // Đơn cần báo giá
-    orders
-      .filter((o) => o.fulfillmentStatus === "quote_needed")
-      .forEach((o) => {
-        list.push({
-          id: `quote-${o.orderId}`,
-          title: `Đơn custom #${o.orderCode} của ${o.customer.fullName}`,
-          subtitle: o.items[0]?.title || "Yêu cầu thiết kế charm độc bản",
-          tag: "Cần báo giá",
-          tagColor: "bg-amber-100 text-amber-800 border-amber-300",
-          actionText: "Báo giá ngay",
-          onClick: () => onNavigateToOrders("custom_quote", o.orderId),
+    // Việc thuộc Đơn hàng
+    if (currentRole === "admin" || currentRole === "orders_staff") {
+      orders
+        .filter((o) => o.fulfillmentStatus === "quote_needed")
+        .forEach((o) => {
+          list.push({
+            id: `quote-${o.orderId}`,
+            title: `Đơn custom #${o.orderCode} (${o.customer.fullName})`,
+            subtitle: o.items[0]?.title || "Yêu cầu thiết kế charm độc bản",
+            tag: "Cần báo giá",
+            tagColor: "bg-purple-100 text-purple-800 border-purple-300",
+            actionText: "Báo giá ngay",
+            onClick: () => onNavigateToOrders("custom_quote", o.orderId),
+            category: "orders",
+          });
         });
-      });
 
-    // Đơn mới nhận cần xác nhận
-    orders
-      .filter((o) => o.fulfillmentStatus === "received")
-      .forEach((o) => {
-        list.push({
-          id: `confirm-${o.orderId}`,
-          title: `Đơn hàng #${o.orderCode} (${o.customer.fullName})`,
-          subtitle: `${o.items.length} sản phẩm — ${formatVND(o.total)}`,
-          tag: "Mới nhận",
-          tagColor: "bg-blue-100 text-blue-800 border-blue-300",
-          actionText: "Xác nhận đơn",
-          onClick: () => onNavigateToOrders("pending", o.orderId),
+      orders
+        .filter((o) => o.fulfillmentStatus === "received")
+        .forEach((o) => {
+          list.push({
+            id: `confirm-${o.orderId}`,
+            title: `Đơn hàng #${o.orderCode} (${o.customer.fullName})`,
+            subtitle: `${o.items.length} món — ${formatVND(o.total)}`,
+            tag: "Mới nhận",
+            tagColor: "bg-blue-100 text-blue-800 border-blue-300",
+            actionText: "Xác nhận đơn",
+            onClick: () => onNavigateToOrders("pending", o.orderId),
+            category: "orders",
+          });
         });
-      });
+    }
 
-    // Lô lưới chưa ghi kết quả giặt sấy
-    batches
-      .filter((b) => b.status === "unprocessed")
-      .forEach((b) => {
-        list.push({
-          id: `batch-${b.batchId}`,
-          title: `Lô lưới thô ${b.batchId} (${b.supplierSource})`,
-          subtitle: `Cân ban đầu ${b.initialWeightKg}kg tại ${b.seaRegion} — Cần ghi kết quả xử lý`,
-          tag: "Chờ ghi xử lý",
-          tagColor: "bg-purple-100 text-purple-800 border-purple-300",
-          actionText: "Ghi xử lý",
-          onClick: () => onNavigateToSupplyChain("inbound", b.batchId),
+    // Việc thuộc Kho & Xưởng may
+    if (currentRole === "admin" || currentRole === "warehouse_staff") {
+      batches
+        .filter((b) => b.status === "unprocessed")
+        .forEach((b) => {
+          list.push({
+            id: `batch-${b.batchId}`,
+            title: `Lô lưới thô ${b.batchId} (${b.supplierSource})`,
+            subtitle: `Cân ban đầu ${b.initialWeightKg}kg tại ${b.seaRegion} — Cần ghi kết quả xử lý`,
+            tag: "Chờ ghi xử lý",
+            tagColor: "bg-purple-100 text-purple-800 border-purple-300",
+            actionText: "Ghi xử lý",
+            onClick: () => onNavigateToSupplyChain("inbound", b.batchId),
+            category: "warehouse",
+          });
         });
-      });
 
-    // Phiếu sản xuất đang may chưa nhập kết quả
-    slips
-      .filter((s) => s.status === "in_production")
-      .forEach((s) => {
-        list.push({
-          id: `slip-${s.slipId}`,
-          title: `Phiếu may ${s.slipId} (${s.workshopName})`,
-          subtitle: `Mẫu: ${s.bagModelName} — Đã xuất ${s.totalExportedKg}kg lưới`,
-          tag: "Đang sản xuất",
-          tagColor: "bg-orange-100 text-orange-800 border-orange-300",
-          actionText: "Nhập kết quả may",
-          onClick: () => onNavigateToSupplyChain("production", s.slipId),
+      slips
+        .filter((s) => s.status === "in_production")
+        .forEach((s) => {
+          list.push({
+            id: `slip-${s.slipId}`,
+            title: `Phiếu may ${s.slipId} (${s.workshopName})`,
+            subtitle: `Mẫu: ${s.bagModelName} — Đã xuất ${s.totalExportedKg}kg lưới`,
+            tag: "Đang may",
+            tagColor: "bg-orange-100 text-orange-800 border-orange-300",
+            actionText: "Nhập kết quả may",
+            onClick: () => onNavigateToSupplyChain("production", s.slipId),
+            category: "warehouse",
+          });
         });
-      });
+    }
 
     return list;
-  }, [orders, batches, slips, onNavigateToOrders, onNavigateToSupplyChain]);
+  }, [orders, batches, slips, currentRole, onNavigateToOrders, onNavigateToSupplyChain]);
 
   return (
-    <div className="space-y-6">
-      {/* 1. Header Tối giản (Req 2) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#E8E2D9] pb-4">
-        <div>
-          <h1 className="text-xl font-bold text-[#2A2521]">Tổng quan vận hành</h1>
-          <p className="text-xs text-[#7A6E65] mt-0.5">
-            Bấm vào từng chỉ số để mở trực tiếp danh sách đã lọc tương ứng.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium bg-[#FAF7F2] text-[#7A6E65] px-2.5 py-1 rounded border border-[#E8E2D9]">
-            Hôm nay: {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}
-          </span>
+    <div className="space-y-4">
+      {/* 1. Header Tối giản (Gọn gàng, không văn giới thiệu) */}
+      <div className="flex items-center justify-between border-b border-[#E2D8C7] pb-2.5">
+        <h1 className="text-base sm:text-lg font-bold text-[#2A2521] tracking-tight">Tổng quan</h1>
+        <div className="text-[11px] font-medium text-[#7A6E65] bg-[#FAF7F2] px-2.5 py-1 rounded border border-[#E2D8C7]">
+          Hôm nay: {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}
         </div>
       </div>
 
-      {/* 2. Bốn Thẻ Chỉ Số Chính (Req 3, Clickable) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Thẻ 1: Đơn cần xử lý */}
-        <button
-          type="button"
-          onClick={() => onNavigateToOrders("pending")}
-          className="bg-white p-4 rounded-xl border border-[#E8E2D9] text-left hover:border-[#C85A32] hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
-            <span className="font-medium">Đơn cần xử lý</span>
-            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Mới / Xác nhận</span>
-          </div>
-          <div className="text-2xl font-bold text-[#2A2521] group-hover:text-[#C85A32] transition-colors">
-            {pendingOrders.length}
-          </div>
-          <div className="text-[11px] text-[#A89C93] mt-1 flex items-center justify-between">
-            <span>Đang chờ chuyển khâu</span>
-            <span className="text-[#C85A32] font-semibold group-hover:underline">Xem danh sách →</span>
-          </div>
-        </button>
+      {/* 2. Thẻ Chỉ Số Được Phân Quyền Theo Role */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Role: Admin hoặc Orders Staff */}
+        {(currentRole === "admin" || currentRole === "orders_staff") && (
+          <>
+            <button
+              type="button"
+              onClick={() => onNavigateToOrders("pending")}
+              className="bg-white p-3.5 rounded-xl border border-[#E2D8C7] text-left hover:border-[#C85A32] hover:shadow-xs transition-all group"
+            >
+              <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
+                <span className="font-medium">Đơn cần xử lý</span>
+                <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">Mới / Xác nhận</span>
+              </div>
+              <div className="text-xl font-bold text-[#2A2521] group-hover:text-[#C85A32] transition-colors">
+                {pendingOrders.length}
+              </div>
+              <div className="text-[10px] text-[#A89C93] mt-1 flex items-center justify-between">
+                <span>Chờ chuyển khâu</span>
+                <span className="text-[#C85A32] font-semibold group-hover:underline">Xem →</span>
+              </div>
+            </button>
 
-        {/* Thẻ 2: Custom cần báo giá */}
-        <button
-          type="button"
-          onClick={() => onNavigateToOrders("custom_quote")}
-          className="bg-white p-4 rounded-xl border border-[#E8E2D9] text-left hover:border-[#C85A32] hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
-            <span className="font-medium">Custom cần báo giá</span>
-            <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold">Yêu cầu charm</span>
-          </div>
-          <div className="text-2xl font-bold text-[#2A2521] group-hover:text-[#C85A32] transition-colors">
-            {customQuotesNeeded.length}
-          </div>
-          <div className="text-[11px] text-[#A89C93] mt-1 flex items-center justify-between">
-            <span>Chờ duyệt concept</span>
-            <span className="text-[#C85A32] font-semibold group-hover:underline">Xem chi tiết →</span>
-          </div>
-        </button>
+            <button
+              type="button"
+              onClick={() => onNavigateToOrders("custom_quote")}
+              className="bg-white p-3.5 rounded-xl border border-[#E2D8C7] text-left hover:border-[#C85A32] hover:shadow-xs transition-all group"
+            >
+              <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
+                <span className="font-medium">Custom cần báo giá</span>
+                <span className="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">Charm</span>
+              </div>
+              <div className="text-xl font-bold text-[#2A2521] group-hover:text-[#C85A32] transition-colors">
+                {customQuotesNeeded.length}
+              </div>
+              <div className="text-[10px] text-[#A89C93] mt-1 flex items-center justify-between">
+                <span>Chờ duyệt concept</span>
+                <span className="text-[#C85A32] font-semibold group-hover:underline">Xem →</span>
+              </div>
+            </button>
 
-        {/* Thẻ 3: Tiền đã thu thực tế (Tách biệt khỏi tổng đơn - Req 24) */}
-        <div className="bg-white p-4 rounded-xl border border-[#E8E2D9] text-left">
-          <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
-            <span className="font-medium">Tiền đã thu thực tế</span>
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">Thực thu</span>
-          </div>
-          <div className="text-2xl font-bold text-emerald-700">
-            {formatVND(totalActualCollected)}
-          </div>
-          <div className="text-[11px] text-[#7A6E65] mt-1">
-            Tổng giá trị đơn: <span className="font-medium">{formatVND(totalGrossOrderValue)}</span>
-          </div>
-        </div>
+            <div className="bg-white p-3.5 rounded-xl border border-[#E2D8C7] text-left">
+              <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
+                <span className="font-medium">Tiền đã thu thực tế</span>
+                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">Thực thu</span>
+              </div>
+              <div className="text-xl font-bold text-emerald-700">
+                {formatVND(totalActualCollected)}
+              </div>
+              <div className="text-[10px] text-[#7A6E65] mt-1">
+                Tổng đơn: <span className="font-medium">{formatVND(totalGrossOrderValue)}</span>
+              </div>
+            </div>
+          </>
+        )}
 
-        {/* Thẻ 4: Sản phẩm sắp/hết hàng */}
-        <button
-          type="button"
-          onClick={onNavigateToProducts}
-          className="bg-white p-4 rounded-xl border border-[#E8E2D9] text-left hover:border-[#C85A32] hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
-            <span className="font-medium">Sản phẩm sắp/hết hàng</span>
-            <span className="text-[10px] bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Tồn kho ≤ 3</span>
-          </div>
-          <div className="text-2xl font-bold text-[#2A2521] group-hover:text-[#C85A32] transition-colors">
-            {lowStockProducts.length}
-          </div>
-          <div className="text-[11px] text-[#A89C93] mt-1 flex items-center justify-between">
-            <span>Cần may bổ sung</span>
-            <span className="text-[#C85A32] font-semibold group-hover:underline">Kiểm kho →</span>
-          </div>
-        </button>
+        {/* Role: Admin hoặc Warehouse Staff */}
+        {(currentRole === "admin" || currentRole === "warehouse_staff") && (
+          <>
+            <button
+              type="button"
+              onClick={onNavigateToProducts}
+              className="bg-white p-3.5 rounded-xl border border-[#E2D8C7] text-left hover:border-[#C85A32] hover:shadow-xs transition-all group"
+            >
+              <div className="flex items-center justify-between text-xs text-[#7A6E65] mb-1">
+                <span className="font-medium">Sản phẩm sắp/hết hàng</span>
+                <span className="text-[9px] bg-red-100 text-red-800 px-1.5 py-0.2 rounded font-bold">Tồn ≤ 3</span>
+              </div>
+              <div className="text-xl font-bold text-[#2A2521] group-hover:text-[#C85A32] transition-colors">
+                {lowStockProducts.length}
+              </div>
+              <div className="text-[10px] text-[#A89C93] mt-1 flex items-center justify-between">
+                <span>Cần may bổ sung</span>
+                <span className="text-[#C85A32] font-semibold group-hover:underline">Kiểm kho →</span>
+              </div>
+            </button>
+          </>
+        )}
+
+        {/* Thẻ phụ trợ chỉ dành riêng cho Warehouse Staff khi không xem thẻ tiền */}
+        {currentRole === "warehouse_staff" && (
+          <>
+            <button
+              type="button"
+              onClick={() => onNavigateToSupplyChain("inventory")}
+              className="bg-white p-3.5 rounded-xl border border-[#E2D8C7] text-left hover:border-[#C85A32] hover:shadow-xs transition-all group"
+            >
+              <div className="text-xs text-[#7A6E65] mb-1 font-medium">Lưới khô trong kho</div>
+              <div className="text-xl font-bold text-blue-700">{formatKg(netMetrics.usableDryInStock)}</div>
+              <div className="text-[10px] text-[#C85A32] mt-1 font-semibold group-hover:underline">Xem kho lưới →</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigateToSupplyChain("production")}
+              className="bg-white p-3.5 rounded-xl border border-[#E2D8C7] text-left hover:border-[#C85A32] hover:shadow-xs transition-all group"
+            >
+              <div className="text-xs text-[#7A6E65] mb-1 font-medium">Lưới đang may ở xưởng</div>
+              <div className="text-xl font-bold text-amber-700">{formatKg(netMetrics.inProduction)}</div>
+              <div className="text-[10px] text-[#C85A32] mt-1 font-semibold group-hover:underline">Xem xưởng may →</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigateToSupplyChain("passport")}
+              className="bg-white p-3.5 rounded-xl border border-[#E2D8C7] text-left hover:border-[#C85A32] hover:shadow-xs transition-all group"
+            >
+              <div className="text-xs text-[#7A6E65] mb-1 font-medium">Túi thành phẩm đã may</div>
+              <div className="text-xl font-bold text-emerald-700">{serials.length} chiếc</div>
+              <div className="text-[10px] text-[#C85A32] mt-1 font-semibold group-hover:underline">Xem sổ Passport →</div>
+            </button>
+          </>
+        )}
       </div>
 
-      {/* 3. Danh Sách Việc Cần Làm Ngay (Req 3) */}
-      <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
-        <div className="flex items-center justify-between mb-3 border-b border-[#F4EFEB] pb-2">
+      {/* 3. Danh Sách Việc Cần Làm Ngay (Lọc theo nhiệm vụ Role) */}
+      <div className="bg-white rounded-xl border border-[#E2D8C7] p-3.5">
+        <div className="flex items-center justify-between mb-2.5 border-b border-[#F4EFEB] pb-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-[#2A2521]">Danh sách việc cần làm</h2>
-            <span className="text-xs bg-[#FAF7F2] text-[#7A6E65] px-2 py-0.5 rounded-full border border-[#E8E2D9] font-medium">
+            <h2 className="text-xs font-bold text-[#2A2521]">Việc cần xử lý ngay</h2>
+            <span className="text-[10px] bg-[#FAF7F2] text-[#7A6E65] px-2 py-0.2 rounded-full border border-[#E2D8C7] font-semibold">
               {actionTasks.length} việc
             </span>
           </div>
-          <span className="text-xs text-[#7A6E65]">Bấm vào từng dòng để mở đúng đối tượng xử lý</span>
+          <span className="text-[11px] text-[#7A6E65]">Bấm để mở đúng đơn hoặc lô cần làm</span>
         </div>
 
         {actionTasks.length === 0 ? (
-          <div className="py-8 text-center text-xs text-[#7A6E65]">
-            ✓ Hiện tại không có việc tồn đọng. Tất cả đơn hàng và quy trình đều đã cập nhật!
+          <div className="py-6 text-center text-xs text-[#7A6E65]">
+            ✓ Không có công việc nào tồn đọng trong phạm vi vai trò của bạn!
           </div>
         ) : (
           <div className="divide-y divide-[#F4EFEB]">
             {actionTasks.map((task) => (
               <div
                 key={task.id}
-                className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FDFBF7] px-2 rounded-lg transition-colors"
+                className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-[#FDFBF7] px-1.5 rounded-lg transition-colors"
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${task.tagColor}`}>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${task.tagColor}`}>
                       {task.tag}
                     </span>
                     <span className="text-xs font-semibold text-[#2A2521]">{task.title}</span>
                   </div>
-                  <p className="text-[11px] text-[#7A6E65] pl-1">{task.subtitle}</p>
+                  <p className="text-[10px] text-[#7A6E65] pl-0.5">{task.subtitle}</p>
                 </div>
                 <button
                   type="button"
                   onClick={task.onClick}
-                  className="px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-medium hover:bg-[#B34E28] transition-colors self-start sm:self-auto flex-shrink-0"
+                  className="px-2.5 py-1 rounded bg-[#C85A32] text-white text-[11px] font-semibold hover:bg-[#B34E28] transition-colors self-start sm:self-auto flex-shrink-0"
                 >
                   {task.actionText} →
                 </button>
@@ -282,52 +323,44 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
         )}
       </div>
 
-      {/* 4. Tách Bạch Số Liệu Lưới Thực Tế (Req 24) */}
-      <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
-        <div className="mb-3 border-b border-[#F4EFEB] pb-2 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-[#2A2521]">Cân bằng dòng vật liệu Lưới ma (kg)</h2>
-            <p className="text-[11px] text-[#7A6E65] mt-0.5">
-              Phân tách rạch ròi từng giai đoạn theo hồ sơ thực tế. Không gộp kg thu gom thô thành kg trong túi.
-            </p>
+      {/* 4. Cân Bằng Vật Liệu Lưới Ma (Chỉ hiện cho Admin & Warehouse Staff) */}
+      {(currentRole === "admin" || currentRole === "warehouse_staff") && (
+        <div className="bg-white rounded-xl border border-[#E2D8C7] p-3.5">
+          <div className="mb-2.5 border-b border-[#F4EFEB] pb-2 flex items-center justify-between">
+            <h2 className="text-xs font-bold text-[#2A2521]">Cân bằng vật liệu Lưới ma (kg)</h2>
+            <button
+              type="button"
+              onClick={() => onNavigateToSupplyChain()}
+              className="text-[11px] text-[#C85A32] hover:underline font-semibold"
+            >
+              Mở sổ Lưới & Passport →
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateToSupplyChain()}
-            className="text-xs text-[#C85A32] hover:underline font-semibold"
-          >
-            Mở sổ Lưới & Passport →
-          </button>
-        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-          <div className="p-3 bg-[#FAF7F2] rounded-lg border border-[#E8E2D9]">
-            <div className="text-[11px] text-[#7A6E65]">1. Lưới tiếp nhận thô</div>
-            <div className="text-lg font-bold text-[#2A2521] mt-1">{formatKg(netMetrics.rawReceived)}</div>
-            <div className="text-[10px] text-[#A89C93] mt-0.5">Bao gồm bùn/ẩm</div>
-          </div>
-          <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200">
-            <div className="text-[11px] text-blue-900">2. Lưới khô trong kho</div>
-            <div className="text-lg font-bold text-blue-700 mt-1">{formatKg(netMetrics.usableDryInStock)}</div>
-            <div className="text-[10px] text-blue-600 mt-0.5">Sẵn sàng xuất may</div>
-          </div>
-          <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200">
-            <div className="text-[11px] text-amber-900">3. Đang ở xưởng may</div>
-            <div className="text-lg font-bold text-amber-700 mt-1">{formatKg(netMetrics.inProduction)}</div>
-            <div className="text-[10px] text-amber-600 mt-0.5">Theo phiếu sản xuất</div>
-          </div>
-          <div className="p-3 bg-emerald-50/50 rounded-lg border border-emerald-200">
-            <div className="text-[11px] text-emerald-900">4. Trong túi đạt chuẩn</div>
-            <div className="text-lg font-bold text-emerald-700 mt-1">{formatKg(netMetrics.inFinishedBags)}</div>
-            <div className="text-[10px] text-emerald-600 mt-0.5">{serials.length} chiếc túi đã tạo mã</div>
-          </div>
-          <div className="p-3 bg-stone-50 rounded-lg border border-stone-200">
-            <div className="text-[11px] text-stone-700">5. Vụn còn dùng được</div>
-            <div className="text-lg font-bold text-stone-800 mt-1">{formatKg(netMetrics.scrapsInStock)}</div>
-            <div className="text-[10px] text-stone-500 mt-0.5">Phối chi tiết nhỏ</div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-center">
+            <div className="p-2.5 bg-[#FAF7F2] rounded-lg border border-[#E2D8C7]">
+              <div className="text-[10px] text-[#7A6E65]">1. Lưới thô tiếp nhận</div>
+              <div className="text-base font-bold text-[#2A2521] mt-0.5">{formatKg(netMetrics.rawReceived)}</div>
+            </div>
+            <div className="p-2.5 bg-blue-50/60 rounded-lg border border-blue-200">
+              <div className="text-[10px] text-blue-900">2. Lưới khô trong kho</div>
+              <div className="text-base font-bold text-blue-700 mt-0.5">{formatKg(netMetrics.usableDryInStock)}</div>
+            </div>
+            <div className="p-2.5 bg-amber-50/60 rounded-lg border border-amber-200">
+              <div className="text-[10px] text-amber-900">3. Đang may ở xưởng</div>
+              <div className="text-base font-bold text-amber-700 mt-0.5">{formatKg(netMetrics.inProduction)}</div>
+            </div>
+            <div className="p-2.5 bg-emerald-50/60 rounded-lg border border-emerald-200">
+              <div className="text-[10px] text-emerald-900">4. Trong túi đạt chuẩn</div>
+              <div className="text-base font-bold text-emerald-700 mt-0.5">{formatKg(netMetrics.inFinishedBags)}</div>
+            </div>
+            <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+              <div className="text-[10px] text-stone-700">5. Vụn tái sinh tồn kho</div>
+              <div className="text-base font-bold text-stone-800 mt-0.5">{formatKg(netMetrics.scrapsInStock)}</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

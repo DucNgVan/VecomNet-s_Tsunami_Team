@@ -431,17 +431,12 @@ export const AdminOrdersTabRefactored: React.FC<AdminOrdersTabProps> = ({
   return (
     <div className="space-y-4">
       {/* 1. Header & Actions (Req 4, 5) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#E8E2D9] pb-4">
-        <div>
-          <h1 className="text-xl font-bold text-[#2A2521]">Quản lý đơn hàng</h1>
-          <p className="text-xs text-[#7A6E65] mt-0.5">
-            Theo dõi tiến độ, thu tiền, đối soát đối tác và chuyển trạng thái đơn.
-          </p>
-        </div>
+      <div className="flex items-center justify-between border-b border-[#E2D8C7] pb-2.5">
+        <h1 className="text-base sm:text-lg font-bold text-[#2A2521] tracking-tight">Đơn hàng</h1>
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
-          className="px-3.5 py-2 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors flex items-center gap-1.5 self-start sm:self-auto shadow-sm"
+          className="px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors flex items-center gap-1.5 shadow-xs"
         >
           <span>+ Tạo đơn trực tiếp</span>
         </button>

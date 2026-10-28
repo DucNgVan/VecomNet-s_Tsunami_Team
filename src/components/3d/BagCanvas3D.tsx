@@ -55,10 +55,10 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
     const [isGlbActive, setIsGlbActive] = useState<boolean>(false);
     const [hasWebGlError, setHasWebGlError] = useState<boolean>(false);
 
-    // Camera & Zoom constants and refs
-    const DEFAULT_CAMERA_Z = 5.2;
-    const MIN_CAMERA_Z = 3.2;
-    const MAX_CAMERA_Z = 7.5;
+    // Camera & Zoom constants and refs (tinh chỉnh khoảng cách mặc định để túi nằm vừa vặn, không bị che bởi nút hoặc lấn header)
+    const DEFAULT_CAMERA_Z = 6.6;
+    const MIN_CAMERA_Z = 4.0;
+    const MAX_CAMERA_Z = 9.0;
     const targetCameraZRef = useRef<number>(DEFAULT_CAMERA_Z);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
@@ -126,7 +126,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       sceneRef.current = scene;
 
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-      camera.position.set(0, 0.1, DEFAULT_CAMERA_Z);
+      camera.position.set(0, -0.22, DEFAULT_CAMERA_Z);
       cameraRef.current = camera;
 
       renderer.setSize(width, height);
@@ -281,7 +281,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
             // Auto-scale to fit canvas viewport nicely
             const maxDim = Math.max(size.x, size.y, size.z);
-            const targetSize = 4.3;
+            const targetSize = 4.0;
             const scale = maxDim > 0 ? targetSize / maxDim : 1;
             glbWrapper.scale.setScalar(scale);
 
@@ -351,7 +351,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
                   const wrapper = new THREE.Group();
                   wrapper.add(sceneObj);
                   const maxDim = Math.max(size.x, size.y, size.z);
-                  const scale = maxDim > 0 ? 4.3 / maxDim : 1;
+                  const scale = maxDim > 0 ? 4.0 / maxDim : 1;
                   wrapper.scale.setScalar(scale);
                   if (size.z > size.x) wrapper.rotation.y = -Math.PI / 2;
                   modelContainer.add(wrapper);
@@ -573,7 +573,8 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       ) => {
         const charmImg = placed.charm.image;
         const charmColor = placed.charm.color || "#B85D43";
-        const charmSize = 0.72;
+        const bagScaleRatio = 4.0 / 4.3;
+        const charmSize = 0.72 * bagScaleRatio;
 
         const pendant = new THREE.Group();
         pendant.renderOrder = 10;
@@ -694,8 +695,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       // Helper to compute exact surface position and drape orientation on the bag via Raycasting
       const computeBagSurfacePlacement = (placed: PlacedCharm) => {
         // Map 2D percentage coordinates to 3D surface space on tote bag
-        const posX = ((placed.x - 50) / 50) * 1.15;
-        const posY = -((placed.y - 50) / 50) * 1.25 - 0.15;
+        const bagScaleRatio = 4.0 / 4.3;
+        const posX = ((placed.x - 50) / 50) * 1.15 * bagScaleRatio;
+        const posY = (-((placed.y - 50) / 50) * 1.25 - 0.15) * bagScaleRatio;
 
         let posZ = 0.52;
         let drapeAngle = 0;

@@ -1627,11 +1627,11 @@ Key 3D printing & charm specs:
                     </span>
                   </div>
 
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
                     <button
                       type="button"
                       onClick={() => setIs3DMode(false)}
-                      className="px-4 py-2 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>Trở về bản phối 2D</span>
                     </button>

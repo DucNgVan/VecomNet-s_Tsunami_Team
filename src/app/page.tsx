@@ -113,21 +113,34 @@ export default function HomePage() {
           <div className="lg:col-span-6 flex items-center justify-center relative">
             <div className="relative w-full max-w-[440px]">
               {hero3dMode ? (
-                <div className="w-full aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 shadow-sm relative border border-[#E8E2D8] overflow-hidden">
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
+                <div className="w-full aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none flex flex-col items-center justify-between">
+                  {/* Top Arch Label */}
+                  <div className="pt-3 text-center z-20 pointer-events-none">
+                    <span className="text-[11px] sm:text-[12px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
+                      NETS STUDIO
+                    </span>
+                  </div>
+
+                  {/* 3D / 2D Toggle Switch at Bottom */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
                     <button
+                      type="button"
                       onClick={() => setHero3dMode(false)}
-                      className="px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs font-semibold text-[#42342B] hover:text-[#B85D43] transition-colors shadow-sm"
+                      className="px-4 py-2 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                     >
-                      Bản vẽ 2D
+                      <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+                      <span>← Trở về bản phối 2D</span>
                     </button>
                   </div>
-                  <BagCanvas3D
-                    bagBase={BAG_BASES[0]}
-                    selectedColor={BAG_COLORS[0]}
-                    placedCharms={[]}
-                    modelUrl={BAG_COLORS[0].model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
-                  />
+
+                  <div className="absolute inset-0 z-10">
+                    <BagCanvas3D
+                      bagBase={BAG_BASES[0]}
+                      selectedColor={BAG_COLORS[0]}
+                      placedCharms={[]}
+                      modelUrl={BAG_COLORS[0].model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
+                    />
+                  </div>
                 </div>
               ) : (
                 <NetBag2DCanvas

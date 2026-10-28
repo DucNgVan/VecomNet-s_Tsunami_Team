@@ -241,8 +241,8 @@ function NetStudioContent() {
   const [uploadedDocName, setUploadedDocName] = useState<string | null>(null);
   const [isAiSketching, setIsAiSketching] = useState(false);
 
-  // 2 Nhánh tạo charm: "photo" (Có ảnh nguyên liệu) hoặc "chat" (Trò chuyện cùng AI khi chưa có ảnh)
-  const [creationMode, setCreationMode] = useState<"photo" | "chat">("photo");
+  // 2 Phương thức tạo charm: "chat" (Trò chuyện cùng AI) hoặc "upload" (Đã có sẵn bản thiết kế tải lên duyệt)
+  const [creationMode, setCreationMode] = useState<"chat" | "upload">("chat");
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [showPromptDetails, setShowPromptDetails] = useState(false);
 
@@ -818,28 +818,25 @@ Key 3D printing & charm specs:
     setUploadedDocName(null);
   };
 
-  // Người dùng gửi tin nhắn trò chuyện THẬT với Nghệ nhân AI Gemini
+  // Người dùng gửi tin nhắn trò chuyện với Nghệ nhân AI Gemini (hoàn toàn qua chat hội thoại, không dùng ảnh)
   const handleConversationalUserMessage = async (
     userText: string,
-    imageBase64Input?: string,
     forceGen: boolean = false
   ) => {
     const text = userText.trim();
-    const imgData = imageBase64Input || customImageFile;
-    if (!text && !imgData && !forceGen) return;
+    if (!text && !forceGen) return;
 
     const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     const userMsgId = `user-${Date.now()}`;
 
-    if (text || imgData) {
+    if (text) {
       setChatLog((prev) => [
         ...prev,
         {
           id: userMsgId,
           sender: "user",
-          text: text || "Đã gửi ảnh mẫu tham chiếu",
+          text,
           time,
-          imageUrl: imgData || undefined,
         },
       ]);
     }
@@ -859,7 +856,6 @@ Key 3D printing & charm specs:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: text,
-          imageBase64: imgData || undefined,
           history: historyPayload,
           bagColor: selectedColor.hex,
           bagColorName: selectedColor.name,
@@ -956,7 +952,7 @@ Key 3D printing & charm specs:
     }
   };
 
-  // KÍCH HOẠT VẼ NGAY THEO Ý TƯỞNG ĐÃ THU THẬP
+  // KÍCH HOẠT VẼ NGAY THEO Ý TƯỞNG ĐÃ THU THẬP TỪ CHAT
   const handleTriggerRealGeneration = async () => {
     setIsAiSketching(true);
     const activeCat = selectedThemeCategory;
@@ -964,7 +960,6 @@ Key 3D printing & charm specs:
     const ideaSummary = currentSlots.subject || motifName || customIdea || "Móc khoá độc bản Nét 3x3cm";
     await handleConversationalUserMessage(
       `Hãy bắt đầu vẽ phác thảo móc khoá 3x3cm: ${ideaSummary}`,
-      customImageFile || undefined,
       true
     );
   };
@@ -1032,50 +1027,23 @@ Key 3D printing & charm specs:
     }
   };
 
-  // Xử lý nén ảnh nguyên liệu và tự động gọi Gemini Vision phân tích
+  // Xử lý tải lên bản thiết kế có sẵn để ướm lên túi và gửi xưởng duyệt
   const handleProcessUploadedFile = (file: File) => {
     if (!file) return;
     setUploadedDocName(file.name);
-    setSelectedCategory("auto"); // Reset về tự động nhận diện ảnh
+    const cleanName = file.name.replace(/\.[^/.]+$/, "");
+    if (!motifName || motifName === "Charm độc bản") {
+      setMotifName(cleanName);
+      setCustomIdea(cleanName);
+    }
 
-    if (file.type.startsWith("image/")) {
+    if (file.type.startsWith("image/") || file.type.includes("svg")) {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const rawData = ev.target?.result as string;
-        // Nén ảnh xuống tối đa 720px để gửi Gemini Vision siêu tốc (~1.5s - 2.5s)
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 720;
-          let w = img.width;
-          let h = img.height;
-          if (w > maxDim || h > maxDim) {
-            if (w > h) {
-              h = Math.round((h * maxDim) / w);
-              w = maxDim;
-            } else {
-              w = Math.round((w * maxDim) / h);
-              h = maxDim;
-            }
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, w, h);
-            const optimizedBase64 = canvas.toDataURL("image/jpeg", 0.82);
-            setCustomImageFile(optimizedBase64);
-            handleAnalyzePhotoToSlots(optimizedBase64);
-          } else {
-            setCustomImageFile(rawData);
-            handleAnalyzePhotoToSlots(rawData);
-          }
-        };
-        img.onerror = () => {
-          setCustomImageFile(rawData);
-          handleAnalyzePhotoToSlots(rawData);
-        };
-        img.src = rawData;
+        setCustomImageFile(rawData);
+        // Tự động gắn thử bản thiết kế lên mẫu túi ngay lập tức
+        handlePlaceCustomOnBag(undefined, undefined, undefined, rawData);
       };
       reader.readAsDataURL(file);
     } else {
@@ -1100,7 +1068,7 @@ Key 3D printing & charm specs:
     const colorToUse = overrideColor || customColor;
     const textToUse = overrideText !== undefined ? overrideText : customText;
     const imgToUse = overrideImage || generatedImageUrl || customImageFile || "";
-    const charmDisplayName = motifName || (textToUse ? `Charm "${textToUse}"` : "Charm AI độc bản");
+    const charmDisplayName = motifName || (textToUse ? `Charm "${textToUse}"` : (creationMode === "upload" ? "Bản thiết kế đính kèm" : "Charm AI độc bản"));
 
     const customCharmObj: Charm = {
       id: "custom-charm-ai",
@@ -1110,7 +1078,7 @@ Key 3D printing & charm specs:
       price: 0,
       plasticOffsetGrams: 200,
       material: "Nhựa lưới biển tái sinh ép nhiệt / Viền đồng thau chống gỉ",
-      description: customIdea || motifStory || "Charm độc bản phác thảo bởi AI theo câu chuyện Đà Nẵng của bạn.",
+      description: creationMode === "upload" ? "Bản thiết kế do khách hàng cung cấp gửi xưởng duyệt" : (customIdea || motifStory || "Charm độc bản phác thảo bởi AI theo câu chuyện Đà Nẵng của bạn."),
       color: colorToUse,
       glowColor: "rgba(184, 93, 67, 0.4)",
       symbol: textToUse ? textToUse.slice(0, 2).toUpperCase() : "★",
@@ -1279,7 +1247,7 @@ Key 3D printing & charm specs:
             size: customSize,
             engravedText: customText.trim() || undefined,
             referenceImageUrl: customImageFile || undefined,
-            imageUrl: generatedImageUrl || undefined,
+            imageUrl: generatedImageUrl || customImageFile || undefined,
             subjectCategory: selectedCategory !== "auto" ? selectedCategory : undefined,
             svgCode: generatedSvgCode || undefined,
             stlData: generatedStlData || undefined,
@@ -1738,7 +1706,7 @@ Key 3D printing & charm specs:
                     >
                       {availableBags.map((bag) => (
                         <option key={bag.id} value={bag.id}>
-                          {bag.name} ({bag.colors?.length || 5} màu) {!isLoadingBags ? `— ${formatVND(bag.basePrice)}` : ""}
+                          {bag.name}
                         </option>
                       ))}
                     </select>
@@ -2088,64 +2056,25 @@ Key 3D printing & charm specs:
                       <div>
                         <div className="text-[11px] tracking-[0.2em] uppercase text-[#B85D43] font-semibold flex items-center gap-1.5">
                           <Wand2 className="w-3.5 h-3.5" />
-                          <span>NÉT AI STYLIST / CHARM ĐỘC BẢN</span>
+                          <span>NÉT STUDIO / CHARM THIẾT KẾ RIÊNG</span>
                         </div>
                         <h2 className="font-serif text-xl sm:text-2xl text-[#241B16] mt-1">
-                          Sáng tạo charm riêng cá nhân hoá cùng AI
+                          Sáng tạo charm riêng cá nhân hoá
                         </h2>
                         <p className="text-xs sm:text-sm text-[#7A6F68] mt-1 leading-relaxed">
-                          AI hỗ trợ lên ý tưởng, phác thảo kỹ thuật 2D gắn trực tiếp lên túi, và gửi xưởng chế tác thủ công.
+                          Trò chuyện cùng AI để phác thảo qua chat, hoặc tải lên bản thiết kế có sẵn để xưởng Nét kiểm tra và báo giá.
                         </p>
                       </div>
 
-                      {/* BƯỚC 1: THU THẬP THÔNG TIN & DUYỆT PROMPT (2 NHÁNH: ẢNH NGUYÊN LIỆU HOẶC TRÒ CHUYỆN AI) */}
+                      {/* BƯỚC 1: LỰA CHỌN PHƯƠNG THỨC THIẾT KẾ */}
                       {aiCustomStep === 1 && (
                         <div className="space-y-4">
-                          {/* 1. LỰA CHỌN ĐẦU VÀO: CÓ ẢNH NGUYÊN LIỆU HAY CHƯA CÓ ẢNH */}
-                          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                            <button
-                              type="button"
-                              onClick={() => setCreationMode("photo")}
-                              className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-2.5 sm:gap-3 ${
-                                creationMode === "photo"
-                                  ? "bg-[#FAF7F2] border-[#B85D43] ring-2 ring-[#B85D43]/20 shadow-xs"
-                                  : "bg-white border-[#E8E2D8] hover:border-[#B85D43]/40 hover:bg-[#FAF7F2]/40"
-                              }`}
-                            >
-                              <div
-                                className={`p-2 rounded-xl shrink-0 transition-colors ${
-                                  creationMode === "photo"
-                                    ? "bg-[#B85D43] text-white shadow-xs"
-                                    : "bg-[#FAF7F2] text-[#7A6F68]"
-                                }`}
-                              >
-                                <Upload className="w-4 h-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span
-                                    className={`text-xs sm:text-sm font-bold ${
-                                      creationMode === "photo"
-                                        ? "text-[#B85D43]"
-                                        : "text-[#241B16]"
-                                    }`}
-                                  >
-                                    Tôi có ảnh nguyên liệu
-                                  </span>
-                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#B85D43]/10 text-[#B85D43] font-semibold">
-                                    AI quét & điền
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-[#7A6F68] mt-0.5 line-clamp-1">
-                                  Gửi ảnh chân dung, cún mèo, đồ vật để AI tự trích xuất
-                                </p>
-                              </div>
-                            </button>
-
+                          {/* 1. LỰA CHỌN: TRÒ CHUYỆN CÙNG AI HOẶC TẢI LÊN BẢN THIẾT KẾ CÓ SẴN */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                             <button
                               type="button"
                               onClick={() => setCreationMode("chat")}
-                              className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-2.5 sm:gap-3 ${
+                              className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                                 creationMode === "chat"
                                   ? "bg-[#FAF7F2] border-[#B85D43] ring-2 ring-[#B85D43]/20 shadow-xs"
                                   : "bg-white border-[#E8E2D8] hover:border-[#B85D43]/40 hover:bg-[#FAF7F2]/40"
@@ -2169,21 +2098,60 @@ Key 3D printing & charm specs:
                                         : "text-[#241B16]"
                                     }`}
                                   >
-                                    Tôi chưa có ảnh
+                                    Trò chuyện cùng AI
                                   </span>
-                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-500/10 text-emerald-700 font-semibold">
-                                    Trò chuyện AI
+                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#B85D43]/10 text-[#B85D43] font-semibold">
+                                    100% Chat
                                   </span>
                                 </div>
-                                <p className="text-[11px] text-[#7A6F68] mt-0.5 line-clamp-1">
-                                  Nghệ nhân AI hỏi đáp từng bước để gợi mở ý tưởng
+                                <p className="text-[11px] text-[#7A6F68] mt-0.5 line-clamp-2">
+                                  Chỉ cần nhắn tin mô tả ý tưởng, AI Nghệ nhân Nét sẽ hỏi đáp và vẽ phác thảo 2D độc bản
+                                </p>
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setCreationMode("upload")}
+                              className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                                creationMode === "upload"
+                                  ? "bg-[#FAF7F2] border-[#B85D43] ring-2 ring-[#B85D43]/20 shadow-xs"
+                                  : "bg-white border-[#E8E2D8] hover:border-[#B85D43]/40 hover:bg-[#FAF7F2]/40"
+                              }`}
+                            >
+                              <div
+                                className={`p-2 rounded-xl shrink-0 transition-colors ${
+                                  creationMode === "upload"
+                                    ? "bg-[#B85D43] text-white shadow-xs"
+                                    : "bg-[#FAF7F2] text-[#7A6F68]"
+                                }`}
+                              >
+                                <Upload className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span
+                                    className={`text-xs sm:text-sm font-bold ${
+                                      creationMode === "upload"
+                                        ? "text-[#B85D43]"
+                                        : "text-[#241B16]"
+                                    }`}
+                                  >
+                                    Đã có sẵn bản thiết kế
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
+                                    Tải lên duyệt
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-[#7A6F68] mt-0.5 line-clamp-2">
+                                  Tải lên file bản vẽ, logo hoặc thiết kế đồ hoạ có sẵn để xưởng Nét kiểm tra & duyệt
                                 </p>
                               </div>
                             </button>
                           </div>
 
-                          {/* NHÁNH 1: TÔI CÓ ẢNH NGUYÊN LIỆU */}
-                          {creationMode === "photo" && (
+                          {/* NHÁNH: TÔI ĐÃ CÓ SẴN BẢN THIẾT KẾ (TẢI LÊN & DUYỆT) */}
+                          {creationMode === "upload" && (
                             <div className="space-y-4">
                               {!customImageFile ? (
                                 <div
@@ -2200,60 +2168,56 @@ Key 3D printing & charm specs:
                                   </div>
                                   <div className="space-y-1.5">
                                     <h3 className="font-serif text-base sm:text-lg text-[#241B16] font-semibold">
-                                      Kéo thả hoặc tải lên ảnh nguyên liệu của bạn
+                                      Tải lên bản thiết kế hoặc hình vẽ có sẵn của bạn
                                     </h3>
                                     <p className="text-xs text-[#7A6F68] max-w-md mx-auto leading-relaxed">
-                                      Ảnh chân dung, thú cưng, đồ vật kỷ niệm, logo hay hoa cỏ. AI sẽ tự động phân tích đường nét nhận dạng và điền vào bảng thông số để bạn kiểm tra!
+                                      Hỗ trợ định dạng hình ảnh (PNG, JPG, WEBP, SVG) hoặc bản phác thảo tay. Bản thiết kế sẽ được ướm thử trực tiếp lên túi và gửi xưởng duyệt kỹ thuật.
                                     </p>
                                   </div>
 
                                   <div className="pt-2">
                                     <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#241B16] hover:bg-[#B85D43] text-white text-xs sm:text-sm font-semibold transition-all cursor-pointer shadow-md active:scale-95">
                                       <Upload className="w-4 h-4" />
-                                      <span>Chọn ảnh từ thiết bị</span>
+                                      <span>Chọn tệp thiết kế từ thiết bị</span>
                                       <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/*,.svg"
                                         onChange={handleImageUpload}
                                         className="hidden"
                                       />
                                     </label>
                                   </div>
 
-                                  {/* Gợi ý các loại ảnh mẫu */}
                                   <div className="pt-3 border-t border-[#E8E2D8]/60 flex items-center justify-center gap-2 flex-wrap text-[11px] text-[#8C7A70]">
-                                    <span className="font-medium text-[#241B16]">Gợi ý ảnh:</span>
-                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">👤 Ảnh chân dung</span>
-                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">🐾 Bé cún / mèo cưng</span>
-                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">☕ Ly nước / Bình giữ nhiệt</span>
-                                    <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">🌸 Hoa sen / Cây cỏ</span>
+                                    <span className="font-medium text-[#241B16]">Phù hợp cho:</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">🏢 Logo thương hiệu / Doanh nghiệp</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">🎨 Bản vẽ vector / Illustrator</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E8E2D8]">✏️ Phác thảo tay có sẵn</span>
                                   </div>
                                 </div>
                               ) : (
                                 <div className="space-y-4">
-                                  {/* Preview bar for uploaded image */}
-                                  <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E8E2D8] flex items-center justify-between gap-3 shadow-xs">
+                                  {/* Preview bar for uploaded design file */}
+                                  <div className="p-4 rounded-2xl bg-white border border-[#E8E2D8] flex items-center justify-between gap-3 shadow-xs">
                                     <div className="flex items-center gap-3 min-w-0">
-                                      <div className="w-14 h-14 rounded-xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shrink-0">
+                                      <div className="w-14 h-14 rounded-xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shrink-0 p-1">
                                         <img
                                           src={customImageFile}
-                                          alt="Ảnh nguyên liệu"
-                                          className="w-full h-full object-cover"
+                                          alt="Bản thiết kế đã tải"
+                                          className="w-full h-full object-contain"
                                         />
                                       </div>
                                       <div className="min-w-0">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="text-xs font-bold text-[#241B16] truncate">
-                                            {uploadedDocName || "Ảnh nguyên liệu đã tải"}
+                                          <span className="text-xs sm:text-sm font-bold text-[#241B16] truncate">
+                                            {uploadedDocName || "Bản thiết kế đính kèm"}
                                           </span>
-                                          <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 shrink-0">
-                                            Đã đính kèm
+                                          <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 shrink-0">
+                                            ✓ Đã tải lên
                                           </span>
                                         </div>
-                                        <p className="text-[11px] text-[#7A6F68] truncate mt-0.5">
-                                          {isAnalyzingPhoto
-                                            ? "AI đang phân tích các đường nét nhận dạng..."
-                                            : "AI đã trích xuất đặc điểm vào bảng bên dưới"}
+                                        <p className="text-[11px] text-[#7A6F68] mt-0.5">
+                                          Đã ướm thử lên túi ở màn hình xem trước (2D / 3D)
                                         </p>
                                       </div>
                                     </div>
@@ -2261,13 +2225,13 @@ Key 3D printing & charm specs:
                                     <div className="flex items-center gap-1.5 shrink-0">
                                       <label
                                         className="px-2.5 py-1.5 rounded-xl border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[11px] font-semibold text-[#5E4D43] transition-colors cursor-pointer flex items-center gap-1"
-                                        title="Đổi ảnh khác"
+                                        title="Đổi tệp thiết kế khác"
                                       >
-                                        <RotateCw className="w-3 h-3 text-[#B85D43]" />
-                                        <span className="hidden sm:inline">Đổi ảnh</span>
+                                        <RotateCw className="w-3.5 h-3.5 text-[#B85D43]" />
+                                        <span className="hidden sm:inline">Đổi file</span>
                                         <input
                                           type="file"
-                                          accept="image/*"
+                                          accept="image/*,.svg"
                                           onChange={handleImageUpload}
                                           className="hidden"
                                         />
@@ -2277,37 +2241,67 @@ Key 3D printing & charm specs:
                                         onClick={() => {
                                           setCustomImageFile(null);
                                           setUploadedDocName(null);
+                                          setPlacedCharms((prev) => prev.filter((c) => !c.charm.id.includes("custom")));
                                         }}
                                         className="p-1.5 rounded-xl hover:bg-rose-50 text-[#8C7A70] hover:text-rose-600 transition-colors cursor-pointer"
-                                        title="Xoá ảnh"
+                                        title="Xoá bản vẽ"
                                       >
                                         <X className="w-4 h-4" />
                                       </button>
                                     </div>
                                   </div>
 
-                                  {/* Trạng thái phân tích hoặc Bảng Duyệt Prompt */}
-                                  {isAnalyzingPhoto ? (
-                                    <div className="p-8 rounded-3xl bg-white border border-[#E8E2D8] text-center space-y-3.5 shadow-xs animate-pulse">
-                                      <div className="w-12 h-12 rounded-full bg-[#B85D43]/10 flex items-center justify-center mx-auto text-[#B85D43]">
-                                        <Wand2 className="w-6 h-6 animate-spin" />
-                                      </div>
-                                      <div>
-                                        <h4 className="font-serif text-sm sm:text-base font-semibold text-[#241B16]">
-                                          Nghệ Nhân AI đang phân tích ảnh nguyên liệu...
-                                        </h4>
-                                        <p className="text-xs text-[#7A6F68] mt-1 max-w-sm mx-auto">
-                                          Nhận diện chủ thể, kiểu tóc, trang phục và tự động điền các ô thông số thiết kế cho bạn kiểm tra.
-                                        </p>
-                                      </div>
-                                      <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#B85D43] font-medium">
-                                        <span className="w-2 h-2 rounded-full bg-[#B85D43] animate-ping" />
-                                        <span>Khoảng 2 - 3 giây...</span>
-                                      </div>
+                                  {/* Form nhập thông tin bản thiết kế để xưởng thẩm định */}
+                                  <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF8F5] border border-[#E8E2D8] space-y-3.5">
+                                    <div>
+                                      <label className="block text-xs font-bold text-[#241B16] mb-1">
+                                        Tên bản thiết kế / Tên dự án *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={motifName || ""}
+                                        onChange={(e) => {
+                                          setMotifName(e.target.value);
+                                          setCustomIdea(e.target.value);
+                                        }}
+                                        placeholder="Ví dụ: Logo Doanh Nghiệp, Biểu tượng kỷ niệm..."
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-white text-xs sm:text-sm text-[#241B16] focus:outline-none focus:border-[#B85D43]"
+                                      />
                                     </div>
-                                  ) : (
-                                    renderPromptReviewForm()
-                                  )}
+
+                                    <div>
+                                      <label className="block text-xs font-bold text-[#241B16] mb-1">
+                                        Ghi chú yêu cầu gia công cho xưởng (tuỳ chọn)
+                                      </label>
+                                      <textarea
+                                        rows={2}
+                                        value={customCharmExtraNote}
+                                        onChange={(e) => setCustomCharmExtraNote(e.target.value)}
+                                        placeholder="Ví dụ: Kích thước mong muốn 4x4cm, viền đồng thau, bề mặt phủ bóng..."
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-white text-xs sm:text-sm text-[#241B16] focus:outline-none focus:border-[#B85D43] resize-none"
+                                      />
+                                    </div>
+
+                                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#E8E2D8]">
+                                      <div className="text-[11px] text-[#7A6F68]">
+                                        Xưởng Nét sẽ kiểm tra thông số và gửi báo giá trong 24h.
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!motifName?.trim()) {
+                                            setMotifName(uploadedDocName || "Bản thiết kế đính kèm");
+                                            setCustomIdea(uploadedDocName || "Bản thiết kế đính kèm");
+                                          }
+                                          setAiCustomStep(3);
+                                        }}
+                                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                      >
+                                        <span>Gửi Duyệt Xưởng & Báo Giá</span>
+                                        <ArrowRight className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -2546,33 +2540,11 @@ Key 3D printing & charm specs:
                                     }}
                                     className="flex items-center gap-2"
                                   >
-                                    {/* Photo attachment button */}
-                                    <label
-                                      className="p-2.5 rounded-xl border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[#7A6F68] hover:text-[#B85D43] transition-colors cursor-pointer shrink-0"
-                                      title="Đính kèm ảnh mẫu thực tế"
-                                    >
-                                      <Paperclip className="w-4 h-4" />
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0];
-                                          if (file) {
-                                            handleProcessUploadedFile(file);
-                                            handleConversationalUserMessage(
-                                              `Đã đính kèm ảnh mẫu: ${file.name}`
-                                            );
-                                          }
-                                        }}
-                                        className="hidden"
-                                      />
-                                    </label>
-
                                     <input
                                       type="text"
                                       value={chatInputText}
                                       onChange={(e) => setChatInputText(e.target.value)}
-                                      placeholder="Nhắn tin với Nghệ nhân AI hoặc yêu cầu vẽ móc khoá (3x3cm)..."
+                                      placeholder="Nhắn tin với Nghệ nhân AI để lên ý tưởng hoặc yêu cầu vẽ móc khoá 2D..."
                                       className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs sm:text-sm text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] transition-colors"
                                     />
 
@@ -2759,7 +2731,7 @@ Key 3D printing & charm specs:
                       {aiCustomStep === 3 && (
                         <div className="space-y-5">
                           {/* Summary Card */}
-                          <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
+                          <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2.5">
                             <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold">
                               TỔNG HỢP YÊU CẦU THIẾT KẾ
                             </span>
@@ -2772,13 +2744,31 @@ Key 3D printing & charm specs:
                               )}
                             </div>
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#5E4D43]">Charm độc bản AI:</span>
+                              <span className="text-[#5E4D43]">
+                                {creationMode === "upload" ? "Bản thiết kế đính kèm:" : "Charm phác thảo AI:"}
+                              </span>
                               <span className="font-semibold text-[#B85D43] bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                                 Chờ xưởng báo giá
                               </span>
                             </div>
-                            <div className="text-[11px] text-[#7A6F68] pt-1 border-t border-[#E8E2D8]">
-                              Ý tưởng: "{customIdea || motifName || "Charm độc bản"}" · Phôi móc khoá 2D Die-Cut độc bản
+                            <div className="text-[11px] text-[#7A6F68] pt-2 border-t border-[#E8E2D8] flex items-center gap-3">
+                              {(customImageFile || generatedImageUrl) && (
+                                <div className="w-12 h-12 rounded-xl border border-[#E8E2D8] bg-white p-1 shrink-0 overflow-hidden flex items-center justify-center shadow-2xs">
+                                  <img
+                                    src={customImageFile || generatedImageUrl || ""}
+                                    alt="Thiết kế"
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <strong className="text-[#241B16] text-xs font-bold block truncate">
+                                  {motifName || uploadedDocName || customIdea || "Bản thiết kế độc bản"}
+                                </strong>
+                                <span className="text-[10.5px] text-[#7A6F68] block">
+                                  {creationMode === "upload" ? "Bản thiết kế có sẵn gửi duyệt" : "Phác thảo 2D qua Trò chuyện AI"}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -2926,10 +2916,16 @@ Key 3D printing & charm specs:
                             <div className="flex items-center gap-3 pt-2">
                               <button
                                 type="button"
-                                onClick={() => setAiCustomStep(2)}
+                                onClick={() => {
+                                  if (creationMode === "upload") {
+                                    setAiCustomStep(1);
+                                  } else {
+                                    setAiCustomStep(2);
+                                  }
+                                }}
                                 className="py-3 px-4 rounded-xl border border-[#E8E2D8] text-xs font-medium text-[#5E4D43] hover:bg-[#FAF7F2] cursor-pointer"
                               >
-                                Chỉnh bản phác thảo
+                                {creationMode === "upload" ? "Đổi tệp thiết kế" : "Chỉnh bản phác thảo"}
                               </button>
 
                               <button
@@ -2941,7 +2937,11 @@ Key 3D printing & charm specs:
                                   <span>Đang gửi yêu cầu...</span>
                                 ) : (
                                   <>
-                                    <span>🚀 Nộp Yêu Cầu Chờ Duyệt & Báo Giá</span>
+                                    <span>
+                                      {creationMode === "upload"
+                                        ? "🚀 Gửi Duyệt Bản Thiết Kế & Báo Giá"
+                                        : "🚀 Nộp Yêu Cầu Chờ Duyệt & Báo Giá"}
+                                    </span>
                                   </>
                                 )}
                               </button>

@@ -1149,7 +1149,7 @@ export const AdminOrdersTabRefactored: React.FC<AdminOrdersTabProps> = ({
                   >
                     {BAG_BASES.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.name} ({formatVND(b.basePrice)})
+                        {b.name}
                       </option>
                     ))}
                   </select>

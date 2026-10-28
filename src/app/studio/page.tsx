@@ -262,11 +262,11 @@ function NetStudioContent() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const [dynamicSuggestionChips, setDynamicSuggestionChips] = useState<string[]>([
-    "Chân dung Chibi bạn bè",
-    "Bé thú cưng đáng yêu",
-    "Biểu tượng biển Đà Nẵng",
+    "Cô gái Áo dài Nón lá",
     "Hoa sen men ngọc",
-    "🎨 Phác thảo ngay (3x3cm)",
+    "Cầu Rồng men lam viền vàng",
+    "Bé thú cưng may mắn",
+    "🎨 Phác thảo ngay (3.5cm)",
   ]);
 
   const [chatLog, setChatLog] = useState<
@@ -800,11 +800,11 @@ Key 3D printing & charm specs:
       },
     ]);
     setDynamicSuggestionChips([
-      "Chân dung Chibi bạn bè",
-      "Bé thú cưng đáng yêu",
-      "Biểu tượng biển Đà Nẵng",
+      "Cô gái Áo dài Nón lá",
       "Hoa sen men ngọc",
-      "🎨 Phác thảo ngay (3x3cm)",
+      "Cầu Rồng men lam viền vàng",
+      "Bé thú cưng may mắn",
+      "🎨 Phác thảo ngay (3.5cm)",
     ]);
     setThemeSlots({
       human: { subject: "", feature1: "", feature2: "", feature3: "" },

@@ -314,6 +314,6 @@ export function buildMaster2DKeychainPrompt(
     }
   }
 
-  // Khung sườn kỹ thuật 2D Keychain chuẩn xưởng chế tác NÉT Studio (Kích thước chuẩn 3x3cm, có khoen xỏ phía trên, 100% tiếng Anh)
-  return `a cute custom 2D die-cut acrylic keychain charm, compact 3cm x 3cm miniature size (30mm x 30mm proportion), featuring ${subjectDescription}, small metallic keychain hanging ring hole on top edge for bag attachment, crafted with recycled ocean plastic and sea glass enamel, clear laser-cut acrylic contour edge, clean flat vector sticker art, isolated on pure solid white #FFFFFF background, no background scenery, no gradient, no drop shadow, no floor, no watermark, sharp focus, single object centered`;
+  // Khung sườn kỹ thuật phôi Charm Men Màu Viền Vàng chuẩn xưởng NÉT Studio (Kích thước chuẩn 3x3cm - 3.5cm, có khâu kim loại vàng phía trên, 100% tiếng Anh)
+  return `a single exquisite handcrafted 2D cloisonné enamel keychain charm, compact 3.5cm miniature size (35mm x 35mm proportion), featuring ${subjectDescription}, contemporary Vietnamese folk art aesthetic, stylized flat enamel color blocks divided by delicate raised gold metal outlines, fluid rhythmic curving and curling contour lines, traditional Vietnamese folk palette of cinnabar red and celadon jade and warm ochre and ivory white, semi-gloss artisan enamel finish with subtle gold metallic wire relief, integrated small gold metal hanging loop at top edge for bag attachment, isolated on pure solid white #FFFFFF background, clean empty perimeter, sharp focus, single object centered, strictly NO chibi, NO oversized anime eyes, NO cartoon face, NO 3D plastic, NO text, NO background scenery, NO drop shadow, NO watermark`;
 }

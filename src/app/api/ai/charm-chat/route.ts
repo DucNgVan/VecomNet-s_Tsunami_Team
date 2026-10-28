@@ -67,10 +67,10 @@ async function callLoraKeychainModel(
 
     loraPrompt = loraPrompt.replace(/[,.;\s]+$/, "");
     if (!loraPrompt || loraPrompt.length < 5) {
-      loraPrompt = "cute anime chibi character";
+      loraPrompt = "Vietnamese folk art cloisonné enamel charm";
     }
 
-    const focusedPrompt = `(single solo keychain charm:1.4), ${loraPrompt}, (only one subject:1.3), centered`;
+    const focusedPrompt = `(single solo keychain charm:1.5), exquisite handcrafted cloisonné enamel charm of ${loraPrompt}, contemporary Vietnamese folk art aesthetic, stylized flat enamel color blocks divided by delicate raised gold metal outlines, small gold metal hanging loop on top edge, (only one charm:1.4), centered`;
 
     // 2. Kích hoạt Endpoint Gradio /generate_keychain
     const initRes = await fetch(`${cleanBase}/gradio_api/call/generate_keychain`, {
@@ -151,6 +151,58 @@ async function callLoraKeychainModel(
     console.warn(`[Hugging Face Space ${cleanBase} Connection Exception]:`, gradioErr);
   }
 
+  return null;
+}
+
+/**
+ * fal.ai FLUX.1 Schnell Engine (Serverless API chuyên dụng, tốc độ 1-2s, 0 hàng đợi)
+ */
+async function callFalFluxModel(
+  prompt: string,
+  apiKey: string
+): Promise<string | null> {
+  try {
+    const res = await fetch("https://fal.run/fal-ai/flux/schnell", {
+      method: "POST",
+      headers: {
+        Authorization: `Key ${apiKey.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        image_size: "square_hd",
+        num_inference_steps: 4,
+        num_images: 1,
+        enable_safety_checker: true,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.warn(`[fal.ai FLUX API HTTP ${res.status}]:`, errText.slice(0, 200));
+      return null;
+    }
+
+    const data = await res.json();
+    const remoteUrl = data.images?.[0]?.url;
+    if (remoteUrl) {
+      try {
+        const imgFetch = await fetch(remoteUrl);
+        if (imgFetch.ok) {
+          const arrayBuf = await imgFetch.arrayBuffer();
+          const b64 = Buffer.from(arrayBuf).toString("base64");
+          const mime = imgFetch.headers.get("content-type") || "image/jpeg";
+          return `data:${mime};base64,${b64}`;
+        }
+      } catch (fetchErr) {
+        console.warn("Could not convert fal.ai image to base64, using remote URL:", fetchErr);
+      }
+      return remoteUrl;
+    }
+  } catch (err: any) {
+    console.warn("[fal.ai FLUX Connection Exception]:", err?.message || err);
+  }
   return null;
 }
 
@@ -315,20 +367,25 @@ QUY TẮC PHÂN LOẠI HAI PHA (CỰC KỲ QUAN TRỌNG):
   + ĐẶT "readyToGenerate": true.
   + BẮT BUỘC TỔNG HỢP VÀ DỊCH TOÀN BỘ SANG TIẾNG ANH trong "masterPrompt".
 
-3. QUY TẮC BẮT BUỘC VỀ MASTER PROMPT (CHO BƯỚC VẼ ẢNH):
-- BẮT BUỘC 100% TIẾNG ANH (Không để sót từ tiếng Việt nào vì mô hình AI tạo ảnh chỉ hiểu tiếng Anh).
-- KÍCH THƯỚC CHUẨN: 3cm x 3cm (compact 3cm x 3cm miniature size, 30mm x 30mm proportion).
-- ĐẶC TRƯNG MÓC KHOÁ NÉT:
-  + Phôi 2D Die-cut acrylic/ceramic enamel, đường viền ngoài sắc nét (sharp die-cut contour outline).
-  + Có một lỗ xỏ / khoen móc kim loại màu bạc ở mép đỉnh trên (small metallic keychain hanging ring hole on top edge) để xỏ vào mắt lưới túi.
-  + Nền trắng tinh khiết tuyệt đối: "isolated on pure solid white #FFFFFF background, clean flat vector sticker art, no background scenery, no gradients, no shadows, no floor, no watermark, single object centered".
-  + Vật liệu: "crafted with recycled ocean marine plastic and sea glass enamel".
-- VỚI NGƯỜI & CON VẬT:
-  + Luôn vẽ Chibi Anime đáng yêu (cute kawaii 2D anime chibi character / ultra-kawaii chibi cartoon pet, oversized cute round head, chubby rosy blushing cheeks, happy anime catchlight eyes).
-  + Bám sát kiểu tóc, trang phục, màu lông, phụ kiện từ mô tả hoặc ảnh mẫu.
-- VỚI ĐỒ VẬT / ĐỊA DANH / HOA CỎ:
-  + Nét vẽ phẳng 2D tinh tế, tối giản, sang trọng.
-  + TUYỆT ĐỐI KHÔNG tự ý thêm mắt cười hay má hồng nếu người dùng không yêu cầu.
+3. QUY TẮC BẮT BUỘC VỀ NGÔN NGỮ TẠO HÌNH NÉT STUDIO (MỸ THUẬT MEN MÀU DÂN GIAN ĐƯƠNG ĐẠI):
+- BẮT BUỘC 100% TIẾNG ANH trong "masterPrompt".
+- KÍCH THƯỚC CHUẨN: 3cm - 3.5cm (compact 3.5cm miniature size, 35mm x 35mm proportion).
+- PHONG CÁCH VÀ ĐƯỜNG NÉT:
+  + Mang tinh thần dân gian Việt Nam được diễn giải theo hướng đương đại: mộc mạc, gần gũi, thanh thoát và có hồn.
+  + Hình phẳng cách điệu, chia thành các mảng màu rõ ràng bằng đường viền kim loại vàng nổi nhẹ (stylized 2D flat cloisonné enamel color blocks divided by delicate raised gold metal outlines).
+  + Đường nét có nhịp cong – lượn – cuộn mềm mại; chuyển tiếp mềm, đầu nét vuốt nhẹ, điểm cuộn vừa phải (fluid rhythmic curving and curling lines inspired by traditional Vietnamese heritage motifs).
+  + Giữ hình dáng đặc trưng của chủ thể, biến tấu vừa đủ để có cá tính riêng và nhận ra ngay khi thu nhỏ (3-4cm).
+  + Bố cục bất đối xứng nhẹ, cân đối và cô đọng. Họa tiết phụ hòa vào đường bao của chủ thể.
+  + Nếu có khuôn mặt: nét nhỏ, tự nhiên, biểu cảm tiết chế, thanh thoát, hiền hoà. Hình tượng tâm linh cần trang nghiêm, thanh tịnh.
+  + TUYỆT ĐỐI TRÁNH: Phong cách chibi, mắt to hoạt hình, tạo hình dễ thương quá mức; chi tiết fantasy; bề mặt nhựa 3D; ánh kim bóng gắt; hoa văn dày đặc; tranh ghép collage.
+- MÀU SẮC DÂN GIAN:
+  + Ưu tiên bảng màu gợi chất dân gian Việt: Đỏ son (cinnabar red), Vàng đất (warm ochre), Xanh chàm (indigo blue), Xanh ngọc (celadon jade) và Trắng ngà (ivory white).
+  + Charm sẽ gắn trên túi lưới xanh lá: cần tương phản rõ về sắc độ, có mảng sáng và viền vàng giúp tách hình nổi bật khỏi nền túi.
+- CHẤT LIỆU VÀ CẤU TẠO:
+  + Mô phỏng charm kim loại phủ men màu (cloisonné enamel charm), viền vàng nổi nhẹ, độ bóng vừa phải.
+  + Mảng men sạch, đường phân chia rõ, các phần nối liền thành một charm không có nét mảnh dễ gãy.
+  + Một vòng móc nhỏ phía trên (small integrated gold metal hanging ring loop on top edge), cân bằng với trọng tâm.
+  + Nền trắng tinh khiết tuyệt đối: "isolated on pure solid white #FFFFFF background, clean empty perimeter, sharp focus, single object centered, strictly NO chibi, NO oversized anime eyes, NO cartoon face, NO 3D plastic, NO text, NO background scenery, no drop shadow, no watermark".
 
 BẮT BUỘC TRẢ VỀ JSON HỢP LỆ THEO SCHEMA:
 {
@@ -659,17 +716,29 @@ BẮT BUỘC TRẢ VỀ JSON HỢP LỆ THEO SCHEMA:
     }
 
     if (parsedData.masterPrompt) {
-      // 1. FLUX.1 lên trước
+      // 1. ƯU TIÊN SỐ 1: FLUX.1 (fal.ai Serverless API nếu có FAL_KEY, hoặc Hugging Face BFL Space)
       try {
-        console.log("[Rank 1: FLUX.1 Schnell] Đang sinh ảnh qua mô hình FLUX.1...");
-        const fluxImageUrl = await callFluxSchnellModel(parsedData.masterPrompt, process.env.HF_TOKEN);
-        if (fluxImageUrl) {
-          console.log("[Rank 1: FLUX.1 Schnell] Sinh ảnh charm thành công từ FLUX.1!");
-          parsedData.imageUrl = fluxImageUrl;
-          parsedData.imageProvider = "flux-schnell";
+        if (process.env.FAL_KEY) {
+          console.log("[Rank 1: fal.ai FLUX.1] Đang sinh ảnh qua fal.ai Dedicated Serverless API...");
+          const falImg = await callFalFluxModel(parsedData.masterPrompt, process.env.FAL_KEY);
+          if (falImg) {
+            console.log("[Rank 1: fal.ai FLUX.1] Sinh ảnh charm thành công qua fal.ai (Zero Queue)!");
+            parsedData.imageUrl = falImg;
+            parsedData.imageProvider = "fal-flux-schnell";
+          }
+        }
+
+        if (!parsedData.imageUrl) {
+          console.log("[Rank 1: FLUX.1 Schnell BFL] Thử gọi Space FLUX.1...");
+          const fluxImageUrl = await callFluxSchnellModel(parsedData.masterPrompt, process.env.HF_TOKEN);
+          if (fluxImageUrl) {
+            console.log("[Rank 1: FLUX.1 Schnell] Sinh ảnh charm thành công từ FLUX.1!");
+            parsedData.imageUrl = fluxImageUrl;
+            parsedData.imageProvider = "flux-schnell";
+          }
         }
       } catch (fluxErr) {
-        console.warn("[Rank 1: FLUX.1 Schnell Exception]:", fluxErr);
+        console.warn("[Rank 1: FLUX.1 Exception]:", fluxErr);
       }
 
       // 2. FALLBACK 2: LORA SDXL TRÊN HUGGING FACE SPACES CỦA NÉT STUDIO

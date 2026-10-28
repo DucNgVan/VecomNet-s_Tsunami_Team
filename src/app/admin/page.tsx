@@ -2,79 +2,61 @@
 
 import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  NetPack,
-  ManufacturedBagItem,
-  Order,
-  Article,
-} from "@/types";
-import { BAG_COLORS } from "@/data/products";
+  AdminOrder,
+  RawNetBatch,
+  ProductionSlip,
+  BagSerialItem,
+  Partner,
+  getAdminOrders,
+  saveAdminOrder,
+  getAdminBatches,
+  getAdminSlips,
+  getAdminSerials,
+  getAdminPartners,
+  getAdminRole,
+  AdminRole,
+} from "@/lib/adminDataStorage";
 import {
-  getAllNetPacks,
-  saveNetPack,
-  getManufacturedItems,
-  manufactureBags,
-  getInStockCountForProduct,
-  createNetPackWithBatchPlan,
-  getAllOrders,
-  updateOrderStatus,
-  getSupplyChainStats,
-  deleteOrderById,
-  clearLocalSupplyChainData,
-} from "@/lib/supplyChainStorage";
-import {
-  syncAllInventoryToFirestore,
-  saveOrderToFirestore,
-  getArticlesFromFirestore,
-  saveArticleToFirestore,
-  deleteArticleFromFirestore,
   getProductsFromFirestore,
   saveProductToFirestore,
   deleteProductFromFirestore,
-  clearAllClaimedBagsFromFirestore,
-  clearAllBatchesFromFirestore,
-  clearAllProductsFromFirestore,
-  clearAllMembersImpact,
-  resetEntireSystemDatabase,
 } from "@/lib/firestoreService";
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { AdminNavbar } from "@/components/admin/AdminNavbar";
-import { AdminDashboardTab } from "@/components/admin/AdminDashboardTab";
-import { AdminOrdersTab } from "@/components/admin/AdminOrdersTab";
-import { AdminSupplyChainTab } from "@/components/admin/AdminSupplyChainTab";
-import { AdminCatalogTab } from "@/components/admin/AdminCatalogTab";
-import { AdminDesignRequestsTab } from "@/components/admin/AdminDesignRequestsTab";
-import { AdminSupportTab } from "@/components/admin/AdminSupportTab";
-// (Icon-free layout as requested)
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminOverviewTab } from "@/components/admin/AdminOverviewTab";
+import { AdminOrdersTabRefactored } from "@/components/admin/AdminOrdersTabRefactored";
+import { AdminSupplyChainPassportTab } from "@/components/admin/AdminSupplyChainPassportTab";
+import { AdminPartnersTab } from "@/components/admin/AdminPartnersTab";
+import { AdminCatalogTabRefactored } from "@/components/admin/AdminCatalogTabRefactored";
+import { AdminSandboxModal } from "@/components/admin/AdminSandboxModal";
 
 function AdminPortalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tab State: 'dashboard' (Mặc định lên đầu) | 'orders' | 'supply-chain' | 'catalog' | 'support'
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  // 1. Menu dọc quản trị gồm: overview | orders | products | net-passport | partners (Req 1)
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [orderFilterParam, setOrderFilterParam] = useState<string>("all");
+  const [selectedOrderIdParam, setSelectedOrderIdParam] = useState<string | undefined>(undefined);
+  const [supplyChainSubTab, setSupplyChainSubTab] = useState<"inbound" | "inventory" | "production" | "passport">("inbound");
 
-  // Sync tab with URL query parameter (with backward compatibility)
+  // Sync tab with URL
   useEffect(() => {
     const rawTab = searchParams.get("tab");
     if (!rawTab) {
-      setActiveTab("dashboard");
+      setActiveTab("overview");
       return;
     }
-    if (rawTab === "analytics") {
-      setActiveTab("dashboard");
-    } else if (rawTab === "orders" || rawTab === "design-requests") {
+    if (["overview", "dashboard", "analytics"].includes(rawTab)) {
+      setActiveTab("overview");
+    } else if (["orders", "design-requests"].includes(rawTab)) {
       setActiveTab("orders");
-    } else if (["net-packs", "manufacturing", "inventory", "supply-chain"].includes(rawTab)) {
-      setActiveTab("supply-chain");
-    } else if (["products", "catalog", "articles"].includes(rawTab)) {
-      setActiveTab("catalog");
-    } else if (["support", "ticket", "tickets"].includes(rawTab)) {
-      setActiveTab("support");
-    } else if (["dashboard", "orders", "supply-chain", "catalog", "support"].includes(rawTab)) {
-      setActiveTab(rawTab);
+    } else if (["products", "catalog"].includes(rawTab)) {
+      setActiveTab("products");
+    } else if (["net-passport", "supply-chain", "batches", "manufacturing"].includes(rawTab)) {
+      setActiveTab("net-passport");
+    } else if (["partners", "commission"].includes(rawTab)) {
+      setActiveTab("partners");
     }
   }, [searchParams]);
 
@@ -83,9 +65,8 @@ function AdminPortalContent() {
     router.push(`/admin?tab=${tabId}`, { scroll: false });
   };
 
-  // Server-side Auth Guard State
+  // 2. Auth Guard
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean | null>(null);
-
   useEffect(() => {
     async function checkServerAuth() {
       try {
@@ -105,559 +86,210 @@ function AdminPortalContent() {
     checkServerAuth();
   }, [router]);
 
-  // Shared Data States
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [netPacks, setNetPacks] = useState<NetPack[]>([]);
-  const [manufacturedItems, setManufacturedItems] = useState<ManufacturedBagItem[]>([]);
+  // 3. Shared Data States
+  const [orders, setOrders] = useState<AdminOrder[]>(() => getAdminOrders());
+  const [batches, setBatches] = useState<RawNetBatch[]>(() => getAdminBatches());
+  const [slips, setSlips] = useState<ProductionSlip[]>(() => getAdminSlips());
+  const [serials, setSerials] = useState<BagSerialItem[]>(() => getAdminSerials());
+  const [partners, setPartners] = useState<Partner[]>(() => getAdminPartners());
   const [backendProducts, setBackendProducts] = useState<any[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [stats, setStats] = useState(() => getSupplyChainStats());
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Cloud Firestore Sync State for Supply Chain
-  const [isSyncingFirestore, setIsSyncingFirestore] = useState(false);
-  const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  // Trạng thái lưu dữ liệu đám mây (Req 25)
+  const [syncStatus, setSyncStatus] = useState<"saved" | "syncing" | "error">("saved");
 
-  // -------------------------------------------------------------
-  // DATA FETCHING & SYNCHRONIZATION
-  // -------------------------------------------------------------
-  const fetchAllData = async () => {
-    setIsRefreshing(true);
+  // Sandbox Modal State (Req 26)
+  const [showSandboxModal, setShowSandboxModal] = useState(false);
+
+  // Fetch Firestore products
+  const fetchProducts = async () => {
     try {
-      // 1. Fetch Orders from Cloud Firestore (Direct Client Read)
-      try {
-        const qOrders = query(collection(db, "orders"));
-        const snapOrders = await getDocs(qOrders);
-        if (!snapOrders.empty) {
-          const cloudOrders: Order[] = [];
-          snapOrders.forEach((d) => cloudOrders.push(d.data() as Order));
-          const validOrders = cloudOrders.filter(
-            (o) => !["NET-ORD-8821", "NET-ORD-8822", "NET-ORD-8823"].includes(o.orderCode)
-          );
-          setOrders(validOrders);
-        } else {
-          setOrders(getAllOrders());
-        }
-      } catch (e) {
-        console.warn("Orders fetch warning (using local fallback):", e);
-        setOrders(getAllOrders());
+      setSyncStatus("syncing");
+      const prods = await getProductsFromFirestore();
+      if (Array.isArray(prods) && prods.length > 0) {
+        setBackendProducts(prods);
       }
-
-      // 2. Fetch Net Packs (batches) & Manufactured Items (bag_items) from Cloud Firestore
-      try {
-        const snapBatches = await getDocs(collection(db, "batches"));
-        if (!snapBatches.empty) {
-          const cloudPacks: NetPack[] = [];
-          snapBatches.forEach((d) => {
-            const data = d.data();
-            cloudPacks.push({
-              packId: data.packId || data.batchId || d.id,
-              seaRegion: data.seaRegion || "Vùng Biển Việt Nam",
-              locationDetails: data.locationDetails || "",
-              coordinates: data.coordinates || { lat: 16.0, lng: 108.0 },
-              recoveryDate: data.recoveryDate || new Date().toISOString().split("T")[0],
-              totalWeightKg: data.totalWeightKg || data.plasticRecoveredKg || 0,
-              remainingWeightKg: data.remainingWeightKg ?? data.plasticRecoveredKg ?? data.totalWeightKg ?? 0,
-              depthMeters: data.depthMeters || 0,
-              diverTeam: data.diverTeam || data.recoveryTeam || "",
-              netPolymer: data.netPolymer || "Nylon-6",
-              status: data.status || "in_production",
-              notes: data.notes || "",
-              createdAt: data.createdAt || new Date().toISOString(),
-              producedBagModel: data.producedBagModel,
-              producedBagCount: data.producedBagCount,
-              serialRangeStart: data.serialRangeStart,
-              serialRangeEnd: data.serialRangeEnd,
-            });
-          });
-          setNetPacks(cloudPacks);
-          localStorage.setItem("net_packs_v1", JSON.stringify(cloudPacks));
-        } else {
-          setNetPacks(getAllNetPacks());
-        }
-      } catch (err) {
-        console.warn("Batches read error:", err);
-        setNetPacks(getAllNetPacks());
-      }
-
-      try {
-        const snapBagItems = await getDocs(collection(db, "bag_items"));
-        if (!snapBagItems.empty) {
-          const cloudItems: ManufacturedBagItem[] = [];
-          snapBagItems.forEach((d) => {
-            const data = d.data();
-            if (data.serialId || data.itemId) {
-              cloudItems.push({
-                serialId: data.serialId || data.itemId || d.id,
-                sourcePackId: data.sourcePackId || data.parentBatchId || "",
-                bagBaseId: data.bagBaseId || "net-tote-01",
-                bagName: data.bagName || "Túi Lưới NÉT",
-                colorId: data.colorId || "green",
-                colorName: data.colorName || "Xanh Lá",
-                manufacturedAt: data.manufacturedAt || data.createdAt || "",
-                workshopName: data.workshopName || "Xưởng NÉT",
-                seaRegion: data.seaRegion || "",
-                coordinates: data.coordinates || { lat: 16.0, lng: 108.0 },
-                plasticConsumedKg: data.plasticConsumedKg || data.plasticOffsetKg || 1.8,
-                status: data.status || (data.ownerUid ? "claimed" : "in_stock"),
-                qrUrl: data.qrUrl || `/passport/${data.sourcePackId || d.id}?itemId=${data.serialId || d.id}`,
-                barcode: data.barcode,
-                nfcTagUid: data.nfcTagUid,
-                isClaimed: !!data.isClaimed || !!data.ownerUid,
-                claimedBy: data.claimedBy || (data.ownerName ? { fullName: data.ownerName, phone: data.ownerPhone || "" } : undefined),
-                assignedOrderCode: data.assignedOrderCode,
-                warrantyStatus: data.warrantyStatus || "unactivated",
-                warrantyMonths: data.warrantyMonths || 24,
-              });
-            }
-          });
-          setManufacturedItems(cloudItems);
-          localStorage.setItem("net_manufactured_items_v1", JSON.stringify(cloudItems));
-        } else {
-          setManufacturedItems(getManufacturedItems());
-        }
-      } catch (err) {
-        console.warn("Bag items read error:", err);
-        setManufacturedItems(getManufacturedItems());
-      }
-
-      setStats(getSupplyChainStats());
-
-      // 3. Fetch Products from Cloud Firestore (Collection 'products') & Local Cache
-      try {
-        const prods = await getProductsFromFirestore();
-        const rawProducts = Array.isArray(prods) ? prods : [];
-        const currentItems = getManufacturedItems();
-        // Đối chiếu tồn kho thực tế của từng sản phẩm từ kho túi thành phẩm (circular supply chain)
-        const reconciledProducts = rawProducts.map((p) => {
-          const realStock = currentItems.filter(
-            (item) =>
-              item.status === "in_stock" &&
-              !item.isClaimed &&
-              (item.bagBaseId === p.id ||
-                (p.category && item.bagBaseId === p.category) ||
-                (p.name && item.bagName?.trim().toLowerCase() === p.name.trim().toLowerCase()))
-          ).length;
-          return {
-            ...p,
-            stockCount: realStock,
-            inStock: realStock > 0,
-          };
-        });
-        setBackendProducts(reconciledProducts);
-      } catch (prodErr) {
-        console.warn("Products fetch warning:", prodErr);
-        setBackendProducts([]);
-      }
-
-      // 4. Fetch Articles from Firestore & Stories
-      try {
-        const arts = await getArticlesFromFirestore();
-        setArticles(arts);
-      } catch {
-        // Fallback
-      }
-    } finally {
-      setIsRefreshing(false);
+      setSyncStatus("saved");
+    } catch {
+      setSyncStatus("saved");
     }
   };
 
   useEffect(() => {
-    if (isAdminAuthenticated) {
-      fetchAllData();
-    }
-  }, [isAdminAuthenticated]);
+    fetchProducts();
+  }, []);
 
-  // -------------------------------------------------------------
-  // ORDER ACTIONS
-  // -------------------------------------------------------------
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order["fulfillmentStatus"]) => {
-    const isDelivered = newStatus === "delivered";
-    const updatePayload: any = {
-      fulfillmentStatus: newStatus,
-      ...(isDelivered
-        ? {
-            shopDeliveredConfirmed: true,
-            shopDeliveredAt: new Date().toISOString(),
-          }
-        : {}),
-    };
-    try {
-      // 1. Firestore update
-      const docRef = doc(db, "orders", orderId);
-      await updateDoc(docRef, updatePayload);
-    } catch (e) {
-      console.warn("Firestore updateOrderStatus warning:", e);
-    }
-    // 2. Local update
-    updateOrderStatus(orderId, newStatus, updatePayload);
-    setOrders((prev) =>
-      prev.map((o) => (o.orderId === orderId ? { ...o, ...updatePayload } : o))
-    );
+  const handleDataReload = () => {
+    setOrders(getAdminOrders());
+    setBatches(getAdminBatches());
+    setSlips(getAdminSlips());
+    setSerials(getAdminSerials());
+    setPartners(getAdminPartners());
+    fetchProducts();
   };
 
-  const handleTogglePaymentStatus = async (orderId: string, currentStatus: "pending" | "paid") => {
-    const nextStatus = currentStatus === "paid" ? "pending" : "paid";
-    try {
-      const docRef = doc(db, "orders", orderId);
-      await updateDoc(docRef, { paymentStatus: nextStatus });
-    } catch (e) {
-      console.warn("Firestore update payment warning:", e);
-    }
-    setOrders((prev) =>
-      prev.map((o) => (o.orderId === orderId ? { ...o, paymentStatus: nextStatus } : o))
-    );
+  // Navigations from Overview clicks (Req 3)
+  const handleOverviewNavigateToOrders = (filterKey?: string, selectOrderId?: string) => {
+    setOrderFilterParam(filterKey || "all");
+    setSelectedOrderIdParam(selectOrderId);
+    handleSelectTab("orders");
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa đơn hàng này khỏi hệ thống không?")) return;
-    try {
-      await deleteDoc(doc(db, "orders", orderId));
-    } catch (e) {
-      console.warn("Firestore delete order warning:", e);
-    }
-    deleteOrderById(orderId);
-    setOrders((prev) => prev.filter((o) => o.orderId !== orderId));
+  const handleOverviewNavigateToSupplyChain = (
+    subTab?: "inbound" | "inventory" | "production" | "passport",
+    selectId?: string
+  ) => {
+    if (subTab) setSupplyChainSubTab(subTab);
+    handleSelectTab("net-passport");
   };
 
-  const handleCreateManualOrder = async (newOrder: Order) => {
-    await saveOrderToFirestore(newOrder);
-    setOrders((prev) => [newOrder, ...prev]);
-    // Refresh inventory counts
-    setManufacturedItems(getManufacturedItems());
-  };
+  const pendingOrdersCount = useMemo(() => {
+    return orders.filter((o) => o.fulfillmentStatus === "received" || o.fulfillmentStatus === "confirmed").length;
+  }, [orders]);
 
-  // -------------------------------------------------------------
-  // SUPPLY CHAIN ACTIONS
-  // -------------------------------------------------------------
-  const handleAddNetPack = (packData: Partial<NetPack>) => {
-    const newPack: NetPack = {
-      packId: packData.packId || `PACK-DN-${Date.now()}`,
-      seaRegion: packData.seaRegion || "Vùng Biển Sơn Trà",
-      locationDetails: packData.locationDetails || "Bãi Bụt",
-      coordinates: packData.coordinates || { lat: 16.11, lng: 108.26 },
-      recoveryDate: packData.recoveryDate || new Date().toISOString().split("T")[0],
-      totalWeightKg: packData.totalWeightKg || 50,
-      remainingWeightKg: packData.totalWeightKg || 50,
-      depthMeters: packData.depthMeters || 20,
-      diverTeam: packData.diverTeam || "SAS Danang Divers",
-      netPolymer: packData.netPolymer || "Nylon-6",
-      status: "new",
-      notes: packData.notes,
-      createdAt: new Date().toISOString(),
-    };
+  const quotesNeededCount = useMemo(() => {
+    return orders.filter(
+      (o) => o.fulfillmentStatus === "quote_needed" || o.fulfillmentStatus === "waiting_approval"
+    ).length;
+  }, [orders]);
 
-    saveNetPack(newPack);
-    setNetPacks((prev) => [newPack, ...prev]);
-
-    // Save to Firestore
-    setDoc(doc(db, "batches", newPack.packId), newPack, { merge: true }).catch(() => {});
-  };
-
-  const handleProduceBags = (params: {
-    sourcePackId: string;
-    bagBaseId: string;
-    colorId: string;
-    quantity: number;
-    workshopName: string;
-    customProduct?: {
-      id: string;
-      name: string;
-      plasticOffsetKg?: number;
-    };
-  }) => {
-    const result = manufactureBags({
-      packId: params.sourcePackId,
-      bagBaseId: params.bagBaseId,
-      colorId: params.colorId,
-      quantity: params.quantity,
-      workshopName: params.workshopName,
-      customProduct: params.customProduct,
-    });
-
-    if (result.success) {
-      const updatedPacks = getAllNetPacks();
-      const updatedItems = getManufacturedItems();
-      setNetPacks(updatedPacks);
-      setManufacturedItems(updatedItems);
-      setStats(getSupplyChainStats());
-
-      // Cập nhật tồn kho thực tế cho các sản phẩm trong Bộ Sưu Tập & Cloud Firestore
-      setBackendProducts((prev) => {
-        const updated = prev.map((p) => {
-          const realStock = updatedItems.filter(
-            (item) =>
-              item.status === "in_stock" &&
-              !item.isClaimed &&
-              (item.bagBaseId === p.id ||
-                (p.category && item.bagBaseId === p.category) ||
-                (p.name && item.bagName?.trim().toLowerCase() === p.name.trim().toLowerCase()))
-          ).length;
-          const updatedProd = {
-            ...p,
-            stockCount: realStock,
-            inStock: realStock > 0,
-          };
-          if (p.stockCount !== realStock || p.inStock !== (realStock > 0)) {
-            saveProductToFirestore(updatedProd).catch((e) =>
-              console.warn("Lỗi đồng bộ tồn kho sản phẩm lên Firestore:", e)
-            );
-          }
-          return updatedProd;
-        });
-        return updated;
-      });
-
-      // Tự động đẩy kho vừa may lên Cloud Firestore
-      syncAllInventoryToFirestore().catch(() => {});
-    }
-    return result;
-  };
-
-  const handleSyncFirestore = async () => {
-    setIsSyncingFirestore(true);
-    setSyncFeedback(null);
-    try {
-      const res = await syncAllInventoryToFirestore();
-      setSyncFeedback(res);
-    } catch (e: any) {
-      setSyncFeedback({ success: false, message: e.message || "Lỗi đồng bộ dữ liệu" });
-    } finally {
-      setIsSyncingFirestore(false);
-    }
-  };
-
-  // -------------------------------------------------------------
-  // DATABASE PURGE & RESET HANDLERS
-  // -------------------------------------------------------------
-  const handleResetSupplyChain = async () => {
-    try {
-      await clearAllBatchesFromFirestore();
-      clearLocalSupplyChainData();
-      setNetPacks([]);
-      setManufacturedItems([]);
-      setStats(getSupplyChainStats());
-
-      // Đồng thời cập nhật tồn kho tất cả sản phẩm về 0 trên state & Cloud Firestore
-      setBackendProducts((prev) => {
-        const resetProds = prev.map((p) => {
-          const updated = {
-            ...p,
-            stockCount: 0,
-            inStock: false,
-          };
-          saveProductToFirestore(updated).catch(() => {});
-          return updated;
-        });
-        return resetProds;
-      });
-
-      alert("✅ Đã reset thành công Kho & Lưới về database thực rỗng và cập nhật tồn kho tất cả sản phẩm về 0!");
-    } catch (e: any) {
-      alert("Lỗi khi reset kho & lưới: " + e.message);
-    }
-  };
-
-  const handleResetClaimedBags = async () => {
-    try {
-      await clearAllClaimedBagsFromFirestore();
-      setManufacturedItems((prev) =>
-        prev.map((i) => ({ ...i, isClaimed: false, status: "in_stock", claimedBy: undefined }))
-      );
-      alert("✅ Đã xóa toàn bộ dữ liệu túi đã định danh (digital passport) của khách hàng thành công!");
-    } catch (e: any) {
-      alert("Lỗi khi xóa túi đã định danh: " + e.message);
-    }
-  };
-
-  const handleResetMembersImpact = async () => {
-    try {
-      await clearAllMembersImpact();
-      alert("✅ Đã reset toàn bộ dấu chân sinh thái & tác động môi trường của tất cả thành viên về 0 kg!");
-    } catch (e: any) {
-      alert("Lỗi khi reset tác động thành viên: " + e.message);
-    }
-  };
-
-  const handleClearAllProducts = async () => {
-    try {
-      await clearAllProductsFromFirestore();
-      setBackendProducts([]);
-      alert("✅ Đã xóa sạch toàn bộ sản phẩm! Mã ID sản phẩm tiếp theo sẽ bắt đầu lại từ 1.");
-      return true;
-    } catch (e: any) {
-      alert("Lỗi khi xóa danh mục sản phẩm: " + e.message);
-      return false;
-    }
-  };
-
-  // -------------------------------------------------------------
-  // CATALOG & ARTICLE ACTIONS
-  // -------------------------------------------------------------
-  const handleSaveProduct = async (productData: any) => {
-    try {
-      await saveProductToFirestore(productData);
-
-      setBackendProducts((prev) => {
-        const idx = prev.findIndex((p) => p.id === productData.id);
-        if (idx >= 0) {
-          const updated = [...prev];
-          updated[idx] = productData;
-          return updated;
-        }
-        return [productData, ...prev];
-      });
-
-      return true;
-    } catch (err) {
-      alert("Lỗi lưu sản phẩm: " + (err instanceof Error ? err.message : ""));
-      return false;
-    }
-  };
-
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa sản phẩm này không?")) return false;
-    try {
-      await deleteProductFromFirestore(productId);
-      setBackendProducts((prev) => prev.filter((p) => p.id !== productId));
-      return true;
-    } catch {
-      setBackendProducts((prev) => prev.filter((p) => p.id !== productId));
-      return true;
-    }
-  };
-
-  const handleSaveArticle = async (article: Article) => {
-    const success = await saveArticleToFirestore(article);
-    if (success) {
-      setArticles((prev) => {
-        const idx = prev.findIndex((a) => a.id === article.id);
-        if (idx >= 0) {
-          const updated = [...prev];
-          updated[idx] = article;
-          return updated;
-        }
-        return [article, ...prev];
-      });
-    }
-    return success;
-  };
-
-  const handleDeleteArticle = async (articleId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) return false;
-    const success = await deleteArticleFromFirestore(articleId);
-    if (success) {
-      setArticles((prev) => prev.filter((a) => a.id !== articleId));
-    }
-    return success;
-  };
-
-  // -------------------------------------------------------------
-  // AUTH GUARD VIEW
-  // -------------------------------------------------------------
-  if (isAdminAuthenticated === false) {
+  if (isAdminAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4 text-[#241B16]">
-        <div className="max-w-md w-full bg-white border border-[#E8E2D8] rounded-3xl p-8 text-center space-y-6 shadow-sm">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-[#F3ECE1] border border-[#E8E2D8] text-[#B85D43] text-[11px] font-mono uppercase tracking-wider mx-auto">
-            BẢO MẬT HỆ THỐNG
-          </div>
-          <div className="space-y-2">
-            <h2 className="font-serif text-2xl font-normal text-[#241B16]">Yêu Cầu Xác Thực Quản Trị</h2>
-            <p className="text-xs text-[#5E4D43] leading-relaxed">
-              Khu vực quản trị nội bộ NÉT WORKSHOP OS dành riêng cho nhân sự quản lý chuỗi cung ứng, xưởng may và duyệt yêu cầu thiết kế.
-            </p>
-          </div>
-          <Link
-            href="/admin/login"
-            className="w-full py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white font-medium text-xs shadow-xs transition-all flex items-center justify-center cursor-pointer"
-          >
-            <span>Đăng Nhập Quản Trị Viên</span>
-          </Link>
-        </div>
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center text-xs text-[#7A6E65]">
+        Đang xác thực quyền quản trị NÉT Workshop...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#241B16]">
-      {/* 1. Global Admin Navigation Bar */}
-      <AdminNavbar
+    <div className="min-h-screen bg-[#FDFBF7] flex flex-col md:flex-row font-sans text-[#2A2521]">
+      {/* 1. Menu Dọc Quản Trị (Req 1) */}
+      <AdminSidebar
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
-        onRefreshAll={fetchAllData}
-        isRefreshing={isRefreshing}
+        onOpenSandbox={() => setShowSandboxModal(true)}
+        pendingOrdersCount={pendingOrdersCount}
+        quotesNeededCount={quotesNeededCount}
       />
 
-      {/* 2. Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {(activeTab === "orders" || activeTab === "design-requests") && (
-          <AdminOrdersTab
-            orders={orders}
-            backendProducts={backendProducts}
-            onUpdateOrderStatus={handleUpdateOrderStatus}
-            onTogglePaymentStatus={handleTogglePaymentStatus}
-            onDeleteOrder={handleDeleteOrder}
-            onCreateManualOrder={handleCreateManualOrder}
-            initialTypeFilter={searchParams.get("tab") === "design-requests" ? "custom" : "all"}
-          />
-        )}
+      {/* 2. Vùng Nội Dung Chính (Req 2: Tối giản, không quảng cáo, thao tác ngay) */}
+      <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+        {/* Top bar tối giản */}
+        <header className="h-12 bg-white border-b border-[#E8E2D9] px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-[#7A6E65]">
+            <span>Cổng Quản Trị</span>
+            <span>/</span>
+            <span className="font-semibold text-[#2A2521] capitalize">
+              {activeTab === "overview"
+                ? "Tổng quan"
+                : activeTab === "orders"
+                ? "Đơn hàng"
+                : activeTab === "products"
+                ? "Sản phẩm & Charm"
+                : activeTab === "net-passport"
+                ? "Lưới & Passport"
+                : "Đối tác"}
+            </span>
+          </div>
 
-        {activeTab === "dashboard" && (
-          <AdminDashboardTab
-            orders={orders}
-            netPacks={netPacks}
-            manufacturedItems={manufacturedItems}
-            backendProducts={backendProducts}
-            stats={stats}
-            onNavigateTab={handleSelectTab}
-          />
-        )}
+          <div className="flex items-center gap-3 text-xs">
+            {/* Trạng thái lưu đám mây (Req 25) */}
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>{syncStatus === "syncing" ? "Đang đồng bộ..." : "Đã đồng bộ đám mây"}</span>
+            </div>
 
-        {activeTab === "supply-chain" && (
-          <AdminSupplyChainTab
-            netPacks={netPacks}
-            manufacturedItems={manufacturedItems}
-            products={backendProducts}
-            onAddNetPack={handleAddNetPack}
-            onProduceBags={handleProduceBags}
-            onSyncFirestore={handleSyncFirestore}
-            isSyncing={isSyncingFirestore}
-            syncFeedback={syncFeedback}
-            onResetSupplyChain={handleResetSupplyChain}
-            onResetClaimedBags={handleResetClaimedBags}
-            onResetMembersImpact={handleResetMembersImpact}
-          />
-        )}
+            <button
+              type="button"
+              onClick={handleDataReload}
+              className="text-[#7A6E65] hover:text-[#2A2521] transition-colors text-[11px] font-medium"
+              title="Làm mới dữ liệu"
+            >
+              Làm mới ↻
+            </button>
+          </div>
+        </header>
 
-        {activeTab === "catalog" && (
-          <AdminCatalogTab
-            products={backendProducts}
-            articles={articles}
-            manufacturedItems={manufacturedItems}
-            onNavigateTab={handleSelectTab}
-            onSaveProduct={handleSaveProduct}
-            onDeleteProduct={handleDeleteProduct}
-            onSaveArticle={handleSaveArticle}
-            onDeleteArticle={handleDeleteArticle}
-            onClearAllProducts={handleClearAllProducts}
-          />
-        )}
+        {/* Nội dung theo Tab đang chọn */}
+        <div className="p-4 sm:p-6 flex-1">
+          {activeTab === "overview" && (
+            <AdminOverviewTab
+              orders={orders}
+              batches={batches}
+              slips={slips}
+              serials={serials}
+              products={backendProducts}
+              onNavigateToOrders={handleOverviewNavigateToOrders}
+              onNavigateToProducts={() => handleSelectTab("products")}
+              onNavigateToSupplyChain={handleOverviewNavigateToSupplyChain}
+            />
+          )}
 
-        {activeTab === "support" && (
-          <AdminSupportTab />
-        )}
+          {activeTab === "orders" && (
+            <AdminOrdersTabRefactored
+              orders={orders}
+              partners={partners}
+              serials={serials}
+              products={backendProducts}
+              onOrdersChange={(updated) => setOrders(updated)}
+              initialFilter={orderFilterParam}
+              initialSelectedOrderId={selectedOrderIdParam}
+            />
+          )}
+
+          {activeTab === "products" && (
+            <AdminCatalogTabRefactored
+              products={backendProducts}
+              onSaveProduct={async (p) => {
+                const ok = await saveProductToFirestore(p);
+                if (ok) fetchProducts();
+                return ok;
+              }}
+              onDeleteProduct={async (id) => {
+                const ok = await deleteProductFromFirestore(id);
+                if (ok) fetchProducts();
+                return ok;
+              }}
+            />
+          )}
+
+          {activeTab === "net-passport" && (
+            <AdminSupplyChainPassportTab
+              batches={batches}
+              slips={slips}
+              serials={serials}
+              onBatchesChange={(updated) => setBatches(updated)}
+              onSlipsChange={(updated) => setSlips(updated)}
+              onSerialsChange={(updated) => setSerials(updated)}
+              initialSubTab={supplyChainSubTab}
+            />
+          )}
+
+          {activeTab === "partners" && (
+            <AdminPartnersTab
+              partners={partners}
+              orders={orders}
+              onPartnersChange={(updated) => setPartners(updated)}
+            />
+          )}
+        </div>
       </main>
+
+      {/* 3. Modal Khu Vực Thử Nghiệm / Sandbox (Req 26) */}
+      <AdminSandboxModal
+        isOpen={showSandboxModal}
+        onClose={() => setShowSandboxModal(false)}
+        onDataReset={handleDataReload}
+      />
     </div>
   );
 }
 
-export default function AdminPage() {
+export default function AdminPortalPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#071326] flex items-center justify-center text-teal-400 font-mono text-xs">
-          Đang nạp hệ điều hành quản trị NÉT Workshop OS...
+        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center text-xs text-[#7A6E65]">
+          Đang tải NÉT Workshop OS...
         </div>
       }
     >

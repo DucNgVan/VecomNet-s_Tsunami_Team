@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowUpRight, Sparkles, User } from "lucide-react";
+import { Menu, X, ArrowUpRight, Sparkles, User, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export const Navbar: React.FC = () => {
@@ -33,6 +33,7 @@ export const Navbar: React.FC = () => {
     { href: "/studio", label: "Nét Studio" },
     { href: "/tracking", label: "Theo dõi yêu cầu" },
     { href: "/passport", label: "Story Passport" },
+    { href: "/team", label: "Đội ngũ phát triển" },
   ];
 
   return (
@@ -58,7 +59,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-7">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-7">
             {navLinks.map((link) => {
               const isActive =
                 pathname === link.href ||
@@ -176,7 +177,7 @@ export const Navbar: React.FC = () => {
                   className="text-xs text-[#7A6F68] hover:text-[#241B16] flex items-center gap-1"
                 >
                   <span>Cổng quản trị viên</span>
-                  <ArrowUpRight className="w-3 h-3" />
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </motion.div>

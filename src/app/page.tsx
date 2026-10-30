@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowRight, Sparkles, MapPin, Leaf, ShieldCheck, QrCode } from "lucide-react";
+import { ArrowUpRight, ArrowRight, Sparkles, MapPin, Leaf, ShieldCheck, QrCode, Users } from "lucide-react";
 import { NetsIntroLoader } from "@/components/ui/NetsIntroLoader";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
@@ -29,54 +29,53 @@ export default function HomePage() {
       desc: "Biểu tượng thành phố biển",
     },
     {
-      id: "sontra",
-      name: "Sơn Trà",
-      symbol: "△",
-      color: "#15803d",
-      desc: "Nơi rừng gặp biển",
+      id: "basket",
+      name: "Thuyền thúng",
+      symbol: "◯",
+      color: "#f59e0b",
+      desc: "Hồn cốt làng chài xưa",
     },
     {
-      id: "vooc",
-      name: "Voọc chà vá",
-      symbol: "✱",
-      color: "#b45309",
-      desc: "Nữ hoàng linh trưởng",
+      id: "coral",
+      name: "San hô Sơn Trà",
+      symbol: "❋",
+      color: "#ef4444",
+      desc: "Rạn san hô cần chở che",
     },
     {
-      id: "sun",
-      name: "Mặt trời",
-      symbol: "☼",
-      color: "#eab308",
-      desc: "Bình minh vịnh Đà Nẵng",
+      id: "lighthouse",
+      name: "Hải đăng Tiên Sa",
+      symbol: "▲",
+      color: "#10b981",
+      desc: "Ánh sáng người đi biển",
     },
     {
-      id: "heart",
-      name: "Dấu yêu",
-      symbol: "♡",
-      color: "#be185d",
-      desc: "Kỷ niệm lưu giữ",
+      id: "cloud",
+      name: "Mây đèo Hải Vân",
+      symbol: "☁",
+      color: "#8b5cf6",
+      desc: "Thiên hạ đệ nhất hùng quan",
     },
   ];
 
   return (
     <div className="w-full min-h-screen bg-[#FAF7F2] text-[#2D231E]">
-      {/* 0. Handwritten Cursive 'Nets' Stroke Intro (Zero Video) */}
-      <NetsIntroLoader
-        forceShow={showIntro}
-        onClose={() => setShowIntro(false)}
-      />
+      {showIntro && (
+        <NetsIntroLoader onComplete={() => setShowIntro(false)} />
+      )}
 
-      {/* 1. HERO SECTION - Exactly matching the user mockup */}
+      {/* 1. HERO SECTION: 3D-First Interactive Bag Presentation */}
       <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-8 pt-10 sm:pt-16 pb-16 sm:pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          {/* Left Column: Headline & Direct CTA */}
-          <div className="lg:col-span-6 space-y-6 sm:space-y-8">
-            <div className="inline-block text-[11px] sm:text-xs tracking-[0.25em] uppercase text-[#7A6F68] font-semibold">
-              TỪ BIỂN CẢ · ĐẾN KÝ ỨC RIÊNG
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          {/* Left Column: Refined Typography & Vision */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EFE9DF] border border-[#E8E2D8] text-[11px] sm:text-xs tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+              <span>DỰ ÁN BDC 2026 · VECOMNET&apos;S TSUNAMI</span>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-6xl lg:text-[68px] leading-[1.2] sm:leading-[1.18] text-[#241B16] font-normal tracking-tight">
-              Mang theo một{" "}
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-[56px] leading-[1.12] text-[#241B16] font-normal tracking-tight">
+              Gói trọn{" "}
               <span className="italic font-serif text-[#B85D43]">nét</span>{" "}
               <span className="block mt-1.5 sm:mt-2.5">Đà Nẵng.</span>
             </h1>
@@ -85,14 +84,21 @@ export default function HomePage() {
               Túi từ lưới đánh cá đã qua sử dụng. Charm kể chuyện địa phương. Và một dấu ấn chỉ thuộc về bạn.
             </p>
 
-            {/* Direct Studio Button */}
-            <div className="pt-2">
+            {/* Direct Studio Button & Link to Team */}
+            <div className="pt-2 flex flex-wrap items-center gap-3 sm:gap-4">
               <Link
                 href="/studio"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm sm:text-base font-medium shadow-sm transition-all hover:translate-y-[-1px]"
               >
                 <span>Tạo chiếc túi của bạn</span>
                 <ArrowUpRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/team"
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-[#241B16] text-sm sm:text-base font-medium transition-all shadow-sm hover:translate-y-[-1px]"
+              >
+                <Users className="w-4 h-4 text-[#B85D43]" />
+                <span>Đội ngũ phát triển</span>
               </Link>
             </div>
 
@@ -285,12 +291,21 @@ export default function HomePage() {
             <span className="font-medium">Minh bạch thử nghiệm (BDC 2026):</span>
             <span>Dữ liệu và quy trình mẫu nhằm kiểm chứng mô hình thời trang tái sinh từ lưới ngư dân tại Đà Nẵng.</span>
           </div>
-          <Link
-            href="/studio"
-            className="text-[#B85D43] hover:underline whitespace-nowrap font-medium"
-          >
-            Bắt đầu thiết kế túi ngay →
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/team"
+              className="text-[#B85D43] hover:underline whitespace-nowrap font-medium flex items-center gap-1"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Đội ngũ phát triển →</span>
+            </Link>
+            <Link
+              href="/studio"
+              className="hidden sm:inline-block text-[#7A6F68] hover:underline whitespace-nowrap"
+            >
+              Bắt đầu thiết kế túi ngay →
+            </Link>
+          </div>
         </div>
       </section>
     </div>

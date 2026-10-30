@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, ShieldCheck, Heart, Leaf, MapPin } from "lucide-react";
+import { ArrowUpRight, ShieldCheck, Heart, Leaf, MapPin, Users } from "lucide-react";
 
 export const Footer: React.FC = () => {
   const pathname = usePathname();
@@ -70,12 +70,18 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link href="/team" className="hover:text-[#B85D43] font-medium transition-colors text-[#B85D43] flex items-center gap-1">
+                  <span>Đội ngũ phát triển</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </Link>
+              </li>
+              <li>
                 <Link href="/partner" className="hover:text-[#B85D43] transition-colors">
                   Điểm chạm đối tác khách sạn & tour
                 </Link>
               </li>
               <li>
-                <Link href="/support" className="hover:text-[#B85D43] font-medium transition-colors text-[#B85D43]">
+                <Link href="/support" className="hover:text-[#B85D43] transition-colors text-[#7A6F68]">
                   Hỗ trợ khách hàng & Gửi ticket
                 </Link>
               </li>
@@ -88,9 +94,16 @@ export const Footer: React.FC = () => {
               Minh Bạch & Liên Hệ
             </h4>
             <p className="text-xs text-[#7A6F68] leading-relaxed">
-              Dự án thử nghiệm BDC 2026. Thông tin vật liệu được theo dõi theo lô thực địa tại Đà Nẵng.
+              Dự án thử nghiệm BDC 2026. Thông tin vật liệu được theo dõi theo lô thực địa tại Đà Nẵng bởi Tsunami Team (5 bàn tay 1 sản phẩm).
             </p>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap gap-2">
+              <Link
+                href="/team"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#D6CDBF] text-xs font-semibold text-[#B85D43] hover:text-[#A24E36] hover:border-[#B85D43]"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Xem Đội ngũ phát triển</span>
+              </Link>
               <Link
                 href="/admin"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#D6CDBF] text-xs font-semibold text-[#5E4D43] hover:text-[#241B16]"
@@ -105,11 +118,11 @@ export const Footer: React.FC = () => {
         {/* Bottom copyright & disclaimer */}
         <div className="pt-8 border-t border-[#E8E2D8] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#7A6F68]">
           <span>
-            © 2026 NÉT Connect. Bản quyền thiết kế và nội dung thuộc về dự án NÉT.
+            © 2026 NÉT Connect · VecomNet&apos;s Tsunami Team (5 bàn tay 1 sản phẩm).
           </span>
-          <span>
-            Minh họa thử nghiệm BDC 2026 · Chưa áp dụng giao dịch thanh toán trực tuyến
-          </span>
+          <Link href="/team" className="text-[#B85D43] hover:underline">
+            Gặp gỡ đội ngũ sáng lập →
+          </Link>
         </div>
       </div>
     </footer>

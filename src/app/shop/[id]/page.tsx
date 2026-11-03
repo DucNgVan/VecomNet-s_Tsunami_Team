@@ -356,44 +356,42 @@ export default function ProductDetailPage() {
           {/* ========================================================= */}
           <div className="lg:col-span-6 flex flex-col items-center">
             
-            {/* The Signature Arch Vault Canvas */}
-            <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 shadow-sm relative border border-[#E8E2D8] overflow-hidden flex flex-col items-center justify-center mx-auto">
+            {/* The Signature Arch Vault Canvas (Đồng bộ chuẩn 100% với khung vòm Nets Studio) */}
+            <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none flex flex-col items-center justify-between mx-auto">
               
-              {/* Badges centered under the arch peak (Tránh hoàn toàn lỗi bị vòm cong bo góc cắt mất nội dung) */}
-              <div className="absolute top-5 sm:top-6 inset-x-0 z-20 flex items-center justify-center gap-2 pointer-events-none px-4">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-md text-[#B85D43] border border-[#E8E2D8] shadow-xs whitespace-nowrap">
-                  {isCombo ? "Bộ Phối Độc Bản" : isCharm ? "Charm Biển Sâu" : "Phôi Túi Lưới NÉT"}
-                </span>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50/95 backdrop-blur-md text-emerald-800 border border-emerald-200 shadow-xs whitespace-nowrap">
-                  -{formatKg(plasticKg)} rác biển
+              {/* Top Arch Label - Khớp 100% mẫu Nets Studio */}
+              <div className="pt-3 text-center z-20 pointer-events-none">
+                <span className="text-[11px] sm:text-[12px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
+                  NETS STUDIO
                 </span>
               </div>
 
-              {/* Floating Pill Switcher Button at Bottom (Khớp 100% mẫu screenshot) */}
+              {/* Floating Pill Switcher Button at Bottom (Chỉ hiển thị chữ 2D hoặc 3D) */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap">
                 {viewMode === "3d" ? (
                   <button
                     type="button"
                     onClick={() => setViewMode("photo")}
-                    className="px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>Trở về bản phối 2D</span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+                    <span>2D</span>
                   </button>
                 ) : has3dModel ? (
                   <button
                     type="button"
                     onClick={() => setViewMode("3d")}
-                    className="px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                   >
-                    <RotateCw className="w-3.5 h-3.5 text-[#B85D43]" />
-                    <span>Xem mô hình 3D 360°</span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+                    <span>3D</span>
                   </button>
                 ) : null}
               </div>
 
-              {/* Product Display inside the Arch */}
+              {/* Product Display inside the Arch (Khớp chính xác vị trí và tỷ lệ treo túi như Studio) */}
               {viewMode === "3d" && has3dModel ? (
-                <div className="w-full h-full relative">
+                <div className="absolute inset-0 z-10">
                   {isCharm ? (
                     <CharmCanvas3D
                       modelUrl={current3dModelUrl}
@@ -412,11 +410,11 @@ export default function ProductDetailPage() {
                   )}
                 </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center p-4">
+                <div className="relative w-full max-w-[320px] h-[340px] flex items-center justify-center my-auto z-10 select-none pointer-events-none p-2">
                   <img
                     src={current2dImage}
                     alt={productName}
-                    className="max-w-full max-h-full object-contain filter drop-shadow-xl transition-transform duration-500 hover:scale-105"
+                    className="max-w-full max-h-full object-contain filter drop-shadow-[0_12px_24px_rgba(36,27,22,0.14)] select-none pointer-events-none transition-all duration-300"
                     loading="eager"
                   />
                 </div>

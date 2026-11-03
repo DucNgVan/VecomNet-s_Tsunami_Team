@@ -1655,7 +1655,7 @@ Key 3D printing & charm specs:
                       className="px-4 py-2 rounded-full bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-xs sm:text-sm font-semibold text-[#42342B] hover:text-[#B85D43] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
-                      <span>← Trở về bản phối 2D</span>
+                      <span>2D</span>
                     </button>
                   </div>
                   <div className="absolute inset-0 z-10">

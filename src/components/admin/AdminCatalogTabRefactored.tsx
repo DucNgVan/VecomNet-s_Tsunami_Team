@@ -240,6 +240,13 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
       return;
     }
 
+    if (file.size > 10 * 1024 * 1024) {
+      alert(
+        `File 3D "${file.name}" nặng ${(file.size / (1024 * 1024)).toFixed(1)}MB, vượt quá giới hạn 10MB của Cloudinary.\n\nHệ thống đã nén sẵn bản siêu nhẹ (~1.8MB) tại:\n"Downloads/túi xách 2/3d_optimized/"\nBạn hãy vào thư mục trên để chọn file nhé!`
+      );
+      return;
+    }
+
     setIsUploadingModel(true);
     setModelProgress(10);
     setModelUploadStatus(`Đang tải file 3D màu #${colorIndex + 1} lên Cloudinary...`);
@@ -353,6 +360,13 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
 
     if (!is3d) {
       alert("Vui lòng chọn file 3D định dạng .glb hoặc .gltf!");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert(
+        `File 3D "${file.name}" nặng ${(file.size / (1024 * 1024)).toFixed(1)}MB, vượt quá giới hạn 10MB của Cloudinary. Vui lòng chọn file dưới 10MB.`
+      );
       return;
     }
 

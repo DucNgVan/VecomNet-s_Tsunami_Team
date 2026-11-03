@@ -8,8 +8,8 @@ export const BAG_COLORS: BagMeshColor[] = [
     glowHex: "#34d399",
     accentHex: "#6ee7b7",
     description: "Sắc xanh lá tươi mát từ sợi lưới tái sinh đại dương, mang hơi thở thiên nhiên Nam Ô trong lành.",
-    image: "/assets/products/bags/tuixach-xanh-la.png",
-    model3dUrl: "/assets/models/tuixach-xanh-la.glb",
+    image: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702237/vecomnets/products/bag_2d_xanh_la.png",
+    model3dUrl: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702176/vecomnets/models/tuixach_xanh_la_v2.glb",
   },
   {
     id: "blue",
@@ -18,8 +18,8 @@ export const BAG_COLORS: BagMeshColor[] = [
     glowHex: "#00F2FE",
     accentHex: "#38bdf8",
     description: "Sắc xanh dương đại dương phóng khoáng, thanh lịch và mang đậm tinh thần biển cả.",
-    image: "/assets/products/bags/tuixach-xanh-duong.png",
-    model3dUrl: "/assets/models/tuixach-xanh-duong.glb",
+    image: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702239/vecomnets/products/bag_2d_xanh_duong.png",
+    model3dUrl: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702178/vecomnets/models/tuixach_xanh_duong_v2.glb",
   },
   {
     id: "pink",
@@ -28,8 +28,8 @@ export const BAG_COLORS: BagMeshColor[] = [
     glowHex: "#f472b6",
     accentHex: "#fbcfe8",
     description: "Sắc hồng san hô ngọt ngào, tinh tế và mang năng lượng trẻ trung đầy cuốn hút.",
-    image: "/assets/products/bags/tuixach-hong.png",
-    model3dUrl: "/assets/models/tuixach-hong.glb",
+    image: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702239/vecomnets/products/bag_2d_hong.png",
+    model3dUrl: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702179/vecomnets/models/tuixach_hong_v2.glb",
   },
   {
     id: "burgundy",
@@ -38,8 +38,8 @@ export const BAG_COLORS: BagMeshColor[] = [
     glowHex: "#e11d48",
     accentHex: "#fda4af",
     description: "Sắc đỏ tía quý phái, sâu lắng và thời thượng tựa ráng chiều rực rỡ trên vịnh biển.",
-    image: "/assets/products/bags/tuixach-do-tia.png",
-    model3dUrl: "/assets/models/tuixach-do-tia.glb",
+    image: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702241/vecomnets/products/bag_2d_do_tia.png",
+    model3dUrl: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702183/vecomnets/models/tuixach_do_tia_v2.glb",
   },
   {
     id: "black",
@@ -48,8 +48,8 @@ export const BAG_COLORS: BagMeshColor[] = [
     glowHex: "#94a3b8",
     accentHex: "#cbd5e1",
     description: "Sắc đen huyền bí tối giản, sang trọng và trường tồn cùng phong cách hiện đại.",
-    image: "/assets/products/bags/tuixach-den.png",
-    model3dUrl: "/assets/models/tuixach-den.glb",
+    image: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702240/vecomnets/products/bag_2d_den.png",
+    model3dUrl: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702181/vecomnets/models/tuixach_den_v2.glb",
   },
 ];
 

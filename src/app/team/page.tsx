@@ -56,7 +56,7 @@ export interface TeamMember {
   specialNote?: string;
 }
 
-export const teamMembers: TeamMember[] = [
+const teamMembers: TeamMember[] = [
   {
     id: "thanh-huyen",
     name: "Trịnh Thanh Huyền",

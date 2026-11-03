@@ -140,23 +140,33 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       container.appendChild(renderer.domElement);
 
       // 3. Studio Lighting Rig - True-to-life studio lighting (prevents overexposure/washing out)
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
       scene.add(ambientLight);
+
+      // Natural Hemisphere fill (loại bỏ góc khuất u tối ở khe đan dây thừng và lòng túi)
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0xd8cebf, 0.7);
+      scene.add(hemiLight);
 
       // Primary Key Daylight
       const sunLight = new THREE.DirectionalLight(0xfffdf7, 1.35);
       sunLight.position.set(3.5, 6.5, 5);
       sunLight.castShadow = true;
+      sunLight.shadow.bias = -0.0005;
       scene.add(sunLight);
 
+      // Dedicated Overhead Light: Rọi sáng trực tiếp quai xách từ trên xuống, làm nổi bật đường xoắn dây thừng
+      const topHandleLight = new THREE.DirectionalLight(0xfffef5, 1.25);
+      topHandleLight.position.set(0, 8.5, 2.5);
+      scene.add(topHandleLight);
+
       // Soft Daylight Fill
-      const skyLight = new THREE.DirectionalLight(0xf8fafc, 0.6);
-      skyLight.position.set(-3.5, 2, 3.5);
+      const skyLight = new THREE.DirectionalLight(0xf8fafc, 0.7);
+      skyLight.position.set(-3.5, 3, 3.5);
       scene.add(skyLight);
 
       // Subtle Rim Light for outline separation
-      const rimLight = new THREE.DirectionalLight(0xffffff, 0.45);
-      rimLight.position.set(0, 4.5, -5);
+      const rimLight = new THREE.DirectionalLight(0xffffff, 0.55);
+      rimLight.position.set(0, 5, -5);
       scene.add(rimLight);
 
       // Soft Under-Glow (gentle accent, not blinding)
@@ -299,9 +309,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
                 if (m.material) {
                   const mat = m.material as THREE.MeshStandardMaterial;
                   mat.side = THREE.DoubleSide;
-                  mat.roughness = 0.95;
-                  mat.metalness = 0.05;
-                  mat.envMapIntensity = 0.8;
+                  mat.roughness = 0.52;
+                  mat.metalness = 0.04;
+                  mat.envMapIntensity = 1.1;
                   if (mat.map) {
                     mat.map.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 16);
                     mat.map.generateMipmaps = true;

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { formatVND } from "@/lib/utils";
 import { BAG_BASES, CHARMS } from "@/data/products";
+import { uploadToCloudinary } from "@/lib/cloudinaryClient";
+import { uploadProductFile } from "@/lib/storageService";
 
 interface AdminCatalogTabRefactoredProps {
   products: any[];
@@ -17,34 +19,97 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
 }) => {
   const [activeCatalogType, setActiveCatalogType] = useState<"bags" | "charms">("bags");
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isNewProduct, setIsNewProduct] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
-  const [show3DAdvanced, setShow3DAdvanced] = useState(false); // Chỉ hiện khi mở nâng cao (Req 10)
+  const [show3DAdvanced, setShow3DAdvanced] = useState(false);
+  const [showManualUrlInput, setShowManualUrlInput] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Bag Products list
-  const bagList = products.length > 0 ? products : BAG_BASES;
+  // Upload States for Image & 3D Model
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageProgress, setImageProgress] = useState(0);
+  const [imageUploadStatus, setImageUploadStatus] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleEditClick = (item: any) => {
-    setEditingItem({ ...item });
-    setShow3DAdvanced(false);
-    setShowEditModal(true);
-  };
+  const [isUploadingModel, setIsUploadingModel] = useState(false);
+  const [modelProgress, setModelProgress] = useState(0);
+  const [modelUploadStatus, setModelUploadStatus] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const modelInputRef = useRef<HTMLInputElement>(null);
+
+  // 1. Phân loại danh sách Túi xách và Charm từ Firestore/LocalStorage
+  const bagList = useMemo(() => {
+    const customBags = products.filter((p: any) => p && p.category !== "charm");
+    if (customBags.length > 0) return customBags;
+    return BAG_BASES;
+  }, [products]);
+
+  const charmList = useMemo(() => {
+    const customCharms = products.filter((p: any) => p && p.category === "charm");
+    const map = new Map<string, any>();
+    // Đưa danh mục mặc định vào trước
+    CHARMS.forEach((c) => map.set(c.id, c));
+    // Các charm tùy chỉnh hoặc cập nhật từ database sẽ ghi đè hoặc bổ sung
+    customCharms.forEach((c) => map.set(c.id, { ...map.get(c.id), ...c }));
+    return Array.from(map.values());
+  }, [products]);
+
+  // 2. Xử lý mở modal Thêm mới
   const handleAddNewClick = () => {
+    const isCharmTab = activeCatalogType === "charms";
     const newItem = {
-      id: `prod-${Date.now()}`,
+      id: isCharmTab ? `charm-${Date.now()}` : `prod-${Date.now()}`,
       name: "",
-      basePrice: 490000,
-      stockCount: 10,
+      vietnameseName: "",
+      category: isCharmTab ? "charm" : "tote",
+      basePrice: isCharmTab ? 180000 : 490000,
+      price: isCharmTab ? 180000 : 490000,
+      stockCount: 15,
       inStock: true,
-      image: "/assets/products/tote-green.jpg",
-      description: "",
+      image: "",
+      imageUrl: "",
+      description: isCharmTab
+        ? "Móc khoá Charm men lam tráng men thủ công độc bản."
+        : "Túi xách tái sinh đan thủ công từ sợi cước lưới ma đại dương.",
+      plasticOffsetKg: isCharmTab ? 0.3 : 1.6,
       model3dUrl: "",
     };
+    setIsNewProduct(true);
     setEditingItem(newItem);
     setShow3DAdvanced(false);
+    setShowManualUrlInput(false);
+    setImageUploadStatus(null);
+    setModelUploadStatus(null);
     setShowEditModal(true);
   };
 
+  // 3. Xử lý mở modal Chỉnh sửa
+  const handleEditClick = (item: any) => {
+    setIsNewProduct(false);
+    const itemPrice = item.basePrice ?? item.price ?? 490000;
+    const itemImg = item.image || item.imageUrl || "";
+    setEditingItem({
+      ...item,
+      basePrice: itemPrice,
+      price: itemPrice,
+      image: itemImg,
+      imageUrl: itemImg,
+      category: item.category || (activeCatalogType === "charms" ? "charm" : "tote"),
+      stockCount: item.stockCount ?? 10,
+      inStock: item.inStock !== false,
+      plasticOffsetKg: item.plasticOffsetKg ?? 1.5,
+      description: item.description || "",
+      model3dUrl: item.model3dUrl || "",
+    });
+    setShow3DAdvanced(Boolean(item.model3dUrl));
+    setShowManualUrlInput(!itemImg);
+    setImageUploadStatus(null);
+    setModelUploadStatus(null);
+    setShowEditModal(true);
+  };
+
+  // 4. Bật/Tắt ẩn hiện sản phẩm
   const handleToggleHide = async (item: any) => {
     const updated = {
       ...item,
@@ -53,32 +118,244 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     await onSaveProduct(updated);
   };
 
+  // 5. Xóa sản phẩm
+  const handleDeleteClick = async (item: any) => {
+    const itemName = item.name || item.vietnameseName || item.id;
+    if (confirm(`Bạn có chắc chắn muốn xóa "${itemName}" khỏi hệ thống?`)) {
+      const ok = await onDeleteProduct(item.id);
+      if (ok) {
+        alert(`Đã xóa thành công "${itemName}"!`);
+      } else {
+        alert("Có lỗi xảy ra khi xóa sản phẩm!");
+      }
+    }
+  };
+
+  // 6. Hàm Tải File Đa Tầng (Cloudinary CDN -> Firebase Storage -> Server Disk -> Data URL)
+  const uploadFileWithFallback = async (
+    file: File,
+    folder: "products" | "models",
+    onProgress?: (pct: number) => void
+  ): Promise<string> => {
+    // Tầng 1: Cloudinary CDN Tối Ưu
+    try {
+      const res = await uploadToCloudinary(file, folder, onProgress);
+      if (res?.url) return res.url;
+    } catch (cldErr: any) {
+      console.warn("[Upload] Cloudinary upload notice, fallback:", cldErr?.message || cldErr);
+    }
+
+    // Tầng 2: Firebase Storage
+    try {
+      const fallbackUrl = await uploadProductFile(
+        file,
+        folder === "models" ? "models" : "images",
+        onProgress
+      );
+      if (fallbackUrl) return fallbackUrl;
+    } catch (storageErr: any) {
+      console.warn("[Upload] Storage service notice, fallback:", storageErr?.message || storageErr);
+    }
+
+    // Tầng 3: Server API /api/upload
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", folder);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.url) return json.url;
+      }
+    } catch (apiErr: any) {
+      console.warn("[Upload] Server API notice, fallback:", apiErr?.message || apiErr);
+    }
+
+    // Tầng 4: Base64 Data URL cho ảnh nhỏ (< 2MB)
+    if (file.type.startsWith("image/") && file.size <= 2 * 1024 * 1024) {
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    throw new Error("Không thể tải file lên máy chủ. Vui lòng kiểm tra kết nối mạng!");
+  };
+
+  // 7. Xử lý Upload Ảnh Sản Phẩm
+  const handleImageFileSelected = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn file hình ảnh (PNG, JPG, JPEG, WebP, SVG)!");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageProgress(15);
+    setImageUploadStatus("Đang chuẩn bị ảnh...");
+
+    // Xem trước ảnh tức thì bằng Object URL để tạo trải nghiệm mượt mà không độ trễ
+    const localPreview = URL.createObjectURL(file);
+    setEditingItem((prev: any) => ({
+      ...prev,
+      image: localPreview,
+      imageUrl: localPreview,
+    }));
+
+    try {
+      setImageUploadStatus("Đang tải ảnh lên đám mây...");
+      const finalUrl = await uploadFileWithFallback(file, "products", (pct) => {
+        setImageProgress(pct);
+        setImageUploadStatus(`Đang tải ảnh... ${pct}%`);
+      });
+
+      setEditingItem((prev: any) => ({
+        ...prev,
+        image: finalUrl,
+        imageUrl: finalUrl,
+      }));
+      setImageProgress(100);
+      setImageUploadStatus("✓ Tải ảnh thành công!");
+      setTimeout(() => setImageUploadStatus(null), 3500);
+    } catch (err: any) {
+      console.error("Image upload failed:", err);
+      alert(`Lỗi tải ảnh: ${err.message || "Vui lòng thử lại"}`);
+      setImageUploadStatus("Lỗi tải ảnh!");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // 8. Xử lý Upload File Mô Hình 3D (.glb / .gltf)
+  const handleModelFileSelected = async (file: File) => {
+    if (!file) return;
+    const is3d =
+      file.name.toLowerCase().endsWith(".glb") ||
+      file.name.toLowerCase().endsWith(".gltf") ||
+      file.type === "model/gltf-binary";
+
+    if (!is3d) {
+      alert("Vui lòng chọn file 3D định dạng .glb hoặc .gltf!");
+      return;
+    }
+
+    setIsUploadingModel(true);
+    setModelProgress(10);
+    setModelUploadStatus("Đang tải mô hình 3D...");
+
+    try {
+      const finalUrl = await uploadFileWithFallback(file, "models", (pct) => {
+        setModelProgress(pct);
+        setModelUploadStatus(`Đang tải mô hình 3D... ${pct}%`);
+      });
+
+      setEditingItem((prev: any) => ({
+        ...prev,
+        model3dUrl: finalUrl,
+      }));
+      setModelProgress(100);
+      setModelUploadStatus("✓ Tải mô hình 3D thành công!");
+      setTimeout(() => setModelUploadStatus(null), 3500);
+    } catch (err: any) {
+      console.error("3D model upload failed:", err);
+      alert(`Lỗi tải file 3D: ${err.message || "Vui lòng thử lại"}`);
+      setModelUploadStatus("Lỗi tải file 3D!");
+    } finally {
+      setIsUploadingModel(false);
+    }
+  };
+
+  // 9. Xử lý Kéo Thả (Drag & Drop) Ảnh
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleImageFileSelected(files[0]);
+    }
+  };
+
+  // 10. Xử lý Lưu Form Sản Phẩm
   const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingItem || !editingItem.name.trim()) {
+    if (!editingItem) return;
+
+    const trimmedName = (editingItem.name || editingItem.vietnameseName || "").trim();
+    if (!trimmedName) {
       alert("Vui lòng nhập tên sản phẩm!");
       return;
     }
-    const success = await onSaveProduct(editingItem);
-    if (success) {
-      setShowEditModal(false);
-      alert("Đã lưu và đồng bộ sản phẩm sang website khách hàng!");
-    } else {
-      alert("Lỗi khi lưu sản phẩm lên cơ sở dữ liệu!");
+
+    if (isUploadingImage || isUploadingModel) {
+      alert("Tệp đang được tải lên hệ thống. Vui lòng đợi trong giây lát!");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        ...editingItem,
+        name: trimmedName,
+        vietnameseName: trimmedName,
+        basePrice: Number(editingItem.basePrice || editingItem.price || 0),
+        price: Number(editingItem.basePrice || editingItem.price || 0),
+        stockCount: Number(editingItem.stockCount ?? 10),
+        plasticOffsetKg: Number(editingItem.plasticOffsetKg ?? 1.5),
+        inStock: editingItem.inStock !== false,
+        image: editingItem.image || editingItem.imageUrl || "",
+        imageUrl: editingItem.imageUrl || editingItem.image || "",
+      };
+
+      const success = await onSaveProduct(payload);
+      if (success) {
+        setShowEditModal(false);
+        alert(
+          isNewProduct
+            ? "Đã thêm mới và đồng bộ sản phẩm sang website khách hàng thành công!"
+            : "Đã cập nhật và đồng bộ sản phẩm thành công!"
+        );
+      } else {
+        alert("Lỗi khi lưu sản phẩm lên cơ sở dữ liệu!");
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
     <div className="space-y-4">
-      {/* 1. Header (Req 10) */}
+      {/* 1. Header & Nút Thêm Mới */}
       <div className="flex items-center justify-between border-b border-[#E2D8C7] pb-2.5">
-        <h1 className="text-base sm:text-lg font-bold text-[#2A2521] tracking-tight">Sản phẩm & Charm</h1>
+        <div>
+          <h1 className="text-base sm:text-lg font-bold text-[#2A2521] tracking-tight">Sản phẩm & Charm</h1>
+          <p className="text-[11px] text-[#7A6E65]">
+            Quản lý kho túi tái sinh, charm men lam và tải ảnh sản phẩm trực tiếp lên hệ thống.
+          </p>
+        </div>
         <button
           type="button"
           onClick={handleAddNewClick}
-          className="px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors shadow-xs"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors shadow-xs"
         >
-          + Thêm sản phẩm
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>{activeCatalogType === "charms" ? "Thêm móc khoá Charm" : "Thêm sản phẩm mới"}</span>
         </button>
       </div>
 
@@ -87,35 +364,42 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         <button
           type="button"
           onClick={() => setActiveCatalogType("bags")}
-          className={`py-2 px-4 border-b-2 transition-colors ${
+          className={`py-2 px-4 border-b-2 transition-colors flex items-center gap-1.5 ${
             activeCatalogType === "bags"
               ? "border-[#C85A32] text-[#C85A32] bg-white font-bold"
               : "border-transparent text-[#7A6E65] hover:text-black"
           }`}
         >
-          Túi xách tái sinh ({bagList.length})
+          <span>Túi xách tái sinh</span>
+          <span className="px-1.5 py-0.2 rounded-full bg-stone-100 text-[10px] text-stone-600 font-mono">
+            {bagList.length}
+          </span>
         </button>
         <button
           type="button"
           onClick={() => setActiveCatalogType("charms")}
-          className={`py-2 px-4 border-b-2 transition-colors ${
+          className={`py-2 px-4 border-b-2 transition-colors flex items-center gap-1.5 ${
             activeCatalogType === "charms"
               ? "border-[#C85A32] text-[#C85A32] bg-white font-bold"
               : "border-transparent text-[#7A6E65] hover:text-black"
           }`}
         >
-          Móc khoá Charm men lam ({CHARMS.length})
+          <span>Móc khoá Charm men lam</span>
+          <span className="px-1.5 py-0.2 rounded-full bg-stone-100 text-[10px] text-stone-600 font-mono">
+            {charmList.length}
+          </span>
         </button>
       </div>
 
-      {/* 3. Bảng Danh Sách Túi Xách (Req 10) */}
+      {/* 3. Bảng Danh Sách Túi Xách */}
       {activeCatalogType === "bags" && (
-        <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden shadow-xs">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#FAF7F2] text-[#7A6E65] border-b border-[#E8E2D9] font-medium">
               <tr>
                 <th className="py-2.5 px-3">Hình ảnh</th>
                 <th className="py-2.5 px-3">Tên sản phẩm</th>
+                <th className="py-2.5 px-3">Phân loại</th>
                 <th className="py-2.5 px-3">Giá niêm yết</th>
                 <th className="py-2.5 px-3">Tồn kho</th>
                 <th className="py-2.5 px-3">Trạng thái bán</th>
@@ -123,52 +407,73 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F4EFEB]">
-              {bagList.map((item: any) => (
-                <tr key={item.id} className="hover:bg-[#FDFBF7]">
-                  <td className="py-2.5 px-3">
-                    <img
-                      src={item.image || "/assets/products/tote-green.jpg"}
-                      alt={item.name}
-                      className="w-12 h-12 object-cover rounded border border-[#E8E2D9] bg-white"
-                    />
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <div className="font-semibold text-[#2A2521]">{item.name}</div>
-                    <div className="text-[10px] text-[#A89C93]">ID: {item.id}</div>
-                  </td>
-                  <td className="py-2.5 px-3 font-medium text-[#2A2521]">{formatVND(item.basePrice || item.price || 490000)}</td>
-                  <td className="py-2.5 px-3 font-bold text-emerald-700">
-                    {item.stockCount ?? 10} chiếc
-                  </td>
-                  <td className="py-2.5 px-3">
-                    {item.inStock !== false ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                        Đang hiển thị
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
-                        Đang ẩn
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 text-right space-x-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleHide(item)}
-                      className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px]"
-                    >
-                      {item.inStock !== false ? "Ẩn" : "Hiện"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleEditClick(item)}
-                      className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px]"
-                    >
-                      Sửa
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {bagList.map((item: any) => {
+                const imgUrl = item.image || item.imageUrl || "/assets/products/tote-green.jpg";
+                return (
+                  <tr key={item.id} className="hover:bg-[#FDFBF7] transition-colors">
+                    <td className="py-2.5 px-3">
+                      <div className="relative w-12 h-12 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
+                        <img
+                          src={imgUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/assets/products/bags/tuixach-xanh-la.png";
+                          }}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="font-semibold text-[#2A2521]">{item.name}</div>
+                      <div className="text-[10px] text-[#A89C93] font-mono">ID: {item.id}</div>
+                    </td>
+                    <td className="py-2.5 px-3 text-[#7A6E65] capitalize">
+                      {item.category === "hobo" ? "Túi Hobo" : item.category === "backpack" ? "Balo" : "Túi Tote"}
+                    </td>
+                    <td className="py-2.5 px-3 font-semibold text-[#2A2521]">
+                      {formatVND(item.basePrice || item.price || 490000)}
+                    </td>
+                    <td className="py-2.5 px-3 font-bold text-emerald-700">
+                      {item.stockCount ?? 10} chiếc
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {item.inStock !== false ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          Đang hiển thị
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
+                          Đang ẩn
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleHide(item)}
+                        className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] transition-colors"
+                      >
+                        {item.inStock !== false ? "Ẩn" : "Hiện"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEditClick(item)}
+                        className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px] transition-colors"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClick(item)}
+                        className="px-2 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-[11px] transition-colors"
+                        title="Xóa sản phẩm"
+                      >
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -176,7 +481,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
 
       {/* 4. Bảng Danh Sách Charm */}
       {activeCatalogType === "charms" && (
-        <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden shadow-xs">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#FAF7F2] text-[#7A6E65] border-b border-[#E8E2D9] font-medium">
               <tr>
@@ -184,77 +489,176 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                 <th className="py-2.5 px-3">Tên charm</th>
                 <th className="py-2.5 px-3">Phân loại</th>
                 <th className="py-2.5 px-3">Đơn giá</th>
+                <th className="py-2.5 px-3">Tồn kho</th>
                 <th className="py-2.5 px-3">Trạng thái</th>
                 <th className="py-2.5 px-3 text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F4EFEB]">
-              {CHARMS.map((charm: any) => (
-                <tr key={charm.id} className="hover:bg-[#FDFBF7]">
-                  <td className="py-2.5 px-3">
-                    <img
-                      src={charm.image || "/assets/charms/whale.png"}
-                      alt={charm.name}
-                      className="w-10 h-10 object-contain rounded border border-[#E8E2D9] bg-white p-1"
-                    />
-                  </td>
-                  <td className="py-2.5 px-3 font-semibold text-[#2A2521]">{charm.vietnameseName || charm.name}</td>
-                  <td className="py-2.5 px-3 text-[#7A6E65] capitalize">{charm.category}</td>
-                  <td className="py-2.5 px-3 font-medium text-[#2A2521]">{formatVND(charm.price)}</td>
-                  <td className="py-2.5 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                      Sẵn sàng gắn
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleEditClick(charm)}
-                      className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px]"
-                    >
-                      Sửa
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {charmList.map((charm: any) => {
+                const imgUrl = charm.image || charm.imageUrl || "/assets/charms/whale.png";
+                return (
+                  <tr key={charm.id} className="hover:bg-[#FDFBF7] transition-colors">
+                    <td className="py-2.5 px-3">
+                      <div className="w-10 h-10 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden p-1 flex items-center justify-center shrink-0">
+                        <img
+                          src={imgUrl}
+                          alt={charm.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/assets/charms/whale.png";
+                          }}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="font-semibold text-[#2A2521]">{charm.vietnameseName || charm.name}</div>
+                      <div className="text-[10px] text-[#A89C93] font-mono">ID: {charm.id}</div>
+                    </td>
+                    <td className="py-2.5 px-3 text-[#7A6E65] capitalize">{charm.category || "men lam"}</td>
+                    <td className="py-2.5 px-3 font-semibold text-[#2A2521]">{formatVND(charm.price || 180000)}</td>
+                    <td className="py-2.5 px-3 font-bold text-emerald-700">
+                      {charm.stockCount ?? 15} chiếc
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {charm.inStock !== false ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          Sẵn sàng gắn
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
+                          Đang ẩn
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleHide(charm)}
+                        className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] transition-colors"
+                      >
+                        {charm.inStock !== false ? "Ẩn" : "Hiện"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEditClick(charm)}
+                        className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px] transition-colors"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClick(charm)}
+                        className="px-2 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-[11px] transition-colors"
+                        title="Xóa charm"
+                      >
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* 5. Modal Sửa / Thêm Sản Phẩm (Req 10) */}
+      {/* 5. Modal Thêm / Chỉnh Sửa Sản Phẩm Có Hỗ Trợ Tải Ảnh Trực Tiếp */}
       {showEditModal && editingItem && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#E8E2D9] w-full max-w-md p-5 shadow-2xl space-y-3 text-xs">
-            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
-              <h2 className="text-sm font-bold text-[#2A2521]">Chỉnh sửa sản phẩm</h2>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-[#E8E2D9] w-full max-w-lg p-5 sm:p-6 shadow-2xl space-y-4 text-xs my-auto">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-[#2A2521]">
+                  {isNewProduct
+                    ? editingItem.category === "charm"
+                      ? "Thêm Móc Khoá Charm Mới"
+                      : "Thêm Sản Phẩm Mới"
+                    : `Chỉnh sửa: ${editingItem.name || editingItem.vietnameseName || "Sản phẩm"}`}
+                </h2>
+                <p className="text-[11px] text-[#7A6E65]">
+                  Tải ảnh trực tiếp từ máy tính hoặc dán URL hình ảnh CDN.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
-                className="text-stone-400 hover:text-black font-bold"
+                className="w-7 h-7 rounded-full bg-stone-100 text-stone-500 hover:text-black hover:bg-stone-200 flex items-center justify-center transition-colors text-sm font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="space-y-2.5">
+            <form onSubmit={handleSaveForm} className="space-y-3.5">
+              {/* Tên sản phẩm */}
               <div>
-                <label className="text-[11px] font-semibold text-[#2A2521]">Tên sản phẩm *</label>
+                <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                  Tên sản phẩm *
+                </label>
                 <input
                   type="text"
                   required
+                  placeholder="VD: NÉT Hobo Crescent Xanh Đại Dương"
                   value={editingItem.name || editingItem.vietnameseName || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                  className="w-full bg-[#FAF7F2] border border-[#E8E2D9] rounded p-2 text-xs"
+                  onChange={(e) =>
+                    setEditingItem({
+                      ...editingItem,
+                      name: e.target.value,
+                      vietnameseName: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2.5 text-xs text-[#2A2521] outline-none transition-colors"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              {/* Phân loại & Khối lượng nhựa bù đắp */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-[#2A2521]">Giá bán (VNĐ) *</label>
+                  <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                    Phân loại danh mục
+                  </label>
+                  <select
+                    value={editingItem.category || "tote"}
+                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                    className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2 text-xs text-[#2A2521] outline-none transition-colors"
+                  >
+                    <option value="tote">Túi Tote tái sinh</option>
+                    <option value="hobo">Túi Hobo Crescent</option>
+                    <option value="backpack">Balo tái sinh</option>
+                    <option value="crossbody">Túi đeo chéo</option>
+                    <option value="charm">Móc khoá Charm men lam</option>
+                    <option value="combo">Bộ phối độc bản (Combo)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                    Nhựa tái sinh cứu biển (kg)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={editingItem.plasticOffsetKg ?? 1.5}
+                    onChange={(e) =>
+                      setEditingItem({ ...editingItem, plasticOffsetKg: parseFloat(e.target.value) || 0 })
+                    }
+                    className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2 text-xs font-semibold text-emerald-700 outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Giá niêm yết & Số lượng tồn kho */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                    Giá niêm yết (VNĐ) *
+                  </label>
                   <input
                     type="number"
                     min={0}
+                    step={1000}
                     required
                     value={editingItem.basePrice || editingItem.price || 0}
                     onChange={(e) =>
@@ -264,73 +668,299 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                         price: Number(e.target.value),
                       })
                     }
-                    className="w-full bg-[#FAF7F2] border border-[#E8E2D9] rounded p-2 text-xs font-bold"
+                    className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2.5 text-xs font-bold text-[#C85A32] outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-[#2A2521]">Số lượng tồn kho</label>
+                  <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                    Số lượng tồn kho (chiếc)
+                  </label>
                   <input
                     type="number"
                     min={0}
                     value={editingItem.stockCount ?? 10}
-                    onChange={(e) => setEditingItem({ ...editingItem, stockCount: Number(e.target.value) })}
-                    className="w-full bg-[#FAF7F2] border border-[#E8E2D9] rounded p-2 text-xs font-bold text-emerald-700"
+                    onChange={(e) =>
+                      setEditingItem({ ...editingItem, stockCount: parseInt(e.target.value, 10) || 0 })
+                    }
+                    className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2.5 text-xs font-bold text-emerald-700 outline-none transition-colors"
                   />
                 </div>
               </div>
 
+              {/* Mô tả tóm tắt */}
               <div>
-                <label className="text-[11px] font-semibold text-[#2A2521]">Link ảnh đại diện</label>
-                <input
-                  type="text"
-                  value={editingItem.image || ""}
-                  onChange={(e) => setEditingItem({ ...editingItem, image: e.target.value })}
-                  placeholder="/assets/products/..."
-                  className="w-full bg-[#FAF7F2] border border-[#E8E2D9] rounded p-2 text-xs"
+                <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                  Mô tả sản phẩm
+                </label>
+                <textarea
+                  rows={2}
+                  value={editingItem.description || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                  placeholder="Mô tả chất liệu cước lưới ma, câu chuyện tái sinh và phong cách sản phẩm..."
+                  className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2 text-xs text-[#2A2521] outline-none transition-colors resize-none"
                 />
               </div>
 
-              {/* MỤC MÔ HÌNH 3D NÂNG CAO (CHỈ HIỆN KHI MỞ - Req 10) */}
-              <div className="border border-[#E8E2D9] rounded-lg p-2.5 bg-[#FAF7F2]">
+              {/* MỤC UPLOAD ẢNH SẢN PHẨM TRỰC TIẾP */}
+              <div className="border border-[#E8E2D9] rounded-xl p-3 bg-[#FAF7F2]/60 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-[#2A2521] flex items-center gap-1.5">
+                    <span>Hình ảnh sản phẩm</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  {imageUploadStatus && (
+                    <span className="text-[10px] font-medium text-emerald-700 animate-pulse">
+                      {imageUploadStatus}
+                    </span>
+                  )}
+                </div>
+
+                {/* Input file ẩn */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImageFileSelected(f);
+                  }}
+                  className="hidden"
+                />
+
+                {/* Khung hiển thị khi đang tải ảnh lên */}
+                {isUploadingImage && (
+                  <div className="p-4 rounded-xl border border-dashed border-[#C85A32] bg-amber-50/60 text-center space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#C85A32]">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span>{imageUploadStatus || "Đang tải ảnh lên đám mây..."}</span>
+                    </div>
+                    {/* Thanh tiến trình % mượt mà */}
+                    <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-[#C85A32] h-full transition-all duration-300 rounded-full"
+                        style={{ width: `${Math.max(5, imageProgress)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Trường hợp 1: Đã có ảnh (Hiển thị thẻ xem trước ảnh + Nút Đổi ảnh / Xóa ảnh) */}
+                {!isUploadingImage && (editingItem.image || editingItem.imageUrl) ? (
+                  <div className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-[#E8E2D9] shadow-2xs">
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
+                      <img
+                        src={editingItem.image || editingItem.imageUrl}
+                        alt="Xem trước ảnh sản phẩm"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/assets/products/bags/tuixach-xanh-la.png";
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          ✓ Đã sẵn sàng
+                        </span>
+                        <span className="text-[10px] text-[#A89C93] truncate font-mono">
+                          {editingItem.image?.startsWith("data:")
+                            ? "Data Image"
+                            : editingItem.image?.split("/").pop()}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-2.5 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] font-semibold transition-colors flex items-center gap-1"
+                        >
+                          <svg className="w-3 h-3 text-[#C85A32]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          <span>Tải ảnh khác</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingItem({ ...editingItem, image: "", imageUrl: "" })
+                          }
+                          className="px-2 py-1 rounded text-stone-500 hover:text-rose-600 hover:bg-rose-50 text-[11px] transition-colors"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Trường hợp 2: Chưa có ảnh (Hiển thị Vùng Kéo Thả / Bấm để Upload) */}
+                {!isUploadingImage && !(editingItem.image || editingItem.imageUrl) && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+                      isDragging
+                        ? "border-[#C85A32] bg-amber-50 scale-[1.01]"
+                        : "border-[#D5C7B7] hover:border-[#C85A32] bg-white hover:bg-[#FAF7F2]"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-[#C85A32] mx-auto mb-2 flex items-center justify-center">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-xs font-semibold text-[#2A2521]">
+                      <span className="text-[#C85A32] underline underline-offset-2">Nhấp để tải ảnh lên</span> hoặc kéo thả ảnh vào đây
+                    </div>
+                    <div className="text-[10px] text-[#A89C93] mt-1">
+                      Hỗ trợ định dạng PNG, JPG, JPEG, WebP (Tối đa 20MB)
+                    </div>
+                  </div>
+                )}
+
+                {/* Tùy chọn xem / nhập URL trực tiếp cho chuyên gia */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowManualUrlInput(!showManualUrlInput)}
+                    className="text-[10px] text-[#7A6E65] hover:text-[#C85A32] underline underline-offset-2 transition-colors flex items-center gap-1"
+                  >
+                    <span>{showManualUrlInput ? "▼ Thu gọn link URL" : "▶ Hoặc nhập đường dẫn URL ảnh trực tiếp"}</span>
+                  </button>
+
+                  {showManualUrlInput && (
+                    <div className="mt-1.5">
+                      <input
+                        type="text"
+                        value={editingItem.image || editingItem.imageUrl || ""}
+                        onChange={(e) =>
+                          setEditingItem({
+                            ...editingItem,
+                            image: e.target.value,
+                            imageUrl: e.target.value,
+                          })
+                        }
+                        placeholder="https://res.cloudinary.com/... hoặc /assets/products/..."
+                        className="w-full bg-white border border-[#E8E2D9] focus:border-[#C85A32] rounded-lg p-2 text-[11px] font-mono outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* MỤC MÔ HÌNH 3D NÂNG CAO (.GLB / .GLTF) */}
+              <div className="border border-[#E8E2D9] rounded-xl p-3 bg-[#FAF7F2]/60 space-y-2">
                 <button
                   type="button"
                   onClick={() => setShow3DAdvanced(!show3DAdvanced)}
-                  className="w-full flex items-center justify-between text-[11px] font-bold text-[#7A6E65] hover:text-[#2A2521]"
+                  className="w-full flex items-center justify-between text-[11px] font-bold text-[#7A6E65] hover:text-[#2A2521] transition-colors"
                 >
-                  <span>{show3DAdvanced ? "▼ Ẩn Cấu Hình Mô Hình 3D Nâng Cao" : "▶ Cấu Hình Mô Hình 3D Nâng Cao"}</span>
-                  <span className="text-[10px] text-[#A89C93]">(.glb / 3D viewer)</span>
+                  <span className="flex items-center gap-1.5">
+                    <span>{show3DAdvanced ? "▼ Ẩn cấu hình mô hình 3D (.glb)" : "▶ Cấu hình mô hình 3D nâng cao (.glb)"}</span>
+                    {editingItem.model3dUrl && (
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" title="Đã có file 3D" />
+                    )}
+                  </span>
+                  <span className="text-[10px] text-[#A89C93] font-normal">Dành cho 3D Studio & WebGL</span>
                 </button>
 
                 {show3DAdvanced && (
-                  <div className="mt-2 space-y-2 pt-2 border-t border-[#E8E2D9]">
-                    <label className="text-[10px] text-[#7A6E65]">Đường dẫn file mô hình 3D (.glb / .gltf):</label>
+                  <div className="pt-2 border-t border-[#E8E2D9] space-y-2.5">
+                    {/* Input file 3D ẩn */}
+                    <input
+                      ref={modelInputRef}
+                      type="file"
+                      accept=".glb,.gltf"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleModelFileSelected(f);
+                      }}
+                      className="hidden"
+                    />
+
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-semibold text-[#7A6E65]">File mô hình 3D (.glb / .gltf):</label>
+                      <button
+                        type="button"
+                        onClick={() => modelInputRef.current?.click()}
+                        disabled={isUploadingModel}
+                        className="px-2.5 py-1 rounded bg-white text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[10px] font-semibold transition-colors flex items-center gap-1 shadow-2xs"
+                      >
+                        <svg className="w-3 h-3 text-[#C85A32]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span>Tải file 3D từ máy tính</span>
+                      </button>
+                    </div>
+
+                    {isUploadingModel && (
+                      <div className="p-2.5 rounded-lg bg-indigo-50/60 border border-indigo-200 text-center space-y-1.5">
+                        <div className="text-[11px] font-semibold text-indigo-700">
+                          {modelUploadStatus || `Đang tải file 3D... ${modelProgress}%`}
+                        </div>
+                        <div className="w-full bg-indigo-100 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
+                            style={{ width: `${Math.max(5, modelProgress)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <input
                       type="text"
                       value={editingItem.model3dUrl || ""}
                       onChange={(e) => setEditingItem({ ...editingItem, model3dUrl: e.target.value })}
-                      placeholder="/assets/models/tote.glb"
-                      className="w-full bg-white border border-[#E8E2D9] rounded p-1.5 text-xs font-mono"
+                      placeholder="/assets/models/tuixach.glb hoặc URL 3D cloud"
+                      className="w-full bg-white border border-[#E8E2D9] focus:border-[#C85A32] rounded-lg p-2 text-xs font-mono text-[#2A2521] outline-none"
                     />
+
                     <div className="text-[10px] text-[#A89C93]">
-                      Trường này chỉ dành cho kỹ thuật viên 3D. Người dùng xem thông thường không bị rối mắt.
+                      Hỗ trợ file định dạng binary glTF (.glb) hoặc .gltf tối đa 100MB để hiển thị trong NÉT 3D Studio.
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="pt-2 flex justify-end gap-2 border-t border-[#E8E2D9]">
+              {/* Footer nút hành động */}
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-[#E8E2D9]">
                 <button
                   type="button"
+                  disabled={isSaving || isUploadingImage || isUploadingModel}
                   onClick={() => setShowEditModal(false)}
-                  className="px-3 py-1.5 rounded bg-stone-100 text-stone-700"
+                  className="px-3.5 py-2 rounded-xl bg-stone-100 text-[#7A6E65] hover:text-[#2A2521] hover:bg-stone-200 font-semibold transition-colors text-xs"
                 >
-                  Hủy
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 rounded bg-[#C85A32] text-white font-semibold hover:bg-[#B34E28]"
+                  disabled={isSaving || isUploadingImage || isUploadingModel}
+                  className="px-4 py-2 rounded-xl bg-[#C85A32] text-white font-semibold hover:bg-[#B34E28] transition-colors text-xs shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
-                  Lưu & Đồng bộ web
+                  {isSaving ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span>Đang lưu...</span>
+                    </>
+                  ) : isUploadingImage ? (
+                    <span>Đang tải ảnh lên...</span>
+                  ) : (
+                    <span>Lưu & Đồng bộ web</span>
+                  )}
                 </button>
               </div>
             </form>

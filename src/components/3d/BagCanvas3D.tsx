@@ -768,35 +768,24 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           maxSurfaceZ = Math.max(0.44, Math.min(0.60, estZ));
         }
 
-        // Tính toán độ nghiêng buông thõng (drapeAngle) theo độ dốc bề mặt vải
-        let drapeAngle = 0;
-        if (topZ !== null && bottomZ !== null) {
-          const spanY = charmSize * 0.88;
-          const diffZ = bottomZ - topZ;
-          // Nếu túi phình ra về phía đáy, ngả charm về phía trước để tựa êm lên mặt túi
-          if (diffZ > 0) {
-            drapeAngle = Math.min(0.38, Math.atan2(diffZ, spanY) * 1.15);
-          }
-        }
-
         // KHOẢNG CÁCH AN TOÀN TUYỆT ĐỐI (SAFE PROTRUSION CLEARANCE):
         // Charm bắt buộc phải nằm trên bề mặt túi, không được xuyên qua túi ở bất kỳ phần nào
-        // posZ luôn lấy theo điểm lồi cao nhất (maxSurfaceZ) + khoảng hở 6.5cm
-        const SAFE_PROTRUSION = 0.065;
+        // posZ luôn lấy theo điểm lồi cao nhất (maxSurfaceZ) + khoảng hở
+        const SAFE_PROTRUSION = 0.055;
         const posZ = maxSurfaceZ + SAFE_PROTRUSION;
 
-        return { posX, posY, posZ, drapeAngle };
+        return { posX, posY, posZ };
       };
 
-      placedCharms.forEach((placed, idx) => {
-        const { posX, posY, posZ, drapeAngle } = computeBagSurfacePlacement(placed);
+      placedCharms.forEach((placed) => {
+        const { posX, posY, posZ } = computeBagSurfacePlacement(placed);
 
         const charmGroup = new THREE.Group();
         charmGroup.position.set(posX, posY, posZ);
-        charmGroup.rotation.z =
-          (placed.rotation || 0) * (Math.PI / 180) +
-          (idx % 2 === 0 ? 1 : -1) * 0.04;
-        charmGroup.rotation.x = drapeAngle;
+        // Treo thẳng đứng tự nhiên, hoàn toàn không bị nghiêng
+        charmGroup.rotation.x = 0;
+        charmGroup.rotation.y = 0;
+        charmGroup.rotation.z = (placed.rotation || 0) * (Math.PI / 180);
         charmGroup.renderOrder = 25;
 
         container.add(charmGroup);

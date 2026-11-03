@@ -611,9 +611,10 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             alphaTest: 0.08, // Cut out all transparent pixels outside the character's contour
             side: THREE.DoubleSide,
             depthWrite: true,
+            depthTest: true,
             polygonOffset: true,
-            polygonOffsetFactor: -2,
-            polygonOffsetUnits: -2,
+            polygonOffsetFactor: -8, // Thiên vị độ sâu hướng về phía camera, chống hoàn toàn hiện tượng xuyên lưới
+            polygonOffsetUnits: -8,
           });
 
           textureLoader.load(
@@ -637,17 +638,17 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
           // Front layer
           const frontMesh = new THREE.Mesh(planeGeo, frontMaterial);
-          frontMesh.position.z = 0.006;
+          frontMesh.position.z = 0.012;
           frontMesh.castShadow = true;
           frontMesh.receiveShadow = true;
-          frontMesh.renderOrder = 10;
+          frontMesh.renderOrder = 25;
           pendant.add(frontMesh);
 
           // Back layer (gives 3mm acrylic thickness feel in 3D without any outer frame)
           const backMesh = new THREE.Mesh(planeGeo, frontMaterial);
-          backMesh.position.z = -0.006;
+          backMesh.position.z = -0.002;
           backMesh.castShadow = true;
-          backMesh.renderOrder = 10;
+          backMesh.renderOrder = 25;
           pendant.add(backMesh);
         } else {
           // Fallback procedural charm
@@ -679,35 +680,52 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
             alphaTest: 0.05,
             side: THREE.DoubleSide,
             depthWrite: true,
+            depthTest: true,
             polygonOffset: true,
-            polygonOffsetFactor: -2,
-            polygonOffsetUnits: -2,
+            polygonOffsetFactor: -8,
+            polygonOffsetUnits: -8,
           });
           const fallbackMesh = new THREE.Mesh(planeGeo, fallbackMat);
           fallbackMesh.castShadow = true;
-          fallbackMesh.renderOrder = 10;
+          fallbackMesh.renderOrder = 25;
           pendant.add(fallbackMesh);
         }
 
         parentGroup.add(pendant);
       };
 
-      // Helper to compute exact surface position and drape orientation on the bag via Raycasting
+      // Helper to compute exact surface position and drape orientation on the bag via Multi-Point Raycasting
       const computeBagSurfacePlacement = (placed: PlacedCharm) => {
         // Map 2D percentage coordinates to 3D surface space on tote bag
         const bagScaleRatio = 3.6 / 4.3;
+        const charmSize = 0.72 * bagScaleRatio; // ~0.603
         const posX = ((placed.x - 50) / 50) * 1.15 * bagScaleRatio;
         const posY = (-((placed.y - 50) / 50) * 1.25 - 0.15) * bagScaleRatio;
-
-        let posZ = 0.52;
-        let drapeAngle = 0;
-        let hasHit = false;
 
         const bagRoot = bagGroupRef.current;
         const modelGroup = modelContainerRef.current;
 
+        // Quét đa điểm (9 điểm) bao phủ toàn bộ diện tích bề mặt charm:
+        // Đỉnh khuyên treo, ngực trên, tâm giữa, thân dưới, đáy charm và 2 mạn bên
+        const sampleOffsets = [
+          { dx: 0, dy: charmSize * 0.44, tag: "top" },
+          { dx: 0, dy: charmSize * 0.22, tag: "upper" },
+          { dx: 0, dy: 0, tag: "center" },
+          { dx: 0, dy: -charmSize * 0.22, tag: "lower" },
+          { dx: 0, dy: -charmSize * 0.44, tag: "bottom" },
+          { dx: -charmSize * 0.22, dy: 0, tag: "left" },
+          { dx: charmSize * 0.22, dy: 0, tag: "right" },
+          { dx: -charmSize * 0.20, dy: -charmSize * 0.25, tag: "botLeft" },
+          { dx: charmSize * 0.20, dy: -charmSize * 0.25, tag: "botRight" },
+        ];
+
+        let maxSurfaceZ = -Infinity;
+        let topZ: number | null = null;
+        let bottomZ: number | null = null;
+        let surfaceHitsCount = 0;
+
         if (bagRoot && modelGroup && modelGroup.children.length > 0) {
-          // Save current bag rotation and reset to neutral identity to align raycasting
+          // Lưu góc xoay hiện tại của túi và tạm đưa về góc trung hòa để bắn Raycast chính xác
           const curRotX = bagRoot.rotation.x;
           const curRotY = bagRoot.rotation.y;
           const curRotZ = bagRoot.rotation.z;
@@ -716,34 +734,56 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           bagRoot.updateMatrixWorld(true);
 
           const raycaster = new THREE.Raycaster();
-          raycaster.set(new THREE.Vector3(posX, posY, 5.0), new THREE.Vector3(0, 0, -1));
-          const hits = raycaster.intersectObjects(modelGroup.children, true);
 
-          if (hits.length > 0) {
-            // Find front-facing surface intersection (facing towards +Z)
-            const frontHit = hits.find((h) => h.face && h.face.normal.z > -0.1) || hits[0];
-            // Safe 4.5cm protrusion right in front of the bag mesh surface
-            posZ = frontHit.point.z + 0.045;
-            hasHit = true;
+          sampleOffsets.forEach((pt) => {
+            const rx = posX + pt.dx;
+            const ry = posY + pt.dy;
+            raycaster.set(new THREE.Vector3(rx, ry, 5.0), new THREE.Vector3(0, 0, -1));
+            const hits = raycaster.intersectObjects(modelGroup.children, true);
 
-            // Conform subtly to surface slope without ever pitching inward
-            if (frontHit.face?.normal) {
-              drapeAngle = Math.max(-0.01, Math.min(0.08, -frontHit.face.normal.y * 0.18));
+            if (hits.length > 0) {
+              // Tìm điểm giao cắt mặt trước ngoài cùng của túi (hướng về phía +Z)
+              const frontHit = hits.find((h) => h.face && h.face.normal.z > -0.2) || hits[0];
+              const hitZ = frontHit.point.z;
+              surfaceHitsCount++;
+
+              if (hitZ > maxSurfaceZ) {
+                maxSurfaceZ = hitZ;
+              }
+              if (pt.tag === "top") topZ = hitZ;
+              if (pt.tag === "bottom") bottomZ = hitZ;
             }
-          }
+          });
 
-          // Restore bag rotation
+          // Phục hồi lại góc xoay ban đầu của túi
           bagRoot.rotation.set(curRotX, curRotY, curRotZ);
           bagRoot.updateMatrixWorld(true);
         }
 
-        // Geometric fallback if ray misses (e.g. model still initializing or placed near extreme edge)
-        if (!hasHit) {
-          const normY = (placed.y - 50) / 50; // -1 at top, +1 at bottom
-          // Tote bottom naturally bulges out to Z ~ 0.55
-          const estZ = 0.46 + normY * 0.09;
-          posZ = Math.max(0.44, Math.min(0.60, estZ)) + 0.045;
+        // Dự phòng hình học nếu không trúng điểm lưới nào (ví dụ model đang nạp)
+        if (surfaceHitsCount === 0 || maxSurfaceZ === -Infinity) {
+          const normY = (placed.y - 50) / 50; // -1 ở miệng túi, +1 ở đáy túi
+          // Đáy túi phình ra tới Z ~ 0.55
+          const estZ = 0.46 + Math.max(0, normY) * 0.12;
+          maxSurfaceZ = Math.max(0.44, Math.min(0.60, estZ));
         }
+
+        // Tính toán độ nghiêng buông thõng (drapeAngle) theo độ dốc bề mặt vải
+        let drapeAngle = 0;
+        if (topZ !== null && bottomZ !== null) {
+          const spanY = charmSize * 0.88;
+          const diffZ = bottomZ - topZ;
+          // Nếu túi phình ra về phía đáy, ngả charm về phía trước để tựa êm lên mặt túi
+          if (diffZ > 0) {
+            drapeAngle = Math.min(0.38, Math.atan2(diffZ, spanY) * 1.15);
+          }
+        }
+
+        // KHOẢNG CÁCH AN TOÀN TUYỆT ĐỐI (SAFE PROTRUSION CLEARANCE):
+        // Charm bắt buộc phải nằm trên bề mặt túi, không được xuyên qua túi ở bất kỳ phần nào
+        // posZ luôn lấy theo điểm lồi cao nhất (maxSurfaceZ) + khoảng hở 6.5cm
+        const SAFE_PROTRUSION = 0.065;
+        const posZ = maxSurfaceZ + SAFE_PROTRUSION;
 
         return { posX, posY, posZ, drapeAngle };
       };
@@ -757,7 +797,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           (placed.rotation || 0) * (Math.PI / 180) +
           (idx % 2 === 0 ? 1 : -1) * 0.04;
         charmGroup.rotation.x = drapeAngle;
-        charmGroup.renderOrder = 10;
+        charmGroup.renderOrder = 25;
 
         container.add(charmGroup);
 
@@ -774,7 +814,8 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
               charmInstance.position.x = -center.x;
               charmInstance.position.y = -center.y;
-              charmInstance.position.z = -center.z;
+              // Căn chỉnh mặt sau của mô hình 3D nằm hoàn toàn từ Z >= 0 ra phía trước ngoài túi
+              charmInstance.position.z = -box.min.z + 0.015;
 
               // Orient charm upright
               charmInstance.rotation.x = Math.PI;
@@ -791,10 +832,13 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
                 if ((child as THREE.Mesh).isMesh) {
                   const m = child as THREE.Mesh;
                   m.castShadow = true;
-                  m.renderOrder = 10;
+                  m.renderOrder = 25;
                   if (m.material) {
                     const origMat = m.material as THREE.MeshStandardMaterial;
                     const clonedMat = origMat.clone();
+                    clonedMat.polygonOffset = true;
+                    clonedMat.polygonOffsetFactor = -6;
+                    clonedMat.polygonOffsetUnits = -6;
                     if (placed.charm.color) {
                       try {
                         clonedMat.color = new THREE.Color(placed.charm.color);

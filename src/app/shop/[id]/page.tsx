@@ -211,6 +211,58 @@ export default function ProductDetailPage() {
       .slice(0, 4);
   }, [rawProduct, allProducts]);
 
+  // Chuẩn bị dữ liệu hiển thị (Đảm bảo gọi Hook vô điều kiện theo chuẩn React Rules of Hooks)
+  const productName = rawProduct?.name || "Túi Lưới NÉT Đà Nẵng";
+  const productPrice = rawProduct?.basePrice || rawProduct?.price || 1250000;
+  const originalPrice = rawProduct?.originalPrice || (isCombo ? Math.round(productPrice * 1.15) : undefined);
+  const plasticKg = Number(
+    rawProduct?.plasticOffsetKg ||
+    (rawProduct?.plasticOffsetGrams ? rawProduct.plasticOffsetGrams / 1000 : 1.8)
+  );
+  const dimensions = rawProduct?.dimensions || "36cm x 32cm x 12cm";
+  const capacity = rawProduct?.capacity || "14 Lít";
+  const maxCharms = rawProduct?.maxCharms || 8;
+  const availableColors: BagMeshColor[] =
+    rawProduct?.colors && Array.isArray(rawProduct.colors) && rawProduct.colors.length > 0
+      ? rawProduct.colors
+      : BAG_COLORS;
+
+  const current2dImage = isBag
+    ? selectedColor.image || rawProduct?.imageUrl || rawProduct?.image || "/assets/products/bags/tuixach-xanh-la.png"
+    : rawProduct?.imageUrl || rawProduct?.image || (isCombo ? "/assets/products/combo-voyager.png" : "");
+
+  const has3dModel = Boolean(rawProduct?.model3dUrl && rawProduct.model3dUrl.trim() !== "");
+  const current3dModelUrl =
+    (isBag ? selectedColor.model3dUrl : null) ||
+    rawProduct?.model3dUrl ||
+    "/assets/models/tuixach-xanh-la.glb";
+
+  const bagBaseObject: BagBase = useMemo(() => ({
+    id: rawProduct?.id || "custom-bag",
+    name: productName,
+    tagline: rawProduct?.tagline || "",
+    description: rawProduct?.description || "",
+    basePrice: productPrice,
+    plasticOffsetKg: plasticKg,
+    dimensions,
+    capacity,
+    colors: availableColors,
+    anchorPoints: rawProduct?.anchorPoints || [
+      { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
+      { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
+      { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
+      { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
+    ],
+    maxCharms,
+    modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(rawProduct?.category)
+      ? rawProduct?.category
+      : "tote") as any,
+    image: current2dImage,
+    model3dUrl: current3dModelUrl,
+    stockCount,
+    inStock: isAvailable,
+  }), [rawProduct, productName, productPrice, plasticKg, dimensions, capacity, availableColors, current2dImage, current3dModelUrl, stockCount, isAvailable, maxCharms]);
+
   // Loading Screen
   if (isLoading) {
     return (
@@ -252,57 +304,6 @@ export default function ProductDetailPage() {
       </div>
     );
   }
-
-  const productName = rawProduct.name || "Túi Lưới NÉT Đà Nẵng";
-  const productPrice = rawProduct.basePrice || rawProduct.price || 1250000;
-  const originalPrice = rawProduct.originalPrice || (isCombo ? Math.round(productPrice * 1.15) : undefined);
-  const plasticKg = Number(
-    rawProduct.plasticOffsetKg ||
-    (rawProduct.plasticOffsetGrams ? rawProduct.plasticOffsetGrams / 1000 : 1.8)
-  );
-  const dimensions = rawProduct.dimensions || "36cm x 32cm x 12cm";
-  const capacity = rawProduct.capacity || "14 Lít";
-  const maxCharms = rawProduct.maxCharms || 8;
-  const availableColors: BagMeshColor[] =
-    rawProduct.colors && Array.isArray(rawProduct.colors) && rawProduct.colors.length > 0
-      ? rawProduct.colors
-      : BAG_COLORS;
-
-  const current2dImage = isBag
-    ? selectedColor.image || rawProduct.imageUrl || rawProduct.image || "/assets/products/bags/tuixach-xanh-la.png"
-    : rawProduct.imageUrl || rawProduct.image || (isCombo ? "/assets/products/combo-voyager.png" : "");
-
-  const has3dModel = Boolean(rawProduct.model3dUrl && rawProduct.model3dUrl.trim() !== "");
-  const current3dModelUrl =
-    (isBag ? selectedColor.model3dUrl : null) ||
-    rawProduct.model3dUrl ||
-    "/assets/models/tuixach-xanh-la.glb";
-
-  const bagBaseObject: BagBase = useMemo(() => ({
-    id: rawProduct?.id || "custom-bag",
-    name: productName,
-    tagline: rawProduct?.tagline || "",
-    description: rawProduct?.description || "",
-    basePrice: productPrice,
-    plasticOffsetKg: plasticKg,
-    dimensions,
-    capacity,
-    colors: availableColors,
-    anchorPoints: rawProduct?.anchorPoints || [
-      { id: "a1", x: 26, y: 32, label: "Góc trên trái" },
-      { id: "a2", x: 50, y: 28, label: "Tâm trên cao" },
-      { id: "a3", x: 74, y: 32, label: "Góc trên phải" },
-      { id: "a4", x: 50, y: 48, label: "Trung tâm túi" },
-    ],
-    maxCharms,
-    modelType: (["tote", "bucket", "clutch", "crossbody", "hobo", "mini"].includes(rawProduct?.category)
-      ? rawProduct?.category
-      : "tote") as any,
-    image: current2dImage,
-    model3dUrl: current3dModelUrl,
-    stockCount,
-    inStock: isAvailable,
-  }), [rawProduct, productName, productPrice, plasticKg, dimensions, capacity, availableColors, current2dImage, current3dModelUrl, stockCount, isAvailable, maxCharms]);
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241B16]">

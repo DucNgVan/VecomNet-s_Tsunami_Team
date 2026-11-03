@@ -120,7 +120,7 @@ const teamMembers: TeamMember[] = [
     role: "Full-stack Developer",
     subRole: "Kỹ Sư Phần Mềm (Frontend & Backend)",
     avatar: "/assets/team/nguyen-van-duc.jpg",
-    tagline: "Hạ tầng số kết nối trọn vẹn chuỗi giá trị Nét",
+    tagline: "Mỗi dòng code là một mắt lưới kết nối ý tưởng với hàng triệu du khách",
     taskTitle: "Kiến trúc & Lập trình toàn diện hệ thống Digital (Front-end & Back-end)",
     status: "In Progress",
     priority: "High",
@@ -136,7 +136,6 @@ const teamMembers: TeamMember[] = [
     accentGradient: "from-[#B85D43] to-[#994730]",
     skills: ["Next.js 14 App Router", "Full-stack Monorepo", "Three.js & WebGL 3D", "Cloud Firestore & Serverless", "Framer Motion & Tailwind"],
     quote: "Mỗi dòng code là một sợi cáp quang bền bỉ kết nối ý tưởng của đồng đội với hàng triệu du khách trên thế giới.",
-    specialNote: "Đức là Lập trình viên của dự án, tự mình thiết kế và lập trình 100% cả Front-end, 3D WebGL và Back-end Serverless.",
     overview:
       "Đảm nhận toàn bộ trọng trách công nghệ của dự án Nét: Thiết kế kiến trúc phần mềm, lập trình giao diện người dùng tương tác cao, mô phỏng 3D WebGL Three.js, xây dựng cơ sở dữ liệu Cloud Firestore, hệ thống xác thực và các API Serverless.",
     detailedPoints: [
@@ -878,29 +877,29 @@ export default function TeamPage() {
             <StatCard
               icon={<Users className="w-5 h-5" />}
               value="5"
-              label="5 bàn tay 1 sản phẩm"
-              sublabel="Cùng chung vị thế & tầm nhìn"
+              label="Trụ cột chuyên môn"
+              sublabel="Quản trị · Công nghệ · Thiết kế · ESG · Thị trường"
               delay={0}
             />
             <StatCard
-              icon={<Cpu className="w-5 h-5" />}
-              value="1"
-              label="Full-stack Developer"
-              sublabel="Đức — 100% Front & Backend"
+              icon={<Sparkles className="w-5 h-5" />}
+              value="100%"
+              label="Tự chủ thiết kế & công nghệ"
+              sublabel="Từ phôi túi thực tế đến nền tảng số 2D/3D"
               delay={0.1}
             />
             <StatCard
               icon={<Layers className="w-5 h-5" />}
               value="5"
-              label="Cấu phần MVP"
-              sublabel="Studio, Passport, Source..."
+              label="Mắt xích chuỗi tuần hoàn"
+              sublabel="Ngư dân · Xưởng dệt · Du lịch · Du khách · Dữ liệu"
               delay={0.2}
             />
             <StatCard
               icon={<Leaf className="w-5 h-5" />}
-              value="100%"
-              label="Chuỗi giá trị tuần hoàn"
-              sublabel="Từ biển sâu tới khách du lịch"
+              value="~1.6 kg"
+              label="Rác biển tái sinh / sản phẩm"
+              sublabel="Minh bạch dữ liệu qua Story Passport"
               delay={0.3}
             />
           </div>

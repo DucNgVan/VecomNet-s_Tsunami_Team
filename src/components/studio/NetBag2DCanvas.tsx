@@ -29,6 +29,38 @@ interface NetBag2DCanvasProps {
   selectedColorName?: string;
 }
 
+// Tỷ lệ chuyển đổi chuẩn xác 1:1 giữa toạ độ PlacedCharm (0-100) và vị trí màn hình Arch Frame (%)
+// Đồng bộ tuyệt đối với phép chiếu phối cảnh PerspectiveCamera(45, 0.8) của BagCanvas3D
+export const toScreenCoords = (placedX: number, placedY: number) => {
+  // posX = ((placedX - 50) / 50) * 1.15 * (3.6 / 4.3) = ((placedX - 50) / 50) * 0.9628
+  // Tại mặt trước túi (posZ ~ 0.55), chiều rộng nhìn thấy là 4.274 units (100% chiều ngang vòm)
+  // => screenX = 50 + ((placedX - 50) / 50) * (0.9628 / 4.274) * 100 = 50 + (placedX - 50) * 0.4505
+  const screenX = 50 + (placedX - 50) * 0.4505;
+
+  // posY = (-((placedY - 50) / 50) * 1.25 - 0.15) * (3.6 / 4.3)
+  // Chiều cao nhìn thấy là 5.343 units (100% chiều cao vòm)
+  // => screenY = 52.35 + (placedY - 50) * 0.3917
+  const screenY = 52.35 + (placedY - 50) * 0.3917;
+
+  return { screenX, screenY };
+};
+
+export const toPlacedCoords = (
+  deltaScreenX: number,
+  deltaScreenY: number,
+  initialX: number,
+  initialY: number
+) => {
+  const deltaPlacedX = deltaScreenX / 0.4505;
+  const deltaPlacedY = deltaScreenY / 0.3917;
+
+  // Giới hạn an toàn trên diện tích vải thân túi (tránh rơi ra ngoài không khí hoặc trôi lên quai xách)
+  const clampedX = Math.max(8, Math.min(92, Math.round(initialX + deltaPlacedX)));
+  const clampedY = Math.max(48, Math.min(92, Math.round(initialY + deltaPlacedY)));
+
+  return { clampedX, clampedY };
+};
+
 export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
   placedCharms,
   onUpdateCharmPosition,
@@ -85,12 +117,18 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
       const rect = bagBoundaryRef.current.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
 
-      const deltaXPercent = ((moveEvent.clientX - dragInfoRef.current.startX) / rect.width) * 100;
-      const deltaYPercent = ((moveEvent.clientY - dragInfoRef.current.startY) / rect.height) * 100;
+      const deltaPixelX = moveEvent.clientX - dragInfoRef.current.startX;
+      const deltaPixelY = moveEvent.clientY - dragInfoRef.current.startY;
 
-      // Giới hạn trong vùng diện tích thân túi an toàn (8% - 92% ngang, 10% - 88% dọc)
-      const clampedX = Math.max(8, Math.min(92, Math.round(dragInfoRef.current.initialCharmX + deltaXPercent)));
-      const clampedY = Math.max(10, Math.min(88, Math.round(dragInfoRef.current.initialCharmY + deltaYPercent)));
+      const deltaScreenX = (deltaPixelX / rect.width) * 100;
+      const deltaScreenY = (deltaPixelY / rect.height) * 100;
+
+      const { clampedX, clampedY } = toPlacedCoords(
+        deltaScreenX,
+        deltaScreenY,
+        dragInfoRef.current.initialCharmX,
+        dragInfoRef.current.initialCharmY
+      );
 
       onUpdateCharmPosition(instanceId, clampedX, clampedY);
     };
@@ -114,36 +152,32 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
     if (!selectedCharmInstanceId) return;
     const target = placedCharms.find((c) => c.instanceId === selectedCharmInstanceId);
     if (!target) return;
-    const newX = Math.max(10, Math.min(90, target.x + dx));
-    const newY = Math.max(12, Math.min(88, target.y + dy));
+    const newX = Math.max(8, Math.min(92, target.x + dx));
+    const newY = Math.max(48, Math.min(92, target.y + dy));
     onUpdateCharmPosition(selectedCharmInstanceId, newX, newY);
   };
 
   return (
     <div className="relative w-full flex flex-col items-center">
-      {/* Main Arch Frame */}
-      <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 flex flex-col items-center justify-between shadow-sm relative overflow-hidden select-none border border-[#E8E2D8]">
+      {/* Main Arch Frame - Chuẩn tỷ lệ & kích thước đồng nhất 100% với khung 3D */}
+      <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] shadow-sm relative overflow-hidden select-none border border-[#E8E2D8]">
         {/* Top Arch Label */}
-        <div className="pt-3 text-center">
+        <div className="pt-3 text-center z-30 pointer-events-none">
           <span className="text-[11px] sm:text-[12px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">
             NETS STUDIO
           </span>
         </div>
 
-        {/* The Bag Container & Dropzone */}
-        <div
-          ref={bagBoundaryRef}
-          className="relative w-full max-w-[320px] h-[340px] flex items-center justify-center my-auto"
-        >
+        {/* Bag Visual Layer - Căn giữa và khớp hoàn toàn kích thước & tỷ lệ treo với mô hình 3D */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center select-none pointer-events-none">
           {bagImageUrl ? (
-            <div className="w-full h-full relative flex items-center justify-center select-none pointer-events-none p-2">
-              <img
-                src={bagImageUrl}
-                alt={selectedColorName ? `Túi xách NÉT (${selectedColorName})` : "Túi xách NÉT"}
-                className="max-w-full max-h-full object-contain drop-shadow-[0_12px_24px_rgba(36,27,22,0.14)] select-none pointer-events-none transition-all duration-300"
-              />
-            </div>
+            <img
+              src={bagImageUrl}
+              alt={selectedColorName ? `Túi xách NÉT (${selectedColorName})` : "Túi xách NÉT"}
+              className="h-[70%] w-auto max-w-[85%] object-contain drop-shadow-[0_12px_24px_rgba(36,27,22,0.14)] select-none pointer-events-none transition-all duration-300"
+            />
           ) : (
+            <div className="h-[70%] aspect-[320/340] relative flex items-center justify-center pointer-events-none">
             /* SVG Illustration of Bag */
             <svg
               viewBox="0 0 320 340"
@@ -344,33 +378,39 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
               </text>
             </g>
           </svg>
+            </div>
           )}
+        </div>
 
-          {/* Interactive Charms Overlay */}
-          <div className="absolute inset-0 pointer-events-auto">
-            {placedCharms.map((placed) => {
-              const isSelected = placed.instanceId === selectedCharmInstanceId;
-              const charmImg =
-                customCharmVisual?.imageUrl ||
-                customCharmVisual?.referenceImageUrl ||
-                placed.charm.image;
+        {/* Interactive Charms Overlay - Phủ toàn bộ vòm để toScreenCoords tính chuẩn 1:1 với BagCanvas3D */}
+        <div
+          ref={bagBoundaryRef}
+          className="absolute inset-0 z-20 pointer-events-auto"
+        >
+          {placedCharms.map((placed) => {
+            const isSelected = placed.instanceId === selectedCharmInstanceId;
+            const { screenX, screenY } = toScreenCoords(placed.x, placed.y);
+            const charmImg =
+              customCharmVisual?.imageUrl ||
+              customCharmVisual?.referenceImageUrl ||
+              placed.charm.image;
 
-              return (
-                <div
-                  key={placed.instanceId}
-                  onPointerDown={(e) => handlePointerDown(placed.instanceId, placed.x, placed.y, e)}
-                  style={{
-                    position: "absolute",
-                    left: `${placed.x}%`,
-                    top: `${placed.y}%`,
-                    transform: "translate(-50%, -50%)",
-                    touchAction: "none",
-                  }}
-                  className={`group cursor-grab active:cursor-grabbing z-10 transition-transform ${
-                    isSelected ? "scale-110 z-20" : "hover:scale-105"
-                  }`}
-                  title={`${placed.charm.vietnameseName || placed.charm.name || "Charm"} - Kéo để đổi vị trí`}
-                >
+            return (
+              <div
+                key={placed.instanceId}
+                onPointerDown={(e) => handlePointerDown(placed.instanceId, placed.x, placed.y, e)}
+                style={{
+                  position: "absolute",
+                  left: `${screenX}%`,
+                  top: `${screenY}%`,
+                  transform: "translate(-50%, -50%)",
+                  touchAction: "none",
+                }}
+                className={`group cursor-grab active:cursor-grabbing z-10 transition-transform ${
+                  isSelected ? "scale-110 z-30" : "hover:scale-105"
+                }`}
+                title={`${placed.charm.vietnameseName || placed.charm.name || "Charm"} - Kéo để đổi vị trí`}
+              >
                   {/* Metal Hang Ring / Loop on top */}
                   <div className="w-2.5 h-3 mx-auto rounded-full border-[1.5px] border-[#D4AF37] bg-transparent -mb-1 shadow-xs pointer-events-none" />
 
@@ -423,7 +463,6 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
               );
             })}
           </div>
-        </div>
 
         {/* 3D / 2D Toggle Switch at Bottom */}
         {show3dToggle && (

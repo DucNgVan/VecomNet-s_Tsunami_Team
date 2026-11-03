@@ -185,7 +185,7 @@ export default function HomePage() {
           <div className="lg:col-span-6 flex items-center justify-center relative">
             <div className="relative w-full max-w-[440px]">
               {hero3dMode ? (
-                <div className="w-full aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none flex flex-col items-center justify-between">
+                <div className="w-full aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none">
                   {/* Top Arch Label */}
                   <div className="pt-3 text-center z-20 pointer-events-none">
                     <span className="text-[11px] sm:text-[12px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">

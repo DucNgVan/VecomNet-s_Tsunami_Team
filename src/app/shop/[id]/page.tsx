@@ -357,7 +357,7 @@ export default function ProductDetailPage() {
           <div className="lg:col-span-6 flex flex-col items-center">
             
             {/* The Signature Arch Vault Canvas (Đồng bộ chuẩn 100% với khung vòm Nets Studio) */}
-            <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none flex flex-col items-center justify-between mx-auto">
+            <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none mx-auto">
               
               {/* Top Arch Label - Khớp 100% mẫu Nets Studio */}
               <div className="pt-3 text-center z-20 pointer-events-none">
@@ -410,11 +410,15 @@ export default function ProductDetailPage() {
                   )}
                 </div>
               ) : (
-                <div className="relative w-full max-w-[320px] h-[340px] flex items-center justify-center my-auto z-10 select-none pointer-events-none p-2">
+                <div className="absolute inset-0 z-10 flex items-center justify-center select-none pointer-events-none">
                   <img
                     src={current2dImage}
                     alt={productName}
-                    className="max-w-full max-h-full object-contain filter drop-shadow-[0_12px_24px_rgba(36,27,22,0.14)] select-none pointer-events-none transition-all duration-300"
+                    className={`${
+                      isCharm
+                        ? "h-[50%] w-auto max-w-[65%]"
+                        : "h-[70%] w-auto max-w-[85%]"
+                    } object-contain filter drop-shadow-[0_12px_24px_rgba(36,27,22,0.14)] select-none pointer-events-none transition-all duration-300`}
                     loading="eager"
                   />
                 </div>

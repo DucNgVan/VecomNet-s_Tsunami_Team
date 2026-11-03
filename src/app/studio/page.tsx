@@ -384,9 +384,9 @@ function NetStudioContent() {
       return;
     }
     const newId = `placed-${charm.id}-${Date.now()}`;
-    // Determine random or offset position within bag center
-    const xPositions = [35, 65, 48, 30, 70, 50];
-    const yPositions = [45, 56, 38, 62, 42, 68];
+    // Determine balanced position within bag body
+    const xPositions = [32, 68, 50, 24, 76, 42];
+    const yPositions = [54, 56, 68, 58, 60, 76];
     const idx = placedCharms.length % xPositions.length;
 
     const newPlaced: PlacedCharm = {
@@ -1640,7 +1640,7 @@ Key 3D printing & charm specs:
             <div className="lg:col-span-5 flex flex-col items-center">
               {/* 3D / 2D Canvas */}
               {is3DMode ? (
-                <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 sm:p-8 shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none flex flex-col items-center justify-between">
+                <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] shadow-sm relative border border-[#E8E2D8] overflow-hidden select-none">
                   {/* Top Arch Label */}
                   <div className="pt-3 text-center z-20 pointer-events-none">
                     <span className="text-[11px] sm:text-[12px] font-serif tracking-[0.25em] text-[#7A6F68] uppercase font-semibold">

@@ -129,7 +129,7 @@ function AdminPortalContent() {
     try {
       setSyncStatus("syncing");
       const prods = await getProductsFromFirestore();
-      if (Array.isArray(prods) && prods.length > 0) {
+      if (Array.isArray(prods)) {
         setBackendProducts(prods);
       }
       setSyncStatus("saved");
@@ -277,12 +277,17 @@ function AdminPortalContent() {
               products={backendProducts}
               onSaveProduct={async (p) => {
                 const ok = await saveProductToFirestore(p);
-                if (ok) fetchProducts();
+                if (ok) await fetchProducts();
                 return ok;
               }}
               onDeleteProduct={async (id) => {
+                setBackendProducts((prev) => prev.filter((p) => p.id !== id));
                 const ok = await deleteProductFromFirestore(id);
-                if (ok) fetchProducts();
+                if (ok) {
+                  await fetchProducts();
+                } else {
+                  await fetchProducts();
+                }
                 return ok;
               }}
             />

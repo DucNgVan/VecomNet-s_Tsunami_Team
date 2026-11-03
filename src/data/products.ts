@@ -168,30 +168,6 @@ export const BAG_BASES: BagBase[] = [
       { id: "m5", x: 68, y: 72, label: "Góc dưới phải" },
     ],
   },
-  {
-    id: "net-duffle-heritage",
-    name: "NÉT Heritage Duffle",
-    tagline: "Sắc đỏ tía hoàng hôn rực rỡ, dung tích lớn cho chuyến hải trình",
-    description:
-      "Túi du lịch đa năng phong cách hải trình với chất liệu cước nhuộm đỏ tía hoàng hôn trầm ấm. Chống nước tuyệt đối và chịu lực vượt trội, sẵn sàng cùng bạn khám phá mọi miền duyên hải.",
-    basePrice: 1350000,
-    plasticOffsetKg: 2.1,
-    dimensions: "42cm x 30cm x 18cm",
-    capacity: "22 Lít",
-    colors: BAG_COLORS,
-    maxCharms: 12,
-    modelType: "tote",
-    image: "/assets/products/bags/tuixach-do-tia.png",
-    model3dUrl: "/assets/models/tuixach-do-tia.glb",
-    anchorPoints: [
-      { id: "d1", x: 25, y: 30, label: "Mạn trái" },
-      { id: "d2", x: 50, y: 28, label: "Tâm trên" },
-      { id: "d3", x: 75, y: 30, label: "Mạn phải" },
-      { id: "d4", x: 50, y: 55, label: "Trọng tâm" },
-      { id: "d5", x: 30, y: 75, label: "Đáy trái" },
-      { id: "d6", x: 70, y: 75, label: "Đáy phải" },
-    ],
-  },
 ];
 
 export const CHARMS: Charm[] = [

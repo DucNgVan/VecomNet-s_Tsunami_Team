@@ -881,7 +881,11 @@ export async function saveProductToFirestore(product: any): Promise<boolean> {
   try {
     await fetch("/api/products", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": "NET-OCEAN-ADMIN-2024",
+      },
+      credentials: "include",
       body: JSON.stringify(cleanProduct),
     });
   } catch (apiErr) {
@@ -915,7 +919,13 @@ export async function deleteProductFromFirestore(productId: string): Promise<boo
 
   // 3. Xóa qua Backend API
   try {
-    await fetch(`/api/products/${productId}`, { method: "DELETE" });
+    await fetch(`/api/products/${productId}`, {
+      method: "DELETE",
+      headers: {
+        "x-admin-secret": "NET-OCEAN-ADMIN-2024",
+      },
+      credentials: "include",
+    });
   } catch (apiErr) {
     console.warn("API delete product warning:", apiErr);
   }

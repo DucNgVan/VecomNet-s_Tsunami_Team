@@ -358,7 +358,7 @@ export const INITIAL_ADMIN_ORDERS: AdminOrder[] = [
         type: "charm",
         price: 150000,
         quantity: 1,
-        image: "/assets/charms/whale.png",
+        image: "",
       },
     ],
     subtotal: 640000,

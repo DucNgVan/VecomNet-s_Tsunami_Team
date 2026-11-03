@@ -356,12 +356,12 @@ export default function ProductDetailPage() {
             {/* The Signature Arch Vault Canvas */}
             <div className="w-full max-w-[440px] aspect-[4/5] bg-[#EFE9DF] rounded-t-[220px] rounded-b-[40px] p-6 shadow-sm relative border border-[#E8E2D8] overflow-hidden flex flex-col items-center justify-center mx-auto">
               
-              {/* Badges in top corners */}
-              <div className="absolute top-6 inset-x-6 z-20 flex items-center justify-between pointer-events-none">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-md text-[#B85D43] border border-[#E8E2D8] shadow-xs">
+              {/* Badges centered under the arch peak (Tránh hoàn toàn lỗi bị vòm cong bo góc cắt mất nội dung) */}
+              <div className="absolute top-5 sm:top-6 inset-x-0 z-20 flex items-center justify-center gap-2 pointer-events-none px-4">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-md text-[#B85D43] border border-[#E8E2D8] shadow-xs whitespace-nowrap">
                   {isCombo ? "Bộ Phối Độc Bản" : isCharm ? "Charm Biển Sâu" : "Phôi Túi Lưới NÉT"}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50/95 backdrop-blur-md text-emerald-800 border border-emerald-200 shadow-xs whitespace-nowrap">
                   -{formatKg(plasticKg)} rác biển
                 </span>
               </div>

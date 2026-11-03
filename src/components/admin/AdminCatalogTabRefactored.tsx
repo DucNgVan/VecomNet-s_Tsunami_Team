@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useMemo } from "react";
 import { formatVND } from "@/lib/utils";
-import { BAG_BASES, BAG_COLORS, CHARMS } from "@/data/products";
+import { BAG_COLORS } from "@/data/products";
 import { uploadToCloudinary } from "@/lib/cloudinaryClient";
 import { uploadProductFile } from "@/lib/storageService";
 
@@ -42,44 +42,18 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. Phân loại danh sách Túi xách và Charm từ Firestore/LocalStorage
-  // QUAN TRỌNG: Luôn bảo toàn toàn bộ 5 mẫu túi nền tảng đại diện cho 5 màu chuẩn NÉT
+  // 1. Phân loại danh sách Túi xách và Charm từ Firestore (100% động từ Firestore, không hardcode)
   const bagList = useMemo(() => {
-    const map = new Map<string, any>();
-    // Đưa 5 mẫu túi gốc (Xanh lá, Xanh dương, Hồng, Đỏ tía, Đen) vào trước
-    BAG_BASES.forEach((b) =>
-      map.set(b.id, {
-        ...b,
-        colors: Array.isArray(b.colors) && b.colors.length > 0 ? b.colors : BAG_COLORS,
-      })
-    );
-
-    // Gộp và đồng bộ các sản phẩm từ database/Firestore
-    products
+    return products
       .filter((p: any) => p && p.category !== "charm")
-      .forEach((p) => {
-        const existing = map.get(p.id) || {};
-        map.set(p.id, {
-          ...existing,
-          ...p,
-          colors:
-            Array.isArray(p.colors) && p.colors.length > 0
-              ? p.colors
-              : existing.colors || BAG_COLORS,
-        });
-      });
-
-    return Array.from(map.values());
+      .map((p: any) => ({
+        ...p,
+        colors: Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : BAG_COLORS,
+      }));
   }, [products]);
 
   const charmList = useMemo(() => {
-    const customCharms = products.filter((p: any) => p && p.category === "charm");
-    const map = new Map<string, any>();
-    // Đưa danh mục mặc định vào trước
-    CHARMS.forEach((c) => map.set(c.id, c));
-    // Các charm tùy chỉnh hoặc cập nhật từ database sẽ ghi đè hoặc bổ sung
-    customCharms.forEach((c) => map.set(c.id, { ...map.get(c.id), ...c }));
-    return Array.from(map.values());
+    return products.filter((p: any) => p && p.category === "charm");
   }, [products]);
 
   // 2. Xử lý mở modal Thêm mới
@@ -519,224 +493,278 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         </button>
       </div>
 
-      {/* 3. Bảng Danh Sách Túi Xách (Hiển thị đầy đủ cả 5 màu sắc) */}
+      {/* 3. Bảng Danh Sách Túi Xách */}
       {activeCatalogType === "bags" && (
         <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden shadow-xs">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#FAF7F2] text-[#7A6E65] border-b border-[#E8E2D9] font-medium">
-              <tr>
-                <th className="py-2.5 px-3">Hình ảnh</th>
-                <th className="py-2.5 px-3">Tên sản phẩm</th>
-                <th className="py-2.5 px-3">Phân loại</th>
-                <th className="py-2.5 px-3">Bảng màu sắc (5 màu)</th>
-                <th className="py-2.5 px-3">Giá niêm yết</th>
-                <th className="py-2.5 px-3">Tồn kho</th>
-                <th className="py-2.5 px-3">Trạng thái bán</th>
-                <th className="py-2.5 px-3 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F4EFEB]">
-              {bagList.map((item: any) => {
-                const itemColors =
-                  Array.isArray(item.colors) && item.colors.length > 0
-                    ? item.colors
-                    : BAG_COLORS;
+          {bagList.length === 0 ? (
+            <div className="p-10 text-center space-y-3">
+              <div className="text-3xl">👜</div>
+              <div className="text-sm font-semibold text-[#2A2521]">Chưa có sản phẩm túi nào trong cơ sở dữ liệu Firestore</div>
+              <p className="text-xs text-[#7A6E65] max-w-sm mx-auto">
+                Tất cả sản phẩm và hình ảnh được lấy từ Cloud Firestore & Cloudinary. Bấm nút bên dưới để tạo sản phẩm túi đầu tiên.
+              </p>
+              <button
+                type="button"
+                onClick={handleAddNewClick}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors shadow-xs cursor-pointer"
+              >
+                + Thêm túi xách mới
+              </button>
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#FAF7F2] text-[#7A6E65] border-b border-[#E8E2D9] font-medium">
+                <tr>
+                  <th className="py-2.5 px-3">Hình ảnh</th>
+                  <th className="py-2.5 px-3">Tên sản phẩm</th>
+                  <th className="py-2.5 px-3">Phân loại</th>
+                  <th className="py-2.5 px-3">Bảng màu sắc</th>
+                  <th className="py-2.5 px-3">Giá niêm yết</th>
+                  <th className="py-2.5 px-3">Tồn kho</th>
+                  <th className="py-2.5 px-3">Trạng thái bán</th>
+                  <th className="py-2.5 px-3 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F4EFEB]">
+                {bagList.map((item: any) => {
+                  const itemColors =
+                    Array.isArray(item.colors) && item.colors.length > 0
+                      ? item.colors
+                      : BAG_COLORS;
 
-                // Xác định màu người dùng đang bấm xem thử trên hàng này
-                const activeRowColorId = selectedRowColor[item.id] || itemColors[0]?.id || "green";
-                const activeColorObj =
-                  itemColors.find((c: any) => c.id === activeRowColorId) || itemColors[0];
-                const displayImg =
-                  activeColorObj?.image || item.image || item.imageUrl || "/assets/products/bags/tuixach-xanh-la.png";
+                  // Xác định màu người dùng đang bấm xem thử trên hàng này
+                  const activeRowColorId = selectedRowColor[item.id] || itemColors[0]?.id || "green";
+                  const activeColorObj =
+                    itemColors.find((c: any) => c.id === activeRowColorId) || itemColors[0];
+                  const displayImg =
+                    activeColorObj?.image || item.image || item.imageUrl || "";
 
-                return (
-                  <tr key={item.id} className="hover:bg-[#FDFBF7] transition-colors">
-                    <td className="py-2.5 px-3">
-                      <div className="relative w-12 h-12 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
-                        <img
-                          src={displayImg}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/assets/products/bags/tuixach-xanh-la.png";
-                          }}
-                        />
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <div className="font-semibold text-[#2A2521]">{item.name}</div>
-                      <div className="text-[10px] text-[#A89C93] font-mono">ID: {item.id}</div>
-                    </td>
-                    <td className="py-2.5 px-3 text-[#7A6E65] capitalize">
-                      {item.category === "hobo"
-                        ? "Túi Hobo"
-                        : item.category === "bucket"
-                        ? "Túi Bucket"
-                        : item.category === "mini" || item.category === "crossbody"
-                        ? "Đeo chéo Mini"
-                        : item.category === "duffle"
-                        ? "Túi Heritage"
-                        : "Túi Tote"}
-                    </td>
-
-                    {/* CỘT BẢNG MÀU SẮC CHO TÚI: XANH LÁ, XANH DƯƠNG, HỒNG, ĐỎ TÍA, ĐEN */}
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {itemColors.map((c: any) => {
-                          const isChosen = c.id === activeRowColorId;
-                          return (
-                            <button
-                              key={c.id}
-                              type="button"
-                              title={`${c.name} - Bấm để xem ảnh màu ${c.name}`}
-                              onClick={() =>
-                                setSelectedRowColor((prev) => ({ ...prev, [item.id]: c.id }))
-                              }
-                              className={`w-4 h-4 rounded-full border transition-all ${
-                                isChosen
-                                  ? "ring-2 ring-[#C85A32] scale-125 border-white shadow-xs z-10"
-                                  : "border-stone-300 hover:scale-110 opacity-75 hover:opacity-100"
-                              }`}
-                              style={{ backgroundColor: c.hex }}
+                  return (
+                    <tr key={item.id} className="hover:bg-[#FDFBF7] transition-colors">
+                      <td className="py-2.5 px-3">
+                        <div className="relative w-12 h-12 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
+                          {displayImg ? (
+                            <img
+                              src={displayImg}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                const fb = e.currentTarget.parentElement?.querySelector(".bag-fallback");
+                                if (fb) (fb as HTMLElement).style.display = "flex";
+                              }}
                             />
-                          );
-                        })}
-                        <span className="text-[10px] text-[#7A6E65] font-medium ml-1">
-                          {activeColorObj?.name || `${itemColors.length} màu`}
-                        </span>
-                      </div>
-                    </td>
+                          ) : null}
+                          <div
+                            className="bag-fallback w-full h-full items-center justify-center text-xs text-[#A89C93]"
+                            style={{ display: displayImg ? "none" : "flex" }}
+                          >
+                            👜
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-[#2A2521]">{item.name}</div>
+                        <div className="text-[10px] text-[#A89C93] font-mono">ID: {item.id}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-[#7A6E65] capitalize">
+                        {item.category === "hobo"
+                          ? "Túi Hobo"
+                          : item.category === "bucket"
+                          ? "Túi Bucket"
+                          : item.category === "mini" || item.category === "crossbody"
+                          ? "Đeo chéo Mini"
+                          : item.category === "duffle"
+                          ? "Túi Heritage"
+                          : "Túi Tote"}
+                      </td>
 
-                    <td className="py-2.5 px-3 font-semibold text-[#2A2521]">
-                      {formatVND(item.basePrice || item.price || 490000)}
-                    </td>
-                    <td className="py-2.5 px-3 font-bold text-emerald-700">
-                      {item.stockCount ?? 10} chiếc
-                    </td>
-                    <td className="py-2.5 px-3">
-                      {item.inStock !== false ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          Đang hiển thị
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
-                          Đang ẩn
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleHide(item)}
-                        className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] transition-colors"
-                      >
-                        {item.inStock !== false ? "Ẩn" : "Hiện"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEditClick(item)}
-                        className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px] transition-colors"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteClick(item)}
-                        className="px-2 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-[11px] transition-colors"
-                        title="Xóa sản phẩm"
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      {/* CỘT BẢNG MÀU SẮC CHO TÚI */}
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5">
+                          {itemColors.map((c: any) => {
+                            const isChosen = c.id === activeRowColorId;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                title={`${c.name} - Bấm để xem ảnh màu ${c.name}`}
+                                onClick={() =>
+                                  setSelectedRowColor((prev) => ({ ...prev, [item.id]: c.id }))
+                                }
+                                className={`w-4 h-4 rounded-full border transition-all ${
+                                  isChosen
+                                    ? "ring-2 ring-[#C85A32] scale-125 border-white shadow-xs z-10"
+                                    : "border-stone-300 hover:scale-110 opacity-75 hover:opacity-100"
+                                }`}
+                                style={{ backgroundColor: c.hex }}
+                              />
+                            );
+                          })}
+                          <span className="text-[10px] text-[#7A6E65] font-medium ml-1">
+                            {activeColorObj?.name || `${itemColors.length} màu`}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-2.5 px-3 font-semibold text-[#2A2521]">
+                        {formatVND(item.basePrice || item.price || 490000)}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-emerald-700">
+                        {item.stockCount ?? 10} chiếc
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {item.inStock !== false ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Đang hiển thị
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
+                            Đang ẩn
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleHide(item)}
+                          className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] transition-colors"
+                        >
+                          {item.inStock !== false ? "Ẩn" : "Hiện"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEditClick(item)}
+                          className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px] transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteClick(item)}
+                          className="px-2 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-[11px] transition-colors"
+                          title="Xóa sản phẩm"
+                        >
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
       {/* 4. Bảng Danh Sách Charm */}
       {activeCatalogType === "charms" && (
         <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden shadow-xs">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#FAF7F2] text-[#7A6E65] border-b border-[#E8E2D9] font-medium">
-              <tr>
-                <th className="py-2.5 px-3">Hình ảnh</th>
-                <th className="py-2.5 px-3">Tên charm</th>
-                <th className="py-2.5 px-3">Phân loại</th>
-                <th className="py-2.5 px-3">Đơn giá</th>
-                <th className="py-2.5 px-3">Tồn kho</th>
-                <th className="py-2.5 px-3">Trạng thái</th>
-                <th className="py-2.5 px-3 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F4EFEB]">
-              {charmList.map((charm: any) => {
-                const imgUrl = charm.image || charm.imageUrl || "/assets/charms/whale.png";
-                return (
-                  <tr key={charm.id} className="hover:bg-[#FDFBF7] transition-colors">
-                    <td className="py-2.5 px-3">
-                      <div className="w-10 h-10 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden p-1 flex items-center justify-center shrink-0">
-                        <img
-                          src={imgUrl}
-                          alt={charm.name}
-                          className="w-full h-full object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/assets/charms/whale.png";
-                          }}
-                        />
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <div className="font-semibold text-[#2A2521]">{charm.vietnameseName || charm.name}</div>
-                      <div className="text-[10px] text-[#A89C93] font-mono">ID: {charm.id}</div>
-                    </td>
-                    <td className="py-2.5 px-3 text-[#7A6E65] capitalize">{charm.category || "men lam"}</td>
-                    <td className="py-2.5 px-3 font-semibold text-[#2A2521]">{formatVND(charm.price || 180000)}</td>
-                    <td className="py-2.5 px-3 font-bold text-emerald-700">
-                      {charm.stockCount ?? 15} chiếc
-                    </td>
-                    <td className="py-2.5 px-3">
-                      {charm.inStock !== false ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          Sẵn sàng gắn
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
-                          Đang ẩn
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleHide(charm)}
-                        className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] transition-colors"
-                      >
-                        {charm.inStock !== false ? "Ẩn" : "Hiện"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEditClick(charm)}
-                        className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px] transition-colors"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteClick(charm)}
-                        className="px-2 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-[11px] transition-colors"
-                        title="Xóa charm"
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {charmList.length === 0 ? (
+            <div className="p-10 text-center space-y-3">
+              <div className="text-3xl">✨</div>
+              <div className="text-sm font-semibold text-[#2A2521]">Chưa có móc khoá charm nào trong cơ sở dữ liệu Firestore</div>
+              <p className="text-xs text-[#7A6E65] max-w-sm mx-auto">
+                Tất cả móc khoá charm được lưu trữ trên Cloud Firestore và hình ảnh từ Cloudinary. Bấm nút bên dưới để tạo charm mới.
+              </p>
+              <button
+                type="button"
+                onClick={handleAddNewClick}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#C85A32] text-white text-xs font-semibold hover:bg-[#B34E28] transition-colors shadow-xs cursor-pointer"
+              >
+                + Thêm móc khoá Charm
+              </button>
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#FAF7F2] text-[#7A6E65] border-b border-[#E8E2D9] font-medium">
+                <tr>
+                  <th className="py-2.5 px-3">Hình ảnh</th>
+                  <th className="py-2.5 px-3">Tên charm</th>
+                  <th className="py-2.5 px-3">Phân loại</th>
+                  <th className="py-2.5 px-3">Đơn giá</th>
+                  <th className="py-2.5 px-3">Tồn kho</th>
+                  <th className="py-2.5 px-3">Trạng thái</th>
+                  <th className="py-2.5 px-3 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F4EFEB]">
+                {charmList.map((charm: any) => {
+                  const imgUrl = charm.image || charm.imageUrl || "";
+                  return (
+                    <tr key={charm.id} className="hover:bg-[#FDFBF7] transition-colors">
+                      <td className="py-2.5 px-3">
+                        <div className="w-10 h-10 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden p-1 flex items-center justify-center shrink-0 relative">
+                          {imgUrl ? (
+                            <img
+                              src={imgUrl}
+                              alt={charm.name}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                const fb = e.currentTarget.parentElement?.querySelector(".charm-fallback");
+                                if (fb) (fb as HTMLElement).style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className="charm-fallback w-full h-full items-center justify-center text-base"
+                            style={{ display: imgUrl ? "none" : "flex" }}
+                          >
+                            {charm.symbol || "✨"}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-[#2A2521]">{charm.vietnameseName || charm.name}</div>
+                        <div className="text-[10px] text-[#A89C93] font-mono">ID: {charm.id}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-[#7A6E65] capitalize">{charm.category || "men lam"}</td>
+                      <td className="py-2.5 px-3 font-semibold text-[#2A2521]">{formatVND(charm.price || 180000)}</td>
+                      <td className="py-2.5 px-3 font-bold text-emerald-700">
+                        {charm.stockCount ?? 15} chiếc
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {charm.inStock !== false ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Sẵn sàng gắn
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
+                            Đang ẩn
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleHide(charm)}
+                          className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] transition-colors"
+                        >
+                          {charm.inStock !== false ? "Ẩn" : "Hiện"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEditClick(charm)}
+                          className="px-2.5 py-1 rounded bg-[#C85A32] text-white font-medium hover:bg-[#B34E28] text-[11px] transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteClick(charm)}
+                          className="px-2 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-[11px] transition-colors"
+                          title="Xóa charm"
+                        >
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -1077,7 +1105,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                         alt="Xem trước ảnh sản phẩm"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/assets/products/bags/tuixach-xanh-la.png";
+                          e.currentTarget.style.display = "none";
                         }}
                       />
                     </div>

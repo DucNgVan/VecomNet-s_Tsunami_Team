@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useMemo } from "react";
 import { formatVND } from "@/lib/utils";
-import { BAG_BASES, CHARMS } from "@/data/products";
+import { BAG_BASES, BAG_COLORS, CHARMS } from "@/data/products";
 import { uploadToCloudinary } from "@/lib/cloudinaryClient";
 import { uploadProductFile } from "@/lib/storageService";
 
@@ -21,9 +21,13 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
   const [showEditModal, setShowEditModal] = useState(false);
   const [isNewProduct, setIsNewProduct] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [activeColorIdx, setActiveColorIdx] = useState<number>(0);
   const [show3DAdvanced, setShow3DAdvanced] = useState(false);
   const [showManualUrlInput, setShowManualUrlInput] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Lưu trữ màu đang chọn xem trước trên từng hàng trong bảng danh sách túi xách
+  const [selectedRowColor, setSelectedRowColor] = useState<{ [bagId: string]: string }>({});
 
   // Upload States for Image & 3D Model
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -39,10 +43,33 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
   const modelInputRef = useRef<HTMLInputElement>(null);
 
   // 1. Phân loại danh sách Túi xách và Charm từ Firestore/LocalStorage
+  // QUAN TRỌNG: Luôn bảo toàn toàn bộ 5 mẫu túi nền tảng đại diện cho 5 màu chuẩn NÉT
   const bagList = useMemo(() => {
-    const customBags = products.filter((p: any) => p && p.category !== "charm");
-    if (customBags.length > 0) return customBags;
-    return BAG_BASES;
+    const map = new Map<string, any>();
+    // Đưa 5 mẫu túi gốc (Xanh lá, Xanh dương, Hồng, Đỏ tía, Đen) vào trước
+    BAG_BASES.forEach((b) =>
+      map.set(b.id, {
+        ...b,
+        colors: Array.isArray(b.colors) && b.colors.length > 0 ? b.colors : BAG_COLORS,
+      })
+    );
+
+    // Gộp và đồng bộ các sản phẩm từ database/Firestore
+    products
+      .filter((p: any) => p && p.category !== "charm")
+      .forEach((p) => {
+        const existing = map.get(p.id) || {};
+        map.set(p.id, {
+          ...existing,
+          ...p,
+          colors:
+            Array.isArray(p.colors) && p.colors.length > 0
+              ? p.colors
+              : existing.colors || BAG_COLORS,
+        });
+      });
+
+    return Array.from(map.values());
   }, [products]);
 
   const charmList = useMemo(() => {
@@ -58,6 +85,10 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
   // 2. Xử lý mở modal Thêm mới
   const handleAddNewClick = () => {
     const isCharmTab = activeCatalogType === "charms";
+    const initialColors = isCharmTab ? [] : JSON.parse(JSON.stringify(BAG_COLORS));
+    const defaultImg = isCharmTab ? "" : initialColors[0]?.image || "/assets/products/bags/tuixach-xanh-la.png";
+    const defaultModel = isCharmTab ? "" : initialColors[0]?.model3dUrl || "/assets/models/tuixach-xanh-la.glb";
+
     const newItem = {
       id: isCharmTab ? `charm-${Date.now()}` : `prod-${Date.now()}`,
       name: "",
@@ -67,15 +98,17 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
       price: isCharmTab ? 180000 : 490000,
       stockCount: 15,
       inStock: true,
-      image: "",
-      imageUrl: "",
+      image: defaultImg,
+      imageUrl: defaultImg,
+      colors: initialColors,
       description: isCharmTab
         ? "Móc khoá Charm men lam tráng men thủ công độc bản."
-        : "Túi xách tái sinh đan thủ công từ sợi cước lưới ma đại dương.",
+        : "Túi xách tái sinh đan thủ công từ sợi cước lưới ma đại dương gồm 5 sắc thái màu biển.",
       plasticOffsetKg: isCharmTab ? 0.3 : 1.6,
-      model3dUrl: "",
+      model3dUrl: defaultModel,
     };
     setIsNewProduct(true);
+    setActiveColorIdx(0);
     setEditingItem(newItem);
     setShow3DAdvanced(false);
     setShowManualUrlInput(false);
@@ -88,21 +121,33 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
   const handleEditClick = (item: any) => {
     setIsNewProduct(false);
     const itemPrice = item.basePrice ?? item.price ?? 490000;
-    const itemImg = item.image || item.imageUrl || "";
+    const isBagCategory = item.category !== "charm";
+    const initialColors =
+      Array.isArray(item.colors) && item.colors.length > 0
+        ? JSON.parse(JSON.stringify(item.colors))
+        : isBagCategory
+        ? JSON.parse(JSON.stringify(BAG_COLORS))
+        : [];
+
+    const itemImg = item.image || item.imageUrl || initialColors[0]?.image || "";
+    const itemModel = item.model3dUrl || initialColors[0]?.model3dUrl || "";
+
     setEditingItem({
       ...item,
       basePrice: itemPrice,
       price: itemPrice,
       image: itemImg,
       imageUrl: itemImg,
+      colors: initialColors,
       category: item.category || (activeCatalogType === "charms" ? "charm" : "tote"),
       stockCount: item.stockCount ?? 10,
       inStock: item.inStock !== false,
       plasticOffsetKg: item.plasticOffsetKg ?? 1.5,
       description: item.description || "",
-      model3dUrl: item.model3dUrl || "",
+      model3dUrl: itemModel,
     });
-    setShow3DAdvanced(Boolean(item.model3dUrl));
+    setActiveColorIdx(0);
+    setShow3DAdvanced(Boolean(itemModel));
     setShowManualUrlInput(!itemImg);
     setImageUploadStatus(null);
     setModelUploadStatus(null);
@@ -184,7 +229,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     throw new Error("Không thể tải file lên máy chủ. Vui lòng kiểm tra kết nối mạng!");
   };
 
-  // 7. Xử lý Upload Ảnh Sản Phẩm
+  // 7. Xử lý Upload Ảnh Sản Phẩm Chính
   const handleImageFileSelected = async (file: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -196,13 +241,19 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     setImageProgress(15);
     setImageUploadStatus("Đang chuẩn bị ảnh...");
 
-    // Xem trước ảnh tức thì bằng Object URL để tạo trải nghiệm mượt mà không độ trễ
     const localPreview = URL.createObjectURL(file);
-    setEditingItem((prev: any) => ({
-      ...prev,
-      image: localPreview,
-      imageUrl: localPreview,
-    }));
+    setEditingItem((prev: any) => {
+      const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : [];
+      if (nextColors[activeColorIdx]) {
+        nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], image: localPreview };
+      }
+      return {
+        ...prev,
+        image: localPreview,
+        imageUrl: localPreview,
+        colors: nextColors,
+      };
+    });
 
     try {
       setImageUploadStatus("Đang tải ảnh lên đám mây...");
@@ -211,11 +262,18 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         setImageUploadStatus(`Đang tải ảnh... ${pct}%`);
       });
 
-      setEditingItem((prev: any) => ({
-        ...prev,
-        image: finalUrl,
-        imageUrl: finalUrl,
-      }));
+      setEditingItem((prev: any) => {
+        const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : [];
+        if (nextColors[activeColorIdx]) {
+          nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], image: finalUrl };
+        }
+        return {
+          ...prev,
+          image: finalUrl,
+          imageUrl: finalUrl,
+          colors: nextColors,
+        };
+      });
       setImageProgress(100);
       setImageUploadStatus("✓ Tải ảnh thành công!");
       setTimeout(() => setImageUploadStatus(null), 3500);
@@ -228,7 +286,61 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     }
   };
 
-  // 8. Xử lý Upload File Mô Hình 3D (.glb / .gltf)
+  // 8. Xử lý Upload Ảnh Riêng Theo Từng Màu Sắc
+  const handleColorImageSelected = async (file: File, colorIndex: number) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn file hình ảnh!");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageProgress(15);
+    setImageUploadStatus(`Đang tải ảnh cho màu #${colorIndex + 1}...`);
+
+    const localPreview = URL.createObjectURL(file);
+    setEditingItem((prev: any) => {
+      const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : JSON.parse(JSON.stringify(BAG_COLORS));
+      if (nextColors[colorIndex]) {
+        nextColors[colorIndex] = { ...nextColors[colorIndex], image: localPreview };
+      }
+      return {
+        ...prev,
+        colors: nextColors,
+        image: colorIndex === activeColorIdx ? localPreview : prev.image,
+        imageUrl: colorIndex === activeColorIdx ? localPreview : prev.imageUrl,
+      };
+    });
+
+    try {
+      const finalUrl = await uploadFileWithFallback(file, "products", (pct) => {
+        setImageProgress(pct);
+        setImageUploadStatus(`Đang tải ảnh... ${pct}%`);
+      });
+
+      setEditingItem((prev: any) => {
+        const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : JSON.parse(JSON.stringify(BAG_COLORS));
+        if (nextColors[colorIndex]) {
+          nextColors[colorIndex] = { ...nextColors[colorIndex], image: finalUrl };
+        }
+        return {
+          ...prev,
+          colors: nextColors,
+          image: colorIndex === activeColorIdx ? finalUrl : prev.image,
+          imageUrl: colorIndex === activeColorIdx ? finalUrl : prev.imageUrl,
+        };
+      });
+      setImageProgress(100);
+      setImageUploadStatus("✓ Tải ảnh màu thành công!");
+      setTimeout(() => setImageUploadStatus(null), 3000);
+    } catch (err: any) {
+      alert(`Lỗi tải ảnh màu: ${err.message}`);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // 9. Xử lý Upload File Mô Hình 3D (.glb / .gltf)
   const handleModelFileSelected = async (file: File) => {
     if (!file) return;
     const is3d =
@@ -251,10 +363,17 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         setModelUploadStatus(`Đang tải mô hình 3D... ${pct}%`);
       });
 
-      setEditingItem((prev: any) => ({
-        ...prev,
-        model3dUrl: finalUrl,
-      }));
+      setEditingItem((prev: any) => {
+        const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : [];
+        if (nextColors[activeColorIdx]) {
+          nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], model3dUrl: finalUrl };
+        }
+        return {
+          ...prev,
+          model3dUrl: finalUrl,
+          colors: nextColors,
+        };
+      });
       setModelProgress(100);
       setModelUploadStatus("✓ Tải mô hình 3D thành công!");
       setTimeout(() => setModelUploadStatus(null), 3500);
@@ -267,7 +386,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     }
   };
 
-  // 9. Xử lý Kéo Thả (Drag & Drop) Ảnh
+  // 10. Xử lý Kéo Thả (Drag & Drop) Ảnh
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -290,7 +409,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     }
   };
 
-  // 10. Xử lý Lưu Form Sản Phẩm
+  // 11. Xử lý Lưu Form Sản Phẩm
   const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem) return;
@@ -308,6 +427,14 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
 
     setIsSaving(true);
     try {
+      const isBag = editingItem.category !== "charm";
+      const finalColors =
+        isBag && Array.isArray(editingItem.colors) && editingItem.colors.length > 0
+          ? editingItem.colors
+          : isBag
+          ? BAG_COLORS
+          : [];
+
       const payload = {
         ...editingItem,
         name: trimmedName,
@@ -317,8 +444,9 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         stockCount: Number(editingItem.stockCount ?? 10),
         plasticOffsetKg: Number(editingItem.plasticOffsetKg ?? 1.5),
         inStock: editingItem.inStock !== false,
-        image: editingItem.image || editingItem.imageUrl || "",
-        imageUrl: editingItem.imageUrl || editingItem.image || "",
+        image: editingItem.image || editingItem.imageUrl || finalColors[0]?.image || "",
+        imageUrl: editingItem.imageUrl || editingItem.image || finalColors[0]?.image || "",
+        colors: finalColors,
       };
 
       const success = await onSaveProduct(payload);
@@ -326,7 +454,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         setShowEditModal(false);
         alert(
           isNewProduct
-            ? "Đã thêm mới và đồng bộ sản phẩm sang website khách hàng thành công!"
+            ? "Đã thêm mới và đồng bộ sản phẩm cùng 5 màu sắc sang website thành công!"
             : "Đã cập nhật và đồng bộ sản phẩm thành công!"
         );
       } else {
@@ -344,7 +472,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         <div>
           <h1 className="text-base sm:text-lg font-bold text-[#2A2521] tracking-tight">Sản phẩm & Charm</h1>
           <p className="text-[11px] text-[#7A6E65]">
-            Quản lý kho túi tái sinh, charm men lam và tải ảnh sản phẩm trực tiếp lên hệ thống.
+            Quản lý kho túi tái sinh (5 sắc màu đại dương: Xanh Lá, Xanh Dương, Hồng, Đỏ Tía, Đen) và móc khoá charm men lam.
           </p>
         </div>
         <button
@@ -355,7 +483,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          <span>{activeCatalogType === "charms" ? "Thêm móc khoá Charm" : "Thêm sản phẩm mới"}</span>
+          <span>{activeCatalogType === "charms" ? "Thêm móc khoá Charm" : "Thêm túi xách mới"}</span>
         </button>
       </div>
 
@@ -370,7 +498,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
               : "border-transparent text-[#7A6E65] hover:text-black"
           }`}
         >
-          <span>Túi xách tái sinh</span>
+          <span>Túi xách tái sinh (5 màu)</span>
           <span className="px-1.5 py-0.2 rounded-full bg-stone-100 text-[10px] text-stone-600 font-mono">
             {bagList.length}
           </span>
@@ -391,7 +519,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         </button>
       </div>
 
-      {/* 3. Bảng Danh Sách Túi Xách */}
+      {/* 3. Bảng Danh Sách Túi Xách (Hiển thị đầy đủ cả 5 màu sắc) */}
       {activeCatalogType === "bags" && (
         <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden shadow-xs">
           <table className="w-full text-left text-xs">
@@ -400,6 +528,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                 <th className="py-2.5 px-3">Hình ảnh</th>
                 <th className="py-2.5 px-3">Tên sản phẩm</th>
                 <th className="py-2.5 px-3">Phân loại</th>
+                <th className="py-2.5 px-3">Bảng màu sắc (5 màu)</th>
                 <th className="py-2.5 px-3">Giá niêm yết</th>
                 <th className="py-2.5 px-3">Tồn kho</th>
                 <th className="py-2.5 px-3">Trạng thái bán</th>
@@ -408,13 +537,24 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
             </thead>
             <tbody className="divide-y divide-[#F4EFEB]">
               {bagList.map((item: any) => {
-                const imgUrl = item.image || item.imageUrl || "/assets/products/tote-green.jpg";
+                const itemColors =
+                  Array.isArray(item.colors) && item.colors.length > 0
+                    ? item.colors
+                    : BAG_COLORS;
+
+                // Xác định màu người dùng đang bấm xem thử trên hàng này
+                const activeRowColorId = selectedRowColor[item.id] || itemColors[0]?.id || "green";
+                const activeColorObj =
+                  itemColors.find((c: any) => c.id === activeRowColorId) || itemColors[0];
+                const displayImg =
+                  activeColorObj?.image || item.image || item.imageUrl || "/assets/products/bags/tuixach-xanh-la.png";
+
                 return (
                   <tr key={item.id} className="hover:bg-[#FDFBF7] transition-colors">
                     <td className="py-2.5 px-3">
                       <div className="relative w-12 h-12 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
                         <img
-                          src={imgUrl}
+                          src={displayImg}
                           alt={item.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -428,8 +568,45 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                       <div className="text-[10px] text-[#A89C93] font-mono">ID: {item.id}</div>
                     </td>
                     <td className="py-2.5 px-3 text-[#7A6E65] capitalize">
-                      {item.category === "hobo" ? "Túi Hobo" : item.category === "backpack" ? "Balo" : "Túi Tote"}
+                      {item.category === "hobo"
+                        ? "Túi Hobo"
+                        : item.category === "bucket"
+                        ? "Túi Bucket"
+                        : item.category === "mini" || item.category === "crossbody"
+                        ? "Đeo chéo Mini"
+                        : item.category === "duffle"
+                        ? "Túi Heritage"
+                        : "Túi Tote"}
                     </td>
+
+                    {/* CỘT BẢNG MÀU SẮC CHO TÚI: XANH LÁ, XANH DƯƠNG, HỒNG, ĐỎ TÍA, ĐEN */}
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-1.5">
+                        {itemColors.map((c: any) => {
+                          const isChosen = c.id === activeRowColorId;
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              title={`${c.name} - Bấm để xem ảnh màu ${c.name}`}
+                              onClick={() =>
+                                setSelectedRowColor((prev) => ({ ...prev, [item.id]: c.id }))
+                              }
+                              className={`w-4 h-4 rounded-full border transition-all ${
+                                isChosen
+                                  ? "ring-2 ring-[#C85A32] scale-125 border-white shadow-xs z-10"
+                                  : "border-stone-300 hover:scale-110 opacity-75 hover:opacity-100"
+                              }`}
+                              style={{ backgroundColor: c.hex }}
+                            />
+                          );
+                        })}
+                        <span className="text-[10px] text-[#7A6E65] font-medium ml-1">
+                          {activeColorObj?.name || `${itemColors.length} màu`}
+                        </span>
+                      </div>
+                    </td>
+
                     <td className="py-2.5 px-3 font-semibold text-[#2A2521]">
                       {formatVND(item.basePrice || item.price || 490000)}
                     </td>
@@ -563,7 +740,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         </div>
       )}
 
-      {/* 5. Modal Thêm / Chỉnh Sửa Sản Phẩm Có Hỗ Trợ Tải Ảnh Trực Tiếp */}
+      {/* 5. Modal Thêm / Chỉnh Sửa Sản Phẩm Có Hỗ Trợ Đầy Đủ 5 Màu Sắc & Upload Ảnh */}
       {showEditModal && editingItem && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl border border-[#E8E2D9] w-full max-w-lg p-5 sm:p-6 shadow-2xl space-y-4 text-xs my-auto">
@@ -574,11 +751,11 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                   {isNewProduct
                     ? editingItem.category === "charm"
                       ? "Thêm Móc Khoá Charm Mới"
-                      : "Thêm Sản Phẩm Mới"
+                      : "Thêm Sản Phẩm Mới (5 Màu Sắc)"
                     : `Chỉnh sửa: ${editingItem.name || editingItem.vietnameseName || "Sản phẩm"}`}
                 </h2>
                 <p className="text-[11px] text-[#7A6E65]">
-                  Tải ảnh trực tiếp từ máy tính hoặc dán URL hình ảnh CDN.
+                  Tải ảnh trực tiếp từ máy tính cho từng màu sắc (Xanh Lá, Xanh Dương, Hồng, Đỏ Tía, Đen).
                 </p>
               </div>
               <button
@@ -599,7 +776,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                 <input
                   type="text"
                   required
-                  placeholder="VD: NÉT Hobo Crescent Xanh Đại Dương"
+                  placeholder="VD: NÉT Tote Signature Tái Sinh"
                   value={editingItem.name || editingItem.vietnameseName || ""}
                   onChange={(e) =>
                     setEditingItem({
@@ -620,13 +797,24 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                   </label>
                   <select
                     value={editingItem.category || "tote"}
-                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      const isBag = newCat !== "charm";
+                      setEditingItem({
+                        ...editingItem,
+                        category: newCat,
+                        colors: isBag && (!editingItem.colors || editingItem.colors.length === 0)
+                          ? JSON.parse(JSON.stringify(BAG_COLORS))
+                          : editingItem.colors,
+                      });
+                    }}
                     className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2 text-xs text-[#2A2521] outline-none transition-colors"
                   >
-                    <option value="tote">Túi Tote tái sinh</option>
+                    <option value="tote">Túi Tote Signature</option>
                     <option value="hobo">Túi Hobo Crescent</option>
-                    <option value="backpack">Balo tái sinh</option>
-                    <option value="crossbody">Túi đeo chéo</option>
+                    <option value="bucket">Túi Ocean Bucket</option>
+                    <option value="crossbody">Túi Đeo chéo Mini</option>
+                    <option value="duffle">Túi Heritage Duffle</option>
                     <option value="charm">Móc khoá Charm men lam</option>
                     <option value="combo">Bộ phối độc bản (Combo)</option>
                   </select>
@@ -687,6 +875,139 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                 </div>
               </div>
 
+              {/* BẢNG CẤU HÌNH BỘ 5 MÀU SẮC (Dành cho dòng Túi xách) */}
+              {editingItem.category !== "charm" && (
+                <div className="border border-[#E8E2D9] rounded-xl p-3 bg-amber-50/30 space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-[#E8E2D9]/80 pb-2">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-[#2A2521]">
+                          Bảng Màu Sắc Túi Xách (5 Màu Chuẩn NÉT)
+                        </label>
+                        <span className="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 font-mono text-[9px] font-bold">
+                          {(editingItem.colors || []).length || 5} màu
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-[#7A6E65]">
+                        Chọn từng tab màu để xem ảnh hoặc tải ảnh riêng biệt từ máy tính.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const defaultColors = JSON.parse(JSON.stringify(BAG_COLORS));
+                        const activeC = defaultColors[activeColorIdx] || defaultColors[0];
+                        setEditingItem({
+                          ...editingItem,
+                          colors: defaultColors,
+                          image: activeC.image,
+                          imageUrl: activeC.image,
+                          model3dUrl: activeC.model3dUrl,
+                        });
+                        alert("Đã nạp lại đủ 5 màu chuẩn NÉT (Xanh Lá, Xanh Dương, Hồng, Đỏ Tía, Đen)!");
+                      }}
+                      className="px-2 py-1 rounded bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 text-[10px] font-bold transition-colors shadow-2xs"
+                      title="Nạp lại 5 màu chuẩn: Xanh lá, Xanh dương, Hồng, Đỏ tía, Đen"
+                    >
+                      ↻ Nạp 5 Màu Gốc
+                    </button>
+                  </div>
+
+                  {/* 5 Tab Màu Sắc: Xanh Lá, Xanh Dương, Hồng, Đỏ Tía, Đen */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    {(editingItem.colors && editingItem.colors.length > 0
+                      ? editingItem.colors
+                      : BAG_COLORS
+                    ).map((color: any, idx: number) => {
+                      const isTabActive = idx === activeColorIdx;
+                      return (
+                        <button
+                          key={color.id || idx}
+                          type="button"
+                          onClick={() => {
+                            setActiveColorIdx(idx);
+                            if (color.image) {
+                              setEditingItem((prev: any) => ({
+                                ...prev,
+                                image: color.image,
+                                imageUrl: color.image,
+                                model3dUrl: color.model3dUrl || prev.model3dUrl,
+                              }));
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all shrink-0 ${
+                            isTabActive
+                              ? "bg-white border-[#C85A32] text-[#C85A32] shadow-xs scale-102"
+                              : "bg-white/80 border-[#E8E2D9] text-[#7A6E65] hover:text-[#2A2521] hover:bg-white"
+                          }`}
+                        >
+                          <span
+                            className="w-3 h-3 rounded-full border border-stone-300 shrink-0 shadow-2xs"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          <span>{color.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Khung tải ảnh cho màu đang chọn */}
+                  {(() => {
+                    const currentColors =
+                      editingItem.colors && editingItem.colors.length > 0
+                        ? editingItem.colors
+                        : BAG_COLORS;
+                    const curColor = currentColors[activeColorIdx] || currentColors[0];
+                    if (!curColor) return null;
+
+                    return (
+                      <div className="p-2.5 bg-white rounded-xl border border-[#E8E2D9] flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-11 h-11 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
+                            <img
+                              src={curColor.image || "/assets/products/bags/tuixach-xanh-la.png"}
+                              alt={curColor.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full border border-stone-300"
+                                style={{ backgroundColor: curColor.hex }}
+                              />
+                              <span className="font-bold text-[#2A2521] text-xs">
+                                Màu {curColor.name}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-[#A89C93] font-mono block truncate max-w-[200px]">
+                              {curColor.image?.split("/").pop() || "Chưa có ảnh"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <label className="px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[10px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1.5 shrink-0">
+                          <svg className="w-3 h-3 text-[#C85A32]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          <span>Đổi ảnh màu này</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleColorImageSelected(f, activeColorIdx);
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
               {/* Mô tả tóm tắt */}
               <div>
                 <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
@@ -701,11 +1022,11 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                 />
               </div>
 
-              {/* MỤC UPLOAD ẢNH SẢN PHẨM TRỰC TIẾP */}
+              {/* MỤC UPLOAD ẢNH ĐẠI DIỆN TRỰC TIẾP */}
               <div className="border border-[#E8E2D9] rounded-xl p-3 bg-[#FAF7F2]/60 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold text-[#2A2521] flex items-center gap-1.5">
-                    <span>Hình ảnh sản phẩm</span>
+                    <span>Hình ảnh hiển thị chính</span>
                     <span className="text-rose-500">*</span>
                   </label>
                   {imageUploadStatus && (

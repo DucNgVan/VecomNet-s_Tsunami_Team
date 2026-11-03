@@ -70,6 +70,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
       price: isCharmTab ? 180000 : 490000,
       stockCount: 15,
       inStock: true,
+      isSpotlight: false,
       image: defaultImg,
       imageUrl: defaultImg,
       colors: initialColors,
@@ -112,6 +113,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
       category: item.category || (activeCatalogType === "charms" ? "charm" : "tote"),
       stockCount: item.stockCount ?? 10,
       inStock: item.inStock !== false,
+      isSpotlight: Boolean(item.isSpotlight),
       plasticOffsetKg: item.plasticOffsetKg ?? 1.5,
       description: item.description || "",
       model3dUrl: itemModel,
@@ -127,6 +129,15 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     const updated = {
       ...item,
       inStock: !item.inStock,
+    };
+    await onSaveProduct(updated);
+  };
+
+  // 4b. Bật/Tắt Spotlight (Hiển thị nổi bật trên Trang chủ người dùng)
+  const handleToggleSpotlight = async (item: any) => {
+    const updated = {
+      ...item,
+      isSpotlight: !item.isSpotlight,
     };
     await onSaveProduct(updated);
   };
@@ -418,6 +429,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         stockCount: Number(editingItem.stockCount ?? 10),
         plasticOffsetKg: Number(editingItem.plasticOffsetKg ?? 1.5),
         inStock: editingItem.inStock !== false,
+        isSpotlight: Boolean(editingItem.isSpotlight),
         description: editingItem.description || "",
         image: defaultImg,
         imageUrl: defaultImg,
@@ -617,17 +629,36 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                         {item.stockCount ?? 10} chiếc
                       </td>
                       <td className="py-2.5 px-3">
-                        {item.inStock !== false ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            Đang hiển thị
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
-                            Đang ẩn
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-1 items-start">
+                          {item.inStock !== false ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              Đang hiển thị
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
+                              Đang ẩn
+                            </span>
+                          )}
+                          {item.isSpotlight && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                              ⭐ Tiêu điểm Hero
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSpotlight(item)}
+                          className={`px-2 py-1 rounded border text-[11px] font-medium transition-colors ${
+                            item.isSpotlight
+                              ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200"
+                              : "bg-[#FAF7F2] text-[#7A6E65] border-[#E8E2D9] hover:border-amber-400 hover:text-amber-700"
+                          }`}
+                          title={item.isSpotlight ? "Đang nổi bật trên Trang chủ. Bấm để tắt" : "Bấm để đưa túi này lên tiêu điểm Trang chủ"}
+                        >
+                          {item.isSpotlight ? "⭐ Spotlight" : "☆ Spotlight"}
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleToggleHide(item)}
@@ -728,17 +759,36 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                         {charm.stockCount ?? 15} chiếc
                       </td>
                       <td className="py-2.5 px-3">
-                        {charm.inStock !== false ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            Sẵn sàng gắn
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
-                            Đang ẩn
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-1 items-start">
+                          {charm.inStock !== false ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              Sẵn sàng gắn
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600">
+                              Đang ẩn
+                            </span>
+                          )}
+                          {charm.isSpotlight && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                              ⭐ Thanh nổi bật
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSpotlight(charm)}
+                          className={`px-2 py-1 rounded border text-[11px] font-medium transition-colors ${
+                            charm.isSpotlight
+                              ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200"
+                              : "bg-[#FAF7F2] text-[#7A6E65] border-[#E8E2D9] hover:border-amber-400 hover:text-amber-700"
+                          }`}
+                          title={charm.isSpotlight ? "Đang hiện trên thanh nổi bật trang chủ. Bấm để tắt" : "Bấm để đưa charm này lên thanh nổi bật Trang chủ"}
+                        >
+                          {charm.isSpotlight ? "⭐ Spotlight" : "☆ Spotlight"}
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleToggleHide(charm)}
@@ -1403,6 +1453,45 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                   )}
                 </div>
               )}
+
+              {/* TÙY CHỌN TRẠNG THÁI & TIÊU ĐIỂM SPOTLIGHT TRANG CHỦ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-[#E8E2D9] bg-[#FAF7F2] hover:bg-[#F4ECE1] cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={editingItem.inStock !== false}
+                    onChange={(e) => setEditingItem({ ...editingItem, inStock: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#C85A32] focus:ring-[#C85A32]"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-[#2A2521] block">
+                      {editingItem.inStock !== false ? "Đang mở bán" : "Tạm ẩn sản phẩm"}
+                    </span>
+                    <span className="text-[10px] text-[#7A6E65]">
+                      Hiện trong danh mục Shop và kho gắn Charm Studio
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(editingItem.isSpotlight)}
+                    onChange={(e) => setEditingItem({ ...editingItem, isSpotlight: e.target.checked })}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-amber-950 flex items-center gap-1">
+                      ⭐ Nổi bật Trang Chủ (Spotlight)
+                    </span>
+                    <span className="text-[10px] text-amber-800/80">
+                      {editingItem.category !== "charm"
+                        ? "Đưa túi này lên vị trí tiêu điểm Hero 3D/2D trên Trang chủ"
+                        : "Đưa charm này lên thanh 'Đà Nẵng Collection / 01' trên Trang chủ"}
+                    </span>
+                  </div>
+                </label>
+              </div>
 
               {/* LƯU Ý VỀ LƯU TRỮ CLOUDINARY & FIRESTORE */}
               <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E2D9] text-[10px] text-[#7A6E65] space-y-0.5">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowRight, Sparkles, MapPin, Leaf, ShieldCheck, QrCode, Users } from "lucide-react";
@@ -8,55 +8,121 @@ import { NetsIntroLoader } from "@/components/ui/NetsIntroLoader";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
 import { BAG_BASES, BAG_COLORS } from "@/data/products";
+import { getProductsFromFirestore } from "@/lib/firestoreService";
+
+const DEFAULT_COLLECTION_CHARMS = [
+  {
+    id: "wave",
+    name: "Sóng Mỹ Khê",
+    symbol: "≈",
+    color: "#60a5fa",
+    desc: "Nhịp sóng biển sớm",
+  },
+  {
+    id: "dragon",
+    name: "Cầu Rồng",
+    symbol: "♜",
+    color: "#d97706",
+    desc: "Biểu tượng thành phố biển",
+  },
+  {
+    id: "basket",
+    name: "Thuyền thúng",
+    symbol: "◯",
+    color: "#f59e0b",
+    desc: "Hồn cốt làng chài xưa",
+  },
+  {
+    id: "coral",
+    name: "San hô Sơn Trà",
+    symbol: "❋",
+    color: "#ef4444",
+    desc: "Rạn san hô cần chở che",
+  },
+  {
+    id: "lighthouse",
+    name: "Hải đăng Tiên Sa",
+    symbol: "▲",
+    color: "#10b981",
+    desc: "Ánh sáng người đi biển",
+  },
+  {
+    id: "cloud",
+    name: "Mây đèo Hải Vân",
+    symbol: "☁",
+    color: "#8b5cf6",
+    desc: "Thiên hạ đệ nhất hùng quan",
+  },
+];
 
 export default function HomePage() {
   const [showIntro, setShowIntro] = useState(false);
   const [hero3dMode, setHero3dMode] = useState(true);
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
+  const [selectedBagColorIdx, setSelectedBagColorIdx] = useState(0);
 
-  const collectionCharms = [
-    {
-      id: "wave",
-      name: "Sóng Mỹ Khê",
-      symbol: "≈",
-      color: "#60a5fa",
-      desc: "Nhịp sóng biển sớm",
-    },
-    {
-      id: "dragon",
-      name: "Cầu Rồng",
-      symbol: "♜",
-      color: "#d97706",
-      desc: "Biểu tượng thành phố biển",
-    },
-    {
-      id: "basket",
-      name: "Thuyền thúng",
-      symbol: "◯",
-      color: "#f59e0b",
-      desc: "Hồn cốt làng chài xưa",
-    },
-    {
-      id: "coral",
-      name: "San hô Sơn Trà",
-      symbol: "❋",
-      color: "#ef4444",
-      desc: "Rạn san hô cần chở che",
-    },
-    {
-      id: "lighthouse",
-      name: "Hải đăng Tiên Sa",
-      symbol: "▲",
-      color: "#10b981",
-      desc: "Ánh sáng người đi biển",
-    },
-    {
-      id: "cloud",
-      name: "Mây đèo Hải Vân",
-      symbol: "☁",
-      color: "#8b5cf6",
-      desc: "Thiên hạ đệ nhất hùng quan",
-    },
-  ];
+  // Tải dữ liệu sản phẩm & charm thời gian thực từ Firestore
+  useEffect(() => {
+    let isMounted = true;
+    getProductsFromFirestore()
+      .then((data) => {
+        if (isMounted && Array.isArray(data)) {
+          setDbProducts(data);
+        }
+      })
+      .catch((err) => console.warn("Lỗi tải sản phẩm trang chủ:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // 1. Phân loại túi xách từ Firestore (chỉ những túi có hàng và admin bật)
+  const bagList = useMemo(() => {
+    return dbProducts.filter((p: any) => p && p.category !== "charm" && p.inStock !== false);
+  }, [dbProducts]);
+
+  // Ưu tiên túi được Admin gắn ⭐ Spotlight để đưa lên Hero trang chủ
+  const featuredBag = useMemo(() => {
+    const spotlight = bagList.find((b: any) => b.isSpotlight);
+    if (spotlight) return spotlight;
+    if (bagList.length > 0) return bagList[0];
+    return BAG_BASES[0];
+  }, [bagList]);
+
+  // Danh sách màu sắc của túi tiêu điểm
+  const bagColors = useMemo(() => {
+    if (Array.isArray(featuredBag?.colors) && featuredBag.colors.length > 0) {
+      return featuredBag.colors;
+    }
+    return BAG_COLORS;
+  }, [featuredBag]);
+
+  const activeColor = bagColors[selectedBagColorIdx] || bagColors[0] || BAG_COLORS[0];
+  const heroModelUrl =
+    activeColor?.model3dUrl ||
+    featuredBag?.model3dUrl ||
+    "/assets/models/tuixach-xanh-la.glb";
+  const heroImageUrl =
+    activeColor?.image ||
+    featuredBag?.image ||
+    "/assets/products/bags/tuixach-xanh-la.png";
+
+  // 2. Phân loại Charm từ Firestore
+  const charmList = useMemo(() => {
+    return dbProducts.filter((p: any) => p && p.category === "charm" && p.inStock !== false);
+  }, [dbProducts]);
+
+  // Thanh nổi bật Charm: Chỉ hiện những charm đang có, ưu tiên charm được admin gắn ⭐ Spotlight
+  const displayCharms = useMemo(() => {
+    const spotlightCharms = charmList.filter((c: any) => c.isSpotlight);
+    if (spotlightCharms.length > 0) {
+      return spotlightCharms;
+    }
+    if (charmList.length > 0) {
+      return charmList.slice(0, 6);
+    }
+    return DEFAULT_COLLECTION_CHARMS; // Fallback chỉ khi cơ sở dữ liệu chưa có charm nào
+  }, [charmList]);
 
   return (
     <div className="w-full min-h-screen bg-[#FAF7F2] text-[#2D231E]">
@@ -141,10 +207,10 @@ export default function HomePage() {
 
                   <div className="absolute inset-0 z-10">
                     <BagCanvas3D
-                      bagBase={BAG_BASES[0]}
-                      selectedColor={BAG_COLORS[0]}
+                      bagBase={featuredBag}
+                      selectedColor={activeColor}
                       placedCharms={[]}
-                      modelUrl={BAG_COLORS[0].model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
+                      modelUrl={heroModelUrl}
                     />
                   </div>
                 </div>
@@ -156,10 +222,33 @@ export default function HomePage() {
                   show3dToggle={true}
                   onToggle3D={() => setHero3dMode(true)}
                   is3dActive={false}
-                  bagImageUrl={BAG_COLORS[0].image}
-                  selectedColorName={BAG_COLORS[0].name}
-                  selectedColorHex={BAG_COLORS[0].hex}
+                  bagImageUrl={heroImageUrl}
+                  selectedColorName={activeColor.name}
+                  selectedColorHex={activeColor.hex}
                 />
+              )}
+
+              {/* Tùy chọn đổi màu cho túi Spotlight trên Trang chủ */}
+              {bagColors.length > 1 && (
+                <div className="mt-3 flex items-center justify-center gap-2 relative z-20">
+                  {bagColors.map((col: any, idx: number) => {
+                    const isSelected = idx === selectedBagColorIdx;
+                    return (
+                      <button
+                        key={col.id || idx}
+                        type="button"
+                        onClick={() => setSelectedBagColorIdx(idx)}
+                        className={`w-5 h-5 rounded-full border transition-all cursor-pointer ${
+                          isSelected
+                            ? "scale-125 border-[#B85D43] ring-2 ring-[#B85D43]/30 shadow-xs"
+                            : "border-stone-300 opacity-70 hover:opacity-100 hover:scale-110"
+                        }`}
+                        style={{ backgroundColor: col.hex }}
+                        title={`${col.name} - Bấm đổi màu túi`}
+                      />
+                    );
+                  })}
+                </div>
               )}
 
               {/* Vertical Side Label */}
@@ -257,28 +346,49 @@ export default function HomePage() {
 
           {/* Arched Charm Cards Row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-            {collectionCharms.map((charm) => (
-              <Link
-                key={charm.id}
-                href={`/studio?charm=${charm.id}`}
-                className="group flex flex-col items-center"
-              >
-                <div className="w-full aspect-[3/4] bg-[#EFE9DF] rounded-t-[90px] rounded-b-2xl p-4 flex flex-col items-center justify-center border border-[#E8E2D8] transition-all group-hover:bg-white group-hover:shadow-sm">
-                  <div
-                    style={{ backgroundColor: charm.color }}
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-xs border border-white/80 group-hover:scale-105 transition-transform"
-                  >
-                    <span>{charm.symbol}</span>
+            {displayCharms.map((charm: any) => {
+              const charmName = charm.vietnameseName || charm.name;
+              const charmPrice = charm.price || charm.basePrice || 25000;
+              const charmImg = charm.image || charm.imageUrl;
+
+              return (
+                <Link
+                  key={charm.id}
+                  href={`/studio?charm=${charm.id}`}
+                  className="group flex flex-col items-center"
+                >
+                  <div className="w-full aspect-[3/4] bg-[#EFE9DF] rounded-t-[90px] rounded-b-2xl p-4 flex flex-col items-center justify-center border border-[#E8E2D8] transition-all group-hover:bg-white group-hover:shadow-md relative overflow-hidden">
+                    {/* Metal loop / hang hook at top */}
+                    <div className="w-2.5 h-3 mx-auto rounded-full border-[1.5px] border-[#D4AF37] bg-transparent -mt-1 mb-2 shadow-xs pointer-events-none" />
+
+                    {/* Charm Image (Ảnh xoá phông trong suốt từ Cloudinary, không dùng khung màu vuông) */}
+                    {charmImg ? (
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center relative">
+                        <img
+                          src={charmImg}
+                          alt={charmName}
+                          className="max-w-full max-h-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.25)] group-hover:scale-110 transition-transform duration-200"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{ backgroundColor: charm.color || "#60a5fa" }}
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-xs border border-white/80 group-hover:scale-105 transition-transform"
+                      >
+                        <span>{charm.symbol || "✨"}</span>
+                      </div>
+                    )}
+
+                    <span className="mt-3 text-xs font-semibold text-[#241B16] text-center line-clamp-1">
+                      {charmName}
+                    </span>
+                    <span className="text-[10px] text-[#7A6F68] text-center mt-0.5 font-medium">
+                      +{typeof charmPrice === "number" ? charmPrice.toLocaleString("vi-VN") : charmPrice} đ
+                    </span>
                   </div>
-                  <span className="mt-4 text-xs font-semibold text-[#241B16] text-center">
-                    {charm.name}
-                  </span>
-                  <span className="text-[10px] text-[#7A6F68] text-center mt-1 font-light">
-                    +25.000 đ
-                  </span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

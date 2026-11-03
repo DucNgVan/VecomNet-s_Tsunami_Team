@@ -44,40 +44,69 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
   selectedColorName,
 }) => {
   const bagBoundaryRef = useRef<HTMLDivElement>(null);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [activeDraggingId, setActiveDraggingId] = useState<string | null>(null);
 
-  // Mouse / Touch Dragging logic
-  const handlePointerDown = (instanceId: string, e: React.PointerEvent) => {
+  // Smooth Dragging with window listeners & delta offsets
+  const dragInfoRef = useRef<{
+    instanceId: string;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    initialCharmX: number;
+    initialCharmY: number;
+  } | null>(null);
+
+  const handlePointerDown = (
+    instanceId: string,
+    initialX: number,
+    initialY: number,
+    e: React.PointerEvent<HTMLDivElement>
+  ) => {
+    e.preventDefault();
     e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDraggingId(instanceId);
+
     if (onSelectCharmInstance) onSelectCharmInstance(instanceId);
-  };
+    setActiveDraggingId(instanceId);
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingId || !bagBoundaryRef.current) return;
-    const rect = bagBoundaryRef.current.getBoundingClientRect();
-    const clientX = e.clientX;
-    const clientY = e.clientY;
+    const pointerId = e.pointerId;
+    dragInfoRef.current = {
+      instanceId,
+      pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialCharmX: initialX,
+      initialCharmY: initialY,
+    };
 
-    // Calculate percentage (0 to 100) inside bag area
-    const rawX = ((clientX - rect.left) / rect.width) * 100;
-    const rawY = ((clientY - rect.top) / rect.height) * 100;
+    const handleWindowPointerMove = (moveEvent: PointerEvent) => {
+      if (!dragInfoRef.current || moveEvent.pointerId !== pointerId) return;
+      if (!bagBoundaryRef.current) return;
 
-    // Constrain within the tote body and card safe boundary
-    const clampedX = Math.max(10, Math.min(90, Math.round(rawX)));
-    const clampedY = Math.max(12, Math.min(88, Math.round(rawY)));
+      const rect = bagBoundaryRef.current.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
 
-    onUpdateCharmPosition(draggingId, clampedX, clampedY);
-  };
+      const deltaXPercent = ((moveEvent.clientX - dragInfoRef.current.startX) / rect.width) * 100;
+      const deltaYPercent = ((moveEvent.clientY - dragInfoRef.current.startY) / rect.height) * 100;
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (draggingId) {
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {}
-      setDraggingId(null);
-    }
+      // Giới hạn trong vùng diện tích thân túi an toàn (8% - 92% ngang, 10% - 88% dọc)
+      const clampedX = Math.max(8, Math.min(92, Math.round(dragInfoRef.current.initialCharmX + deltaXPercent)));
+      const clampedY = Math.max(10, Math.min(88, Math.round(dragInfoRef.current.initialCharmY + deltaYPercent)));
+
+      onUpdateCharmPosition(instanceId, clampedX, clampedY);
+    };
+
+    const handleWindowPointerUp = (upEvent: PointerEvent) => {
+      if (upEvent.pointerId !== pointerId) return;
+      window.removeEventListener("pointermove", handleWindowPointerMove);
+      window.removeEventListener("pointerup", handleWindowPointerUp);
+      window.removeEventListener("pointercancel", handleWindowPointerUp);
+      dragInfoRef.current = null;
+      setActiveDraggingId(null);
+    };
+
+    window.addEventListener("pointermove", handleWindowPointerMove, { passive: false });
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    window.addEventListener("pointercancel", handleWindowPointerUp);
   };
 
   // Keyboard / arrow click stepping
@@ -104,8 +133,6 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
         {/* The Bag Container & Dropzone */}
         <div
           ref={bagBoundaryRef}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
           className="relative w-full max-w-[320px] h-[340px] flex items-center justify-center my-auto"
         >
           {bagImageUrl ? (
@@ -323,12 +350,15 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
           <div className="absolute inset-0 pointer-events-auto">
             {placedCharms.map((placed) => {
               const isSelected = placed.instanceId === selectedCharmInstanceId;
-              const isCustom = placed.charm.id.includes("custom") || placed.charm.category === "special" && placed.charm.name.includes("Custom");
+              const charmImg =
+                customCharmVisual?.imageUrl ||
+                customCharmVisual?.referenceImageUrl ||
+                placed.charm.image;
 
               return (
                 <div
                   key={placed.instanceId}
-                  onPointerDown={(e) => handlePointerDown(placed.instanceId, e)}
+                  onPointerDown={(e) => handlePointerDown(placed.instanceId, placed.x, placed.y, e)}
                   style={{
                     position: "absolute",
                     left: `${placed.x}%`,
@@ -339,79 +369,52 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                   className={`group cursor-grab active:cursor-grabbing z-10 transition-transform ${
                     isSelected ? "scale-110 z-20" : "hover:scale-105"
                   }`}
-                  title={`${placed.charm.vietnameseName} - Kéo để đổi vị trí`}
+                  title={`${placed.charm.vietnameseName || placed.charm.name || "Charm"} - Kéo để đổi vị trí`}
                 >
-                  {/* Metal Hang Ring / Loop only for non-custom standard charms */}
-                  {!isCustom && (
-                    <div className="w-2 h-2.5 mx-auto rounded-t-full border-1.5 border-[#D4AF37] bg-transparent -mb-0.5 shadow-xs" />
-                  )}
+                  {/* Metal Hang Ring / Loop on top */}
+                  <div className="w-2.5 h-3 mx-auto rounded-full border-[1.5px] border-[#D4AF37] bg-transparent -mb-1 shadow-xs pointer-events-none" />
 
-                  {/* Custom Keychain Charm (Hiển thị phôi móc khoá 2D Die-Cut độc bản) */}
-                  {isCustom && (customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl || placed.charm.image) ? (
+                  {/* Charm Graphic (Không còn khung vuông, hiển thị hình xoá phông tự nhiên trực tiếp lên túi) */}
+                  {charmImg ? (
                     <div
-                      className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center relative transition-transform ${
-                        isSelected ? "scale-115 drop-shadow-[0_0_12px_rgba(184,93,67,0.9)]" : "drop-shadow-lg"
+                      className={`w-14 h-14 sm:w-16 sm:h-16 flex flex-col items-center justify-center relative transition-transform ${
+                        isSelected
+                          ? "scale-115 drop-shadow-[0_0_12px_rgba(184,93,67,0.95)]"
+                          : "drop-shadow-[0_6px_10px_rgba(0,0,0,0.3)]"
                       }`}
                     >
-                      <div className="w-full h-full flex items-center justify-center p-0.5 relative">
-                        <img
-                          src={customCharmVisual?.imageUrl || customCharmVisual?.referenceImageUrl || placed.charm.image}
-                          alt={placed.charm.vietnameseName || "Móc khoá 2D Nét"}
-                          className="w-full h-full object-contain select-none pointer-events-none drop-shadow-md"
-                        />
-                      </div>
-                      {/* Active Drag Indicator Icon */}
-                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
-                        <Move className="w-2.5 h-2.5" />
-                      </div>
-                    </div>
-                  ) : (
-                    /* Standard / Fallback badge */
-                    <div
-                      style={{
-                        backgroundColor: placed.charm.color || "#38bdf8",
-                      }}
-                      className={`w-11 h-11 sm:w-12 sm:h-12 ${
-                        isCustom && customCharmVisual?.shape === "circle"
-                          ? "rounded-full"
-                          : isCustom && customCharmVisual?.shape === "teardrop"
-                          ? "rounded-t-full rounded-b-md"
-                          : isCustom && customCharmVisual?.shape === "heart"
-                          ? "rounded-2xl"
-                          : isCustom && customCharmVisual?.shape === "freeform"
-                          ? "rounded-[16px_4px_16px_4px]"
-                          : "rounded-xl"
-                      } flex flex-col items-center justify-center text-white shadow-md border-2 border-white/80 relative transition-all overflow-hidden ${
-                        isSelected ? "ring-2 ring-[#B85D43] ring-offset-2" : ""
-                      }`}
-                    >
-                      {isCustom && customCharmVisual?.referenceImageUrl ? (
-                        <img
-                          src={customCharmVisual.referenceImageUrl}
-                          alt="Custom Sketch"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : placed.charm.image ? (
-                        <img
-                          src={placed.charm.image}
-                          alt={placed.charm.vietnameseName}
-                          className="w-full h-full object-contain p-1"
-                        />
-                      ) : (
-                        <span className="text-lg sm:text-xl font-bold leading-none select-none drop-shadow-xs">
-                          {placed.charm.symbol || "✨"}
-                        </span>
-                      )}
+                      <img
+                        src={charmImg}
+                        alt={placed.charm.vietnameseName || placed.charm.name || "Charm"}
+                        className="w-full h-full object-contain select-none pointer-events-none"
+                      />
 
                       {/* Engraved text if custom */}
-                      {customCharmVisual?.engravedText && isCustom && (
-                        <span className="text-[7.5px] font-mono tracking-tight text-white/95 mt-0.5 truncate max-w-[36px] bg-black/40 px-1 rounded">
+                      {customCharmVisual?.engravedText && (
+                        <span className="text-[7.5px] font-mono tracking-tight text-white bg-black/60 px-1 rounded -mt-0.5 block max-w-[42px] truncate mx-auto text-center pointer-events-none">
                           {customCharmVisual.engravedText}
                         </span>
                       )}
 
-                      {/* Active Drag Indicator Icon */}
-                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white">
+                      {/* Active Drag Indicator Icon on hover */}
+                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white pointer-events-none">
+                        <Move className="w-2.5 h-2.5" />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Fallback badge only when no image exists */
+                    <div
+                      style={{
+                        backgroundColor: placed.charm.color || "#38bdf8",
+                      }}
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex flex-col items-center justify-center text-white shadow-md border-2 border-white/80 relative transition-all overflow-hidden ${
+                        isSelected ? "ring-2 ring-[#B85D43] ring-offset-2" : ""
+                      }`}
+                    >
+                      <span className="text-lg sm:text-xl font-bold leading-none select-none drop-shadow-xs">
+                        {placed.charm.symbol || "✨"}
+                      </span>
+                      <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-0.5 text-white pointer-events-none">
                         <Move className="w-2.5 h-2.5" />
                       </div>
                     </div>

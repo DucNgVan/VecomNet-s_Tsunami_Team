@@ -69,6 +69,7 @@ function NetStudioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const partnerQuery = searchParams.get("partner") || "";
+  const initialCharmId = searchParams.get("charm") || "";
 
   // Studio Mode Tabs: "ready" (Charm có sẵn từ kho) | "ai_custom" (Sáng tạo charm riêng cùng AI)
   const [activeTab, setActiveTab] = useState<"ready" | "ai_custom">("ready");
@@ -176,6 +177,26 @@ function NetStudioContent() {
               stockCount: Number(p.stockCount) >= 0 ? Number(p.stockCount) : 10,
             }));
           setAvailableCharms(liveCharms);
+
+          // Nếu người dùng chọn bấm "Phối thử" charm từ Trang chủ, tự động gắn charm đó lên túi
+          if (initialCharmId && liveCharms.length > 0) {
+            const foundCharm = liveCharms.find((c) => c.id === initialCharmId);
+            if (foundCharm) {
+              const newInstanceId = `charm-${foundCharm.id}-${Date.now()}`;
+              setPlacedCharms([
+                {
+                  instanceId: newInstanceId,
+                  charmId: foundCharm.id,
+                  anchorId: `a-${foundCharm.id}`,
+                  rotation: 0,
+                  charm: foundCharm,
+                  x: 50,
+                  y: 48,
+                },
+              ]);
+              setSelectedCharmInstanceId(newInstanceId);
+            }
+          }
         } else {
           setAvailableCharms([]);
         }

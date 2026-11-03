@@ -4,7 +4,6 @@ import React, { useState, useRef, useMemo } from "react";
 import { formatVND } from "@/lib/utils";
 import { BAG_COLORS } from "@/data/products";
 import { uploadToCloudinary } from "@/lib/cloudinaryClient";
-import { uploadProductFile } from "@/lib/storageService";
 
 interface AdminCatalogTabRefactoredProps {
   products: any[];
@@ -22,8 +21,6 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
   const [isNewProduct, setIsNewProduct] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [activeColorIdx, setActiveColorIdx] = useState<number>(0);
-  const [show3DAdvanced, setShow3DAdvanced] = useState(false);
-  const [showManualUrlInput, setShowManualUrlInput] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Lưu trữ màu đang chọn xem trước trên từng hàng trong bảng danh sách túi xách
@@ -33,7 +30,6 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageProgress, setImageProgress] = useState(0);
   const [imageUploadStatus, setImageUploadStatus] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   const [isUploadingModel, setIsUploadingModel] = useState(false);
   const [modelProgress, setModelProgress] = useState(0);
@@ -41,6 +37,8 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelInputRef = useRef<HTMLInputElement>(null);
+  const colorImgInputRef = useRef<HTMLInputElement>(null);
+  const colorModelInputRef = useRef<HTMLInputElement>(null);
 
   // 1. Phân loại danh sách Túi xách và Charm từ Firestore (100% động từ Firestore, không hardcode)
   const bagList = useMemo(() => {
@@ -150,146 +148,53 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     }
   };
 
-  // 6. Hàm Tải File Đa Tầng (Cloudinary CDN -> Firebase Storage -> Server Disk -> Data URL)
-  const uploadFileWithFallback = async (
+  // 6. Hàm Tải File Trực Tiếp Lên Cloudinary CDN (KHÔNG lưu lên Firebase Storage)
+  const uploadFileToCloudinary = async (
     file: File,
     folder: "products" | "models",
     onProgress?: (pct: number) => void
   ): Promise<string> => {
-    // Tầng 1: Cloudinary CDN Tối Ưu
+    // Tầng 1: Tải trực tiếp lên Cloudinary CDN bằng chữ ký trực tiếp từ trình duyệt
     try {
       const res = await uploadToCloudinary(file, folder, onProgress);
       if (res?.url) return res.url;
     } catch (cldErr: any) {
-      console.warn("[Upload] Cloudinary upload notice, fallback:", cldErr?.message || cldErr);
+      console.warn("[Cloudinary Direct Upload Notice]:", cldErr?.message || cldErr);
     }
 
-    // Tầng 2: Firebase Storage
-    try {
-      const fallbackUrl = await uploadProductFile(
-        file,
-        folder === "models" ? "models" : "images",
-        onProgress
-      );
-      if (fallbackUrl) return fallbackUrl;
-    } catch (storageErr: any) {
-      console.warn("[Upload] Storage service notice, fallback:", storageErr?.message || storageErr);
-    }
-
-    // Tầng 3: Server API /api/upload
+    // Tầng 2: Dự phòng qua Server Route /api/upload/cloudinary (vẫn lưu trữ 100% trên Cloudinary)
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", folder);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/upload/cloudinary", { method: "POST", body: formData });
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.url) return json.url;
       }
     } catch (apiErr: any) {
-      console.warn("[Upload] Server API notice, fallback:", apiErr?.message || apiErr);
+      console.warn("[Cloudinary Server Route Error]:", apiErr);
     }
 
-    // Tầng 4: Base64 Data URL cho ảnh nhỏ (< 2MB)
-    if (file.type.startsWith("image/") && file.size <= 2 * 1024 * 1024) {
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    throw new Error("Không thể tải file lên máy chủ. Vui lòng kiểm tra kết nối mạng!");
+    throw new Error("Không thể tải file lên Cloudinary. Vui lòng kiểm tra file hoặc kết nối mạng!");
   };
 
-  // 7. Xử lý Upload Ảnh Sản Phẩm Chính
-  const handleImageFileSelected = async (file: File) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Vui lòng chọn file hình ảnh (PNG, JPG, JPEG, WebP, SVG)!");
-      return;
-    }
-
-    setIsUploadingImage(true);
-    setImageProgress(15);
-    setImageUploadStatus("Đang chuẩn bị ảnh...");
-
-    const localPreview = URL.createObjectURL(file);
-    setEditingItem((prev: any) => {
-      const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : [];
-      if (nextColors[activeColorIdx]) {
-        nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], image: localPreview };
-      }
-      return {
-        ...prev,
-        image: localPreview,
-        imageUrl: localPreview,
-        colors: nextColors,
-      };
-    });
-
-    try {
-      setImageUploadStatus("Đang tải ảnh lên đám mây...");
-      const finalUrl = await uploadFileWithFallback(file, "products", (pct) => {
-        setImageProgress(pct);
-        setImageUploadStatus(`Đang tải ảnh... ${pct}%`);
-      });
-
-      setEditingItem((prev: any) => {
-        const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : [];
-        if (nextColors[activeColorIdx]) {
-          nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], image: finalUrl };
-        }
-        return {
-          ...prev,
-          image: finalUrl,
-          imageUrl: finalUrl,
-          colors: nextColors,
-        };
-      });
-      setImageProgress(100);
-      setImageUploadStatus("✓ Tải ảnh thành công!");
-      setTimeout(() => setImageUploadStatus(null), 3500);
-    } catch (err: any) {
-      console.error("Image upload failed:", err);
-      alert(`Lỗi tải ảnh: ${err.message || "Vui lòng thử lại"}`);
-      setImageUploadStatus("Lỗi tải ảnh!");
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
-
-  // 8. Xử lý Upload Ảnh Riêng Theo Từng Màu Sắc
+  // 7. Xử lý Upload Ảnh Riêng Theo Từng Màu Sắc lên Cloudinary
   const handleColorImageSelected = async (file: File, colorIndex: number) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      alert("Vui lòng chọn file hình ảnh!");
+      alert("Vui lòng chọn file hình ảnh (PNG, JPG, WebP)!");
       return;
     }
 
     setIsUploadingImage(true);
     setImageProgress(15);
-    setImageUploadStatus(`Đang tải ảnh cho màu #${colorIndex + 1}...`);
-
-    const localPreview = URL.createObjectURL(file);
-    setEditingItem((prev: any) => {
-      const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : JSON.parse(JSON.stringify(BAG_COLORS));
-      if (nextColors[colorIndex]) {
-        nextColors[colorIndex] = { ...nextColors[colorIndex], image: localPreview };
-      }
-      return {
-        ...prev,
-        colors: nextColors,
-        image: colorIndex === activeColorIdx ? localPreview : prev.image,
-        imageUrl: colorIndex === activeColorIdx ? localPreview : prev.imageUrl,
-      };
-    });
+    setImageUploadStatus(`Đang tải ảnh màu #${colorIndex + 1} lên Cloudinary...`);
 
     try {
-      const finalUrl = await uploadFileWithFallback(file, "products", (pct) => {
+      const finalUrl = await uploadFileToCloudinary(file, "products", (pct) => {
         setImageProgress(pct);
-        setImageUploadStatus(`Đang tải ảnh... ${pct}%`);
+        setImageUploadStatus(`Đang tải ảnh lên Cloudinary... ${pct}%`);
       });
 
       setEditingItem((prev: any) => {
@@ -300,22 +205,139 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         return {
           ...prev,
           colors: nextColors,
-          image: colorIndex === activeColorIdx ? finalUrl : prev.image,
-          imageUrl: colorIndex === activeColorIdx ? finalUrl : prev.imageUrl,
+          image: colorIndex === 0 ? finalUrl : prev.image || finalUrl,
+          imageUrl: colorIndex === 0 ? finalUrl : prev.imageUrl || finalUrl,
         };
       });
       setImageProgress(100);
-      setImageUploadStatus("✓ Tải ảnh màu thành công!");
+      setImageUploadStatus("✓ Tải ảnh màu lên Cloudinary thành công!");
       setTimeout(() => setImageUploadStatus(null), 3000);
     } catch (err: any) {
-      alert(`Lỗi tải ảnh màu: ${err.message}`);
+      alert(`Lỗi tải ảnh màu lên Cloudinary: ${err.message}`);
+      setImageUploadStatus("Lỗi tải ảnh!");
     } finally {
       setIsUploadingImage(false);
     }
   };
 
-  // 9. Xử lý Upload File Mô Hình 3D (.glb / .gltf)
-  const handleModelFileSelected = async (file: File) => {
+  // 8. Xử lý Upload File Mô Hình 3D (.glb / .gltf) Riêng Cho Từng Màu Sắc lên Cloudinary
+  const handleColorModelSelected = async (file: File, colorIndex: number) => {
+    if (!file) return;
+    const is3d =
+      file.name.toLowerCase().endsWith(".glb") ||
+      file.name.toLowerCase().endsWith(".gltf") ||
+      file.type === "model/gltf-binary";
+
+    if (!is3d) {
+      alert("Vui lòng chọn file mô hình 3D (.glb hoặc .gltf)!");
+      return;
+    }
+
+    setIsUploadingModel(true);
+    setModelProgress(10);
+    setModelUploadStatus(`Đang tải file 3D màu #${colorIndex + 1} lên Cloudinary...`);
+
+    try {
+      const finalUrl = await uploadFileToCloudinary(file, "models", (pct) => {
+        setModelProgress(pct);
+        setModelUploadStatus(`Đang tải file 3D lên Cloudinary... ${pct}%`);
+      });
+
+      setEditingItem((prev: any) => {
+        const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : JSON.parse(JSON.stringify(BAG_COLORS));
+        if (nextColors[colorIndex]) {
+          nextColors[colorIndex] = { ...nextColors[colorIndex], model3dUrl: finalUrl };
+        }
+        return {
+          ...prev,
+          colors: nextColors,
+          model3dUrl: colorIndex === 0 ? finalUrl : prev.model3dUrl || finalUrl,
+        };
+      });
+      setModelProgress(100);
+      setModelUploadStatus("✓ Tải file 3D lên Cloudinary thành công!");
+      setTimeout(() => setModelUploadStatus(null), 3500);
+    } catch (err: any) {
+      alert(`Lỗi tải file 3D lên Cloudinary: ${err.message}`);
+      setModelUploadStatus("Lỗi tải file 3D!");
+    } finally {
+      setIsUploadingModel(false);
+    }
+  };
+
+  // 9. Thêm màu mới cho túi xách
+  const handleAddColor = () => {
+    const newColor = {
+      id: `color-${Date.now()}`,
+      name: `Màu mới #${(editingItem?.colors || []).length + 1}`,
+      hex: "#2D5E4E",
+      image: "",
+      model3dUrl: "",
+    };
+    setEditingItem((prev: any) => {
+      const nextColors = Array.isArray(prev.colors) ? [...prev.colors, newColor] : [newColor];
+      setActiveColorIdx(nextColors.length - 1);
+      return {
+        ...prev,
+        colors: nextColors,
+      };
+    });
+  };
+
+  // 10. Xóa màu khỏi túi xách
+  const handleRemoveColor = (idx: number) => {
+    if ((editingItem?.colors || []).length <= 1) {
+      alert("Túi xách phải có ít nhất 1 màu sắc!");
+      return;
+    }
+    const colorName = editingItem.colors[idx]?.name || `màu #${idx + 1}`;
+    if (confirm(`Bạn có chắc muốn xoá "${colorName}" khỏi danh sách màu?`)) {
+      setEditingItem((prev: any) => {
+        const nextColors = prev.colors.filter((_: any, i: number) => i !== idx);
+        setActiveColorIdx(Math.max(0, idx - 1));
+        return {
+          ...prev,
+          colors: nextColors,
+        };
+      });
+    }
+  };
+
+  // 11. Upload Ảnh của Charm lên Cloudinary
+  const handleCharmImageSelected = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn file hình ảnh (PNG, JPG, WebP)!");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageProgress(10);
+    setImageUploadStatus("Đang tải ảnh charm lên Cloudinary...");
+
+    try {
+      const finalUrl = await uploadFileToCloudinary(file, "products", (pct) => {
+        setImageProgress(pct);
+        setImageUploadStatus(`Đang tải ảnh charm... ${pct}%`);
+      });
+
+      setEditingItem((prev: any) => ({
+        ...prev,
+        image: finalUrl,
+        imageUrl: finalUrl,
+      }));
+      setImageProgress(100);
+      setImageUploadStatus("✓ Tải ảnh charm lên Cloudinary thành công!");
+      setTimeout(() => setImageUploadStatus(null), 3000);
+    } catch (err: any) {
+      alert(`Lỗi tải ảnh charm lên Cloudinary: ${err.message}`);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // 12. Upload Mô hình 3D (.glb) của Charm lên Cloudinary
+  const handleCharmModelSelected = async (file: File) => {
     if (!file) return;
     const is3d =
       file.name.toLowerCase().endsWith(".glb") ||
@@ -329,61 +351,29 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
 
     setIsUploadingModel(true);
     setModelProgress(10);
-    setModelUploadStatus("Đang tải mô hình 3D...");
+    setModelUploadStatus("Đang tải file 3D charm lên Cloudinary...");
 
     try {
-      const finalUrl = await uploadFileWithFallback(file, "models", (pct) => {
+      const finalUrl = await uploadFileToCloudinary(file, "models", (pct) => {
         setModelProgress(pct);
-        setModelUploadStatus(`Đang tải mô hình 3D... ${pct}%`);
+        setModelUploadStatus(`Đang tải 3D... ${pct}%`);
       });
 
-      setEditingItem((prev: any) => {
-        const nextColors = Array.isArray(prev.colors) ? [...prev.colors] : [];
-        if (nextColors[activeColorIdx]) {
-          nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], model3dUrl: finalUrl };
-        }
-        return {
-          ...prev,
-          model3dUrl: finalUrl,
-          colors: nextColors,
-        };
-      });
+      setEditingItem((prev: any) => ({
+        ...prev,
+        model3dUrl: finalUrl,
+      }));
       setModelProgress(100);
-      setModelUploadStatus("✓ Tải mô hình 3D thành công!");
-      setTimeout(() => setModelUploadStatus(null), 3500);
+      setModelUploadStatus("✓ Tải file 3D charm lên Cloudinary thành công!");
+      setTimeout(() => setModelUploadStatus(null), 3000);
     } catch (err: any) {
-      console.error("3D model upload failed:", err);
-      alert(`Lỗi tải file 3D: ${err.message || "Vui lòng thử lại"}`);
-      setModelUploadStatus("Lỗi tải file 3D!");
+      alert(`Lỗi tải file 3D charm: ${err.message}`);
     } finally {
       setIsUploadingModel(false);
     }
   };
 
-  // 10. Xử lý Kéo Thả (Drag & Drop) Ảnh
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleImageFileSelected(files[0]);
-    }
-  };
-
-  // 11. Xử lý Lưu Form Sản Phẩm
+  // 13. Xử lý Lưu Form Sản Phẩm Lên Cloud Firestore (Ảnh & 3D lưu trữ trên Cloudinary)
   const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem) return;
@@ -395,7 +385,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     }
 
     if (isUploadingImage || isUploadingModel) {
-      alert("Tệp đang được tải lên hệ thống. Vui lòng đợi trong giây lát!");
+      alert("Tệp đang được tải lên Cloudinary. Vui lòng đợi trong giây lát!");
       return;
     }
 
@@ -409,18 +399,35 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
           ? BAG_COLORS
           : [];
 
+      // Hình ảnh và 3D mặc định
+      const defaultImg =
+        (isBag ? finalColors[0]?.image : editingItem.image) ||
+        editingItem.image ||
+        editingItem.imageUrl ||
+        "";
+
+      const defaultModel =
+        (isBag ? finalColors[0]?.model3dUrl : editingItem.model3dUrl) ||
+        editingItem.model3dUrl ||
+        "";
+
+      // Chỉ lưu thông tin metadata trên Firestore (Ảnh & 3D là URL Cloudinary)
       const payload = {
-        ...editingItem,
+        id: editingItem.id,
         name: trimmedName,
         vietnameseName: trimmedName,
+        category: editingItem.category || (isBag ? "tote" : "charm"),
         basePrice: Number(editingItem.basePrice || editingItem.price || 0),
         price: Number(editingItem.basePrice || editingItem.price || 0),
         stockCount: Number(editingItem.stockCount ?? 10),
         plasticOffsetKg: Number(editingItem.plasticOffsetKg ?? 1.5),
         inStock: editingItem.inStock !== false,
-        image: editingItem.image || editingItem.imageUrl || finalColors[0]?.image || "",
-        imageUrl: editingItem.imageUrl || editingItem.image || finalColors[0]?.image || "",
+        description: editingItem.description || "",
+        image: defaultImg,
+        imageUrl: defaultImg,
+        model3dUrl: defaultModel,
         colors: finalColors,
+        updatedAt: new Date().toISOString(),
       };
 
       const success = await onSaveProduct(payload);
@@ -428,11 +435,11 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
         setShowEditModal(false);
         alert(
           isNewProduct
-            ? "Đã thêm mới và đồng bộ sản phẩm cùng 5 màu sắc sang website thành công!"
-            : "Đã cập nhật và đồng bộ sản phẩm thành công!"
+            ? "Đã lưu sản phẩm vào Firestore thành công! (Hình ảnh & File 3D lưu trữ trên Cloudinary)"
+            : "Đã cập nhật sản phẩm thành công vào Firestore!"
         );
       } else {
-        alert("Lỗi khi lưu sản phẩm lên cơ sở dữ liệu!");
+        alert("Lỗi khi lưu sản phẩm lên Firestore!");
       }
     } finally {
       setIsSaving(false);
@@ -903,143 +910,10 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                 </div>
               </div>
 
-              {/* BẢNG CẤU HÌNH BỘ 5 MÀU SẮC (Dành cho dòng Túi xách) */}
-              {editingItem.category !== "charm" && (
-                <div className="border border-[#E8E2D9] rounded-xl p-3 bg-amber-50/30 space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-[#E8E2D9]/80 pb-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <label className="text-[11px] font-bold text-[#2A2521]">
-                          Bảng Màu Sắc Túi Xách (5 Màu Chuẩn NÉT)
-                        </label>
-                        <span className="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 font-mono text-[9px] font-bold">
-                          {(editingItem.colors || []).length || 5} màu
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-[#7A6E65]">
-                        Chọn từng tab màu để xem ảnh hoặc tải ảnh riêng biệt từ máy tính.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const defaultColors = JSON.parse(JSON.stringify(BAG_COLORS));
-                        const activeC = defaultColors[activeColorIdx] || defaultColors[0];
-                        setEditingItem({
-                          ...editingItem,
-                          colors: defaultColors,
-                          image: activeC.image,
-                          imageUrl: activeC.image,
-                          model3dUrl: activeC.model3dUrl,
-                        });
-                        alert("Đã nạp lại đủ 5 màu chuẩn NÉT (Xanh Lá, Xanh Dương, Hồng, Đỏ Tía, Đen)!");
-                      }}
-                      className="px-2 py-1 rounded bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 text-[10px] font-bold transition-colors shadow-2xs"
-                      title="Nạp lại 5 màu chuẩn: Xanh lá, Xanh dương, Hồng, Đỏ tía, Đen"
-                    >
-                      ↻ Nạp 5 Màu Gốc
-                    </button>
-                  </div>
-
-                  {/* 5 Tab Màu Sắc: Xanh Lá, Xanh Dương, Hồng, Đỏ Tía, Đen */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    {(editingItem.colors && editingItem.colors.length > 0
-                      ? editingItem.colors
-                      : BAG_COLORS
-                    ).map((color: any, idx: number) => {
-                      const isTabActive = idx === activeColorIdx;
-                      return (
-                        <button
-                          key={color.id || idx}
-                          type="button"
-                          onClick={() => {
-                            setActiveColorIdx(idx);
-                            if (color.image) {
-                              setEditingItem((prev: any) => ({
-                                ...prev,
-                                image: color.image,
-                                imageUrl: color.image,
-                                model3dUrl: color.model3dUrl || prev.model3dUrl,
-                              }));
-                            }
-                          }}
-                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all shrink-0 ${
-                            isTabActive
-                              ? "bg-white border-[#C85A32] text-[#C85A32] shadow-xs scale-102"
-                              : "bg-white/80 border-[#E8E2D9] text-[#7A6E65] hover:text-[#2A2521] hover:bg-white"
-                          }`}
-                        >
-                          <span
-                            className="w-3 h-3 rounded-full border border-stone-300 shrink-0 shadow-2xs"
-                            style={{ backgroundColor: color.hex }}
-                          />
-                          <span>{color.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Khung tải ảnh cho màu đang chọn */}
-                  {(() => {
-                    const currentColors =
-                      editingItem.colors && editingItem.colors.length > 0
-                        ? editingItem.colors
-                        : BAG_COLORS;
-                    const curColor = currentColors[activeColorIdx] || currentColors[0];
-                    if (!curColor) return null;
-
-                    return (
-                      <div className="p-2.5 bg-white rounded-xl border border-[#E8E2D9] flex items-center justify-between gap-3 shadow-2xs">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-11 h-11 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
-                            <img
-                              src={curColor.image || "/assets/products/bags/tuixach-xanh-la.png"}
-                              alt={curColor.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className="w-2.5 h-2.5 rounded-full border border-stone-300"
-                                style={{ backgroundColor: curColor.hex }}
-                              />
-                              <span className="font-bold text-[#2A2521] text-xs">
-                                Màu {curColor.name}
-                              </span>
-                            </div>
-                            <span className="text-[10px] text-[#A89C93] font-mono block truncate max-w-[200px]">
-                              {curColor.image?.split("/").pop() || "Chưa có ảnh"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <label className="px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[10px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1.5 shrink-0">
-                          <svg className="w-3 h-3 text-[#C85A32]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                          <span>Đổi ảnh màu này</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) handleColorImageSelected(f, activeColorIdx);
-                            }}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* Mô tả tóm tắt */}
+              {/* Mô tả tóm tắt sản phẩm (Lưu ở Firestore) */}
               <div>
                 <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
-                  Mô tả sản phẩm
+                  Mô tả sản phẩm (Lưu trong Firestore)
                 </label>
                 <textarea
                   rows={2}
@@ -1050,146 +924,395 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                 />
               </div>
 
-              {/* MỤC UPLOAD ẢNH ĐẠI DIỆN TRỰC TIẾP */}
-              <div className="border border-[#E8E2D9] rounded-xl p-3 bg-[#FAF7F2]/60 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-bold text-[#2A2521] flex items-center gap-1.5">
-                    <span>Hình ảnh hiển thị chính</span>
-                    <span className="text-rose-500">*</span>
-                  </label>
-                  {imageUploadStatus && (
-                    <span className="text-[10px] font-medium text-emerald-700 animate-pulse">
-                      {imageUploadStatus}
-                    </span>
-                  )}
-                </div>
+              {/* Input file ẩn cho màu đang chọn */}
+              <input
+                ref={colorImgInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleColorImageSelected(f, activeColorIdx);
+                }}
+                className="hidden"
+              />
+              <input
+                ref={colorModelInputRef}
+                type="file"
+                accept=".glb,.gltf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleColorModelSelected(f, activeColorIdx);
+                }}
+                className="hidden"
+              />
 
-                {/* Input file ẩn */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handleImageFileSelected(f);
-                  }}
-                  className="hidden"
-                />
+              {/* Input file ẩn cho Charm */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleCharmImageSelected(f);
+                }}
+                className="hidden"
+              />
+              <input
+                ref={modelInputRef}
+                type="file"
+                accept=".glb,.gltf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleCharmModelSelected(f);
+                }}
+                className="hidden"
+              />
 
-                {/* Khung hiển thị khi đang tải ảnh lên */}
-                {isUploadingImage && (
-                  <div className="p-4 rounded-xl border border-dashed border-[#C85A32] bg-amber-50/60 text-center space-y-2">
-                    <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#C85A32]">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      <span>{imageUploadStatus || "Đang tải ảnh lên đám mây..."}</span>
-                    </div>
-                    {/* Thanh tiến trình % mượt mà */}
-                    <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-[#C85A32] h-full transition-all duration-300 rounded-full"
-                        style={{ width: `${Math.max(5, imageProgress)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Trường hợp 1: Đã có ảnh (Hiển thị thẻ xem trước ảnh + Nút Đổi ảnh / Xóa ảnh) */}
-                {!isUploadingImage && (editingItem.image || editingItem.imageUrl) ? (
-                  <div className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-[#E8E2D9] shadow-2xs">
-                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center">
-                      <img
-                        src={editingItem.image || editingItem.imageUrl}
-                        alt="Xem trước ảnh sản phẩm"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex-1 min-w-0 space-y-1.5">
+              {/* BẢNG CẤU HÌNH TỪNG MÀU SẮC (MỖI MÀU CÓ ẢNH RIÊNG & FILE 3D RIÊNG TRÊN CLOUDINARY) */}
+              {editingItem.category !== "charm" ? (
+                <div className="border border-[#E8E2D9] rounded-xl p-3 bg-amber-50/20 space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#E8E2D9]/80 pb-2">
+                    <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          ✓ Đã sẵn sàng
-                        </span>
-                        <span className="text-[10px] text-[#A89C93] truncate font-mono">
-                          {editingItem.image?.startsWith("data:")
-                            ? "Data Image"
-                            : editingItem.image?.split("/").pop()}
+                        <label className="text-[11px] font-bold text-[#2A2521]">
+                          Màu Sắc Túi (Mỗi màu có ảnh &amp; file 3D riêng trên Cloudinary)
+                        </label>
+                        <span className="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 font-mono text-[9px] font-bold">
+                          {(editingItem.colors || []).length} màu
                         </span>
                       </div>
+                      <p className="text-[10px] text-[#7A6E65]">
+                        Chọn từng tab màu để tải ảnh và file 3D (.glb) riêng biệt lên Cloudinary.
+                      </p>
+                    </div>
 
-                      <div className="flex items-center gap-2 pt-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleAddColor}
+                        className="px-2 py-1 rounded bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 text-[10px] font-bold transition-colors cursor-pointer"
+                        title="Thêm một sắc màu mới cho túi"
+                      >
+                        + Thêm màu
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const defaultColors = JSON.parse(JSON.stringify(BAG_COLORS));
+                          setEditingItem((prev: any) => ({
+                            ...prev,
+                            colors: defaultColors,
+                            image: defaultColors[0]?.image || prev.image,
+                            model3dUrl: defaultColors[0]?.model3dUrl || prev.model3dUrl,
+                          }));
+                          setActiveColorIdx(0);
+                          alert("Đã nạp lại đủ 5 màu chuẩn NÉT (Xanh Lá, Xanh Dương, Hồng, Đỏ Tía, Đen)!");
+                        }}
+                        className="px-2 py-1 rounded bg-white border border-stone-300 text-[#5E4D43] hover:bg-stone-100 text-[10px] font-medium transition-colors cursor-pointer"
+                        title="Nạp lại 5 màu chuẩn NÉT"
+                      >
+                        ↻ 5 Màu Chuẩn
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Danh sách các tab màu sắc */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    {(editingItem.colors || []).map((color: any, idx: number) => {
+                      const isTabActive = idx === activeColorIdx;
+                      const hasImg = Boolean(color.image);
+                      const has3d = Boolean(color.model3dUrl);
+
+                      return (
                         <button
+                          key={color.id || idx}
                           type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="px-2.5 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px] font-semibold transition-colors flex items-center gap-1"
+                          onClick={() => setActiveColorIdx(idx)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                            isTabActive
+                              ? "bg-white border-[#C85A32] text-[#C85A32] shadow-xs scale-102 font-bold"
+                              : "bg-white/80 border-[#E8E2D9] text-[#7A6E65] hover:text-[#2A2521] hover:bg-white"
+                          }`}
                         >
-                          <svg className="w-3 h-3 text-[#C85A32]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                          <span>Tải ảnh khác</span>
+                          <span
+                            className="w-3 h-3 rounded-full border border-stone-300 shrink-0 shadow-2xs"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          <span>{color.name}</span>
+                          {hasImg && <span className="text-[9px]" title="Đã có ảnh">📷</span>}
+                          {has3d && <span className="text-[9px]" title="Đã có file 3D .glb">🧊</span>}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingItem({ ...editingItem, image: "", imageUrl: "" })
-                          }
-                          className="px-2 py-1 rounded text-stone-500 hover:text-rose-600 hover:bg-rose-50 text-[11px] transition-colors"
-                        >
-                          Xóa
-                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Chi tiết cấu hình cho màu đang chọn */}
+                  {(() => {
+                    const curColors = editingItem.colors || [];
+                    const curColor = curColors[activeColorIdx] || curColors[0];
+                    if (!curColor) return null;
+
+                    return (
+                      <div className="p-3 bg-white rounded-xl border border-[#E8E2D9] space-y-3 shadow-2xs">
+                        {/* Hàng 1: Tên màu & Mã màu Hex */}
+                        <div className="flex items-center justify-between gap-3 border-b border-[#F4EFEB] pb-2">
+                          <div className="flex items-center gap-2 flex-1">
+                            <input
+                              type="color"
+                              value={curColor.hex || "#3d8b85"}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditingItem((prev: any) => {
+                                  const nextColors = [...prev.colors];
+                                  nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], hex: val };
+                                  return { ...prev, colors: nextColors };
+                                });
+                              }}
+                              className="w-7 h-7 rounded border border-stone-300 cursor-pointer p-0 shrink-0"
+                              title="Bấm để chọn mã màu"
+                            />
+                            <input
+                              type="text"
+                              value={curColor.name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditingItem((prev: any) => {
+                                  const nextColors = [...prev.colors];
+                                  nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], name: val };
+                                  return { ...prev, colors: nextColors };
+                                });
+                              }}
+                              placeholder="Tên màu sắc (VD: Xanh Lá)"
+                              className="font-bold text-[#2A2521] text-xs bg-[#FAF7F2] border border-[#E8E2D9] rounded-lg px-2.5 py-1 flex-1 outline-none focus:border-[#C85A32]"
+                            />
+                            <span className="text-[10px] text-[#7A6E65] font-mono px-2 py-1 bg-stone-100 rounded">
+                              {curColor.hex}
+                            </span>
+                          </div>
+
+                          {curColors.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveColor(activeColorIdx)}
+                              className="text-stone-400 hover:text-rose-600 text-[11px] font-medium transition-colors cursor-pointer"
+                              title="Xóa màu này khỏi sản phẩm"
+                            >
+                              ✕ Xóa màu này
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Hàng 2: HÌNH ẢNH 2D CỦA MÀU NÀY (CLOUDINARY) */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-[#5E4D43] flex items-center gap-1">
+                              <span>1. Ảnh 2D của màu {curColor.name}</span>
+                              <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                Cloudinary
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => colorImgInputRef.current?.click()}
+                              disabled={isUploadingImage}
+                              className="px-2.5 py-1 rounded bg-[#FAF7F2] text-[#C85A32] border border-[#C85A32]/40 hover:bg-amber-50 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                            >
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                              <span>Tải ảnh màu này lên Cloudinary</span>
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="w-12 h-12 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center relative">
+                              {curColor.image ? (
+                                <img
+                                  src={curColor.image}
+                                  alt={curColor.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[9px] text-[#A89C93] text-center px-1">Chưa có ảnh</span>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              value={curColor.image || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditingItem((prev: any) => {
+                                  const nextColors = [...prev.colors];
+                                  nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], image: val };
+                                  return {
+                                    ...prev,
+                                    colors: nextColors,
+                                    image: activeColorIdx === 0 ? val : prev.image,
+                                    imageUrl: activeColorIdx === 0 ? val : prev.imageUrl,
+                                  };
+                                });
+                              }}
+                              placeholder="Hoặc dán trực tiếp URL ảnh Cloudinary (https://res.cloudinary.com/...)"
+                              className="flex-1 bg-[#FAF7F2] border border-[#E8E2D9] rounded-lg p-2 text-[10px] font-mono outline-none focus:border-[#C85A32] text-[#2A2521]"
+                            />
+                            {curColor.image && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingItem((prev: any) => {
+                                    const nextColors = [...prev.colors];
+                                    nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], image: "" };
+                                    return { ...prev, colors: nextColors };
+                                  });
+                                }}
+                                className="px-1.5 py-1 text-stone-400 hover:text-rose-600 text-xs cursor-pointer"
+                                title="Xóa link ảnh màu này"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Hàng 3: FILE MÔ HÌNH 3D (.GLB / .GLTF) CỦA MÀU NÀY (CLOUDINARY) */}
+                        <div className="space-y-1.5 pt-2 border-t border-[#F4EFEB]">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-[#5E4D43] flex items-center gap-1">
+                              <span>2. Mô hình 3D (.glb) của màu {curColor.name}</span>
+                              <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                Cloudinary
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => colorModelInputRef.current?.click()}
+                              disabled={isUploadingModel}
+                              className="px-2.5 py-1 rounded bg-[#FAF7F2] text-[#2D5E4E] border border-[#2D5E4E]/40 hover:bg-emerald-50 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                            >
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                              <span>Tải file 3D (.glb) lên Cloudinary</span>
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="px-2 py-1.5 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] text-[10px] font-mono shrink-0 flex items-center gap-1">
+                              {curColor.model3dUrl ? (
+                                <span className="text-emerald-700 font-bold flex items-center gap-1">
+                                  <span>🧊</span> 3D Sẵn Sàng
+                                </span>
+                              ) : (
+                                <span className="text-stone-400">Chưa có 3D</span>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              value={curColor.model3dUrl || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditingItem((prev: any) => {
+                                  const nextColors = [...prev.colors];
+                                  nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], model3dUrl: val };
+                                  return {
+                                    ...prev,
+                                    colors: nextColors,
+                                    model3dUrl: activeColorIdx === 0 ? val : prev.model3dUrl,
+                                  };
+                                });
+                              }}
+                              placeholder="Hoặc dán trực tiếp URL 3D Cloudinary (.glb)"
+                              className="flex-1 bg-[#FAF7F2] border border-[#E8E2D9] rounded-lg p-2 text-[10px] font-mono outline-none focus:border-[#C85A32] text-[#2A2521]"
+                            />
+                            {curColor.model3dUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingItem((prev: any) => {
+                                    const nextColors = [...prev.colors];
+                                    nextColors[activeColorIdx] = { ...nextColors[activeColorIdx], model3dUrl: "" };
+                                    return { ...prev, colors: nextColors };
+                                  });
+                                }}
+                                className="px-1.5 py-1 text-stone-400 hover:text-rose-600 text-xs cursor-pointer"
+                                title="Xóa link 3D màu này"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Thanh tiến trình khi đang upload ảnh hoặc 3D */}
+                        {(isUploadingImage || isUploadingModel) && (
+                          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-center space-y-1">
+                            <div className="text-[10px] font-bold text-[#C85A32]">
+                              {imageUploadStatus || modelUploadStatus}
+                            </div>
+                            <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-[#C85A32] h-full transition-all duration-300 rounded-full"
+                                style={{ width: `${Math.max(5, isUploadingImage ? imageProgress : modelProgress)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                /* CẤU HÌNH HÌNH ẢNH & MÔ HÌNH 3D CHO CHARM (LƯU TRỮ CLOUDINARY) */
+                <div className="border border-[#E8E2D9] rounded-xl p-3 bg-amber-50/20 space-y-3">
+                  <div className="border-b border-[#E8E2D9]/80 pb-2">
+                    <label className="text-[11px] font-bold text-[#2A2521] block">
+                      Hình ảnh &amp; Mô hình 3D của Charm (Lưu trữ Cloudinary)
+                    </label>
+                    <p className="text-[10px] text-[#7A6E65]">
+                      Tải ảnh 2D và file 3D (.glb) của móc khoá charm trực tiếp lên Cloudinary.
+                    </p>
                   </div>
-                ) : null}
 
-                {/* Trường hợp 2: Chưa có ảnh (Hiển thị Vùng Kéo Thả / Bấm để Upload) */}
-                {!isUploadingImage && !(editingItem.image || editingItem.imageUrl) && (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
-                      isDragging
-                        ? "border-[#C85A32] bg-amber-50 scale-[1.01]"
-                        : "border-[#D5C7B7] hover:border-[#C85A32] bg-white hover:bg-[#FAF7F2]"
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-amber-50 text-[#C85A32] mx-auto mb-2 flex items-center justify-center">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
+                  {/* Ảnh Charm */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold text-[#5E4D43] flex items-center gap-1">
+                        <span>1. Ảnh hiển thị của Charm</span>
+                        <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          Cloudinary
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingImage}
+                        className="px-2.5 py-1 rounded bg-[#FAF7F2] text-[#C85A32] border border-[#C85A32]/40 hover:bg-amber-50 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span>Tải ảnh charm lên Cloudinary</span>
+                      </button>
                     </div>
-                    <div className="text-xs font-semibold text-[#2A2521]">
-                      <span className="text-[#C85A32] underline underline-offset-2">Nhấp để tải ảnh lên</span> hoặc kéo thả ảnh vào đây
-                    </div>
-                    <div className="text-[10px] text-[#A89C93] mt-1">
-                      Hỗ trợ định dạng PNG, JPG, JPEG, WebP (Tối đa 20MB)
-                    </div>
-                  </div>
-                )}
 
-                {/* Tùy chọn xem / nhập URL trực tiếp cho chuyên gia */}
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowManualUrlInput(!showManualUrlInput)}
-                    className="text-[10px] text-[#7A6E65] hover:text-[#C85A32] underline underline-offset-2 transition-colors flex items-center gap-1"
-                  >
-                    <span>{showManualUrlInput ? "▼ Thu gọn link URL" : "▶ Hoặc nhập đường dẫn URL ảnh trực tiếp"}</span>
-                  </button>
-
-                  {showManualUrlInput && (
-                    <div className="mt-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 h-12 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] overflow-hidden shrink-0 flex items-center justify-center relative p-1">
+                        {editingItem.image || editingItem.imageUrl ? (
+                          <img
+                            src={editingItem.image || editingItem.imageUrl}
+                            alt="Charm preview"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <span className="text-[9px] text-[#A89C93] text-center px-1">Chưa có ảnh</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={editingItem.image || editingItem.imageUrl || ""}
@@ -1200,86 +1323,103 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                             imageUrl: e.target.value,
                           })
                         }
-                        placeholder="https://res.cloudinary.com/... hoặc /assets/products/..."
-                        className="w-full bg-white border border-[#E8E2D9] focus:border-[#C85A32] rounded-lg p-2 text-[11px] font-mono outline-none"
+                        placeholder="Hoặc dán trực tiếp URL ảnh Cloudinary (https://res.cloudinary.com/...)"
+                        className="flex-1 bg-[#FAF7F2] border border-[#E8E2D9] rounded-lg p-2 text-[10px] font-mono outline-none focus:border-[#C85A32] text-[#2A2521]"
                       />
+                      {(editingItem.image || editingItem.imageUrl) && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem({ ...editingItem, image: "", imageUrl: "" })}
+                          className="px-1.5 py-1 text-stone-400 hover:text-rose-600 text-xs cursor-pointer"
+                          title="Xóa link ảnh charm"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* MỤC MÔ HÌNH 3D NÂNG CAO (.GLB / .GLTF) */}
-              <div className="border border-[#E8E2D9] rounded-xl p-3 bg-[#FAF7F2]/60 space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setShow3DAdvanced(!show3DAdvanced)}
-                  className="w-full flex items-center justify-between text-[11px] font-bold text-[#7A6E65] hover:text-[#2A2521] transition-colors"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span>{show3DAdvanced ? "▼ Ẩn cấu hình mô hình 3D (.glb)" : "▶ Cấu hình mô hình 3D nâng cao (.glb)"}</span>
-                    {editingItem.model3dUrl && (
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" title="Đã có file 3D" />
-                    )}
-                  </span>
-                  <span className="text-[10px] text-[#A89C93] font-normal">Dành cho 3D Studio & WebGL</span>
-                </button>
-
-                {show3DAdvanced && (
-                  <div className="pt-2 border-t border-[#E8E2D9] space-y-2.5">
-                    {/* Input file 3D ẩn */}
-                    <input
-                      ref={modelInputRef}
-                      type="file"
-                      accept=".glb,.gltf"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleModelFileSelected(f);
-                      }}
-                      className="hidden"
-                    />
-
+                  {/* Mô hình 3D Charm */}
+                  <div className="space-y-1.5 pt-2 border-t border-[#F4EFEB]">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-semibold text-[#7A6E65]">File mô hình 3D (.glb / .gltf):</label>
+                      <label className="text-[10px] font-bold text-[#5E4D43] flex items-center gap-1">
+                        <span>2. Mô hình 3D (.glb) của Charm</span>
+                        <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          Cloudinary
+                        </span>
+                      </label>
                       <button
                         type="button"
                         onClick={() => modelInputRef.current?.click()}
                         disabled={isUploadingModel}
-                        className="px-2.5 py-1 rounded bg-white text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[10px] font-semibold transition-colors flex items-center gap-1 shadow-2xs"
+                        className="px-2.5 py-1 rounded bg-[#FAF7F2] text-[#2D5E4E] border border-[#2D5E4E]/40 hover:bg-emerald-50 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                       >
-                        <svg className="w-3 h-3 text-[#C85A32]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                        <span>Tải file 3D từ máy tính</span>
+                        <span>Tải file 3D (.glb) lên Cloudinary</span>
                       </button>
                     </div>
 
-                    {isUploadingModel && (
-                      <div className="p-2.5 rounded-lg bg-indigo-50/60 border border-indigo-200 text-center space-y-1.5">
-                        <div className="text-[11px] font-semibold text-indigo-700">
-                          {modelUploadStatus || `Đang tải file 3D... ${modelProgress}%`}
-                        </div>
-                        <div className="w-full bg-indigo-100 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
-                            style={{ width: `${Math.max(5, modelProgress)}%` }}
-                          />
-                        </div>
+                    <div className="flex items-center gap-2">
+                      <div className="px-2 py-1.5 rounded-lg border border-[#E8E2D9] bg-[#FAF7F2] text-[10px] font-mono shrink-0 flex items-center gap-1">
+                        {editingItem.model3dUrl ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <span>🧊</span> 3D Sẵn Sàng
+                          </span>
+                        ) : (
+                          <span className="text-stone-400">Chưa có 3D</span>
+                        )}
                       </div>
-                    )}
-
-                    <input
-                      type="text"
-                      value={editingItem.model3dUrl || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, model3dUrl: e.target.value })}
-                      placeholder="/assets/models/tuixach.glb hoặc URL 3D cloud"
-                      className="w-full bg-white border border-[#E8E2D9] focus:border-[#C85A32] rounded-lg p-2 text-xs font-mono text-[#2A2521] outline-none"
-                    />
-
-                    <div className="text-[10px] text-[#A89C93]">
-                      Hỗ trợ file định dạng binary glTF (.glb) hoặc .gltf tối đa 100MB để hiển thị trong NÉT 3D Studio.
+                      <input
+                        type="text"
+                        value={editingItem.model3dUrl || ""}
+                        onChange={(e) => setEditingItem({ ...editingItem, model3dUrl: e.target.value })}
+                        placeholder="Hoặc dán trực tiếp URL 3D Cloudinary (.glb)"
+                        className="flex-1 bg-[#FAF7F2] border border-[#E8E2D9] rounded-lg p-2 text-[10px] font-mono outline-none focus:border-[#C85A32] text-[#2A2521]"
+                      />
+                      {editingItem.model3dUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem({ ...editingItem, model3dUrl: "" })}
+                          className="px-1.5 py-1 text-stone-400 hover:text-rose-600 text-xs cursor-pointer"
+                          title="Xóa link 3D charm"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
+
+                  {/* Progress bar khi tải charm */}
+                  {(isUploadingImage || isUploadingModel) && (
+                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-center space-y-1">
+                      <div className="text-[10px] font-bold text-[#C85A32]">
+                        {imageUploadStatus || modelUploadStatus}
+                      </div>
+                      <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-[#C85A32] h-full transition-all duration-300 rounded-full"
+                          style={{ width: `${Math.max(5, isUploadingImage ? imageProgress : modelProgress)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* LƯU Ý VỀ LƯU TRỮ CLOUDINARY & FIRESTORE */}
+              <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E2D9] text-[10px] text-[#7A6E65] space-y-0.5">
+                <div className="font-semibold text-[#2A2521] flex items-center gap-1">
+                  <span>☁️</span>
+                  <span>Lưu trữ đồng bộ chuẩn:</span>
+                </div>
+                <p>
+                  • Toàn bộ <strong>hình ảnh và file 3D (.glb)</strong> được lưu trữ an toàn trên <strong>Cloudinary CDN</strong>.
+                </p>
+                <p>
+                  • <strong>Số lượng tồn kho, giá tiền, màu sắc và mô tả</strong> được lưu trữ trên <strong>Cloud Firestore</strong>.
+                </p>
               </div>
 
               {/* Footer nút hành động */}

@@ -231,11 +231,14 @@ export default function ProductDetailPage() {
     ? selectedColor.image || rawProduct?.imageUrl || rawProduct?.image || "/assets/products/bags/tuixach-xanh-la.png"
     : rawProduct?.imageUrl || rawProduct?.image || (isCombo ? "/assets/products/combo-voyager.png" : "");
 
-  const has3dModel = Boolean(rawProduct?.model3dUrl && rawProduct.model3dUrl.trim() !== "");
   const current3dModelUrl =
     (isBag ? selectedColor.model3dUrl : null) ||
     rawProduct?.model3dUrl ||
-    "/assets/models/tuixach-xanh-la.glb";
+    (isBag ? "/assets/models/tuixach-xanh-la.glb" : "");
+  const has3dModel = Boolean(
+    (isBag ? selectedColor.model3dUrl : null) ||
+    rawProduct?.model3dUrl
+  );
 
   const bagBaseObject: BagBase = useMemo(() => ({
     id: rawProduct?.id || "custom-bag",

@@ -82,8 +82,6 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
     setIsNewProduct(true);
     setActiveColorIdx(0);
     setEditingItem(newItem);
-    setShow3DAdvanced(false);
-    setShowManualUrlInput(false);
     setImageUploadStatus(null);
     setModelUploadStatus(null);
     setShowEditModal(true);
@@ -119,8 +117,6 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
       model3dUrl: itemModel,
     });
     setActiveColorIdx(0);
-    setShow3DAdvanced(Boolean(itemModel));
-    setShowManualUrlInput(!itemImg);
     setImageUploadStatus(null);
     setModelUploadStatus(null);
     setShowEditModal(true);

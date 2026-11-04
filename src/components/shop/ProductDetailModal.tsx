@@ -69,9 +69,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       ? bagData?.plasticOffsetKg
       : isCombo
       ? comboData?.plasticOffsetKg
-      : charmData?.plasticOffsetGrams
-      ? charmData.plasticOffsetGrams / 1000
-      : (charmData as any)?.plasticOffsetKg || 0.35) || 0
+      : 0) || 0
   );
 
   const imageUrl = isBag
@@ -135,12 +133,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <div className="flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/70">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#0b1e3b] text-sky-200">
-                {isBag ? "Phôi Túi Lưới NÉT" : isCombo ? "Bộ Sưu Tập Combo" : "Charm Thủy Tinh Biển Sâu"}
+                {isBag ? "Phôi Túi Lưới NÉT" : isCombo ? "Bộ Sưu Tập Combo" : "Phụ Kiện Charm Kim Loại"}
               </span>
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-emerald-600" />
-                <span>-{formatKg(plasticKg)} rác biển</span>
-              </span>
+              {plasticKg > 0 ? (
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-emerald-600" />
+                  <span>-{formatKg(plasticKg)} rác biển</span>
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                  <span>Mạ vàng & Tráng men</span>
+                </span>
+              )}
               {stockCount !== undefined && (
                 <span
                   className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
@@ -271,16 +276,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     >
                       {isAvailable ? `Kho xưởng sẵn: ${stockCount !== undefined ? stockCount : 1} chiếc` : "Hết hàng sẵn tại kho"}
                     </span>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      -{formatKg(plasticKg)} rác biển
-                    </span>
+                    {isCharm ? (
+                      <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                        Hợp kim mạ vàng 18K
+                      </span>
+                    ) : (
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        -{formatKg(plasticKg)} rác biển
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
                     {isBag
                       ? bagData?.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh độc bản NÉT."
                       : isCombo
                       ? comboData?.tagline || comboData?.description || "Set túi lưới tái sinh kết hợp charm phong thủy độc bản."
-                      : charmData?.description || "Phụ kiện charm độc bản đúc thủ công từ thủy tinh biển và cước lưới ma."}
+                      : charmData?.description || "Phụ kiện charm độc bản đúc từ hợp kim cao cấp mạ vàng 18K và tráng men màu thủ công."}
                   </p>
                 </div>
 
@@ -359,15 +370,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 col-span-2">
                         <div className="text-slate-400 text-[10px] font-bold uppercase">Chất liệu chế tác</div>
-                        <div className="font-bold text-slate-900 mt-0.5">{charmData?.material || "Thủy tinh biển & cước tái sinh"}</div>
+                        <div className="font-bold text-slate-900 mt-0.5">{charmData?.material || "Hợp kim cao cấp mạ vàng 18K & tráng men thủ công"}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                        <div className="text-slate-400 text-[10px] font-bold uppercase">Ý nghĩa</div>
-                        <div className="font-bold text-teal-800 mt-0.5">Hộ Mệnh Bình An</div>
+                        <div className="text-slate-400 text-[10px] font-bold uppercase">Công nghệ gia công</div>
+                        <div className="font-bold text-teal-800 mt-0.5">Đúc khuôn & dập nổi 3D</div>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                        <div className="text-slate-400 text-[10px] font-bold uppercase">Rác biển thu gom</div>
-                        <div className="font-bold text-emerald-700 mt-0.5">{charmData?.plasticOffsetGrams || Math.round(plasticKg * 1000) || 350}g rác</div>
+                        <div className="text-slate-400 text-[10px] font-bold uppercase">Cơ cấu khóa gài</div>
+                        <div className="font-bold text-slate-900 mt-0.5">Khuyên kim loại chắc chắn</div>
                       </div>
                     </>
                   )}

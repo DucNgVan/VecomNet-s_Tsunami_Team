@@ -14,7 +14,6 @@ import {
   RotateCw,
   Image as ImageIcon,
   Compass,
-  Share2,
   Check,
   Layers,
   Box,
@@ -45,7 +44,6 @@ export default function ProductDetailPage() {
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [manufacturedItems, setManufacturedItems] = useState<ManufacturedBagItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   const [viewMode, setViewMode] = useState<"photo" | "3d">("photo");
   const [selectedColor, setSelectedColor] = useState<BagMeshColor>(BAG_COLORS[0]);
@@ -94,9 +92,14 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   // 2. Chuẩn hóa dữ liệu theo kiểu sản phẩm
-  const isBag = rawProduct?.category !== "combo" && rawProduct?.category !== "charm";
-  const isCombo = rawProduct?.category === "combo";
-  const isCharm = rawProduct?.category === "charm";
+  const isCharm =
+    rawProduct?.category === "charm" ||
+    rawProduct?.category === "charms" ||
+    String(rawProduct?.id || "").startsWith("charm-");
+  const isCombo =
+    rawProduct?.category === "combo" ||
+    String(rawProduct?.id || "").startsWith("combo-");
+  const isBag = !isCharm && !isCombo;
 
   // Đồng bộ màu mặc định khi sản phẩm tải xong
   useEffect(() => {
@@ -183,7 +186,7 @@ export default function ProductDetailPage() {
         price: rawProduct.basePrice || rawProduct.price || 180000,
         quantity,
         image: rawProduct.imageUrl || rawProduct.image || "",
-        plasticOffsetKg: ((rawProduct.plasticOffsetGrams || 350) / 1000) * quantity,
+        plasticOffsetKg: 0,
         stockCount,
       });
       showToast(
@@ -191,15 +194,6 @@ export default function ProductDetailPage() {
         `Charm "${rawProduct.vietnameseName || rawProduct.name}" đã được thêm thành công.`,
         "info"
       );
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-      showToast("Đã sao chép liên kết", "Bạn có thể chia sẻ sản phẩm này với bạn bè.", "info");
     }
   };
 
@@ -215,12 +209,16 @@ export default function ProductDetailPage() {
   const productName = rawProduct?.name || "Túi Lưới NÉT Đà Nẵng";
   const productPrice = rawProduct?.basePrice || rawProduct?.price || 1250000;
   const originalPrice = rawProduct?.originalPrice || (isCombo ? Math.round(productPrice * 1.15) : undefined);
-  const plasticKg = Number(
-    rawProduct?.plasticOffsetKg ||
-    (rawProduct?.plasticOffsetGrams ? rawProduct.plasticOffsetGrams / 1000 : 1.8)
-  );
-  const dimensions = rawProduct?.dimensions || "36cm x 32cm x 12cm";
-  const capacity = rawProduct?.capacity || "14 Lít";
+  const plasticKg = isCharm
+    ? 0
+    : Number(
+        rawProduct?.plasticOffsetKg ||
+        (rawProduct?.plasticOffsetGrams ? rawProduct.plasticOffsetGrams / 1000 : 1.8)
+      );
+  const dimensions = isCharm
+    ? rawProduct?.dimensions || "4.5cm x 4.0cm x 0.4cm"
+    : rawProduct?.dimensions || "36cm x 32cm x 12cm";
+  const capacity = isCharm ? null : rawProduct?.capacity || "14 Lít";
   const maxCharms = rawProduct?.maxCharms || 8;
   const availableColors: BagMeshColor[] =
     rawProduct?.colors && Array.isArray(rawProduct.colors) && rawProduct.colors.length > 0
@@ -310,43 +308,6 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241B16]">
-      {/* Top Breadcrumb & Actions Bar */}
-      <div className="border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-[#7A6F68] overflow-hidden whitespace-nowrap">
-            <Link href="/" className="hover:text-[#B85D43] transition-colors">
-              Trang Chủ
-            </Link>
-            <span>/</span>
-            <Link href="/shop" className="hover:text-[#B85D43] transition-colors">
-              Bộ Sưu Tập
-            </Link>
-            <span>/</span>
-            <span className="font-semibold text-[#241B16] truncate max-w-[200px] sm:max-w-xs">
-              {productName}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleCopyLink}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E8E2D8] bg-white hover:bg-[#FAF7F2] text-[#5E4D43] font-medium transition-colors cursor-pointer"
-              title="Sao chép liên kết sản phẩm"
-            >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{copiedLink ? "Đã chép" : "Chia sẻ"}</span>
-            </button>
-            <Link
-              href="/shop"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#FAF7F2] hover:bg-[#EFE9DF] text-[#5E4D43] font-semibold border border-[#E8E2D8] transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quay lại</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Main Product Showcase Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -466,21 +427,43 @@ export default function ProductDetailPage() {
 
             {/* Environmental & Craft Integrity Highlights */}
             <div className="mt-4 w-full max-w-[440px] grid grid-cols-3 gap-2.5">
-              <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
-                <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                <span className="text-[10px] font-bold text-[#241B16] leading-tight">100% Cước Tái Sinh</span>
-                <span className="text-[9px] text-[#7A6F68]">Biển Đà Nẵng</span>
-              </div>
-              <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
-                <Sparkles className="w-4 h-4 text-amber-700" />
-                <span className="text-[10px] font-bold text-[#241B16] leading-tight">Đan Tay Nghệ Nhân</span>
-                <span className="text-[9px] text-[#7A6F68]">18-24 giờ thủ công</span>
-              </div>
-              <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
-                <Compass className="w-4 h-4 text-sky-700" />
-                <span className="text-[10px] font-bold text-[#241B16] leading-tight">Passport Định Danh</span>
-                <span className="text-[9px] text-[#7A6F68]">Mã số mẻ lưới</span>
-              </div>
+              {isCharm ? (
+                <>
+                  <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                    <ShieldCheck className="w-4 h-4 text-amber-700" />
+                    <span className="text-[10px] font-bold text-[#241B16] leading-tight">Đúc Kim Loại</span>
+                    <span className="text-[9px] text-[#7A6F68]">Mạ vàng 18K</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                    <Sparkles className="w-4 h-4 text-amber-700" />
+                    <span className="text-[10px] font-bold text-[#241B16] leading-tight">Tráng Men Màu</span>
+                    <span className="text-[9px] text-[#7A6F68]">Thủ công tinh xảo</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                    <Compass className="w-4 h-4 text-sky-700" />
+                    <span className="text-[10px] font-bold text-[#241B16] leading-tight">Văn Hóa Đà Nẵng</span>
+                    <span className="text-[9px] text-[#7A6F68]">Kỷ vật độc bản</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                    <span className="text-[10px] font-bold text-[#241B16] leading-tight">100% Cước Tái Sinh</span>
+                    <span className="text-[9px] text-[#7A6F68]">Biển Đà Nẵng</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                    <Sparkles className="w-4 h-4 text-amber-700" />
+                    <span className="text-[10px] font-bold text-[#241B16] leading-tight">Đan Tay Nghệ Nhân</span>
+                    <span className="text-[9px] text-[#7A6F68]">18-24 giờ thủ công</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white border border-[#E8E2D8] flex flex-col items-center text-center gap-1 shadow-2xs">
+                    <Compass className="w-4 h-4 text-sky-700" />
+                    <span className="text-[10px] font-bold text-[#241B16] leading-tight">Passport Định Danh</span>
+                    <span className="text-[9px] text-[#7A6F68]">Mã số mẻ lưới</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -491,17 +474,26 @@ export default function ProductDetailPage() {
             
             {/* Header info */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                    isAvailable
-                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                      : "bg-rose-50 text-rose-800 border border-rose-200"
-                  }`}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                      isAvailable
+                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                        : "bg-rose-50 text-rose-800 border border-rose-200"
+                    }`}
+                  >
+                    {isAvailable ? `✓ Còn hàng (${stockCount} sản phẩm trong kho)` : "Tạm hết hàng"}
+                  </span>
+                  <span className="text-xs text-[#7A6F68]">Mã: NET-{rawProduct.id?.slice(0, 8)?.toUpperCase()}</span>
+                </div>
+                <Link
+                  href="/shop"
+                  className="inline-flex items-center gap-1 text-xs text-[#7A6F68] hover:text-[#B85D43] transition-colors"
                 >
-                  {isAvailable ? `✓ Còn hàng (${stockCount} sản phẩm trong kho)` : "Tạm hết hàng"}
-                </span>
-                <span className="text-xs text-[#7A6F68]">Mã: NET-{rawProduct.id?.slice(0, 8)?.toUpperCase()}</span>
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Bộ sưu tập</span>
+                </Link>
               </div>
 
               <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-normal text-[#241B16] leading-tight">
@@ -509,7 +501,11 @@ export default function ProductDetailPage() {
               </h1>
 
               <p className="text-xs sm:text-sm text-[#5E4D43] leading-relaxed">
-                {rawProduct.tagline || rawProduct.description || "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh biển Đà Nẵng, bền chắc và độc bản."}
+                {rawProduct.tagline ||
+                  rawProduct.description ||
+                  (isCharm
+                    ? "Móc khoá Charm đúc kim loại nguyên khối mạ vàng tinh xảo, tráng men màu thủ công mang biểu tượng văn hóa đặc trưng Đà Nẵng."
+                    : "Thiết kế đan thủ công từ sợi cước lưới ma tái sinh biển Đà Nẵng, bền chắc và độc bản.")}
               </p>
             </div>
 
@@ -530,9 +526,15 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="text-right">
-                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                  Thu gom {formatKg(plasticKg)} cước ma
-                </span>
+                {isCharm ? (
+                  <span className="text-[10px] text-amber-800 font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                    Hợp kim mạ vàng tráng men
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    Thu gom {formatKg(plasticKg)} cước ma
+                  </span>
+                )}
               </div>
             </div>
 
@@ -616,12 +618,21 @@ export default function ProductDetailPage() {
                   </Link>
                 )}
 
-                <Link
-                  href="/passport"
-                  className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-center text-[#7A6F68] hover:text-[#241B16] hover:bg-white/60 transition-colors"
-                >
-                  Tra cứu Passport số & hành trình mẻ lưới thu gom ↗
-                </Link>
+                {isCharm ? (
+                  <Link
+                    href="/studio"
+                    className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-center text-[#7A6F68] hover:text-[#241B16] hover:bg-white/60 transition-colors"
+                  >
+                    Thử gắn Charm này lên túi tại Nét Studio ↗
+                  </Link>
+                ) : (
+                  <Link
+                    href="/passport"
+                    className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-center text-[#7A6F68] hover:text-[#241B16] hover:bg-white/60 transition-colors"
+                  >
+                    Tra cứu Passport số & hành trình mẻ lưới thu gom ↗
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -667,35 +678,78 @@ export default function ProductDetailPage() {
                       <span className="text-[#7A6F68]">Kích thước tiêu chuẩn:</span>
                       <span className="font-semibold text-[#241B16]">{dimensions}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
-                      <span className="text-[#7A6F68]">Dung tích chứa:</span>
-                      <span className="font-semibold text-[#241B16]">{capacity}</span>
-                    </div>
-                    {isBag && (
-                      <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
-                        <span className="text-[#7A6F68]">Số điểm neo gắn Charm:</span>
-                        <span className="font-semibold text-[#241B16]">{maxCharms} vị trí chịu lực</span>
-                      </div>
+
+                    {isCharm ? (
+                      <>
+                        <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
+                          <span className="text-[#7A6F68]">Chất liệu chế tác:</span>
+                          <span className="font-semibold text-[#241B16]">
+                            {rawProduct.material || "Hợp kim cao cấp mạ vàng & tráng men thủ công"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
+                          <span className="text-[#7A6F68]">Công nghệ gia công:</span>
+                          <span className="font-semibold text-[#241B16]">Đúc khuôn kim loại & chạm dập 3D</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
+                          <span className="text-[#7A6F68]">Cơ cấu khóa gài:</span>
+                          <span className="font-semibold text-[#241B16]">Khuyên móc kim loại chắc chắn (gài túi hoặc làm móc chìa khóa)</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
+                          <span className="text-[#7A6F68]">Trọng lượng:</span>
+                          <span className="font-semibold text-[#241B16]">~35 gram</span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="text-[#7A6F68]">Phân loại sản phẩm:</span>
+                          <span className="font-semibold text-amber-800">Phụ kiện lưu niệm văn hóa Đà Nẵng</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
+                          <span className="text-[#7A6F68]">Dung tích chứa:</span>
+                          <span className="font-semibold text-[#241B16]">{capacity}</span>
+                        </div>
+                        {isBag && (
+                          <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
+                            <span className="text-[#7A6F68]">Số điểm neo gắn Charm:</span>
+                            <span className="font-semibold text-[#241B16]">{maxCharms} vị trí chịu lực</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
+                          <span className="text-[#7A6F68]">Tải trọng chịu lực:</span>
+                          <span className="font-semibold text-[#241B16]">Tối đa 12kg</span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="text-[#7A6F68]">Khối lượng rác biển giải cứu:</span>
+                          <span className="font-semibold text-emerald-700">-{formatKg(plasticKg)}</span>
+                        </div>
+                      </>
                     )}
-                    <div className="flex justify-between py-1 border-b border-[#FAF7F2]">
-                      <span className="text-[#7A6F68]">Tải trọng chịu lực:</span>
-                      <span className="font-semibold text-[#241B16]">Tối đa 12kg</span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span className="text-[#7A6F68]">Khối lượng rác biển giải cứu:</span>
-                      <span className="font-semibold text-emerald-700">-{formatKg(plasticKg)}</span>
-                    </div>
                   </div>
                 )}
 
                 {activeTab === "story" && (
                   <div className="space-y-2 text-[#5E4D43]">
-                    <p>
-                      Mỗi chiếc túi và charm tại NÉT bắt đầu từ những mẩu lưới ma cước biển trôi dạt ở rạn san hô Sơn Trà và vịnh Đà Nẵng.
-                    </p>
-                    <p>
-                      Quy trình xử lý 4 bước: Thu gom bởi đội thợ lặn địa phương → Phân loại & giặt tiệt trùng sinh học không hóa chất độc hại → Tách sợi cước nguyên bản → Đan thủ công bởi nghệ nhân làng đan lưới truyền thống.
-                    </p>
+                    {isCharm ? (
+                      <>
+                        <p>
+                          Mỗi chiếc charm NÉT được chế tác từ phôi hợp kim đúc nguyên khối chống gỉ, bề mặt mạ vàng tinh xảo và tráng men màu thủ công từng chi tiết.
+                        </p>
+                        <p>
+                          Lấy cảm hứng từ những biểu tượng văn hóa và sinh thái tiêu biểu của Đà Nẵng (Cầu Rồng, Voọc Chà Vá Chân Nâu, Chùa Linh Ứng, Cá Ngư Ông...), charm mang ý nghĩa may mắn, bình an cho chủ nhân và là kỷ vật du lịch độc bản.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p>
+                          Mỗi chiếc túi tại NÉT bắt đầu từ những mẩu lưới ma cước biển trôi dạt ở rạn san hô Sơn Trà và vịnh Đà Nẵng.
+                        </p>
+                        <p>
+                          Quy trình xử lý 4 bước: Thu gom bởi đội thợ lặn địa phương → Phân loại & giặt tiệt trùng sinh học không hóa chất độc hại → Tách sợi cước nguyên bản → Đan thủ công bởi nghệ nhân làng đan lưới truyền thống.
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -703,15 +757,15 @@ export default function ProductDetailPage() {
                   <div className="space-y-2 text-[#5E4D43]">
                     <div className="flex items-start gap-2">
                       <Truck className="w-4 h-4 text-[#B85D43] shrink-0 mt-0.5" />
-                      <span>Miễn phí vận chuyển toàn quốc cho đơn hàng từ 1.000.000 ₫.</span>
+                      <span>{isCharm ? "Miễn phí vận chuyển toàn quốc cho đơn từ 500.000 ₫ (hoặc mua kèm túi NÉT)." : "Miễn phí vận chuyển toàn quốc cho đơn hàng từ 1.000.000 ₫."}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <RefreshCw className="w-4 h-4 text-[#B85D43] shrink-0 mt-0.5" />
-                      <span>Bảo hành kết cấu cước 24 tháng & hỗ trợ phục chế làm sạch trọn đời.</span>
+                      <span>{isCharm ? "Bảo hành màu men & khuyên móc kim loại 12 tháng." : "Bảo hành kết cấu cước 24 tháng & hỗ trợ phục chế làm sạch trọn đời."}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <ShieldCheck className="w-4 h-4 text-[#B85D43] shrink-0 mt-0.5" />
-                      <span>Cấp Passport định danh độc bản ghi nhận đóng góp bảo vệ môi trường biển.</span>
+                      <span>{isCharm ? "Đóng gói trong hộp quà kỷ vật NÉT Signature sang trọng." : "Cấp Passport định danh độc bản ghi nhận đóng góp bảo vệ môi trường biển."}</span>
                     </div>
                   </div>
                 )}

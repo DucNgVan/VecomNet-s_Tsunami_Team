@@ -173,11 +173,9 @@ export default function ShopPage() {
           vietnameseName: p.vietnameseName || p.name || "Charm Thủy Tinh Biển",
           category: p.charmCategory || "marine",
           price: p.basePrice || p.price || 180000,
-          plasticOffsetGrams:
-            p.plasticOffsetGrams ||
-            (p.plasticOffsetKg ? Math.round(p.plasticOffsetKg * 1000) : 350),
-          material: p.material || "Thủy tinh biển & cước lưới tái sinh",
-          description: p.description || "Phụ kiện charm độc bản đúc thủ công.",
+          plasticOffsetGrams: 0,
+          material: p.material || "Hợp kim cao cấp mạ vàng 18K & tráng men thủ công",
+          description: p.description || "Phụ kiện charm độc bản đúc từ hợp kim cao cấp mạ vàng 18K và tráng men màu thủ công.",
           color: p.color || "#38bdf8",
           glowColor: p.glowColor || "rgba(56, 189, 248, 0.4)",
           symbol: p.symbol || "✨",
@@ -243,7 +241,7 @@ export default function ShopPage() {
       price: charm.price,
       quantity: 1,
       image: charm.image || "",
-      plasticOffsetKg: charm.plasticOffsetGrams / 1000,
+      plasticOffsetKg: 0,
       stockCount: charm.stockCount,
     });
 

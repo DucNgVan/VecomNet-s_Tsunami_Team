@@ -75,9 +75,9 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
       imageUrl: defaultImg,
       colors: initialColors,
       description: isCharmTab
-        ? "Móc khoá Charm men lam tráng men thủ công độc bản."
+        ? "Móc khoá Charm đúc kim loại nguyên khối mạ vàng tinh xảo, tráng men màu thủ công mang biểu tượng văn hóa đặc trưng Đà Nẵng."
         : "Túi xách tái sinh đan thủ công từ sợi cước lưới ma đại dương gồm 5 sắc thái màu biển.",
-      plasticOffsetKg: isCharmTab ? 0.3 : 1.6,
+      plasticOffsetKg: isCharmTab ? 0 : 1.6,
       model3dUrl: defaultModel,
     };
     setIsNewProduct(true);
@@ -114,7 +114,7 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
       stockCount: item.stockCount ?? 10,
       inStock: item.inStock !== false,
       isSpotlight: Boolean(item.isSpotlight),
-      plasticOffsetKg: item.plasticOffsetKg ?? 1.5,
+      plasticOffsetKg: isBagCategory ? (item.plasticOffsetKg ?? 1.5) : 0,
       description: item.description || "",
       model3dUrl: itemModel,
     });
@@ -915,21 +915,37 @@ export const AdminCatalogTabRefactored: React.FC<AdminCatalogTabRefactoredProps>
                   </select>
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
-                    Nhựa tái sinh cứu biển (kg)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={editingItem.plasticOffsetKg ?? 1.5}
-                    onChange={(e) =>
-                      setEditingItem({ ...editingItem, plasticOffsetKg: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2 text-xs font-semibold text-emerald-700 outline-none transition-colors"
-                  />
-                </div>
+                {editingItem.category !== "charm" ? (
+                  <div>
+                    <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                      Nhựa tái sinh cứu biển (kg)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={editingItem.plasticOffsetKg ?? 1.5}
+                      onChange={(e) =>
+                        setEditingItem({ ...editingItem, plasticOffsetKg: parseFloat(e.target.value) || 0 })
+                      }
+                      className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2 text-xs font-semibold text-emerald-700 outline-none transition-colors"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-[11px] font-semibold text-[#2A2521] block mb-1">
+                      Chất liệu chế tác kim loại
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.material || "Hợp kim cao cấp mạ vàng 18K & tráng men thủ công"}
+                      onChange={(e) =>
+                        setEditingItem({ ...editingItem, material: e.target.value })
+                      }
+                      className="w-full bg-[#FAF7F2] border border-[#E8E2D9] focus:border-[#C85A32] focus:bg-white rounded-lg p-2 text-xs font-medium text-[#2A2521] outline-none transition-colors"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Giá niêm yết & Số lượng tồn kho */}

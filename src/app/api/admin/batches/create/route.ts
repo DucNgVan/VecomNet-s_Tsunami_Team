@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 import { verifyAdminAuth, unauthorizedResponse } from "@/lib/adminAuth";
+import { generateSecretKey, OFFICIAL_DOMAIN } from "@/lib/passportSecurity";
 
 export async function POST(req: NextRequest) {
   try {
@@ -87,7 +88,8 @@ export async function POST(req: NextRequest) {
               coralProtectedSqM: Number(((yieldRate / rawWeight) * 53.4).toFixed(2)) || 0.32,
               co2AvoidedKg: Number((yieldRate * 1.9).toFixed(2)) || 1.62,
               status: "in_stock",
-              qrUrl: `https://net.eco/passport/${itemId}`,
+              secretKey: generateSecretKey(itemId),
+              qrUrl: `${OFFICIAL_DOMAIN}/passport/${itemId}?key=${generateSecretKey(itemId)}`,
               createdAt: FieldValue.serverTimestamp(),
             },
             { merge: true }

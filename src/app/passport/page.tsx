@@ -370,7 +370,7 @@ function PassportContent() {
                   type="button"
                   onClick={() => {
                     if (lookupCodeInput.trim()) {
-                      router.push(`/passport?code=${encodeURIComponent(lookupCodeInput.trim())}`);
+                      router.push(`/passport/${encodeURIComponent(lookupCodeInput.trim())}`);
                     }
                   }}
                   className="px-4 py-2.5 rounded-xl bg-[#241B16] hover:bg-black text-white text-xs font-bold shrink-0 cursor-pointer transition-colors"

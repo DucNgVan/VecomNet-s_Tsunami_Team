@@ -359,7 +359,7 @@ function OrderSuccessContent() {
 
               <div className="w-28 h-28 rounded-2xl bg-white p-2 border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-md">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://net.eco/trace/${order.assignedBatchId}&bgcolor=ffffff&color=0b1e3b`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.net-s.id.vn/passport/${order.assignedBatchId}&bgcolor=ffffff&color=0b1e3b`}
                   alt="QR"
                   className="w-full h-full object-contain"
                 />

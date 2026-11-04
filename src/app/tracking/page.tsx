@@ -28,6 +28,7 @@ import {
   requestDesignRevision,
   DesignRequest,
 } from "@/lib/designRequestStorage";
+import { generateSecretKey } from "@/lib/passportSecurity";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 
 function TrackingContent() {
@@ -428,13 +429,19 @@ function TrackingContent() {
                     Cảm ơn bạn đã đồng hành cùng NÉT trong hành trình tái sinh rác lưới đại dương Đà Nẵng.
                   </p>
                   <div className="pt-2 flex gap-3">
-                    <Link
-                      href={`/passport/${currentRequest.passportCode || "PACK-DN-2024-082"}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2D5E4E] hover:bg-[#234B3E] text-white text-xs font-semibold transition-all"
-                    >
-                      <span>Xem Story Passport & QR</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    {(() => {
+                      const passId = currentRequest.passportCode || currentRequest.id || "PACK-DN-2024-082";
+                      const passKey = generateSecretKey(passId);
+                      return (
+                        <Link
+                          href={`/passport/${passId}?key=${passKey}`}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2D5E4E] hover:bg-[#234B3E] text-white text-xs font-semibold transition-all"
+                        >
+                          <span>Xem Story Passport & QR</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      );
+                    })()}
                     <Link
                       href="/support"
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#E8E2D8] hover:bg-[#FAF7F2] text-[#5E4D43] text-xs font-semibold transition-all"

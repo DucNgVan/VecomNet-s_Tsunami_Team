@@ -131,7 +131,11 @@ export function getAllDesignRequests(): DesignRequest[] {
 export function getDesignRequestById(id: string): DesignRequest | undefined {
   const all = getAllDesignRequests();
   const clean = id.trim().toUpperCase();
-  return all.find((r) => r.id.toUpperCase() === clean);
+  return all.find(
+    (r) =>
+      r.id.toUpperCase() === clean ||
+      (r.passportCode && r.passportCode.toUpperCase() === clean)
+  );
 }
 
 export function saveDesignRequest(req: DesignRequest): DesignRequest[] {

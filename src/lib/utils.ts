@@ -27,7 +27,7 @@ export function generateOrderCode(): string {
 
 export function generateBatchQrCode(batchId: string): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-    `https://net.eco/trace/${batchId}`
+    `https://www.net-s.id.vn/passport/${batchId}`
   )}&bgcolor=060F1E&color=00F2FE`;
 }
 

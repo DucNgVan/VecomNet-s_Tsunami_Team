@@ -1,5 +1,6 @@
 import { NetPack, ManufacturedBagItem, Order, BagBase, BagMeshColor } from "@/types";
 import { BAG_BASES, BAG_COLORS, getBagColor } from "@/data/products";
+import { generateSecretKey } from "@/lib/passportSecurity";
 
 const NET_PACKS_KEY = "net_packs_v1";
 const MANUFACTURED_ITEMS_KEY = "net_manufactured_items_v1";
@@ -179,7 +180,7 @@ export function manufactureBags(params: ManufactureParams): {
       coordinates: pack.coordinates,
       plasticConsumedKg: netRequiredPerBag,
       status: "in_stock",
-      qrUrl: `/passport/${encodeURIComponent(pack.packId)}?itemId=${encodeURIComponent(serialId)}`,
+      qrUrl: `/passport/${encodeURIComponent(serialId)}?key=${generateSecretKey(serialId)}`,
       barcode,
       nfcTagUid,
       isClaimed: false,
@@ -451,7 +452,7 @@ export function createNetPackWithBatchPlan(params: CreatePackWithPlanParams): {
       coordinates: newPack.coordinates,
       plasticConsumedKg: netRequiredPerBag,
       status: "in_stock",
-      qrUrl: `/passport/${encodeURIComponent(newPack.packId)}?itemId=${encodeURIComponent(serialId)}`,
+      qrUrl: `/passport/${encodeURIComponent(serialId)}?key=${generateSecretKey(serialId)}`,
       barcode,
       nfcTagUid,
       isClaimed: false,

@@ -24,6 +24,11 @@ import { doc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import confetti from "canvas-confetti";
 import {
+  OFFICIAL_DOMAIN,
+  generateSecretKey,
+  buildPersonalizedPassportUrl,
+} from "@/lib/passportSecurity";
+import {
   Sparkles,
   QrCode,
   ShieldCheck,
@@ -516,10 +521,11 @@ export const UnifiedMemberProfile: React.FC = () => {
 
   const handleCopyPassportUrl = (bag: DbBagItem) => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/passport/${encodeURIComponent(bag.parentBatchId)}?itemId=${encodeURIComponent(bag.itemId)}`;
+    const key = generateSecretKey(bag.itemId);
+    const url = buildPersonalizedPassportUrl(bag.itemId, key, true);
     navigator.clipboard.writeText(url);
     setCopiedPassportLink(true);
-    showToast("Đã sao chép liên kết Story Passport độc bản!", "info");
+    showToast("Đã sao chép liên kết Story Passport cá nhân hoá chính chủ!", "info");
     setTimeout(() => setCopiedPassportLink(false), 2000);
   };
 
@@ -1426,28 +1432,35 @@ export const UnifiedMemberProfile: React.FC = () => {
                   </div>
 
                   {/* QR Card */}
-                  <div className="w-full p-4 rounded-2xl bg-white border border-[#E8E2D8] shadow-xs flex items-center gap-4">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                        typeof window !== "undefined"
-                          ? `${window.location.origin}/passport/${selectedPassportBag.parentBatchId}?itemId=${selectedPassportBag.itemId}`
-                          : `https://vecomnets.vercel.app/passport/${selectedPassportBag.itemId}`
-                      )}&color=36-27-22&bgcolor=FAF7F2`}
-                      alt="Mã QR Passport"
-                      className="w-16 h-16 rounded-xl border border-[#E8E2D8] p-1 bg-[#FAF7F2]"
-                    />
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold block">
-                        MÃ QR ĐỘC BẢN
-                      </span>
-                      <div className="text-xs font-mono font-bold text-[#B85D43]">
-                        {selectedPassportBag.itemId}
+                  {(() => {
+                    const bagKey = generateSecretKey(selectedPassportBag.itemId);
+                    const personalizedUrl = buildPersonalizedPassportUrl(selectedPassportBag.itemId, bagKey, true);
+                    return (
+                      <div className="w-full p-4 rounded-2xl bg-white border border-[#E8E2D8] shadow-xs flex items-center gap-4">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                            personalizedUrl
+                          )}&color=36-27-22&bgcolor=FAF7F2`}
+                          alt="Mã QR Passport"
+                          className="w-16 h-16 rounded-xl border border-[#E8E2D8] p-1 bg-[#FAF7F2] shrink-0"
+                        />
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6F68] font-semibold block">
+                            MÃ QR CHÍNH CHỦ
+                          </span>
+                          <div className="text-xs font-mono font-bold text-[#B85D43] truncate">
+                            {selectedPassportBag.itemId}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            Khóa: <span className="font-bold text-emerald-800">{bagKey}</span>
+                          </div>
+                          <p className="text-[10px] text-[#7A6F68] leading-tight">
+                            Quét QR mở trực tiếp Hộ Chiếu Số trên <strong>{OFFICIAL_DOMAIN}</strong>.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[10px] text-[#7A6F68] leading-tight">
-                        Quét QR mở đúng hồ sơ chiếc túi này, không mở trang giới thiệu chung.
-                      </p>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Right: Informational Passport Cards */}

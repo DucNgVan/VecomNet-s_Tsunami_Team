@@ -11,6 +11,11 @@ import {
 } from "@/lib/adminDataStorage";
 import { formatKg, formatVND } from "@/lib/utils";
 import { BAG_BASES } from "@/data/products";
+import {
+  generateSecretKey,
+  OFFICIAL_DOMAIN,
+  buildPersonalizedPassportUrl,
+} from "@/lib/passportSecurity";
 
 interface AdminSupplyChainPassportTabProps {
   batches: RawNetBatch[];
@@ -678,21 +683,34 @@ export const AdminSupplyChainPassportTab: React.FC<AdminSupplyChainPassportTabPr
                     <td className="py-3 px-3 text-right">
                       {s.passport ? (
                         <div className="flex items-center justify-end gap-1.5">
-                          <a
-                            href={`/passport/${s.batchId}?itemId=${s.serialId}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px]"
-                          >
-                            Xem
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => alert(`Tải mã QR cho túi ${s.serialId}: https://nets.vn/passport/${s.batchId}?itemId=${s.serialId}`)}
-                            className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px]"
-                          >
-                            QR
-                          </button>
+                          {(() => {
+                            const key = generateSecretKey(s.serialId);
+                            const personalizedUrl = buildPersonalizedPassportUrl(s.serialId, key, true);
+                            return (
+                              <>
+                                <a
+                                  href={`/passport/${s.serialId}?key=${key}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px]"
+                                  title={`Xem Passport chính chủ (Khóa: ${key})`}
+                                >
+                                  Xem
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(personalizedUrl);
+                                    alert(`Đã sao chép link Passport cá nhân hoá cho túi ${s.serialId}:\n${personalizedUrl}\n\nMã khóa bảo mật: ${key}`);
+                                  }}
+                                  className="px-2 py-1 rounded bg-[#FAF7F2] text-[#2A2521] border border-[#E8E2D9] hover:border-[#C85A32] text-[11px]"
+                                  title="Sao chép link & mã bảo mật chính chủ"
+                                >
+                                  QR/Link
+                                </button>
+                              </>
+                            );
+                          })()}
                         </div>
                       ) : (
                         <button

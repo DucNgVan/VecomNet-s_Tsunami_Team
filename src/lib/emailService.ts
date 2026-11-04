@@ -138,7 +138,7 @@ export function generateOrderReceiptHTML(order: Order): string {
         </div>
 
         <div style="text-align: center; margin-top: 28px;">
-          <a href="https://net.eco/passport/${encodeURIComponent(order.assignedBatchId)}" style="display: inline-block; background-color: #071326; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em;">
+          <a href="https://www.net-s.id.vn/passport/${encodeURIComponent(order.assignedBatchId)}" style="display: inline-block; background-color: #071326; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em;">
             TRA CỨU HẢI ĐỒ NGUỒN GỐC & CĂN CƯỚC SỐ
           </a>
         </div>

@@ -15,6 +15,7 @@ import { TraceBatch, Order, Article } from "@/types";
 import { TRACE_BATCHES, TOTAL_IMPACT_STATS } from "@/data/traceability";
 import { INITIAL_ARTICLES } from "@/data/stories";
 import { BAG_COLORS } from "@/data/products";
+import { generateSecretKey } from "@/lib/passportSecurity";
 
 // Type definitions for Database Entities
 export interface DbCustomerProfile {
@@ -492,9 +493,10 @@ export async function syncSingleItemToFirestore(item: any): Promise<boolean> {
         co2AvoidedKg:
           item.co2AvoidedKg ||
           Number(((item.plasticOffsetKg || item.plasticConsumedKg || 0.65) * 1.9).toFixed(1)),
+        secretKey: item.secretKey || generateSecretKey(item.serialId),
         qrUrl:
           item.qrUrl ||
-          `/passport/${encodeURIComponent(item.sourcePackId)}?itemId=${encodeURIComponent(item.serialId)}`,
+          `/passport/${encodeURIComponent(item.serialId)}?key=${generateSecretKey(item.serialId)}`,
         updatedAt: serverTimestamp(),
       },
       { merge: true }

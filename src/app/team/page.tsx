@@ -58,11 +58,11 @@ export interface TeamMember {
 
 const teamMembers: TeamMember[] = [
   {
-    id: "thanh-huyen",
-    name: "Trịnh Thanh Huyền",
+    id: "bich-ngoc",
+    name: "Nguyễn Huy Bích Ngọc",
     role: "Team Leader",
     subRole: "Quản Trị Dự Án & Chiến Lược Chuỗi Giá Trị",
-    avatar: "/assets/team/trinh-thanh-huyen.jpg",
+    avatar: "/assets/team/nguyen-huy-bich-ngoc.jpg",
     tagline: "Gắn kết toàn diện mắt xích chuỗi giá trị tuần hoàn",
     taskTitle: "Quản lý tổng thể dự án & Điều phối chuỗi giá trị Nét",
     status: "In Progress",
@@ -236,11 +236,11 @@ const teamMembers: TeamMember[] = [
     ],
   },
   {
-    id: "bich-ngoc",
-    name: "Nguyễn Huy Bích Ngọc",
+    id: "thanh-huyen",
+    name: "Trịnh Thanh Huyền",
     role: "Vật liệu & Môi trường",
     subRole: "Nghiên Cứu Chuỗi Cung Ứng & Chỉ Số ESG",
-    avatar: "/assets/team/nguyen-huy-bich-ngoc.jpg",
+    avatar: "/assets/team/trinh-thanh-huyen.jpg",
     tagline: "Biến rác biển thành tài nguyên sạch, minh bạch từng kg",
     taskTitle: "Khảo sát đối tác thu gom/xử lý & Chuẩn hóa dữ liệu tác động môi trường",
     status: "In Progress",
@@ -957,7 +957,7 @@ export default function TeamPage() {
                 </span>
               </h2>
               <p className="text-sm text-[#5E4D43] leading-relaxed font-light">
-                Được lãnh đạo bởi <strong>Trịnh Thanh Huyền</strong> (Team Leader) và hiện thực hóa công nghệ 100% bởi <strong>Nguyễn Văn Đức</strong> (Full-stack Developer), Nét xây dựng một hệ thống số khép kín:
+                Được lãnh đạo bởi <strong>Nguyễn Huy Bích Ngọc</strong> (Team Leader) và hiện thực hóa công nghệ 100% bởi <strong>Nguyễn Văn Đức</strong> (Full-stack Developer), Nét xây dựng một hệ thống số khép kín:
               </p>
 
               <div className="space-y-3 pt-2">
@@ -1099,7 +1099,7 @@ export default function TeamPage() {
           <div className="flex items-center gap-2">
             <GraduationCap className="w-4 h-4 text-[#2D5E4E]" />
             <span className="font-medium text-[#241B16]">VecomNet&apos;s Tsunami Team:</span>
-            <span>Trịnh Thanh Huyền · Nguyễn Văn Đức · Lê Minh Quân · Nguyễn Huy Bích Ngọc · Lê Nguyên Khang</span>
+            <span>Nguyễn Huy Bích Ngọc · Nguyễn Văn Đức · Lê Minh Quân · Trịnh Thanh Huyền · Lê Nguyên Khang</span>
           </div>
           <Link href="/" className="text-[#B85D43] hover:underline font-medium">
             ← Về trang chủ Nét

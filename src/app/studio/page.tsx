@@ -37,7 +37,7 @@ import {
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
 import { PlacedCharm, BagBase, BagMeshColor, Charm } from "@/types";
-import { BAG_COLORS, BAG_BASES } from "@/data/products";
+import { BAG_COLORS, BAG_BASES, getBagColor } from "@/data/products";
 import { formatVND } from "@/lib/utils";
 import { getProductsFromFirestore } from "@/lib/firestoreService";
 import {
@@ -106,7 +106,15 @@ function NetStudioContent() {
             .map((p: any) => {
               const bagColors: BagMeshColor[] =
                 Array.isArray(p.colors) && p.colors.length > 0
-                  ? p.colors
+                  ? p.colors.map((c: any) => {
+                      const def = getBagColor(c.id || c.name || c.hex);
+                      return {
+                        ...def,
+                        ...c,
+                        image: c.image || def.image,
+                        model3dUrl: c.model3dUrl || def.model3dUrl,
+                      };
+                    })
                   : BAG_COLORS;
 
               return {
@@ -1666,7 +1674,12 @@ Key 3D printing & charm specs:
                       bagBase={selectedBag}
                       selectedColor={selectedColor}
                       placedCharms={placedCharms}
-                      modelUrl={selectedColor.model3dUrl || selectedBag.model3dUrl || "/assets/models/tuixach-xanh-la.glb"}
+                      modelUrl={
+                        selectedColor.model3dUrl ||
+                        getBagColor(selectedColor?.id || selectedColor?.name || selectedColor?.hex).model3dUrl ||
+                        selectedBag.model3dUrl ||
+                        "/assets/models/tuixach-xanh-la.glb"
+                      }
                     />
                   </div>
                 </div>
@@ -1680,7 +1693,11 @@ Key 3D printing & charm specs:
                   show3dToggle={true}
                   onToggle3D={() => setIs3DMode(!is3DMode)}
                   is3dActive={is3DMode}
-                  bagImageUrl={selectedColor?.image || selectedBag.image}
+                  bagImageUrl={
+                    selectedColor?.image ||
+                    getBagColor(selectedColor?.id || selectedColor?.name || selectedColor?.hex).image ||
+                    selectedBag.image
+                  }
                   selectedColorHex={selectedColor?.hex}
                   selectedColorName={selectedColor?.name}
                   customCharmVisual={
@@ -1775,7 +1792,15 @@ Key 3D printing & charm specs:
                           <button
                             key={c.id || c.hex}
                             type="button"
-                            onClick={() => setSelectedColor(c)}
+                            onClick={() => {
+                              const def = getBagColor(c.id || c.name || c.hex);
+                              setSelectedColor({
+                                ...def,
+                                ...c,
+                                image: c.image || def.image,
+                                model3dUrl: c.model3dUrl || def.model3dUrl,
+                              });
+                            }}
                             className={`w-7 h-7 rounded-full transition-all relative flex items-center justify-center cursor-pointer shadow-sm ${
                               isSelected
                                 ? "ring-2 ring-[#B85D43] ring-offset-2 scale-110"

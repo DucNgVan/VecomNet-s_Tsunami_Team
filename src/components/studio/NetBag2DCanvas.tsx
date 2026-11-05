@@ -172,9 +172,27 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
         <div className="absolute inset-0 z-10 flex items-center justify-center select-none pointer-events-none">
           {bagImageUrl ? (
             <img
+              key={bagImageUrl}
               src={bagImageUrl}
               alt={selectedColorName ? `Túi xách NÉT (${selectedColorName})` : "Túi xách NÉT"}
               className="h-[70%] w-auto max-w-[85%] object-contain drop-shadow-[0_12px_24px_rgba(36,27,22,0.14)] select-none pointer-events-none transition-all duration-300"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const c = (selectedColorName || selectedColorHex || "").toLowerCase();
+                const fallback =
+                  c.includes("dương") || c.includes("blue")
+                    ? "/assets/products/bags/tuixach-xanh-duong.png"
+                    : c.includes("hồng") || c.includes("pink")
+                    ? "/assets/products/bags/tuixach-hong.png"
+                    : c.includes("tía") || c.includes("đỏ") || c.includes("burgundy")
+                    ? "/assets/products/bags/tuixach-do-tia.png"
+                    : c.includes("đen") || c.includes("black")
+                    ? "/assets/products/bags/tuixach-den.png"
+                    : "/assets/products/bags/tuixach-xanh-la.png";
+                if (!target.src.includes(fallback)) {
+                  target.src = fallback;
+                }
+              }}
             />
           ) : (
             <div className="h-[70%] aspect-[320/340] relative flex items-center justify-center pointer-events-none">
@@ -390,10 +408,15 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
           {placedCharms.map((placed) => {
             const isSelected = placed.instanceId === selectedCharmInstanceId;
             const { screenX, screenY } = toScreenCoords(placed.x, placed.y);
-            const charmImg =
-              customCharmVisual?.imageUrl ||
-              customCharmVisual?.referenceImageUrl ||
-              placed.charm.image;
+            const isCustomCharm = Boolean(
+              placed.charm.id.includes("custom") ||
+              placed.instanceId.includes("custom")
+            );
+            const charmImg = isCustomCharm
+              ? customCharmVisual?.imageUrl ||
+                customCharmVisual?.referenceImageUrl ||
+                placed.charm.image
+              : placed.charm.image;
 
             return (
               <div
@@ -430,7 +453,7 @@ export const NetBag2DCanvas: React.FC<NetBag2DCanvasProps> = ({
                       />
 
                       {/* Engraved text if custom */}
-                      {customCharmVisual?.engravedText && (
+                      {isCustomCharm && customCharmVisual?.engravedText && (
                         <span className="text-[7.5px] font-mono tracking-tight text-white bg-black/60 px-1 rounded -mt-0.5 block max-w-[42px] truncate mx-auto text-center pointer-events-none">
                           {customCharmVisual.engravedText}
                         </span>

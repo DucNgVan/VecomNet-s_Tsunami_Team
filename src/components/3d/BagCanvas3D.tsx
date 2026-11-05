@@ -54,6 +54,8 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
     const [isLoadingModel, setIsLoadingModel] = useState<boolean>(true);
     const [isGlbActive, setIsGlbActive] = useState<boolean>(false);
     const [hasWebGlError, setHasWebGlError] = useState<boolean>(false);
+    const [isSceneReady, setIsSceneReady] = useState<boolean>(false);
+    const [sceneVersion, setSceneVersion] = useState<number>(0);
 
     // Camera & Zoom constants and refs (cân chỉnh theo tỉ lệ bản vẽ 2D: túi nằm chính giữa, cân đối trên dưới, không bị che khuất)
     const DEFAULT_CAMERA_Z = 7.0;
@@ -192,201 +194,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       charmsContainerRef.current = charmsContainer;
       bagRoot.add(charmsContainer);
 
-      // Helper: Build procedural fallback mesh for bag
-      const buildProceduralFallback = () => {
-        modelContainer.clear();
-
-        const c = document.createElement("canvas");
-        c.width = 512;
-        c.height = 512;
-        const ctx = c.getContext("2d");
-        if (ctx) {
-          ctx.fillStyle = selectedColor.hex;
-          ctx.fillRect(0, 0, 512, 512);
-          ctx.strokeStyle = selectedColor.accentHex;
-          ctx.lineWidth = 3;
-          const step = 32;
-          for (let i = -512; i < 1024; i += step) {
-            ctx.beginPath();
-            ctx.moveTo(i, 0);
-            ctx.lineTo(i + 512, 512);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(i, 512);
-            ctx.lineTo(i + 512, 0);
-            ctx.stroke();
-          }
-        }
-        const netTex = new THREE.CanvasTexture(c);
-        netTex.wrapS = THREE.RepeatWrapping;
-        netTex.wrapT = THREE.RepeatWrapping;
-        netTex.repeat.set(4, 3);
-
-        const bodyGeo = new THREE.BoxGeometry(2.7, 3.2, 1.4, 24, 24, 24);
-        const bodyMat = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color(selectedColor.hex),
-          map: netTex,
-          roughness: 0.25,
-          metalness: 0.1,
-          transmission: 0.35,
-          thickness: 0.6,
-          ior: 1.45,
-          clearcoat: 0.8,
-          side: THREE.DoubleSide,
-        });
-        const fallbackMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        modelContainer.add(fallbackMesh);
-
-        // Handles
-        const handleCurve = new THREE.CatmullRomCurve3([
-          new THREE.Vector3(-0.9, 1.5, 0.4),
-          new THREE.Vector3(-0.8, 2.7, 0.4),
-          new THREE.Vector3(0, 3.1, 0.4),
-          new THREE.Vector3(0.8, 2.7, 0.4),
-          new THREE.Vector3(0.9, 1.5, 0.4),
-        ]);
-        const handleMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#0c2340"),
-          roughness: 0.3,
-          metalness: 0.6,
-        });
-        const h1 = new THREE.Mesh(new THREE.TubeGeometry(handleCurve, 32, 0.08, 12, false), handleMat);
-        modelContainer.add(h1);
-        const h2 = h1.clone();
-        h2.position.z = -0.8;
-        modelContainer.add(h2);
-      };
-
-      // 5. Asynchronously Load the Uploaded Bag Model
-      setIsLoadingModel(true);
-
-      if (bagGltfModelCache.has(activeModelUrl)) {
-        modelContainer.clear();
-        const cachedGroup = bagGltfModelCache.get(activeModelUrl)!.clone(true);
-        modelContainer.add(cachedGroup);
-        setIsGlbActive(true);
-        setIsLoadingModel(false);
-      } else if (activeModelUrl) {
-        const loader = createConfiguredGLTFLoader();
-        loader.load(
-          activeModelUrl,
-          (gltf) => {
-            if (!isSubscribed) return;
-
-            modelContainer.clear();
-            const loadedScene = gltf.scene;
-
-            // Compute exact bounding box and dimensions
-            const box = new THREE.Box3().setFromObject(loadedScene);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-
-            // Center model at origin
-            loadedScene.position.x = -center.x;
-            loadedScene.position.y = -center.y;
-            loadedScene.position.z = -center.z;
-
-            const glbWrapper = new THREE.Group();
-            glbWrapper.add(loadedScene);
-
-            // Auto-scale to fit canvas viewport nicely
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const targetSize = 3.6;
-            const scale = maxDim > 0 ? targetSize / maxDim : 1;
-            glbWrapper.scale.setScalar(scale);
-
-            // Rotate -90 degrees around Y axis so the front face faces directly towards camera (+Z) if needed
-            if (size.z > size.x) {
-              glbWrapper.rotation.y = -Math.PI / 2;
-            }
-
-            // Material enhancements: preserve authored PBR textures with crisp anisotropic filtering
-            loadedScene.traverse((child) => {
-              if ((child as THREE.Mesh).isMesh) {
-                const m = child as THREE.Mesh;
-                m.castShadow = true;
-                m.receiveShadow = true;
-                if (m.material) {
-                  const mat = m.material as THREE.MeshStandardMaterial;
-                  mat.side = THREE.DoubleSide;
-                  mat.roughness = 0.52;
-                  mat.metalness = 0.04;
-                  mat.envMapIntensity = 1.1;
-                  if (mat.map) {
-                    mat.map.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 16);
-                    mat.map.generateMipmaps = true;
-                    mat.map.minFilter = THREE.LinearMipmapLinearFilter;
-                    mat.map.needsUpdate = true;
-                  }
-                }
-              }
-            });
-
-            bagGltfModelCache.set(activeModelUrl, glbWrapper);
-            modelContainer.add(glbWrapper.clone(true));
-            setIsGlbActive(true);
-            setIsLoadingModel(false);
-          },
-          undefined,
-          (err) => {
-            console.warn("Bag GLTF Load fallback:", err);
-            if (!isSubscribed) return;
-
-            // Nếu modelUrl tải thất bại (ví dụ đường dẫn 404), tự động chuyển sang mô hình 3D chuẩn có sẵn trong /assets/models/
-            const colorName = (selectedColor?.name || "").toLowerCase();
-            const defaultModel = colorName.includes("dương")
-              ? "/assets/models/tuixach-xanh-duong.glb"
-              : colorName.includes("hồng")
-              ? "/assets/models/tuixach-hong.glb"
-              : colorName.includes("tía") || colorName.includes("đỏ")
-              ? "/assets/models/tuixach-do-tia.glb"
-              : colorName.includes("đen")
-              ? "/assets/models/tuixach-den.glb"
-              : "/assets/models/tuixach-xanh-la.glb";
-
-            if (activeModelUrl !== defaultModel) {
-              console.log("[BagCanvas3D] Đang tải mô hình 3D chuẩn thay thế:", defaultModel);
-              loader.load(
-                defaultModel,
-                (fallbackGltf) => {
-                  if (!isSubscribed) return;
-                  modelContainer.clear();
-                  const sceneObj = fallbackGltf.scene;
-                  const box = new THREE.Box3().setFromObject(sceneObj);
-                  const center = box.getCenter(new THREE.Vector3());
-                  const size = box.getSize(new THREE.Vector3());
-                  sceneObj.position.x = -center.x;
-                  sceneObj.position.y = -center.y;
-                  sceneObj.position.z = -center.z;
-                  const wrapper = new THREE.Group();
-                  wrapper.add(sceneObj);
-                  const maxDim = Math.max(size.x, size.y, size.z);
-                  const scale = maxDim > 0 ? 3.6 / maxDim : 1;
-                  wrapper.scale.setScalar(scale);
-                  if (size.z > size.x) wrapper.rotation.y = -Math.PI / 2;
-                  modelContainer.add(wrapper);
-                  setIsGlbActive(true);
-                  setIsLoadingModel(false);
-                },
-                undefined,
-                () => {
-                  buildProceduralFallback();
-                  setIsGlbActive(false);
-                  setIsLoadingModel(false);
-                }
-              );
-              return;
-            }
-
-            buildProceduralFallback();
-            setIsGlbActive(false);
-            setIsLoadingModel(false);
-          }
-        );
-      } else {
-        buildProceduralFallback();
-        setIsLoadingModel(false);
-      }
+      setIsSceneReady(true);
 
       // 6. Interactive Orbit & Drag Controls
       let isDragging = false;
@@ -531,6 +339,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
 
       return () => {
         isSubscribed = false;
+        setIsSceneReady(false);
         dom.removeEventListener("mousedown", onMouseDown);
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
@@ -547,7 +356,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         }
         renderer.dispose();
       };
-    }, [bagBase, activeModelUrl, isInteractive]);
+    }, [bagBase?.id, isInteractive]);
 
     // Update dynamic under-glow color when selectedColor changes
     useEffect(() => {
@@ -556,10 +365,223 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       }
     }, [selectedColor]);
 
+    // Asynchronously Load and Swap the Bag 3D Model when activeModelUrl or selectedColor changes
+    useEffect(() => {
+      const modelContainer = modelContainerRef.current;
+      if (!isSceneReady || !modelContainer) return;
+
+      let isSubscribed = true;
+      setIsLoadingModel(true);
+
+      const buildProceduralFallback = () => {
+        if (!isSubscribed) return;
+        modelContainer.clear();
+
+        const c = document.createElement("canvas");
+        c.width = 512;
+        c.height = 512;
+        const ctx = c.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = selectedColor?.hex || "#3d8b85";
+          ctx.fillRect(0, 0, 512, 512);
+          ctx.strokeStyle = selectedColor?.accentHex || "#6ee7b7";
+          ctx.lineWidth = 3;
+          const step = 32;
+          for (let i = -512; i < 1024; i += step) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i + 512, 512);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(i, 512);
+            ctx.lineTo(i + 512, 0);
+            ctx.stroke();
+          }
+        }
+        const netTex = new THREE.CanvasTexture(c);
+        netTex.wrapS = THREE.RepeatWrapping;
+        netTex.wrapT = THREE.RepeatWrapping;
+        netTex.repeat.set(4, 3);
+
+        const bodyGeo = new THREE.BoxGeometry(2.7, 3.2, 1.4, 24, 24, 24);
+        const bodyMat = new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color(selectedColor?.hex || "#3d8b85"),
+          map: netTex,
+          roughness: 0.25,
+          metalness: 0.1,
+          transmission: 0.35,
+          thickness: 0.6,
+          ior: 1.45,
+          clearcoat: 0.8,
+          side: THREE.DoubleSide,
+        });
+        const fallbackMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        modelContainer.add(fallbackMesh);
+
+        // Handles
+        const handleCurve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(-0.9, 1.5, 0.4),
+          new THREE.Vector3(-0.8, 2.7, 0.4),
+          new THREE.Vector3(0, 3.1, 0.4),
+          new THREE.Vector3(0.8, 2.7, 0.4),
+          new THREE.Vector3(0.9, 1.5, 0.4),
+        ]);
+        const handleMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color("#0c2340"),
+          roughness: 0.3,
+          metalness: 0.6,
+        });
+        const h1 = new THREE.Mesh(new THREE.TubeGeometry(handleCurve, 32, 0.08, 12, false), handleMat);
+        modelContainer.add(h1);
+        const h2 = h1.clone();
+        h2.position.z = -0.8;
+        modelContainer.add(h2);
+
+        setIsGlbActive(false);
+        setIsLoadingModel(false);
+        setSceneVersion((v) => v + 1);
+      };
+
+      if (bagGltfModelCache.has(activeModelUrl)) {
+        modelContainer.clear();
+        const cachedGroup = bagGltfModelCache.get(activeModelUrl)!.clone(true);
+        modelContainer.add(cachedGroup);
+        setIsGlbActive(true);
+        setIsLoadingModel(false);
+        setSceneVersion((v) => v + 1);
+        return () => {
+          isSubscribed = false;
+        };
+      }
+
+      if (activeModelUrl) {
+        const loader = createConfiguredGLTFLoader();
+        loader.load(
+          activeModelUrl,
+          (gltf) => {
+            if (!isSubscribed) return;
+
+            modelContainer.clear();
+            const loadedScene = gltf.scene;
+
+            // Compute exact bounding box and dimensions
+            const box = new THREE.Box3().setFromObject(loadedScene);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            // Center model at origin
+            loadedScene.position.x = -center.x;
+            loadedScene.position.y = -center.y;
+            loadedScene.position.z = -center.z;
+
+            const glbWrapper = new THREE.Group();
+            glbWrapper.add(loadedScene);
+
+            // Auto-scale to fit canvas viewport nicely
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const targetSize = 3.6;
+            const scale = maxDim > 0 ? targetSize / maxDim : 1;
+            glbWrapper.scale.setScalar(scale);
+
+            // Rotate -90 degrees around Y axis so the front face faces directly towards camera (+Z) if needed
+            if (size.z > size.x) {
+              glbWrapper.rotation.y = -Math.PI / 2;
+            }
+
+            // Material enhancements: preserve authored PBR textures with crisp anisotropic filtering
+            loadedScene.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) {
+                const m = child as THREE.Mesh;
+                m.castShadow = true;
+                m.receiveShadow = true;
+                if (m.material) {
+                  const mat = m.material as THREE.MeshStandardMaterial;
+                  mat.side = THREE.DoubleSide;
+                  mat.roughness = 0.52;
+                  mat.metalness = 0.04;
+                  mat.envMapIntensity = 1.1;
+                  if (mat.map && rendererRef.current) {
+                    mat.map.anisotropy = Math.min(rendererRef.current.capabilities.getMaxAnisotropy(), 16);
+                    mat.map.generateMipmaps = true;
+                    mat.map.minFilter = THREE.LinearMipmapLinearFilter;
+                    mat.map.needsUpdate = true;
+                  }
+                }
+              }
+            });
+
+            bagGltfModelCache.set(activeModelUrl, glbWrapper);
+            modelContainer.add(glbWrapper.clone(true));
+            setIsGlbActive(true);
+            setIsLoadingModel(false);
+            setSceneVersion((v) => v + 1);
+          },
+          undefined,
+          (err) => {
+            console.warn("Bag GLTF Load fallback:", err);
+            if (!isSubscribed) return;
+
+            // Nếu modelUrl tải thất bại, tự động chuyển sang mô hình 3D chuẩn có sẵn trong /assets/models/
+            const colorName = (selectedColor?.name || "").toLowerCase();
+            const defaultModel = colorName.includes("dương")
+              ? "/assets/models/tuixach-xanh-duong.glb"
+              : colorName.includes("hồng")
+              ? "/assets/models/tuixach-hong.glb"
+              : colorName.includes("tía") || colorName.includes("đỏ")
+              ? "/assets/models/tuixach-do-tia.glb"
+              : colorName.includes("đen")
+              ? "/assets/models/tuixach-den.glb"
+              : "/assets/models/tuixach-xanh-la.glb";
+
+            if (activeModelUrl !== defaultModel) {
+              console.log("[BagCanvas3D] Đang tải mô hình 3D chuẩn thay thế:", defaultModel);
+              loader.load(
+                defaultModel,
+                (fallbackGltf) => {
+                  if (!isSubscribed) return;
+                  modelContainer.clear();
+                  const sceneObj = fallbackGltf.scene;
+                  const box = new THREE.Box3().setFromObject(sceneObj);
+                  const center = box.getCenter(new THREE.Vector3());
+                  const size = box.getSize(new THREE.Vector3());
+                  sceneObj.position.x = -center.x;
+                  sceneObj.position.y = -center.y;
+                  sceneObj.position.z = -center.z;
+                  const wrapper = new THREE.Group();
+                  wrapper.add(sceneObj);
+                  const maxDim = Math.max(size.x, size.y, size.z);
+                  const scale = maxDim > 0 ? 3.6 / maxDim : 1;
+                  wrapper.scale.setScalar(scale);
+                  if (size.z > size.x) wrapper.rotation.y = -Math.PI / 2;
+                  modelContainer.add(wrapper);
+                  setIsGlbActive(true);
+                  setIsLoadingModel(false);
+                  setSceneVersion((v) => v + 1);
+                },
+                undefined,
+                () => {
+                  buildProceduralFallback();
+                }
+              );
+              return;
+            }
+
+            buildProceduralFallback();
+          }
+        );
+      } else {
+        buildProceduralFallback();
+      }
+
+      return () => {
+        isSubscribed = false;
+      };
+    }, [activeModelUrl, selectedColor?.name, selectedColor?.hex, isSceneReady]);
+
     // Dynamic 3D Charms Placement on Bag (Supports 3D models GLB, Custom AI Charms, and 2D Image Charms)
     useEffect(() => {
       const container = charmsContainerRef.current;
-      if (!container) return;
+      if (!isSceneReady || !container) return;
       container.clear();
 
       if (!placedCharms || placedCharms.length === 0) return;
@@ -867,7 +889,7 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       return () => {
         isCurrent = false;
       };
-    }, [placedCharms, isGlbActive]);
+    }, [placedCharms, isSceneReady, sceneVersion, activeModelUrl]);
 
     return (
       <div className={`relative w-full h-full min-h-[420px] select-none ${className}`}>

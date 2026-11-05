@@ -138,12 +138,83 @@ function AdminPortalContent() {
     }
   };
 
+  const fetchOrders = async () => {
+    try {
+      const orderMap = new Map<string, AdminOrder>();
+
+      // 1. Local admin orders
+      const local = getAdminOrders();
+      for (const o of local) {
+        orderMap.set(o.orderCode.toUpperCase(), o);
+      }
+
+      // 2. Query Firestore collections "orders" and "design_requests"
+      try {
+        const { db } = await import("@/lib/firebase");
+        const { collection, getDocs } = await import("firebase/firestore");
+
+        // A. Orders collection
+        try {
+          const snapOrders = await getDocs(collection(db, "orders"));
+          if (!snapOrders.empty) {
+            snapOrders.forEach((d) => {
+              const data = d.data() as any;
+              if (data && (data.orderCode || data.orderId)) {
+                const code = (data.orderCode || data.orderId).toUpperCase();
+                orderMap.set(code, {
+                  ...orderMap.get(code),
+                  ...data,
+                  orderCode: data.orderCode || data.orderId,
+                  orderId: data.orderId || data.orderCode,
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("Firestore orders query notice:", e);
+        }
+
+        // B. Design requests collection
+        try {
+          const snapReqs = await getDocs(collection(db, "design_requests"));
+          if (!snapReqs.empty) {
+            const { convertDesignRequestToAdminOrder } = await import("@/lib/adminDataStorage");
+            snapReqs.forEach((d) => {
+              const reqData = d.data() as any;
+              if (reqData && reqData.id) {
+                const code = reqData.id.toUpperCase();
+                if (!orderMap.has(code)) {
+                  orderMap.set(code, convertDesignRequestToAdminOrder(reqData));
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("Admin Firestore design_requests query notice:", e);
+        }
+      } catch (e) {
+        console.warn("Firestore init notice:", e);
+      }
+
+      const merged = Array.from(orderMap.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      if (merged.length > 0) {
+        setOrders(merged);
+      }
+    } catch (e) {
+      console.warn("fetchOrders error:", e);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchOrders();
   }, []);
 
   const handleDataReload = () => {
-    setOrders(getAdminOrders());
+    fetchOrders();
     setBatches(getAdminBatches());
     setSlips(getAdminSlips());
     setSerials(getAdminSerials());
@@ -266,7 +337,22 @@ function AdminPortalContent() {
               partners={partners}
               serials={serials}
               products={backendProducts}
-              onOrdersChange={(updated) => setOrders(updated)}
+              onOrdersChange={(updated) => {
+                setOrders(updated);
+                try {
+                  import("@/lib/firebase").then(async ({ db }) => {
+                    const { doc, setDoc, serverTimestamp } = await import("firebase/firestore");
+                    for (const o of updated) {
+                      await setDoc(doc(db, "orders", o.orderId), { ...o, updatedAt: serverTimestamp() }, { merge: true });
+                      if (o.rawStudioReq) {
+                        await setDoc(doc(db, "design_requests", o.orderCode), { ...o.rawStudioReq, updatedAt: serverTimestamp() }, { merge: true });
+                      }
+                    }
+                  });
+                } catch (err) {
+                  console.warn("onOrdersChange firestore sync notice:", err);
+                }
+              }}
               initialFilter={orderFilterParam}
               initialSelectedOrderId={selectedOrderIdParam}
             />

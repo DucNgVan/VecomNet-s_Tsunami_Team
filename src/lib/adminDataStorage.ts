@@ -1,6 +1,148 @@
 "use client";
 
 import { BAG_BASES } from "@/data/products";
+import type { DesignRequest } from "@/lib/designRequestStorage";
+
+export function convertDesignRequestToAdminOrder(req: DesignRequest): AdminOrder {
+  const isCustom = Boolean(req.hasCustomCharm || req.customCharm);
+
+  let fulfillmentStatus: OrderFulfillmentStatus = "received";
+  if (isCustom) {
+    switch (req.status) {
+      case "pending_review":
+        fulfillmentStatus = "quote_needed";
+        break;
+      case "concept_sent":
+      case "revision_requested":
+        fulfillmentStatus = "waiting_approval";
+        break;
+      case "approved":
+      case "in_production":
+        fulfillmentStatus = "in_production";
+        break;
+      case "shipping":
+        fulfillmentStatus = "delivering";
+        break;
+      case "completed":
+        fulfillmentStatus = "delivered";
+        break;
+      case "cancelled":
+        fulfillmentStatus = "cancelled";
+        break;
+      default:
+        fulfillmentStatus = "quote_needed";
+    }
+  } else {
+    switch (req.status) {
+      case "pending_review":
+      case "confirmed":
+        fulfillmentStatus = "confirmed";
+        break;
+      case "in_production":
+        fulfillmentStatus = "in_production";
+        break;
+      case "shipping":
+        fulfillmentStatus = "delivering";
+        break;
+      case "completed":
+        fulfillmentStatus = "delivered";
+        break;
+      case "cancelled":
+        fulfillmentStatus = "cancelled";
+        break;
+      default:
+        fulfillmentStatus = "confirmed";
+    }
+  }
+
+  const items: AdminOrderItem[] = [
+    {
+      id: `bag-${req.bagId || "base"}`,
+      title: `${req.bagName || "Túi Lưới NÉT"} (${req.bagColor?.name || "Xanh Lá"})`,
+      type: "base_bag",
+      price: req.bagPrice || 250000,
+      quantity: 1,
+      image: req.bagColor?.image || "/assets/products/bags/tuixach-xanh-la.png",
+      bagBaseId: req.bagId,
+    },
+    ...(req.placedCharms || []).map((pc, idx) => ({
+      id: `charm-${pc.charm?.id || idx}`,
+      title: pc.charm?.vietnameseName || pc.charm?.name || "Charm Phụ Kiện",
+      type: (pc.charm?.id?.includes("custom") ? "custom_charm" : "charm") as any,
+      price: pc.charm?.price || 0,
+      quantity: 1,
+      image: pc.charm?.image,
+    })),
+  ];
+
+  if (isCustom && req.customCharm) {
+    items.push({
+      id: `custom-charm-${req.id}`,
+      title: `Charm Độc Bản: ${req.customCharm.motifName || req.customCharm.idea || "Theo yêu cầu riêng"}`,
+      type: "custom_charm",
+      price: req.customCharmPrice || 0,
+      quantity: 1,
+      image: req.customCharm.imageUrl || req.customCharm.referenceImageUrl,
+      conceptUrl: req.conceptImageUrl,
+      referenceUrl: req.customCharm.referenceImageUrl,
+    });
+  }
+
+  const total = req.finalTotal || req.baseTotal || (items.reduce((s, it) => s + (it.price * it.quantity), 0));
+
+  return {
+    orderId: req.id,
+    orderCode: req.id,
+    createdAt: req.createdAt || new Date().toISOString().replace("T", " ").slice(0, 16),
+    updatedAt: req.createdAt || new Date().toISOString().replace("T", " ").slice(0, 16),
+    orderType: isCustom ? "custom_charm" : "ready_made",
+    customer: {
+      fullName: req.customerName || "Khách hàng NÉT",
+      phone: req.contact || req.customerPhone || "0905000000",
+      email: req.customerEmail || "",
+      address: req.customerAddress || "",
+      city: req.customerCity || "Đà Nẵng",
+      note: req.notes || req.customCharm?.idea || undefined,
+    },
+    items,
+    subtotal: total,
+    shippingFee: 0,
+    total,
+    paidAmount: req.status === "completed" || req.status === "confirmed" ? total : 0,
+    remainingAmount: req.status === "completed" || req.status === "confirmed" ? 0 : total,
+    paymentStatus: req.status === "completed" ? "paid" : "unpaid",
+    paymentHistory: [],
+    fulfillmentStatus,
+    customWorkflow: isCustom
+      ? {
+          conceptDescription: req.customCharm?.idea || req.customCharm?.story || req.notes,
+          conceptSketches: req.conceptImageUrl
+            ? [req.conceptImageUrl]
+            : req.customCharm?.imageUrl
+            ? [req.customCharm.imageUrl]
+            : [],
+          quoteAmount: req.customCharmPrice || 0,
+          quoteNotes: req.conceptNote,
+          clientApprovalStatus: req.status === "approved" ? "approved" : "pending",
+        }
+      : undefined,
+    delivery: {
+      method: req.deliveryMethod === "partner_pickup" ? "partner_pickup" : "shipping",
+      carrier: req.carrier,
+      trackingCode: req.trackingCode,
+    },
+    inventoryDeducted: Boolean(req.inventoryDeducted),
+    inventoryDeductedAt: req.inventoryDeductedAt,
+    auditHistory: (req.trackingEvents || []).map((te) => ({
+      timestamp: te.time,
+      actor: "Hệ thống",
+      action: te.status,
+      details: te.description,
+    })),
+    partnerCode: req.partnerCode,
+    rawStudioReq: req,
+  };
+}
 
 // ============================================================================
 // 1. DATA TYPES (Strictly matching the 26 requirements)
@@ -78,7 +220,10 @@ export interface AdminOrder {
   customWorkflow?: {
     conceptDescription?: string;
     conceptUrl?: string;
+    conceptSketches?: string[];
     quotedPrice?: number;
+    quoteAmount?: number;
+    quoteNotes?: string;
     estimatedDeliveryDate?: string;
     quoteSentAt?: string;
     clientApprovalStatus?: "pending" | "approved" | "revision_requested";
@@ -91,11 +236,14 @@ export interface AdminOrder {
   delivery: {
     carrier?: string;
     trackingCode?: string;
+    method?: string;
     promisedDate?: string;
     actualDeliveryDate?: string;
   };
   assignedSerialIds?: string[];
   inventoryDeducted: boolean;
+  inventoryDeductedAt?: string;
+  rawStudioReq?: any;
   auditHistory: OrderAuditEntry[];
 }
 
@@ -329,6 +477,63 @@ export const INITIAL_SERIALS: BagSerialItem[] = Array.from({ length: 10 }, (_, i
 
 export const INITIAL_ADMIN_ORDERS: AdminOrder[] = [
   {
+    orderId: "NET-REQ-2589",
+    orderCode: "NET-REQ-2589",
+    createdAt: "2026-11-05 01:08",
+    updatedAt: "2026-11-05 01:08",
+    orderType: "custom_charm",
+    customer: {
+      fullName: "Nguyen Van Duc (FGW DN)",
+      phone: "0905000000",
+      email: "ducnv@nets.eco",
+      address: "Đà Nẵng",
+      city: "Đà Nẵng",
+      note: "Yêu cầu charm riêng: Cô gái Áo dài Nón lá",
+    },
+    items: [
+      {
+        id: "item-bag-2589",
+        title: "NETS Tote Signature (Xanh Lá)",
+        type: "base_bag",
+        price: 299000,
+        quantity: 1,
+        bagBaseId: "net-tote-01",
+        image: "https://res.cloudinary.com/yiowz9tn/image/upload/v1793702237/vecomnets/products/bag_2d_xanh_la.png",
+      },
+      {
+        id: "item-charm-2589",
+        title: "Charm Độc Bản: Cô gái Áo dài Nón lá",
+        type: "custom_charm",
+        price: 0,
+        quantity: 1,
+      },
+    ],
+    subtotal: 299000,
+    shippingFee: 0,
+    total: 299000,
+    paidAmount: 0,
+    remainingAmount: 299000,
+    paymentStatus: "unpaid",
+    paymentHistory: [],
+    fulfillmentStatus: "quote_needed",
+    customWorkflow: {
+      conceptDescription: "Charm độc bản phác thảo bởi AI theo câu chuyện: Cô gái Áo dài Nón lá",
+      clientApprovalStatus: "pending",
+    },
+    delivery: {
+      method: "shipping",
+    },
+    inventoryDeducted: false,
+    auditHistory: [
+      {
+        timestamp: "2026-11-05 01:08",
+        actor: "Khách hàng",
+        action: "Đã gửi yêu cầu phác thảo",
+        details: "Yêu cầu thiết kế charm độc bản đã được tiếp nhận từ Nét Studio",
+      },
+    ],
+  },
+  {
     orderId: "ord-001",
     orderCode: "NET-ORD-2026-001",
     createdAt: "2026-10-25 14:30",
@@ -534,7 +739,42 @@ function writeStorage<T>(key: string, data: T): void {
 
 // Orders
 export function getAdminOrders(): AdminOrder[] {
-  return readStorage<AdminOrder[]>(STORAGE_KEYS.ORDERS, INITIAL_ADMIN_ORDERS);
+  const stored = readStorage<AdminOrder[]>(STORAGE_KEYS.ORDERS, INITIAL_ADMIN_ORDERS);
+  const orderMap = new Map<string, AdminOrder>();
+
+  // 1. Initial admin orders (seeded orders like NET-REQ-2589)
+  for (const o of INITIAL_ADMIN_ORDERS) {
+    orderMap.set(o.orderCode.toUpperCase(), o);
+  }
+
+  // 2. Stored admin orders (takes priority)
+  for (const o of stored) {
+    if (o && o.orderCode) {
+      orderMap.set(o.orderCode.toUpperCase(), o);
+    }
+  }
+
+  // 3. Auto-sync from Studio Design Requests in local storage
+  if (typeof window !== "undefined") {
+    try {
+      const rawReqs = localStorage.getItem("net_design_requests_v2");
+      if (rawReqs) {
+        const reqs: any[] = JSON.parse(rawReqs);
+        for (const req of reqs) {
+          if (req && req.id) {
+            const codeKey = req.id.toUpperCase();
+            if (!orderMap.has(codeKey)) {
+              orderMap.set(codeKey, convertDesignRequestToAdminOrder(req));
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return Array.from(orderMap.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export function saveAdminOrder(order: AdminOrder): AdminOrder[] {

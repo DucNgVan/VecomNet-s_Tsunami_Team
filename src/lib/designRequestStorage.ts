@@ -154,6 +154,44 @@ export function saveDesignRequest(req: DesignRequest): DesignRequest[] {
     } catch (e) {
       console.error("Error saving design requests:", e);
     }
+
+    // Auto-sync into Admin Orders local storage
+    try {
+      import("@/lib/adminDataStorage").then(({ convertDesignRequestToAdminOrder, saveAdminOrder }) => {
+        const adminOrd = convertDesignRequestToAdminOrder(req);
+        saveAdminOrder(adminOrd);
+      });
+    } catch (e) {
+      console.warn("Auto saveAdminOrder notice:", e);
+    }
+
+    // Auto-sync to Cloud Firestore collections "design_requests" and "orders"
+    try {
+      import("@/lib/firebase").then(async ({ db }) => {
+        const { doc, setDoc, serverTimestamp } = await import("firebase/firestore");
+        await setDoc(doc(db, "design_requests", req.id), { ...req, updatedAt: serverTimestamp() }, { merge: true });
+        import("@/lib/adminDataStorage").then(async ({ convertDesignRequestToAdminOrder }) => {
+          const adminOrd = convertDesignRequestToAdminOrder(req);
+          await setDoc(doc(db, "orders", req.id), { ...adminOrd, updatedAt: serverTimestamp() }, { merge: true });
+        });
+      });
+    } catch (e) {
+      console.warn("Firestore cloud sync notice:", e);
+    }
+
+    // Auto-sync to Serverless API /api/orders
+    try {
+      import("@/lib/adminDataStorage").then(async ({ convertDesignRequestToAdminOrder }) => {
+        const adminOrd = convertDesignRequestToAdminOrder(req);
+        await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(adminOrd),
+        });
+      });
+    } catch (e) {
+      console.warn("API orders sync notice:", e);
+    }
   }
   return updated;
 }

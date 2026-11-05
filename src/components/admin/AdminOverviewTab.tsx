@@ -29,7 +29,9 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
 }) => {
   // 1. Chỉ số chính (Req 3, Req 24)
   const pendingOrders = useMemo(() => {
-    return orders.filter((o) => o.fulfillmentStatus === "received" || o.fulfillmentStatus === "confirmed");
+    return orders.filter((o) =>
+      ["received", "confirmed", "quote_needed", "waiting_approval"].includes(o.fulfillmentStatus)
+    );
   }, [orders]);
 
   const customQuotesNeeded = useMemo(() => {

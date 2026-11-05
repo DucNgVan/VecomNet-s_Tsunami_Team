@@ -76,18 +76,20 @@ export const AdminOrdersTabRefactored: React.FC<AdminOrdersTabProps> = ({
       // Tìm theo mã đơn / tên / SĐT
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase().trim();
-        const matchCode = o.orderCode.toLowerCase().includes(q);
-        const matchName = o.customer.fullName.toLowerCase().includes(q);
-        const matchPhone = o.customer.phone.includes(q);
+        const matchCode = (o.orderCode || o.orderId || "").toLowerCase().includes(q);
+        const matchName = (o.customer?.fullName || "").toLowerCase().includes(q);
+        const matchPhone = (o.customer?.phone || "").includes(q);
         if (!matchCode && !matchName && !matchPhone) return false;
       }
 
       // Lọc theo Loại đơn
       if (typeFilter !== "all" && o.orderType !== typeFilter) return false;
 
-      // Lọc theo Trạng thái
+      // Lọc theo Trạng thái (Bao gồm cả đơn có sẵn mới nhận/xác nhận VÀ đơn custom cần báo giá/chờ duyệt)
       if (statusFilter === "pending_all") {
-        if (o.fulfillmentStatus !== "received" && o.fulfillmentStatus !== "confirmed") return false;
+        if (!["received", "confirmed", "quote_needed", "waiting_approval"].includes(o.fulfillmentStatus)) {
+          return false;
+        }
       } else if (statusFilter !== "all") {
         if (o.fulfillmentStatus !== statusFilter) return false;
       }
@@ -477,7 +479,7 @@ export const AdminOrdersTabRefactored: React.FC<AdminOrdersTabProps> = ({
             className="w-full bg-[#FAF7F2] border border-[#E8E2D9] rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-[#C85A32]"
           >
             <option value="all">Tiến độ: Tất cả</option>
-            <option value="pending_all">Cần xử lý (Mới / Xác nhận)</option>
+            <option value="pending_all">Cần xử lý (Mới / Xác nhận / Báo giá)</option>
             <option value="quote_needed">Cần báo giá (Custom)</option>
             <option value="waiting_approval">Chờ khách duyệt</option>
             <option value="in_production">Đang sản xuất</option>

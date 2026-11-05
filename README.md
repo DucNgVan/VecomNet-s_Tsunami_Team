@@ -1,5 +1,13 @@
-# NÉT — Eco-Luxury 3D E-Commerce Platform
+# NÉT — Eco-Luxury 3D E-Commerce Platform (FINAL RELEASE)
 > Nền tảng thương mại điện tử bền vững cao cấp cho sản phẩm túi xách và charm tái chế từ lưới đánh cá ("lưới ma") đại dương Việt Nam.
+>
+> 🌐 **Domain chính thức (Production):** [https://www.net-s.id.vn](https://www.net-s.id.vn)  
+> 👥 **Đơn vị thực hiện:** **VecomNet's Tsunami Team** — BDC 2026  
+> - **Nguyễn Huy Bích Ngọc** — *Team Leader (Quản Trị Dự Án & Chiến Lược Chuỗi Giá Trị)*  
+> - **Nguyễn Văn Đức** — *Full-stack Developer (Frontend, 3D WebGL, Backend Serverless)*  
+> - **Lê Minh Quân** — *Phát Triển Sản Phẩm (Thiết Kế Tạo Dáng Công Nghiệp & 3D Specs)*  
+> - **Trịnh Thanh Huyền** — *Vật liệu & Môi trường (Nghiên Cứu Chuỗi Cung Ứng & Chỉ Số ESG)*  
+> - **Lê Nguyên Khang** — *Định hướng Thị trường (Chiến Lược Kinh Doanh & Mạng Lưới Đối Tác)*  
 
 ---
 
@@ -103,10 +111,13 @@ npm run dev
 # Hoặc khởi chạy bản build Production đã được tối ưu hóa (Port 3000)
 npm start
 ```
-Truy cập ứng dụng tại: `http://localhost:3000`
-- Trang chủ: `http://localhost:3000/`
-- Nét Studio: `http://localhost:3000/studio`
-- Cửa hàng: `http://localhost:3000/shop`
-- Story Passport: `http://localhost:3000/passport`
-- Doanh nghiệp B2B: `http://localhost:3000/b2b`
-- Bảng điều khiển xưởng Nét (Admin): `http://localhost:3000/admin`
+Truy cập ứng dụng trực tuyến tại: **[https://www.net-s.id.vn](https://www.net-s.id.vn)**  
+Hoặc môi trường nội bộ: `http://localhost:3000`
+- Trang chủ: `https://www.net-s.id.vn/`
+- Nét Studio: `https://www.net-s.id.vn/studio`
+- Cửa hàng: `https://www.net-s.id.vn/shop`
+- Story Passport: `https://www.net-s.id.vn/passport`
+- Doanh nghiệp B2B: `https://www.net-s.id.vn/b2b`
+- Tra cứu đơn hàng: `https://www.net-s.id.vn/tracking`
+- Đội ngũ: `https://www.net-s.id.vn/team`
+- Bảng điều khiển xưởng Nét (Admin): `https://www.net-s.id.vn/admin`

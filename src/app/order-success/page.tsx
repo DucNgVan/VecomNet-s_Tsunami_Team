@@ -22,7 +22,9 @@ import {
   Mail,
   Phone,
   ShieldCheck,
+  Truck,
 } from "lucide-react";
+import { generateOrderSecretKey } from "@/lib/orderTrackingSecurity";
 import { OceanBackdrop } from "@/components/ocean/OceanBackdrop";
 import { OceanFloatingCard } from "@/components/ocean/OceanFloatingCard";
 
@@ -368,15 +370,26 @@ function OrderSuccessContent() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
-              <Link href="/profile">
-                <GlassButton
-                  variant="primary"
-                  size="md"
-                  icon={<Sparkles className="w-4 h-4 text-amber-300" />}
-                >
-                  Theo Dõi Đơn & Định Danh Túi Tại Hồ Sơ
-                </GlassButton>
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link href={`/tracking?code=${order.orderCode}&key=${generateOrderSecretKey(order.orderCode)}`}>
+                  <GlassButton
+                    variant="primary"
+                    size="md"
+                    icon={<Truck className="w-4 h-4 text-emerald-300" />}
+                  >
+                    Theo Dõi Tiến Độ Đơn Hàng
+                  </GlassButton>
+                </Link>
+                <Link href="/profile">
+                  <GlassButton
+                    variant="secondary"
+                    size="md"
+                    icon={<Sparkles className="w-4 h-4 text-amber-500" />}
+                  >
+                    Hồ Sơ & Căn Cước Túi
+                  </GlassButton>
+                </Link>
+              </div>
 
               <div className="flex items-center gap-3">
                 <Link href="/admin">

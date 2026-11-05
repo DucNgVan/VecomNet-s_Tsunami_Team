@@ -1,5 +1,6 @@
 import { Order } from "@/types";
 import { formatVND, formatKg } from "@/lib/utils";
+import { generateOrderSecretKey } from "@/lib/orderTrackingSecurity";
 
 /**
  * Tạo mẫu HTML Email Biên Nhận Đơn Hàng & Chứng Chỉ Đại Dương chuẩn Thương Mại Điện Tử
@@ -138,8 +139,11 @@ export function generateOrderReceiptHTML(order: Order): string {
         </div>
 
         <div style="text-align: center; margin-top: 28px;">
-          <a href="https://www.net-s.id.vn/passport/${encodeURIComponent(order.assignedBatchId)}" style="display: inline-block; background-color: #071326; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em;">
-            TRA CỨU HẢI ĐỒ NGUỒN GỐC & CĂN CƯỚC SỐ
+          <a href="https://www.net-s.id.vn/tracking?code=${encodeURIComponent(order.orderCode)}&key=${generateOrderSecretKey(order.orderCode)}" style="display: inline-block; background-color: #B85D43; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; margin-right: 8px; margin-bottom: 8px;">
+            THEO DÕI TIẾN ĐỘ ĐƠN HÀNG
+          </a>
+          <a href="https://www.net-s.id.vn/passport/${encodeURIComponent(order.assignedBatchId)}" style="display: inline-block; background-color: #071326; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 8px;">
+            TRA CỨU HẢI ĐỒ NGUỒN GỐC
           </a>
         </div>
       </td>

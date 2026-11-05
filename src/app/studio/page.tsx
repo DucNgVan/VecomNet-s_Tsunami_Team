@@ -48,6 +48,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
 import { removeWhiteBackground } from "@/lib/charmImageProcessor";
+import { generateOrderSecretKey } from "@/lib/orderTrackingSecurity";
 import {
   CHARM_THEME_CONFIGS,
   CharmThemeCategory,
@@ -1613,7 +1614,11 @@ Key 3D printing & charm specs:
 
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
               <button
-                onClick={() => router.push(`/tracking?code=${createdRequestId}`)}
+                onClick={() => {
+                  const reqId = createdRequestId || "";
+                  const key = generateOrderSecretKey(reqId);
+                  router.push(`/tracking?code=${reqId}&key=${key}`);
+                }}
                 className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-medium shadow-sm transition-all"
               >
                 Theo dõi & duyệt thiết kế ngay

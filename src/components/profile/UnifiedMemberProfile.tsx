@@ -28,6 +28,7 @@ import {
   generateSecretKey,
   buildPersonalizedPassportUrl,
 } from "@/lib/passportSecurity";
+import { generateOrderSecretKey } from "@/lib/orderTrackingSecurity";
 import {
   Sparkles,
   QrCode,
@@ -1111,12 +1112,17 @@ export const UnifiedMemberProfile: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Passport code link if ready */}
-                    {req.passportCode && (
-                      <div className="pt-2 border-t border-[#E8E2D8] flex items-center justify-between text-xs">
-                        <span className="text-[#5E4D43]">
-                          Mã Passport độc bản gán theo: <strong>{req.passportCode}</strong>
-                        </span>
+                    {/* Passport code link & Tracking */}
+                    <div className="pt-2 border-t border-[#E8E2D8] flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <Link
+                        href={`/tracking?code=${req.id}&key=${generateOrderSecretKey(req.id)}`}
+                        className="text-[#B85D43] hover:text-[#A24E36] font-medium flex items-center gap-1"
+                      >
+                        <span>Theo dõi tiến độ & duyệt concept</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+
+                      {req.passportCode && (
                         <button
                           type="button"
                           onClick={() => {
@@ -1151,13 +1157,13 @@ export const UnifiedMemberProfile: React.FC = () => {
                               });
                             }
                           }}
-                          className="text-[#B85D43] hover:text-[#A24E36] font-medium flex items-center gap-1 cursor-pointer"
+                          className="text-[#2D5E4E] hover:text-[#234B3E] font-medium flex items-center gap-1 cursor-pointer"
                         >
                           <span>Mở xem Story Passport</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))}
 
@@ -1248,7 +1254,17 @@ export const UnifiedMemberProfile: React.FC = () => {
                       </div>
 
                       {/* 2-Way Confirmation & Digital Claiming */}
-                      <div className="pt-2 border-t border-[#E8E2D8]">
+                      <div className="pt-2 border-t border-[#E8E2D8] space-y-2">
+                        <div className="flex items-center justify-between text-xs pb-1 border-b border-[#FAF7F2]">
+                          <span className="text-[#7A6F68]">Tiến độ đơn hàng:</span>
+                          <Link
+                            href={`/tracking?code=${order.orderCode}&key=${generateOrderSecretKey(order.orderCode)}`}
+                            className="text-[#B85D43] hover:text-[#A24E36] font-medium flex items-center gap-1"
+                          >
+                            <span>Xem hành trình chi tiết</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
                         {order.isClaimed ? (
                           <div className="p-3.5 rounded-xl bg-[#F4F9F6] border border-[#D1E7DD] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                             <div className="flex items-center gap-2 text-xs text-[#2D5E4E] font-medium">

@@ -11,31 +11,16 @@ interface NetsIntroLoaderProps {
 
 export const NetsIntroLoader: React.FC<NetsIntroLoaderProps> = ({
   onComplete,
-  forceShow = false,
+  forceShow = true,
   onClose,
 }) => {
-  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
   const [animationPhase, setAnimationPhase] = useState<"drawing" | "holding" | "fading">("drawing");
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (forceShow) {
-      setIsVisible(true);
-      setAnimationPhase("drawing");
-      return;
-    }
-
-    const hasShown = sessionStorage.getItem("net_intro_shown_session");
-    if (hasShown === "true") {
-      setIsVisible(false);
-      if (onComplete) onComplete();
-      return;
-    }
-
     setIsVisible(true);
     setAnimationPhase("drawing");
-  }, [forceShow, onComplete]);
+  }, []);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -63,11 +48,6 @@ export const NetsIntroLoader: React.FC<NetsIntroLoaderProps> = ({
   }, [isVisible]);
 
   const handleFinish = () => {
-    try {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("net_intro_shown_session", "true");
-      }
-    } catch {}
     setIsVisible(false);
     if (onClose) onClose();
     if (onComplete) onComplete();

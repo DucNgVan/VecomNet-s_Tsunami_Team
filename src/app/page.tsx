@@ -56,7 +56,7 @@ const DEFAULT_COLLECTION_CHARMS = [
 ];
 
 export default function HomePage() {
-  const [showIntro, setShowIntro] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   const [hero3dMode, setHero3dMode] = useState(true);
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [selectedBagColorIdx, setSelectedBagColorIdx] = useState(0);
@@ -127,7 +127,7 @@ export default function HomePage() {
   return (
     <div className="w-full min-h-screen bg-[#FAF7F2] text-[#2D231E]">
       {showIntro && (
-        <NetsIntroLoader onComplete={() => setShowIntro(false)} />
+        <NetsIntroLoader forceShow={true} onComplete={() => setShowIntro(false)} />
       )}
 
       {/* 1. HERO SECTION: 3D-First Interactive Bag Presentation */}

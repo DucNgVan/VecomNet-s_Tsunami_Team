@@ -62,6 +62,15 @@ export interface BackendOrder {
   items: BackendOrderItem[];
   subtotal: number;
   shippingFee: number;
+  discountAmount?: number;
+  appliedVoucher?: {
+    code: string;
+    title: string;
+    discountType: string;
+    discountValue: number;
+    discountAmount: number;
+    isFreeShipping?: boolean;
+  };
   total: number;
   totalPlasticOffsetKg: number;
   assignedBatchId: string;

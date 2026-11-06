@@ -916,6 +916,31 @@ export const AdminOrdersTabRefactored: React.FC<AdminOrdersTabProps> = ({
                     </div>
                   </div>
 
+                  {/* Hiển thị chi tiết Voucher đã áp dụng */}
+                  {(currentOrder.appliedVoucher || (currentOrder.discountAmount && currentOrder.discountAmount > 0)) && (
+                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-[11px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">
+                          {currentOrder.appliedVoucher?.code || "VOUCHER"}
+                        </span>
+                        <div>
+                          <div className="font-bold text-emerald-900">
+                            {currentOrder.appliedVoucher?.title || "Mã ưu đãi đã áp dụng"}
+                          </div>
+                          <div className="text-[10px] text-emerald-700">
+                            Tạm tính: {formatVND(currentOrder.subtotal)} • Phí ship: {formatVND(currentOrder.shippingFee)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-sm text-emerald-700">
+                          -{formatVND(currentOrder.discountAmount || currentOrder.appliedVoucher?.discountAmount || 0)}
+                        </div>
+                        <span className="text-[10px] text-emerald-600 font-medium">Khấu trừ vào tổng đơn</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[#2A2521]">Lịch sử giao dịch thu/hoàn tiền:</span>
                     <button

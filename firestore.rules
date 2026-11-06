@@ -50,6 +50,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // 9. Mã giảm giá & Vouchers
+    match /vouchers/{voucherId} {
+      allow read: if true;
+      allow write: if false; // Ghi qua server admin API
+    }
+
     // Mặc định: Chặn toàn bộ các thao tác ghi khác ngoài danh mục cho phép
     match /{document=**} {
       allow read, write: if false;

@@ -5,6 +5,8 @@ import { BackendOrder } from "../models";
 import { generateOrderCode } from "@/lib/utils";
 import { calculateShippingFee } from "@/data/vietnamAddress";
 import { sendOrderConfirmationEmail } from "@/lib/emailService";
+import { DEFAULT_VOUCHERS, validateAndCalculateVoucher } from "@/lib/voucherStorage";
+import { Voucher } from "@/types";
 
 export class OrderService {
   /**
@@ -119,8 +121,110 @@ export class OrderService {
 
     // 3. Tính phí vận chuyển tự động theo tỉnh/thành
     const province = customer?.city || "Đà Nẵng";
-    const shippingFee = calculateShippingFee(calculatedSubtotal, province);
-    const grandTotal = calculatedSubtotal + shippingFee;
+    const initialShippingFee = calculateShippingFee(calculatedSubtotal, province);
+
+    // 3B. Áp dụng Voucher Khuyến Mãi (Server-side validation)
+    let discountAmount = 0;
+    let finalShippingFee = initialShippingFee;
+    let validatedAppliedVoucher: any = null;
+
+    const codeToValidate = body.voucherCode || body.appliedVoucher?.code;
+    if (codeToValidate) {
+      const cleanVoucherCode = String(codeToValidate).trim().toUpperCase();
+      let voucherDef: Voucher | undefined = DEFAULT_VOUCHERS.find(
+        (v) => v.code.toUpperCase() === cleanVoucherCode
+      );
+
+      try {
+        const { adminDb } = await import("../config/firebaseAdmin");
+        if (adminDb) {
+          const snap = await adminDb.collection("vouchers").where("code", "==", cleanVoucherCode).limit(1).get();
+          if (!snap.empty) {
+            voucherDef = { ...(snap.docs[0].data() as Voucher), id: snap.docs[0].id };
+          }
+        }
+      } catch (fsErr) {
+        // Fallback to default
+      }
+
+      if (voucherDef) {
+        let isNewCustomer = true;
+        if (voucherDef.customerTarget === "new_customer") {
+          try {
+            const { adminDb } = await import("../config/firebaseAdmin");
+            if (adminDb) {
+              if (userId && userId !== "guest") {
+                const userOrdersSnap = await adminDb.collection("orders").where("userId", "==", userId).limit(1).get();
+                if (!userOrdersSnap.empty) isNewCustomer = false;
+              }
+              if (isNewCustomer && customer?.email) {
+                const emailSnap = await adminDb
+                  .collection("orders")
+                  .where("customer.email", "==", customer.email.trim().toLowerCase())
+                  .limit(1)
+                  .get();
+                if (!emailSnap.empty) isNewCustomer = false;
+              }
+              if (isNewCustomer && customer?.phone) {
+                const cleanPhone = customer.phone.trim().replace(/\D/g, "");
+                const phoneSnap = await adminDb
+                  .collection("orders")
+                  .where("customer.phone", "==", cleanPhone)
+                  .limit(1)
+                  .get();
+                if (!phoneSnap.empty) isNewCustomer = false;
+              }
+            }
+          } catch (e) {
+            // Fallback
+          }
+        }
+
+        const valResult = validateAndCalculateVoucher(voucherDef, {
+          items: verifiedItems,
+          subtotal: calculatedSubtotal,
+          shippingFee: initialShippingFee,
+          isNewCustomer,
+          customerEmail: customer?.email,
+          customerPhone: customer?.phone,
+          userId,
+        });
+
+        if (valResult.eligible) {
+          discountAmount = valResult.discountAmount;
+          if (valResult.isFreeShipping) {
+            finalShippingFee = 0;
+          }
+          validatedAppliedVoucher = {
+            code: voucherDef.code,
+            title: voucherDef.title,
+            discountType: voucherDef.discountType,
+            discountValue: voucherDef.discountValue,
+            discountAmount,
+            isFreeShipping: valResult.isFreeShipping,
+          };
+
+          // Cập nhật lượt sử dụng
+          try {
+            const { adminDb } = await import("../config/firebaseAdmin");
+            if (adminDb && voucherDef.id) {
+              const vRef = adminDb.collection("vouchers").doc(voucherDef.id);
+              const vDoc = await vRef.get();
+              if (vDoc.exists) {
+                await vRef.update({
+                  usedCount: (vDoc.data()?.usedCount || 0) + 1,
+                  updatedAt: new Date().toISOString(),
+                });
+              }
+            }
+          } catch (incErr) {
+            console.warn("[OrderService] Increment voucher usedCount notice:", incErr);
+          }
+        }
+      }
+    }
+
+    const grandTotal = Math.max(0, calculatedSubtotal - discountAmount + finalShippingFee);
 
     const orderCode = generateOrderCode();
     const orderId = `ord-${Date.now()}`;
@@ -197,7 +301,9 @@ export class OrderService {
       },
       items: verifiedItems,
       subtotal: calculatedSubtotal,
-      shippingFee,
+      shippingFee: finalShippingFee,
+      discountAmount,
+      appliedVoucher: validatedAppliedVoucher,
       total: grandTotal,
       totalPlasticOffsetKg: finalPlasticOffsetKg,
       assignedBatchId,

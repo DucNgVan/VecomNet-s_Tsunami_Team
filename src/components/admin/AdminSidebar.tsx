@@ -25,8 +25,8 @@ interface AdminSidebarProps {
 
 // Danh sách quyền hạn chuẩn xác cho từng vai trò (Role-based Access Control)
 export const ALLOWED_TABS_BY_ROLE: Record<AdminRole, string[]> = {
-  admin: ["overview", "orders", "products", "net-passport", "partners"],
-  orders_staff: ["overview", "orders", "partners"], // Chỉ thấy Đơn hàng & Đối tác
+  admin: ["overview", "orders", "products", "net-passport", "partners", "vouchers"],
+  orders_staff: ["overview", "orders", "partners", "vouchers"], // Đơn hàng, Đối tác & Mã giảm giá
   warehouse_staff: ["overview", "products", "net-passport"], // Chỉ thấy Sản phẩm, Kho lưới & Sản xuất
 };
 
@@ -62,6 +62,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     {
       id: "partners",
       label: "Đối tác",
+    },
+    {
+      id: "vouchers",
+      label: "Mã giảm giá",
     },
   ];
 

@@ -211,6 +211,15 @@ export interface AdminOrder {
   items: AdminOrderItem[];
   subtotal: number;
   shippingFee: number;
+  discountAmount?: number;
+  appliedVoucher?: {
+    code: string;
+    title: string;
+    discountType: string;
+    discountValue: number;
+    discountAmount: number;
+    isFreeShipping?: boolean;
+  };
   total: number;
   paidAmount: number; // Tiền đã thu thực tế
   remainingAmount: number; // Còn lại

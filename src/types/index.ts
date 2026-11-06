@@ -155,6 +155,8 @@ export type Order = {
   items: CartItem[];
   subtotal: number;
   shippingFee: number;
+  discountAmount?: number;
+  appliedVoucher?: AppliedVoucherInfo;
   total: number;
   totalPlasticOffsetKg: number;
   assignedBatchId: string;
@@ -256,3 +258,49 @@ export type Article = {
   updatedAt?: string;
   tags?: string[];
 };
+
+export type VoucherDiscountType =
+  | 'percentage'       // Giảm % trên tổng đơn hoặc danh mục
+  | 'fixed_amount'     // Giảm số tiền cố định (vd: 50.000đ)
+  | 'same_price_item'  // Đồng giá theo sản phẩm/charm (vd: đồng giá 50.000đ/charm)
+  | 'free_shipping';   // Miễn phí vận chuyển
+
+export type VoucherApplicableTarget =
+  | 'all'              // Toàn bộ đơn hàng
+  | 'charm'            // Chỉ áp dụng cho Charm
+  | 'bag';             // Chỉ áp dụng cho Túi
+
+export type VoucherCustomerTarget =
+  | 'all'              // Mọi khách hàng
+  | 'new_customer';    // Khách hàng mới (đơn đầu tiên)
+
+export interface Voucher {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  discountType: VoucherDiscountType;
+  discountValue: number;
+  maxDiscountAmount?: number;
+  minOrderValue?: number;
+  minQuantity?: number;
+  applicableTarget: VoucherApplicableTarget;
+  customerTarget: VoucherCustomerTarget;
+  usageLimit?: number;
+  usedCount: number;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AppliedVoucherInfo {
+  code: string;
+  title: string;
+  discountType: VoucherDiscountType;
+  discountValue: number;
+  discountAmount: number;
+  isFreeShipping?: boolean;
+}

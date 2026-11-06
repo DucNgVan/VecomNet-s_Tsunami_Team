@@ -28,6 +28,7 @@ import { AdminOrdersTabRefactored } from "@/components/admin/AdminOrdersTabRefac
 import { AdminSupplyChainPassportTab } from "@/components/admin/AdminSupplyChainPassportTab";
 import { AdminPartnersTab } from "@/components/admin/AdminPartnersTab";
 import { AdminCatalogTabRefactored } from "@/components/admin/AdminCatalogTabRefactored";
+import { AdminVouchersTab } from "@/components/admin/AdminVouchersTab";
 import { AdminSandboxModal } from "@/components/admin/AdminSandboxModal";
 
 function AdminPortalContent() {
@@ -68,6 +69,8 @@ function AdminPortalContent() {
         target = "net-passport";
       } else if (["partners", "commission"].includes(rawTab)) {
         target = "partners";
+      } else if (["vouchers", "discounts", "coupons"].includes(rawTab)) {
+        target = "vouchers";
       }
     }
 
@@ -397,6 +400,10 @@ function AdminPortalContent() {
               orders={orders}
               onPartnersChange={(updated) => setPartners(updated)}
             />
+          )}
+
+          {activeTab === "vouchers" && ALLOWED_TABS_BY_ROLE[currentRole].includes("vouchers") && (
+            <AdminVouchersTab />
           )}
         </div>
       </main>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NÉT — Video Demo Showcase & Archify Flow Structure (Full HD 1080p)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #020914;
+      --bg-card: rgba(10, 22, 40, 0.75);
+      --border-cyan: rgba(0, 240, 255, 0.25);
+      --cyan-glow: #00f0ff;
+      --emerald: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: radial-gradient(circle at 50% 0%, #06203a 0%, #020914 70%);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+      padding-bottom: 60px;
+    }
+    header {
+      border-bottom: 1px solid var(--border-cyan);
+      backdrop-filter: blur(16px);
+      background: rgba(2, 9, 20, 0.85);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 16px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: var(--cyan-glow);
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-left: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--cyan-glow);
+    }
+    .hero {
+      max-width: 1400px;
+      margin: 40px auto 20px;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .tag-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--cyan-glow);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--cyan-glow);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffffff 30%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 850px;
+      margin: 0 auto 30px;
+    }
+    
+    /* Tabs */
+    .tabs-container {
+      max-width: 1300px;
+      margin: 0 auto 20px;
+      padding: 0 24px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .tab-btn {
+      background: rgba(10, 22, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-muted);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+    .tab-btn:hover {
+      border-color: var(--cyan-glow);
+      color: #fff;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+      border-color: var(--cyan-glow);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+    }
+
+    .video-container {
+      max-width: 1300px;
+      margin: 0 auto 40px;
+      padding: 0 24px;
+    }
+    .video-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      box-shadow: 0 20px 60px -15px rgba(0, 240, 255, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      aspect-ratio: 16 / 9;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+    .chapters-grid {
+      max-width: 1300px;
+      margin: 20px auto 40px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .chapter-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .chapter-card:hover {
+      border-color: var(--cyan-glow);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -6px rgba(0, 240, 255, 0.25);
+    }
+    .chap-time {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 12px;
+      color: var(--cyan-glow);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .chap-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .chap-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .section-title {
+      max-width: 1300px;
+      margin: 40px auto 20px;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .section-title h2 {
+      font-size: 26px;
+      font-weight: 700;
+    }
+    .archify-frame {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .archify-embed {
+      width: 100%;
+      height: 640px;
+      border-radius: 18px;
+      border: 1px solid var(--border-cyan);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      background: #010814;
+    }
+    .cta-box {
+      max-width: 1300px;
+      margin: 50px auto 0;
+      padding: 40px 24px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+      border: 1px solid var(--border-cyan);
+      border-radius: 20px;
+      text-align: center;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #00f0ff 0%, #00b4d8 100%);
+      color: #020914;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.2s;
+      margin: 10px;
+    }
+    .btn:hover {
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+      transform: scale(1.02);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: none;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-badge">
+      <span>🌊 NÉT</span>
+      <span style="font-size: 13px; color: var(--text-muted); font-weight: 400;">| ECO-LUXURY PLATFORM</span>
+    </div>
+    <div class="nav-links">
+      <a href="#video">Xem Video Demo</a>
+      <a href="#archify">Kiến Trúc Archify</a>
+      <a href="#chapters">Phân Cảnh Chi Tiết</a>
+      <a href="https://www.net-s.id.vn" target="_blank" style="color: var(--cyan-glow);">Trang Web Chính Thức ↗</a>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="tag-badge">OFFICIAL PRODUCT LAUNCH DEMO • 1080P FULL HD</div>
+    <h1>NÉT — Reclaiming Oceans. Weaving Memories.</h1>
+    <p class="subtitle">Video demo toàn diện các luồng vận hành của website NÉT (User & Admin): Bắt đầu từ nét bút khởi nguyên đặc trưng "Nets", trải nghiệm 3D WebGL, tùy biến túi Nét Studio Snap-to-Mesh, tra cứu đơn hàng 4 bước, hộ chiếu số Phygital GPS và hệ thống quản trị xưởng Nét Workshop OS.</p>
+  </div>
+
+  <!-- Switcher Tabs -->
+  <div class="tabs-container">
+    <button class="tab-btn active" id="tabBtn1" onclick="switchTab(1)">
+      <span>🎬 Video Demo Thực Tế (Bản Cắt Ghép & Lồng Subtitle • 4:11)</span>
+    </button>
+    <button class="tab-btn" id="tabBtn2" onclick="switchTab(2)">
+      <span>🌐 Video Tổng Hợp & Archify Flow (Concept Master • 2:20)</span>
+    </button>
+  </div>
+
+  <!-- TAB 1: User Recording Processed Video (Featured) -->
+  <div id="tab1" class="tab-content active">
+    <div class="video-container" id="video">
+      <div class="video-wrapper">
+        <video id="demoVideoUser" controls preload="metadata">
+          <source src="../public/assets/NET_User_Demo_Processed_1080p.mp4" type="video/mp4">
+          Trình duyệt của bạn không hỗ trợ thẻ video HTML5.
+        </video>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 16px; margin-top: 20px; flex-wrap: wrap;">
+        <a href="../public/assets/NET_User_Demo_Processed_1080p.mp4" download class="btn">Tải Video Demo Thực Tế Master (1080p MP4) ↓</a>
+        <a href="../public/assets/NET_Intro_NetBut_Loader.mp4" download class="btn btn-secondary">Tải Video Nét Bút Loader (MP4) ↓</a>
+      </div>
+    </div>
+
+    <div class="section-title" id="chapters">
+      <div>
+        <h2>10 Phân Cảnh Trình Diễn Chi Tiết (Bản Demo Thực Tế)</h2>
+        <p style="color: var(--text-muted); font-size: 14px;">Bấm vào từng phân cảnh để nhảy trực tiếp tới mốc thời gian trên video</p>
+      </div>
+    </div>
+
+    <div class="chapters-grid">
+      <div class="chapter-card" onclick="seekVideoUser(0)" style="border-color: var(--cyan-glow); background: rgba(0, 240, 255, 0.06);">
+        <div class="chap-time">00:00 - 00:37</div>
+        <div class="chap-title">01. Trang Chủ & Bộ Đếm ESG Biển Sâu</div>
+        <div class="chap-desc">Mô hình 3D xoay 360 độ, chuyển đổi màu sắc thời gian thực và bộ đếm 142.5kg lưới ma đã thu gom.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(37.5)">
+        <div class="chap-time">00:37 - 01:02</div>
+        <div class="chap-title">02. Cửa Hàng & Chi Tiết Sản Phẩm</div>
+        <div class="chap-desc">Danh mục túi Eco Tote tái chế, bộ lọc thông số bảo vệ môi trường và chuyển tiếp cấu hình riêng.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(62.5)">
+        <div class="chap-time">01:02 - 01:42</div>
+        <div class="chap-title">03. Nét Studio 3D & Snap-to-Mesh</div>
+        <div class="chap-desc">Không gian thiết kế túi 3D WebGL, kéo thả Charm Cầu Rồng & Sóng Biển hít ngàm chuẩn xác #B2, #C4.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(102.5)">
+        <div class="chap-time">01:42 - 01:59</div>
+        <div class="chap-title">04. Tra Cứu Đơn Hàng NET-REQ-4531</div>
+        <div class="chap-desc">Hành trình 4 bước thủ công minh bạch: Thu gom lưới -> Sơ chế -> May thủ công -> Vận chuyển xanh.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(119.5)">
+        <div class="chap-time">01:59 - 02:10</div>
+        <div class="chap-title">05. Digital Story Passport (Sơn Trà GPS)</div>
+        <div class="chap-desc">Căn cước số Phygital độc bản, tọa độ 16.1024°N 108.2611°E và vinh danh thợ lặn tình nguyện SASA.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(130.5)">
+        <div class="chap-time">02:10 - 02:22</div>
+        <div class="chap-title">06. Đội Ngũ Sáng Lập VecomNet's Tsunami</div>
+        <div class="chap-desc">Đội thi Business Digital Challenge 2026 với khát vọng bảo tồn hệ sinh thái biển đảo miền Trung.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(142.5)">
+        <div class="chap-time">02:22 - 02:54</div>
+        <div class="chap-title">07. Trung Tâm Hỗ Trợ & Bảo Hành Trọn Đời</div>
+        <div class="chap-desc">Chính sách thu hồi sản phẩm cũ đổi voucher tái sinh, cam kết khép kín không để rác quay lại biển.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(154.5)">
+        <div class="chap-time">02:34 - 02:46</div>
+        <div class="chap-title">08. Xác Thực Bảo Mật Cổng Quản Trị OS</div>
+        <div class="chap-desc">Phân quyền kiểm soát xưởng may với Master Passkey mã hóa cấp quản đốc.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(166.5)">
+        <div class="chap-time">02:46 - 03:32</div>
+        <div class="chap-title">09. Quản Trị Sản Phẩm & Voucher Khuyến Mãi</div>
+        <div class="chap-desc">Quản lý 5 SKU màu sắc túi lưới, cấu hình số lượng tồn kho và chiến dịch phát hành Voucher xanh.</div>
+      </div>
+      <div class="chapter-card" onclick="seekVideoUser(212.5)">
+        <div class="chap-time">03:32 - 04:11</div>
+        <div class="chap-title">10. Tổng Quan Điều Hành Xưởng May</div>
+        <div class="chap-desc">Cân đối 130kg lưới ma nguyên liệu, phân công nhiệm vụ nghệ nhân và tổng kết giải pháp kinh tế tuần hoàn.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Concept Master & Archify Flow -->
+  <div id="tab2" class="tab-content">
+    <div class="video-container">
+      <div class="video-wrapper">
+        <video id="demoVideoConcept" controls preload="metadata">
+          <source src="../public/assets/NET_Product_Demo_FullHD.mp4" type="video/mp4">
+          Trình duyệt của bạn không hỗ trợ thẻ video HTML5.
+        </video>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 16px; margin-top: 20px;">
+        <a href="../public/assets/NET_Product_Demo_FullHD.mp4" download class="btn">Tải Video Concept Master (1080p MP4) ↓</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Archify Flow Section -->
+  <div class="section-title" id="archify">
+    <div>
+      <h2>Sơ Đồ Flow Structure Tương Tác (Archify Showcase v3.2)</h2>
+      <p style="color: var(--text-muted); font-size: 14px;">Bản vẽ tương tác Signal-Flow khép kín 3 tầng: Khách Hàng (User) ↔ Core AI Engine ↔ Xưởng May (Admin)</p>
+    </div>
+    <div>
+      <a href="architecture/demo_flow_structure.html" target="_blank" class="btn btn-secondary" style="padding: 10px 20px; font-size: 13px;">Mở Toàn Màn Hình ↗</a>
+    </div>
+  </div>
+
+  <div class="archify-frame">
+    <iframe class="archify-embed" src="architecture/demo_flow_structure.html"></iframe>
+  </div>
+
+  <div class="cta-box">
+    <h2 style="font-size: 28px; margin-bottom: 12px;">Trải Nghiệm Trực Tiếp Nền Tảng NÉT</h2>
+    <p style="color: var(--text-muted); margin-bottom: 24px; max-width: 650px; margin-left: auto; margin-right: auto;">
+      Trang web chính thức đã triển khai trên Production tại <strong>https://www.net-s.id.vn</strong>, kết nối cơ sở dữ liệu Firebase Cloud Firestore và mô hình Three.js 3D chân thực.
+    </p>
+    <a href="https://www.net-s.id.vn" target="_blank" class="btn">Truy Cập www.net-s.id.vn ↗</a>
+    <a href="../public/assets/NET_User_Demo_Processed_1080p.mp4" download class="btn btn-secondary">Tải Video Master (1080p MP4)</a>
+  </div>
+
+  <script>
+    function switchTab(num) {
+      document.getElementById('tabBtn1').classList.toggle('active', num === 1);
+      document.getElementById('tabBtn2').classList.toggle('active', num === 2);
+      document.getElementById('tab1').classList.toggle('active', num === 1);
+      document.getElementById('tab2').classList.toggle('active', num === 2);
+    }
+
+    function seekVideoUser(seconds) {
+      const vid = document.getElementById('demoVideoUser');
+      vid.currentTime = seconds;
+      vid.play();
+      document.getElementById('video').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>

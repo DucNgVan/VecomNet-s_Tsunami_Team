@@ -11,7 +11,7 @@ import {
 } from "@/lib/designRequestStorage";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
-import { sanitizeSvg } from "@/lib/utils";
+import { sanitizeSvg, formatVND } from "@/lib/utils";
 // (Icon-free layout as requested)
 
 export const AdminDesignRequestsTab: React.FC = () => {
@@ -265,6 +265,13 @@ export const AdminDesignRequestsTab: React.FC = () => {
                       ★ Yêu cầu charm riêng: "{req.customCharm?.idea || req.notes}"
                     </div>
                   )}
+
+                  {req.voucherCode && (
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/60 text-[10px] text-emerald-300 font-mono">
+                      <span>Voucher: {req.voucherCode}</span>
+                      {req.discountAmount ? <span>(-{formatVND(req.discountAmount)})</span> : null}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -342,6 +349,20 @@ export const AdminDesignRequestsTab: React.FC = () => {
                     <div>
                       <span className="text-slate-400">Nguồn đối tác:</span>{" "}
                       <span className="font-mono text-amber-400 font-bold">{selectedReq.partnerCode}</span>
+                    </div>
+                  )}
+
+                  {(selectedReq.voucherCode || (selectedReq.discountAmount && selectedReq.discountAmount > 0)) && (
+                    <div className="p-2 rounded bg-emerald-950/50 border border-emerald-800/80 flex items-center justify-between text-xs text-emerald-200">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-emerald-400">Voucher:</span>
+                        <span className="font-mono font-bold bg-emerald-900/80 px-2 py-0.5 rounded text-white border border-emerald-600">
+                          {selectedReq.voucherCode || selectedReq.appliedVoucher?.code}
+                        </span>
+                      </div>
+                      {selectedReq.discountAmount ? (
+                        <span className="font-bold text-emerald-300">-{formatVND(selectedReq.discountAmount)}</span>
+                      ) : null}
                     </div>
                   )}
 

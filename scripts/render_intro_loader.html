@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #FAF7F2;
+      color: #2D231E;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .stage {
+      position: relative;
+      width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    svg {
+      width: 480px;
+      height: auto;
+      overflow: visible;
+      filter: drop-shadow(0 2px 4px rgba(36, 27, 22, 0.08));
+    }
+    .subtitle {
+      margin-top: 32px;
+      font-size: 16px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #7A6F68;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s, transform 0.5s;
+    }
+    .hint {
+      position: absolute;
+      bottom: -70px;
+      font-size: 13px;
+      color: #9E9289;
+      letter-spacing: 0.12em;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <svg viewBox="0 0 390 190" xmlns="http://www.w3.org/2000/svg">
+      <!-- Continuous cursive "Nets" handwritten path -->
+      <path
+        id="pathMain"
+        d="M 56 82 C 60 66, 72 58, 78 58 C 82 58, 83 72, 80 148 C 86 112, 112 58, 134 58 C 142 58, 145 72, 143 148 C 143 155, 148 155, 155 146 C 162 136, 172 104, 180 96 C 186 90, 192 92, 188 104 C 182 118, 166 128, 166 138 C 166 148, 178 152, 194 148 C 208 142, 224 96, 235 45 L 234 136 C 234 148, 244 150, 256 146 C 264 138, 276 110, 285 96 C 292 88, 276 88, 268 102 C 260 114, 272 122, 282 128 C 294 134, 296 146, 282 150 C 270 152, 264 146, 274 144 C 288 142, 310 144, 332 144"
+        fill="none"
+        stroke="#241B16"
+        stroke-width="8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <!-- Stroke 2: Crossbar for the 't' -->
+      <path
+        id="pathBar"
+        d="M 218 84 C 230 82, 246 82, 256 84"
+        fill="none"
+        stroke="#241B16"
+        stroke-width="7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    <div class="subtitle" id="subTitle">Từ biển cả · Đến ký ức riêng</div>
+    <div class="hint" id="hint">Chạm vào màn hình để bắt đầu</div>
+  </div>
+
+  <script>
+    const pathMain = document.getElementById('pathMain');
+    const pathBar = document.getElementById('pathBar');
+    const subTitle = document.getElementById('subTitle');
+    const hint = document.getElementById('hint');
+
+    const lenMain = pathMain.getTotalLength();
+    const lenBar = pathBar.getTotalLength();
+
+    pathMain.style.strokeDasharray = lenMain;
+    pathMain.style.strokeDashoffset = lenMain;
+
+    pathBar.style.strokeDasharray = lenBar;
+    pathBar.style.strokeDashoffset = lenBar;
+    pathBar.style.opacity = '0';
+
+    // Total animation time: 3.8s
+    // 0 to 1.8s: main path draws (ease [0.45, 0.05, 0.25, 1])
+    // 1.35s to 1.7s: bar draws
+    // 1.8s to 3.2s: hold, subtitle and hint fade in
+    // 3.2s to 3.8s: fade out
+    window.setProgress = function(sec) {
+      // 1. Main stroke progress
+      const pMain = Math.max(0, Math.min(1, sec / 1.8));
+      // Ease curve approx cubic-bezier(0.45, 0.05, 0.25, 1)
+      const easeMain = pMain < 0.5 ? 4 * pMain * pMain * pMain : 1 - Math.pow(-2 * pMain + 2, 3) / 2;
+      pathMain.style.strokeDashoffset = lenMain * (1 - easeMain);
+
+      // 2. Crossbar stroke
+      if (sec >= 1.35) {
+        pathBar.style.opacity = '1';
+        const pBar = Math.max(0, Math.min(1, (sec - 1.35) / 0.35));
+        const easeBar = 0.5 - 0.5 * Math.cos(Math.PI * pBar);
+        pathBar.style.strokeDashoffset = lenBar * (1 - easeBar);
+      } else {
+        pathBar.style.opacity = '0';
+        pathBar.style.strokeDashoffset = lenBar;
+      }
+
+      // 3. Subtitle
+      if (sec >= 1.8) {
+        subTitle.style.opacity = '0.75';
+        subTitle.style.transform = 'translateY(0)';
+      } else {
+        subTitle.style.opacity = '0';
+        subTitle.style.transform = 'translateY(10px)';
+      }
+
+      // 4. Hint
+      if (sec >= 1.0) {
+        hint.style.opacity = '0.4';
+      } else {
+        hint.style.opacity = '0';
+      }
+
+      // 5. Fade out stage at 3.2s to 3.8s
+      if (sec >= 3.2) {
+        const fadeP = (sec - 3.2) / 0.6;
+        document.body.style.opacity = (1 - fadeP).toString();
+      } else {
+        document.body.style.opacity = '1';
+      }
+    };
+  </script>
+</body>
+</html>

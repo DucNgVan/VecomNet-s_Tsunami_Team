@@ -88,7 +88,10 @@ export function convertDesignRequestToAdminOrder(req: DesignRequest): AdminOrder
     });
   }
 
-  const total = req.finalTotal || req.baseTotal || (items.reduce((s, it) => s + (it.price * it.quantity), 0));
+  const rawSubtotal = req.baseTotal || items.reduce((s, it) => s + (it.price * it.quantity), 0);
+  const total = req.finalTotal !== undefined
+    ? req.finalTotal
+    : Math.max(0, rawSubtotal - (req.discountAmount || 0) + (req.shippingFee || 0));
 
   return {
     orderId: req.id,
@@ -105,8 +108,10 @@ export function convertDesignRequestToAdminOrder(req: DesignRequest): AdminOrder
       note: req.notes || req.customCharm?.idea || undefined,
     },
     items,
-    subtotal: total,
-    shippingFee: 0,
+    subtotal: rawSubtotal,
+    shippingFee: req.shippingFee || 0,
+    discountAmount: req.discountAmount || 0,
+    appliedVoucher: req.appliedVoucher,
     total,
     paidAmount: req.status === "completed" || req.status === "confirmed" ? total : 0,
     remainingAmount: req.status === "completed" || req.status === "confirmed" ? 0 : total,

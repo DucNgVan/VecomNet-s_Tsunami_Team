@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "NÉT — End-to-End User & Admin Flow Structure",
+    "subtitle": "Kiến trúc luồng tương tác thống nhất giữa Khách Hàng (User), Xưởng May (Admin) & AI Engine",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/demo_flow_structure.html"
+  },
+  "lanes": [
+    { "id": "user_lane", "label": "Khách Hàng (User Experience)" },
+    { "id": "engine_lane", "label": "AI & Dịch Vụ Số (Core Engine)" },
+    { "id": "admin_lane", "label": "Xưởng NÉT (Admin Supply Chain)" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "1. Thu gom & Số hóa mẻ lưới", "fromCol": 0, "toCol": 1 },
+    { "id": "p2", "label": "2. Khám phá & Đồng sáng tạo 3D", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "p3", "label": "3. Đặt hàng & Giao nhận 2 chiều", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "ingest_grp", "label": "Chuỗi cung ứng nguồn", "lane": "admin_lane", "fromCol": 0, "toCol": 1 },
+    { "id": "co_create_grp", "label": "Đồng sáng tạo cá nhân", "lane": "user_lane", "fromCol": 1, "toCol": 3, "variant": "emphasis" },
+    { "id": "fulfillment_grp", "label": "Xác thực 2 chiều", "lane": "user_lane", "fromCol": 4, "toCol": 5, "variant": "security" }
+  ],
+  "mainPath": [
+    "user_landing",
+    "user_quiz",
+    "ai_story",
+    "user_studio",
+    "user_cart",
+    "user_checkout",
+    "engine_payment",
+    "admin_dispatch",
+    "user_confirm",
+    "engine_passport"
+  ],
+  "nodes": [
+    { "id": "user_landing", "lane": "user_lane", "col": 0, "type": "frontend", "label": "Khám Phá Biển", "sublabel": "3D Canvas & ESG", "tag": "WebGL", "width": 130 },
+    { "id": "user_quiz", "lane": "user_lane", "col": 1, "type": "frontend", "label": "Trắc Nghiệm AI", "sublabel": "My Da Nang Story", "tag": "AI Quiz", "width": 130 },
+    { "id": "user_studio", "lane": "user_lane", "col": 2, "type": "frontend", "label": "NÉT Studio 3D", "sublabel": "Snap Charm Lưới", "tag": "3D Bag", "width": 130 },
+    { "id": "user_cart", "lane": "user_lane", "col": 3, "type": "frontend", "label": "Giỏ Hàng Bản Vẽ", "sublabel": "Snapshot xưởng", "tag": "Cart", "width": 130 },
+    { "id": "user_checkout", "lane": "user_lane", "col": 4, "type": "frontend", "label": "Thanh Toán QR", "sublabel": "Khớp mã tự động", "tag": "Checkout", "width": 130 },
+    { "id": "user_confirm", "lane": "user_lane", "col": 5, "type": "security", "label": "Nhận Hàng 2 Chiều", "sublabel": "Kích hoạt độc bản", "tag": "2-Way Step 2", "width": 130 },
+
+    { "id": "iot_origin", "lane": "engine_lane", "col": 0, "type": "external", "label": "Tọa Độ Sơn Trà", "sublabel": "16.1024N 108.2611E", "tag": "SASA Divers", "width": 130 },
+    { "id": "ai_story", "lane": "engine_lane", "col": 1, "type": "cloud", "label": "AI Story Engine", "sublabel": "Gemini / GPT-4o", "tag": "Poetic Vibe", "width": 130 },
+    { "id": "engine_3d", "lane": "engine_lane", "col": 2, "type": "cloud", "label": "Three.js WebGL", "sublabel": "tuixach.glb 360", "tag": "3D Engine", "width": 130 },
+    { "id": "engine_payment", "lane": "engine_lane", "col": 4, "type": "messagebus", "label": "Cổng VietQR", "sublabel": "Webhook tức thời", "tag": "Banking", "width": 130 },
+    { "id": "engine_passport", "lane": "engine_lane", "col": 5, "type": "database", "label": "Story Passport", "sublabel": "Lưu di sản biển", "tag": "Passport", "width": 130 },
+
+    { "id": "admin_pack", "lane": "admin_lane", "col": 0, "type": "backend", "label": "Nhận Kiện Lưới", "sublabel": "GPS Sơn Trà 142kg", "tag": "net_packs", "width": 130 },
+    { "id": "admin_mint", "lane": "admin_lane", "col": 1, "type": "backend", "label": "Đăng Ký Lô Lưới", "sublabel": "NET-DN-20241010", "tag": "Auto Mint", "width": 130 },
+    { "id": "admin_plan", "lane": "admin_lane", "col": 2, "type": "backend", "label": "Lệnh Cắt May", "sublabel": "Định mức 0.65kg", "tag": "Yield", "width": 130 },
+    { "id": "admin_craft", "lane": "admin_lane", "col": 3, "type": "backend", "label": "Xưởng May Chế Tác", "sublabel": "Đính charm Barcode", "tag": "Crafting", "width": 130 },
+    { "id": "admin_dispatch", "lane": "admin_lane", "col": 4, "type": "security", "label": "Shop Đã Giao", "sublabel": "shopDelivered", "tag": "2-Way Step 1", "width": 130 }
+  ],
+  "edges": [
+    { "id": "e_landing_quiz", "from": "user_landing", "to": "user_quiz", "label": "khám phá", "variant": "emphasis" },
+    { "id": "e_quiz_ai", "from": "user_quiz", "to": "ai_story", "label": "gửi câu hỏi", "variant": "default" },
+    { "id": "e_ai_studio", "from": "ai_story", "to": "user_studio", "label": "gợi ý charm", "variant": "emphasis" },
+    { "id": "e_3d_studio", "from": "engine_3d", "to": "user_studio", "label": "render 3D", "variant": "dashed" },
+    { "id": "e_studio_cart", "from": "user_studio", "to": "user_cart", "label": "lưu thiết kế", "variant": "emphasis" },
+    { "id": "e_cart_checkout", "from": "user_cart", "to": "user_checkout", "label": "đặt hàng", "variant": "emphasis" },
+    { "id": "e_checkout_pay", "from": "user_checkout", "to": "engine_payment", "label": "quét VietQR", "variant": "default" },
+    { "id": "e_pay_dispatch", "from": "engine_payment", "to": "admin_dispatch", "label": "tiền về xưởng", "variant": "emphasis" },
+    { "id": "e_pack_mint", "from": "admin_pack", "to": "admin_mint", "label": "tạo mã lô", "variant": "default" },
+    { "id": "e_mint_plan", "from": "admin_mint", "to": "admin_plan", "label": "phân bổ vải", "variant": "default" },
+    { "id": "e_plan_craft", "from": "admin_plan", "to": "admin_craft", "label": "phôi may", "variant": "default" },
+    { "id": "e_craft_dispatch", "from": "admin_craft", "to": "admin_dispatch", "label": "xuất xưởng", "variant": "default" },
+    { "id": "e_dispatch_confirm", "from": "admin_dispatch", "to": "user_confirm", "label": "bàn giao 2 chiều", "variant": "security" },
+    { "id": "e_confirm_passport", "from": "user_confirm", "to": "engine_passport", "label": "kích hoạt độc bản", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mô Hình Phygital Thông Minh",
+      "items": [
+        "Mỗi chiếc túi có mã Serial độc bản gắn liền tọa độ mẻ lưới thực",
+        "Thay thế hoàn toàn thẻ nhựa NFC bằng quy trình giao nhận 2 chiều"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Tác Động Môi Trường Minh Bạch",
+      "items": [
+        "Chỉ số ESG tính toán theo thời gian thực: kg rác & m² san hô",
+        "Story Passport lưu trữ vĩnh viễn câu chuyện cá nhân hóa và di sản"
+      ]
+    }
+  ]
+}

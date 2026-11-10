@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "2ae55c0c-b49b-4185-90e3-215504969619",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/demo_flow_structure.json",
+  "output": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/demo_flow_structure.html",
+  "specification": {
+    "sha256": "d9c1b7920690741620751c8ad42d7c1fc60297947557bcd28bc48104c6470dd5",
+    "bytes": 6906
+  },
+  "artifact": {
+    "sha256": "8fe77a71f35f6507995770571440debd15346d0f6f1d0af34e77aabe6a272892",
+    "bytes": 866528
+  }
+}

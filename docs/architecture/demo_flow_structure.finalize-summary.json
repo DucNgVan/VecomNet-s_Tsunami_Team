@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/demo_flow_structure.json",
+    "sha256": "d9c1b7920690741620751c8ad42d7c1fc60297947557bcd28bc48104c6470dd5",
+    "bytes": 6906
+  },
+  "artifact": {
+    "path": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/demo_flow_structure.html",
+    "sha256": "8fe77a71f35f6507995770571440debd15346d0f6f1d0af34e77aabe6a272892",
+    "bytes": 866528
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/demo_flow_structure.finalize.json",
+    "summaryReceipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/demo_flow_structure.finalize-summary.json",
+    "browserCheckReceipt": "/Users/3o/Documents/Study/Vecomnets/docs/architecture/demo_flow_structure.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-06T08:34:22.128Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2572,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

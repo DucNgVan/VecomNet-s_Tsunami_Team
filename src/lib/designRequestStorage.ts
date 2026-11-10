@@ -1,4 +1,4 @@
-import { PlacedCharm, BagMeshColor } from "@/types";
+import { PlacedCharm, BagMeshColor, AppliedVoucherInfo } from "@/types";
 import { deductInventoryForCustomOrder } from "@/lib/inventoryStorage";
 
 export type DeliveryMethod =
@@ -78,6 +78,12 @@ export interface DesignRequest {
   customCharmPrice?: number; // Quoted by admin
   finalTotal?: number;
   status: RequestStatus;
+
+  // Voucher & Discount details
+  appliedVoucher?: AppliedVoucherInfo;
+  voucherCode?: string;
+  discountAmount?: number;
+  shippingFee?: number;
 
   // Concept & Versioning
   conceptVersion?: number;

@@ -21,7 +21,7 @@ import { getManufacturedItems } from "@/lib/supplyChainStorage";
 import { ManufacturedBagItem } from "@/types";
 
 export default function ShopPage() {
-  const [filterCategory, setFilterCategory] = useState<"all" | "combos" | "bags" | "charms">(
+  const [filterCategory, setFilterCategory] = useState<"all" | "bags" | "charms">(
     "all"
   );
   const [selectedDetailItem, setSelectedDetailItem] = useState<ProductDetailItem | null>(null);
@@ -286,8 +286,7 @@ export default function ShopPage() {
   };
 
   const filterTabs = [
-    { id: "all", label: "Tất Cả Sản Phẩm", count: products.length },
-    { id: "combos", label: "Bộ Sưu Tập Combo", count: comboItems.length },
+    { id: "all", label: "Tất Cả Sản Phẩm", count: bagItems.length + charmItems.length },
     { id: "bags", label: "Phôi Túi Lưới (Bases)", count: bagItems.length },
     { id: "charms", label: "Charm Thủy Tinh (Charms)", count: charmItems.length },
   ];
@@ -385,7 +384,7 @@ export default function ShopPage() {
               Đang tải danh mục sản phẩm từ Cloud Firestore...
             </p>
           </div>
-        ) : products.length === 0 ? (
+        ) : (bagItems.length === 0 && charmItems.length === 0) ? (
           /* EMPTY DATABASE STATE */
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
@@ -399,7 +398,7 @@ export default function ShopPage() {
               Bộ Sưu Tập Đang Được Cập Nhật
             </h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Toàn bộ dữ liệu mẫu tĩnh đã được dọn sạch. Hệ thống hiện hoạt động theo chế độ 100% Real Database. Bạn có thể đăng sản phẩm mới (Túi, Combo, Charm) trực tiếp từ trang Quản Trị để tự động hiển thị tại đây.
+              Toàn bộ dữ liệu mẫu tĩnh đã được dọn sạch. Hệ thống hiện hoạt động theo chế độ 100% Real Database. Bạn có thể đăng sản phẩm mới (Túi, Charm) trực tiếp từ trang Quản Trị để tự động hiển thị tại đây.
             </p>
             <div className="pt-2">
               <Link
@@ -413,149 +412,13 @@ export default function ShopPage() {
           </motion.div>
         ) : (
           <div className="space-y-10">
-            {/* Section 1: Combos (if 'all' or 'combos') */}
-            {(filterCategory === "all" || filterCategory === "combos") && (
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center gap-2">
-                    <span>Bộ Sưu Tập Phối Sẵn (Combos)</span>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold font-sans">
-                      {comboItems.length} mẫu
-                    </span>
-                  </h2>
-                </div>
-
-                {comboItems.length === 0 ? (
-                  <div className="p-8 text-center rounded-2xl bg-slate-50/70 border border-slate-200 text-slate-500 text-sm">
-                    Chưa có bộ combo nào trong cơ sở dữ liệu. Quản trị viên có thể tạo combo mới trong mục Quản trị.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {comboItems.map((combo, idx) => {
-                      const isComboAvailable = Boolean(combo.inStock && (combo.stockCount ?? 0) > 0);
-
-                      return (
-                        <OceanFloatingCard
-                          key={combo.id}
-                          delay={idx * 0.25}
-                          duration={5 + (idx % 3)}
-                          distance={5}
-                        >
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: idx * 0.1 }}
-                            className="h-full p-6 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_20px_rgba(11,30,59,0.05)] hover:shadow-[0_20px_40px_rgba(11,30,59,0.12)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
-                          >
-                            <Link
-                              href={`/shop/${combo.id}`}
-                              className="block cursor-pointer"
-                            >
-                              <div className="flex items-center justify-between mb-4">
-                                {combo.badge && (
-                                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FAF7F2] text-[#B85D43] border border-[#E8E2D8]">
-                                    {combo.badge}
-                                  </span>
-                                )}
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                      isComboAvailable
-                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                        : "bg-rose-50 text-rose-700 border border-rose-200"
-                                    }`}
-                                  >
-                                    {isComboAvailable ? `Còn ${combo.stockCount}` : "Hết hàng"}
-                                  </span>
-                                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                                    -{formatKg(combo.plasticOffsetKg)} rác biển
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="w-full aspect-[4/3] rounded-2xl mb-4 bg-gradient-to-b from-[#F7F4EE] to-[#EFEAE1] flex flex-col items-center justify-center border border-[#E8E2D8] overflow-hidden relative group-hover:border-[#B85D43]/60 transition-all p-3">
-                                <img
-                                  src={combo.image || "/assets/products/combo-voyager.png"}
-                                  alt={combo.name}
-                                  className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-500"
-                                  loading="lazy"
-                                />
-                                {combo.includedCharms && combo.includedCharms.length > 0 && (
-                                  <div className="absolute bottom-2 inset-x-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-[#E8E2D8] shadow-xs text-xs pointer-events-none">
-                                    <span className="text-[10px] text-[#7A6F68] font-bold uppercase mr-1">
-                                      Kèm {combo.includedCharms.length} charm:
-                                    </span>
-                                    {combo.includedCharms.map((c) => (
-                                      <span key={c.id} className="text-sm" title={c.vietnameseName}>
-                                        {c.symbol}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                              <h3 className="font-serif text-lg font-bold text-[#241B16] group-hover:text-[#B85D43] transition-colors">
-                                {combo.name}
-                              </h3>
-                              <p className="text-xs text-[#5E4D43] mt-1 line-clamp-2">{combo.tagline}</p>
-                              <div className="text-[11px] text-[#B85D43] font-bold mt-1.5 hover:underline">
-                                Xem chi tiết sản phẩm ↗
-                              </div>
-                            </Link>
-
-                            <div className="mt-5 pt-3.5 border-t border-[#E8E2D8]">
-                              <div className="flex items-baseline justify-between mb-3">
-                                <span className="text-lg font-bold text-[#241B16]">
-                                  {formatVND(combo.price)}
-                                </span>
-                                <span className="text-xs text-[#7A6F68] line-through">
-                                  {formatVND(combo.originalPrice)}
-                                </span>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-2">
-                                <Link
-                                  href={`/shop/${combo.id}`}
-                                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-white hover:bg-[#FAF7F2] text-[#5E4D43] border border-[#E8E2D8] shadow-xs transition-colors cursor-pointer"
-                                >
-                                  <RotateCw className="w-3.5 h-3.5 text-[#B85D43]" />
-                                  <span>Chi Tiết</span>
-                                </Link>
-                                <GlassButton
-                                  variant={isComboAvailable ? "primary" : "secondary"}
-                                  size="sm"
-                                  disabled={!isComboAvailable}
-                                  onClick={() => handleAddCombo(combo)}
-                                  className={`w-full text-xs shadow-xs cursor-pointer ${
-                                    !isComboAvailable ? "opacity-60 cursor-not-allowed" : ""
-                                  }`}
-                                  icon={<ShoppingBag className="w-3.5 h-3.5" />}
-                                >
-                                  {isComboAvailable ? "Thêm Giỏ" : "Hết Hàng"}
-                                </GlassButton>
-                              </div>
-                            </div>
-                          </motion.div>
-                        </OceanFloatingCard>
-                      );
-                    })}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Section 2: Bag Bases (if 'all' or 'bags') */}
+            {/* Section 1: Bag Bases (if 'all' or 'bags') */}
             {(filterCategory === "all" || filterCategory === "bags") && (
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="space-y-4 pt-6"
+                className="space-y-4"
               >
                 <div className="flex items-center justify-between">
                   <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center gap-2">
@@ -681,7 +544,7 @@ export default function ShopPage() {
               </motion.div>
             )}
 
-            {/* Section 3: Individual Charms (if 'all' or 'charms') */}
+            {/* Section 2: Individual Charms (if 'all' or 'charms') */}
             {(filterCategory === "all" || filterCategory === "charms") && (
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
@@ -703,75 +566,112 @@ export default function ShopPage() {
                     Chưa có charm phụ kiện nào trong cơ sở dữ liệu. Quản trị viên có thể tạo charm mới từ trang Admin.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {charmItems.map((charm, idx) => {
-                      const isCharmAvailable = Boolean(charm.inStock !== false && (charm.stockCount ?? 1) > 0);
+                      const isCharmAvailable = Boolean(charm.inStock && (charm.stockCount ?? 0) > 0);
 
                       return (
                         <OceanFloatingCard
                           key={charm.id}
-                          delay={idx * 0.12}
-                          duration={4.5 + (idx % 3)}
-                          distance={3}
+                          delay={idx * 0.18}
+                          duration={6 + (idx % 2)}
+                          distance={4}
                         >
                           <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.4, delay: idx * 0.05 }}
-                            className="h-full p-4 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_2px_12px_rgba(11,30,59,0.03)] hover:shadow-[0_12px_24px_rgba(11,30,59,0.08)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: idx * 0.08 }}
+                            className="h-full p-5 rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-[0_4px_16px_rgba(11,30,59,0.04)] hover:shadow-[0_16px_32px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 flex flex-col justify-between group"
                           >
                             <Link
                               href={`/shop/${charm.id}`}
                               className="block cursor-pointer"
                             >
-                              <div className="w-full aspect-square rounded-2xl mb-3 border border-[#E8E2D8] shadow-xs relative overflow-hidden bg-gradient-to-b from-[#F7F4EE] to-[#EFEAE1] flex items-center justify-center group-hover:border-[#B85D43]/60 transition-all p-2.5">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-[10px] uppercase tracking-wider font-bold text-[#7A6F68]">
+                                  CHARM
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                      isCharmAvailable
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                        : "bg-rose-50 text-rose-700 border border-rose-200"
+                                    }`}
+                                  >
+                                    {isCharmAvailable ? `Còn ${charm.stockCount}` : "Hết hàng"}
+                                  </span>
+                                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                    {charm.plasticOffsetGrams && charm.plasticOffsetGrams > 0
+                                      ? `-${charm.plasticOffsetGrams}g`
+                                      : "Thủ công"}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="w-full aspect-square rounded-2xl mb-4 bg-gradient-to-b from-[#F7F4EE] to-[#EFEAE1] border border-[#E8E2D8] flex flex-col items-center justify-center relative overflow-hidden group-hover:border-[#B85D43]/60 transition-all p-3">
                                 {charm.image ? (
                                   <img
                                     src={charm.image}
                                     alt={charm.name}
-                                    className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-500"
+                                    className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-500"
                                     loading="lazy"
                                   />
                                 ) : (
                                   <span className="text-4xl filter drop-shadow">{charm.symbol || "✨"}</span>
                                 )}
-                                {!isCharmAvailable && (
-                                  <div className="absolute top-2 right-2 pointer-events-none">
-                                    <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-[9px] font-bold text-rose-700 shadow-xs">
-                                      Hết hàng
-                                    </span>
-                                  </div>
-                                )}
+                                <div className="absolute bottom-2 inset-x-3 flex items-center justify-between bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#E8E2D8] shadow-xs pointer-events-none">
+                                  <span className="text-[10px] text-[#5E4D43] font-bold truncate max-w-[120px]">
+                                    {charm.material?.includes("18K") ? "Mạ vàng 18K" : "Hợp kim cao cấp"}
+                                  </span>
+                                  <span className="text-[10px] text-[#B85D43] font-bold">
+                                    Khuyên cài NÉT
+                                  </span>
+                                </div>
                               </div>
 
-                              <h4 className="font-serif text-sm font-bold text-[#241B16] group-hover:text-[#B85D43] transition-colors line-clamp-1">
-                                {charm.vietnameseName}
-                              </h4>
-                              <p className="text-[11px] text-[#7A6F68] line-clamp-1 mt-0.5 font-medium">
-                                {charm.material}
+                              <h3 className="font-serif text-base font-bold text-[#241B16] group-hover:text-[#B85D43] transition-colors">
+                                {charm.vietnameseName || charm.name}
+                              </h3>
+                              <p className="text-xs text-[#5E4D43] mt-1 line-clamp-2 font-medium">
+                                {charm.description || "Phụ kiện charm độc bản đúc từ hợp kim cao cấp mạ vàng 18K và tráng men màu thủ công."}
                               </p>
-                              <div className="text-[10px] text-[#B85D43] font-bold mt-1 hover:underline">
-                                Xem chi tiết ↗
+                              <div className="text-[11px] text-[#B85D43] font-bold mt-1 hover:underline">
+                                Xem chi tiết sản phẩm ↗
                               </div>
                             </Link>
 
-                            <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                              <span className="text-xs sm:text-sm font-bold text-[#0b1e3b]">
-                                {formatVND(charm.price)}
-                              </span>
-                              <motion.button
-                                whileTap={isCharmAvailable ? { scale: 0.9 } : undefined}
-                                disabled={!isCharmAvailable}
-                                onClick={() => handleAddCharm(charm)}
-                                className={`p-2 rounded-xl transition-colors shadow-sm ${
-                                  isCharmAvailable
-                                    ? "bg-slate-100 hover:bg-[#0b1e3b] hover:text-white text-slate-800 cursor-pointer"
-                                    : "bg-slate-100 text-slate-400 opacity-50 cursor-not-allowed"
-                                }`}
-                                title={isCharmAvailable ? "Thêm charm vào giỏ" : "Hết hàng"}
-                              >
-                                <ShoppingBag className="w-3.5 h-3.5" />
-                              </motion.button>
+                            <div className="mt-4 pt-3 border-t border-[#E8E2D8]">
+                              <div className="flex items-baseline justify-between mb-3">
+                                <span className="text-base font-bold text-[#241B16]">
+                                  {formatVND(charm.price)}
+                                </span>
+                                <span className="text-[11px] text-[#7A6F68] font-semibold">
+                                  Khuyên xoay 360°
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <Link
+                                  href={`/shop/${charm.id}`}
+                                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-white hover:bg-[#FAF7F2] text-[#5E4D43] border border-[#E8E2D8] shadow-xs transition-colors cursor-pointer"
+                                >
+                                  <RotateCw className="w-3.5 h-3.5 text-[#B85D43]" />
+                                  <span>Chi Tiết</span>
+                                </Link>
+                                <GlassButton
+                                  variant={isCharmAvailable ? "primary" : "secondary"}
+                                  size="sm"
+                                  disabled={!isCharmAvailable}
+                                  onClick={() => handleAddCharm(charm)}
+                                  className={`w-full text-xs shadow-xs cursor-pointer ${
+                                    !isCharmAvailable ? "opacity-60 cursor-not-allowed" : ""
+                                  }`}
+                                  icon={<ShoppingBag className="w-3.5 h-3.5" />}
+                                >
+                                  {isCharmAvailable ? "Mua Charm" : "Hết Hàng"}
+                                </GlassButton>
+                              </div>
                             </div>
                           </motion.div>
                         </OceanFloatingCard>

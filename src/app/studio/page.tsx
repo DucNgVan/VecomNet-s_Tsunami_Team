@@ -33,19 +33,24 @@ import {
   Eye,
   Download,
   Loader2,
+  Ticket,
+  Tag,
+  ShoppingBag,
+  AlertCircle,
 } from "lucide-react";
 import { NetBag2DCanvas } from "@/components/studio/NetBag2DCanvas";
 import { BagCanvas3D } from "@/components/3d/BagCanvas3D";
-import { PlacedCharm, BagBase, BagMeshColor, Charm } from "@/types";
+import { PlacedCharm, BagBase, BagMeshColor, Charm, Voucher, AppliedVoucherInfo, CartItem } from "@/types";
 import { BAG_COLORS, BAG_BASES, getBagColor } from "@/data/products";
 import { formatVND } from "@/lib/utils";
-import { getProductsFromFirestore } from "@/lib/firestoreService";
+import { getProductsFromFirestore, saveOrderToFirestore } from "@/lib/firestoreService";
 import {
   saveDesignRequest,
   generateRequestId,
   DesignRequest,
 } from "@/lib/designRequestStorage";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import { generateCharmSTLFromSVG, triggerSTLDownload } from "@/lib/stlGenerator";
 import { removeWhiteBackground } from "@/lib/charmImageProcessor";
 import { generateOrderSecretKey } from "@/lib/orderTrackingSecurity";
@@ -55,6 +60,14 @@ import {
   SlotValues,
   buildMaster2DKeychainPrompt,
 } from "@/lib/masterPromptTemplates";
+import {
+  getStoredVouchers,
+  validateAndCalculateVoucher,
+  incrementVoucherUsage,
+  checkIsNewCustomer,
+} from "@/lib/voucherStorage";
+import { VoucherSelectorModal } from "@/components/voucher/VoucherSelectorModal";
+import { saveNewOrder } from "@/lib/supplyChainStorage";
 
 // Bảng màu men gốm thủ công Nét Studio
 const CERAMIC_PALETTE = [
@@ -376,12 +389,219 @@ function NetStudioContent() {
   const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Cart integration
+  const { addToCart, setIsCartOpen } = useCart();
+
+  // Voucher states
+  const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucherInfo | null>(null);
+  const [rawVoucher, setRawVoucher] = useState<Voucher | null>(null);
+  const [voucherDiscount, setVoucherDiscount] = useState<number>(0);
+  const [isFreeShipping, setIsFreeShipping] = useState<boolean>(false);
+  const [voucherInput, setVoucherInput] = useState<string>("");
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState<boolean>(false);
+  const [voucherFeedback, setVoucherFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [availableVouchers, setAvailableVouchers] = useState<Voucher[]>([]);
+
+  useEffect(() => {
+    setAvailableVouchers(getStoredVouchers());
+  }, [isVoucherModalOpen]);
+
   // Total price calculations
   const standardCharmsTotal = placedCharms
     .filter((c) => !c.charm.id.includes("custom"))
     .reduce((sum, c) => sum + c.charm.price, 0);
 
   const totalPriceNumber = baseBagPrice + standardCharmsTotal;
+
+  // Kiểm tra khách hàng mới
+  const isNewCustomer = React.useMemo(() => {
+    return checkIsNewCustomer(customerEmail, customerPhone || customerContact, user?.uid);
+  }, [customerEmail, customerPhone, customerContact, user]);
+
+  // Cấu trúc CartItem ảo đại diện cho chiếc túi đang phối ở Studio để tính voucher
+  const studioCartItems = React.useMemo<CartItem[]>(() => {
+    return [
+      {
+        cartItemId: `studio-${selectedBag.id}`,
+        type: "custom_bag",
+        title: `${selectedBag.name} (${selectedColor.name})`,
+        price: totalPriceNumber,
+        quantity: 1,
+        image: selectedColor?.image || selectedBag.image,
+        plasticOffsetKg: selectedBag.plasticOffsetKg || 1.6,
+        bagBaseId: selectedBag.id,
+        details: {
+          colorName: selectedColor.name,
+          charmsCount: placedCharms.length,
+          charmsList: placedCharms.map((c) => c.charm.vietnameseName || c.charm.name),
+          configuration: {
+            bagBase: selectedBag,
+            color: selectedColor,
+            placedCharms: placedCharms,
+            notes: customCharmExtraNote || customIdea,
+          } as any,
+        },
+      },
+    ];
+  }, [selectedBag, selectedColor, totalPriceNumber, placedCharms, customCharmExtraNote, customIdea]);
+
+  // Phí vận chuyển
+  const baseShippingFee = React.useMemo(() => {
+    if (deliveryMethod === "partner_pickup" || deliveryMethod === "workshop_pickup") {
+      return 0;
+    }
+    if (totalPriceNumber >= 1500000) {
+      return 0;
+    }
+    const lower = (customerAddress || "").toLowerCase();
+    if (lower.includes("đà nẵng") || lower.includes("da nang")) {
+      return 20000;
+    }
+    return 35000;
+  }, [deliveryMethod, customerAddress, totalPriceNumber]);
+
+  const effectiveShippingFee = isFreeShipping ? 0 : baseShippingFee;
+  const finalGrandTotal = Math.max(0, totalPriceNumber - voucherDiscount + effectiveShippingFee);
+
+  // Áp dụng voucher
+  const handleApplyVoucher = (voucher: Voucher): { success: boolean; message: string; discountAmount?: number } => {
+    const evaluation = validateAndCalculateVoucher(voucher, {
+      items: studioCartItems,
+      subtotal: totalPriceNumber,
+      shippingFee: baseShippingFee,
+      isNewCustomer,
+      customerEmail,
+      customerPhone: customerPhone || customerContact,
+      userId: user?.uid,
+    });
+
+    if (!evaluation.eligible) {
+      setVoucherFeedback({ type: "error", message: evaluation.reason || "Mã không đủ điều kiện áp dụng!" });
+      return {
+        success: false,
+        message: evaluation.reason || "Mã giảm giá không đủ điều kiện cho cấu hình túi hiện tại!",
+      };
+    }
+
+    const info: AppliedVoucherInfo = {
+      code: voucher.code,
+      title: voucher.title,
+      discountType: voucher.discountType,
+      discountValue: voucher.discountValue,
+      discountAmount: evaluation.discountAmount,
+      isFreeShipping: evaluation.isFreeShipping,
+    };
+
+    setAppliedVoucher(info);
+    setRawVoucher(voucher);
+    setVoucherDiscount(evaluation.discountAmount);
+    setIsFreeShipping(evaluation.isFreeShipping);
+    setVoucherFeedback({
+      type: "success",
+      message: `Đã áp dụng mã "${voucher.code}" thành công! Giảm ${formatVND(evaluation.discountAmount)}${evaluation.isFreeShipping ? " + Freeship" : ""}.`,
+    });
+    return {
+      success: true,
+      message: `Đã áp dụng mã "${voucher.code}" thành công!`,
+      discountAmount: evaluation.discountAmount,
+    };
+  };
+
+  const handleApplyByCode = (code: string): { success: boolean; message: string; discountAmount?: number } => {
+    const clean = code.trim().toUpperCase();
+    if (!clean) {
+      setVoucherFeedback({ type: "error", message: "Vui lòng nhập mã voucher!" });
+      return { success: false, message: "Vui lòng nhập mã voucher!" };
+    }
+
+    const vouchers = getStoredVouchers();
+    const found = vouchers.find((v) => v.code.toUpperCase() === clean);
+    if (!found) {
+      setVoucherFeedback({ type: "error", message: `Mã giảm giá "${clean}" không tồn tại hoặc đã hết hạn!` });
+      return { success: false, message: `Mã giảm giá "${clean}" không tồn tại hoặc đã hết hạn!` };
+    }
+
+    return handleApplyVoucher(found);
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setRawVoucher(null);
+    setVoucherDiscount(0);
+    setIsFreeShipping(false);
+    setVoucherFeedback(null);
+  };
+
+  const handleApplyInline = () => {
+    if (!voucherInput.trim()) return;
+    const res = handleApplyByCode(voucherInput.trim());
+    if (res.success) {
+      setVoucherInput("");
+    }
+  };
+
+  // Tự động tính toán lại khi số lượng charm hoặc túi thay đổi
+  useEffect(() => {
+    if (rawVoucher) {
+      const evaluation = validateAndCalculateVoucher(rawVoucher, {
+        items: studioCartItems,
+        subtotal: totalPriceNumber,
+        shippingFee: baseShippingFee,
+        isNewCustomer,
+        customerEmail,
+        customerPhone: customerPhone || customerContact,
+        userId: user?.uid,
+      });
+
+      if (evaluation.eligible) {
+        setVoucherDiscount(evaluation.discountAmount);
+        setIsFreeShipping(evaluation.isFreeShipping);
+        setAppliedVoucher((prev) =>
+          prev
+            ? {
+                ...prev,
+                discountAmount: evaluation.discountAmount,
+                isFreeShipping: evaluation.isFreeShipping,
+              }
+            : null
+        );
+      } else {
+        setAppliedVoucher(null);
+        setRawVoucher(null);
+        setVoucherDiscount(0);
+        setIsFreeShipping(false);
+        setVoucherFeedback({
+          type: "error",
+          message: `Mã "${rawVoucher.code}" không còn đủ điều kiện: ${evaluation.reason || "Vui lòng chọn mã khác."}`,
+        });
+      }
+    }
+  }, [placedCharms.length, selectedBag.id, totalPriceNumber, baseShippingFee, isNewCustomer]);
+
+  // Thêm chiếc túi custom vào giỏ hàng chung
+  const handleAddToCart = () => {
+    addToCart({
+      type: "custom_bag",
+      title: `${selectedBag.name} (${selectedColor.name})`,
+      price: totalPriceNumber,
+      quantity: 1,
+      image: selectedColor?.image || selectedBag.image,
+      plasticOffsetKg: selectedBag.plasticOffsetKg || 1.6,
+      bagBaseId: selectedBag.id,
+      details: {
+        colorName: selectedColor.name,
+        charmsCount: placedCharms.length,
+        charmsList: placedCharms.map((c) => c.charm.vietnameseName || c.charm.name),
+        configuration: {
+          bagBase: selectedBag,
+          color: selectedColor,
+          placedCharms: placedCharms,
+          notes: customCharmExtraNote || customIdea,
+        } as any,
+      },
+    });
+    setIsCartOpen(true);
+  };
 
   // Handle Charm add/remove
   const handleAddReadyCharm = (charm: Charm) => {
@@ -1220,7 +1440,7 @@ Key 3D printing & charm specs:
               cartItemId: `item-bag-${Date.now()}`,
               type: "custom_bag",
               title: `${selectedBag.name} (${selectedColor.name})`,
-              price: baseBagPrice,
+              price: totalPriceNumber,
               quantity: 1,
               image: selectedColor?.image || selectedBag.image,
               plasticOffsetKg: selectedBag.plasticOffsetKg || 1.6,
@@ -1229,21 +1449,43 @@ Key 3D printing & charm specs:
                 colorName: selectedColor.name,
                 charmsCount: placedCharms.length,
                 charmsList: placedCharms.map((c) => c.charm.vietnameseName || c.charm.name),
+                configuration: {
+                  bagBase: selectedBag,
+                  color: selectedColor,
+                  placedCharms: placedCharms,
+                  notes: customCharmExtraNote || customIdea,
+                },
               },
             },
           ],
           subtotal: totalPriceNumber,
-          total: totalPriceNumber,
-          shippingFee: 0,
+          shippingFee: effectiveShippingFee,
+          discountAmount: voucherDiscount,
+          appliedVoucher: appliedVoucher || undefined,
+          total: finalGrandTotal,
+          totalPlasticOffsetKg: selectedBag.plasticOffsetKg || 1.6,
           paymentMethod: "cod",
           paymentStatus: "pending",
           fulfillmentStatus: "received",
           userId: user?.uid || undefined,
         };
         deductInventoryForOrder(tempOrder);
+
+        // Lưu đơn hàng vào storage nội bộ và Firestore
+        try {
+          saveNewOrder(tempOrder);
+          await saveOrderToFirestore(tempOrder);
+        } catch (saveErr) {
+          console.warn("Save tempOrder notice:", saveErr);
+        }
       } catch (deductErr) {
         console.warn("Deduct inventory notice:", deductErr);
       }
+    }
+
+    // Tăng lượt sử dụng voucher nếu đã dùng
+    if (appliedVoucher?.code) {
+      incrementVoucherUsage(appliedVoucher.code);
     }
 
     const newRequest: DesignRequest = {
@@ -1289,6 +1531,11 @@ Key 3D printing & charm specs:
           }
         : undefined,
       baseTotal: totalPriceNumber,
+      voucherCode: appliedVoucher?.code || voucherInput.trim() || undefined,
+      appliedVoucher: appliedVoucher || undefined,
+      discountAmount: voucherDiscount,
+      shippingFee: effectiveShippingFee,
+      finalTotal: hasCustom ? undefined : finalGrandTotal,
       status: hasCustom ? "pending_review" : "confirmed",
       trackingEvents: [
         {
@@ -1296,8 +1543,8 @@ Key 3D printing & charm specs:
           status: hasCustom ? "Đã gửi yêu cầu phác thảo" : "Đã xác nhận đơn hàng thành công",
           location: "Hệ thống Nét Studio & Kho xưởng",
           description: hasCustom
-            ? "Yêu cầu thiết kế charm độc bản đã được tiếp nhận. Đội ngũ xưởng đang kiểm tra và chuẩn bị concept phác thảo."
-            : "Đơn hàng đã được xác nhận trực tiếp, tồn kho đã tự động khấu trừ khỏi bộ sưu tập và đang tiến hành xuất xưởng.",
+            ? `Yêu cầu thiết kế charm độc bản đã được tiếp nhận.${appliedVoucher ? ` Đã ghi nhận mã ưu đãi: ${appliedVoucher.code}.` : ""} Đội ngũ xưởng đang kiểm tra và chuẩn bị concept phác thảo.`
+            : `Đơn hàng đã được xác nhận trực tiếp${appliedVoucher ? ` (áp dụng mã ${appliedVoucher.code} giảm ${formatVND(voucherDiscount)})` : ""}, tồn kho đã tự động khấu trừ khỏi bộ sưu tập và đang tiến hành xuất xưởng.`,
         },
       ],
       passportCode: `NET-BAG-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -1618,6 +1865,30 @@ Key 3D printing & charm specs:
                   </>
                 )}
               </button>
+            </div>
+
+            {/* Voucher & Price Info if applied */}
+            {appliedVoucher && voucherDiscount > 0 && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-950">
+                <div className="flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-emerald-700" />
+                  <span>
+                    Mã ưu đãi đã áp dụng: <strong className="font-mono">{appliedVoucher.code}</strong>
+                  </span>
+                </div>
+                <span className="font-bold text-emerald-800">
+                  {isFreeShipping ? "Freeship" : `-${formatVND(voucherDiscount)}`}
+                </span>
+              </div>
+            )}
+
+            <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-between text-xs">
+              <span className="text-[#5E4D43] font-medium">Tổng thanh toán dự kiến:</span>
+              <span className="font-serif text-lg font-bold text-[#241B16]">
+                {hasAppliedCustomToBag || customIdea.trim()
+                  ? "Chờ xưởng báo giá charm"
+                  : formatVND(finalGrandTotal)}
+              </span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
@@ -2091,13 +2362,24 @@ Key 3D printing & charm specs:
                           )}
                         </div>
 
-                        <button
-                          onClick={() => setFlowStep("review")}
-                          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <span>Đặt hàng bộ phối</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                          <button
+                            type="button"
+                            onClick={handleAddToCart}
+                            className="flex-1 sm:flex-initial px-4 py-3 rounded-xl border border-[#B85D43] text-[#B85D43] hover:bg-[#FAF7F2] text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <ShoppingBag className="w-4 h-4" />
+                            <span>Thêm vào giỏ</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFlowStep("review")}
+                            className="flex-1 sm:flex-initial px-5 py-3 rounded-xl bg-[#B85D43] hover:bg-[#A24E36] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <span>Đặt hàng bộ phối</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2951,6 +3233,42 @@ Key 3D printing & charm specs:
                               />
                             </div>
 
+                            {/* Voucher input for custom charm quote */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block text-xs font-semibold text-[#241B16]">
+                                  Mã ưu đãi / Voucher (nếu có)
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsVoucherModalOpen(true)}
+                                  className="text-[11px] font-semibold text-[#B85D43] hover:underline flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Ticket className="w-3 h-3" />
+                                  <span>Kho voucher</span>
+                                </button>
+                              </div>
+                              <div className="relative">
+                                <Tag className="w-3.5 h-3.5 text-[#A89F91] absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                  type="text"
+                                  value={voucherInput}
+                                  onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+                                  placeholder="Nhập mã voucher (VD: NETSOPENING, CHARM50K, NETS50K...)"
+                                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs font-semibold text-[#241B16] uppercase focus:outline-none focus:border-[#B85D43]"
+                                />
+                              </div>
+                              {appliedVoucher ? (
+                                <p className="text-[10.5px] text-emerald-700 font-medium mt-1">
+                                  ✓ Đã chọn mã <strong>{appliedVoucher.code}</strong> ({appliedVoucher.title}) - sẽ được áp dụng khi xưởng gửi báo giá.
+                                </p>
+                              ) : (
+                                <p className="text-[10.5px] text-[#7A6F68] mt-1">
+                                  Mã giảm giá sẽ được ghi nhận và áp dụng vào báo giá phác thảo chính thức.
+                                </p>
+                              )}
+                            </div>
+
                             {/* Terms Checkbox */}
                             <label className="flex items-start gap-2.5 cursor-pointer text-xs text-[#5E4D43] pt-1">
                               <input
@@ -3022,13 +3340,22 @@ Key 3D printing & charm specs:
                       {isLoadingBags ? (
                         <div className="h-8 w-32 bg-[#E8E2D8]/80 rounded-lg animate-pulse blur-[0.5px] ml-auto mb-1" />
                       ) : (
-                        <div className="font-serif text-2xl sm:text-3xl font-bold text-[#241B16]">
-                          {totalPriceNumber.toLocaleString("vi-VN")} đ
+                        <div className="flex flex-col items-end">
+                          {voucherDiscount > 0 && (
+                            <span className="text-xs text-[#7A6F68] line-through font-medium">
+                              {formatVND(totalPriceNumber + effectiveShippingFee)}
+                            </span>
+                          )}
+                          <div className="font-serif text-2xl sm:text-3xl font-bold text-[#B85D43]">
+                            {formatVND(finalGrandTotal)}
+                          </div>
                         </div>
                       )}
                       <div className="text-[11px] text-[#7A6F68]">
                         {hasAppliedCustomToBag || customIdea.trim()
                           ? "+ Charm riêng (Chờ báo giá)"
+                          : appliedVoucher
+                          ? `Đã áp dụng mã ${appliedVoucher.code}`
                           : "Đã gồm túi & charm sẵn"}
                       </div>
                     </div>
@@ -3185,6 +3512,193 @@ Key 3D printing & charm specs:
                       />
                     </div>
 
+                    {/* VOUCHER & DISCOUNT CODE SECTION */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF8F5] border border-[#E8E2D8] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-[#B85D43]/10 text-[#B85D43] flex items-center justify-center shrink-0">
+                            <Ticket className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-[#241B16] uppercase tracking-wider">
+                              Mã Ưu Đãi / Voucher Giảm Giá
+                            </h4>
+                            <p className="text-[11px] text-[#7A6F68]">
+                              Áp dụng ưu đãi mua sắm hoặc nhập mã đặc quyền
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsVoucherModalOpen(true)}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#F3ECE1] border border-[#E8E2D8] text-xs font-semibold text-[#B85D43] hover:text-[#A24E36] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-[#B85D43]" />
+                          <span>Kho voucher ({availableVouchers.length})</span>
+                        </button>
+                      </div>
+
+                      {/* Applied Voucher Card */}
+                      {appliedVoucher ? (
+                        <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-300 flex items-center justify-between gap-3 animate-in fade-in">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                              <Check className="w-4 h-4 stroke-[2.5]" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono font-bold text-xs text-emerald-950 uppercase tracking-wide">
+                                  {appliedVoucher.code}
+                                </span>
+                                <span className="text-[10px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
+                                  {isFreeShipping ? "Freeship" : `-${formatVND(voucherDiscount)}`}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-emerald-800 truncate mt-0.5">
+                                {appliedVoucher.title}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setIsVoucherModalOpen(true)}
+                              className="text-xs text-[#234B3E] hover:underline font-semibold cursor-pointer"
+                            >
+                              Đổi
+                            </button>
+                            <span className="text-emerald-300">|</span>
+                            <button
+                              type="button"
+                              onClick={handleRemoveVoucher}
+                              className="text-xs text-rose-600 hover:text-rose-800 hover:underline font-semibold cursor-pointer"
+                            >
+                              Gỡ
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Inline Input Form */
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="relative flex-1">
+                            <Tag className="w-3.5 h-3.5 text-[#A89F91] absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={voucherInput}
+                              onChange={(e) => {
+                                setVoucherInput(e.target.value.toUpperCase());
+                                if (voucherFeedback) setVoucherFeedback(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleApplyInline();
+                                }
+                              }}
+                              placeholder="Nhập mã voucher (VD: CHARM50K, NETSOPENING, NETS50K)"
+                              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white border border-[#E8E2D8] text-xs font-semibold text-[#241B16] placeholder:text-[#A89F91] focus:outline-hidden focus:border-[#B85D43] uppercase"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleApplyInline}
+                            disabled={!voucherInput.trim()}
+                            className="px-4 py-2.5 rounded-xl bg-[#241B16] hover:bg-black text-white text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0 shadow-2xs"
+                          >
+                            Áp Dụng
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Feedback message if any */}
+                      {voucherFeedback && (
+                        <div
+                          className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+                            voucherFeedback.type === "success"
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              : "bg-rose-50 text-rose-800 border border-rose-200"
+                          }`}
+                        >
+                          {voucherFeedback.type === "success" ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          )}
+                          <span>{voucherFeedback.message}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* DETAILED PRICE BREAKDOWN TABLE */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2.5">
+                      <div className="flex items-center justify-between text-xs text-[#5E4D43]">
+                        <span>Phôi túi ({selectedBag?.name || "Túi Lưới NÉT"}):</span>
+                        <span className="font-semibold text-[#241B16]">{formatVND(baseBagPrice)}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-[#5E4D43]">
+                        <span>Phụ kiện charm ({placedCharms.length} charm):</span>
+                        <span className="font-semibold text-[#241B16]">{formatVND(standardCharmsTotal)}</span>
+                      </div>
+
+                      {hasAppliedCustomToBag || customIdea.trim() ? (
+                        <div className="flex items-center justify-between text-xs text-[#5E4D43]">
+                          <span>Charm riêng độc bản:</span>
+                          <span className="text-[#B85D43] font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[11px]">
+                            Chờ xưởng báo giá
+                          </span>
+                        </div>
+                      ) : null}
+
+                      <div className="pt-2 border-t border-[#E8E2D8] flex items-center justify-between text-xs text-[#5E4D43]">
+                        <span>Tạm tính:</span>
+                        <span className="font-semibold text-[#241B16]">{formatVND(totalPriceNumber)}</span>
+                      </div>
+
+                      {appliedVoucher && voucherDiscount > 0 && (
+                        <div className="flex items-center justify-between text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                          <span className="flex items-center gap-1.5">
+                            <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Giảm giá voucher ({appliedVoucher.code}):</span>
+                          </span>
+                          <span>-{formatVND(voucherDiscount)}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-xs text-[#5E4D43]">
+                        <span>Phí vận chuyển:</span>
+                        <span className="font-medium text-[#241B16]">
+                          {isFreeShipping
+                            ? "Miễn phí (Voucher Freeship)"
+                            : effectiveShippingFee === 0
+                            ? "Miễn phí"
+                            : formatVND(effectiveShippingFee)}
+                        </span>
+                      </div>
+
+                      <div className="pt-2.5 border-t border-[#E8E2D8] flex items-baseline justify-between">
+                        <div>
+                          <span className="font-serif text-sm font-bold text-[#241B16] block">
+                            Tổng thanh toán:
+                          </span>
+                          {voucherDiscount > 0 && (
+                            <span className="text-[11px] text-[#7A6F68] line-through font-medium">
+                              {formatVND(totalPriceNumber + effectiveShippingFee)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="font-serif text-2xl sm:text-3xl font-bold text-[#B85D43]">
+                            {hasAppliedCustomToBag || customIdea.trim()
+                              ? "Chờ xưởng báo giá"
+                              : formatVND(finalGrandTotal)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Consent Checkboxes */}
                     <div className="space-y-2 pt-2">
                       <label className="flex items-start gap-2.5 cursor-pointer text-xs text-[#5E4D43]">
@@ -3247,6 +3761,19 @@ Key 3D printing & charm specs:
             </div>
           </div>
         )}
+        {/* Voucher Selector Modal */}
+        <VoucherSelectorModal
+          isOpen={isVoucherModalOpen}
+          onClose={() => setIsVoucherModalOpen(false)}
+          items={studioCartItems}
+          subtotal={totalPriceNumber}
+          shippingFee={baseShippingFee}
+          appliedVoucher={appliedVoucher}
+          onApplyVoucher={handleApplyVoucher}
+          onApplyByCode={handleApplyByCode}
+          onRemoveVoucher={handleRemoveVoucher}
+          isNewCustomer={isNewCustomer}
+        />
       </div>
     </div>
   );

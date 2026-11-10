@@ -203,7 +203,9 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
         req.hasCustomCharm ? "• Có charm riêng" : ""
       }`;
 
-      const priceVal = req.finalTotal || req.baseTotal + (req.customCharmPrice || 0);
+      const priceVal = req.finalTotal !== undefined
+        ? req.finalTotal
+        : Math.max(0, req.baseTotal - (req.discountAmount || 0) + (req.shippingFee || 0) + (req.customCharmPrice || 0));
       const isB2B = !!req.partnerCode || req.customerName?.toLowerCase().includes("resort") || req.customerName?.toLowerCase().includes("hotel");
 
       // Placed charms list for subSummary
@@ -211,6 +213,9 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
       let subDesc = placedNames ? `Charm: ${placedNames}` : "Chưa gắn charm";
       if (req.hasCustomCharm) {
         subDesc += ` • Yêu cầu riêng: "${req.customCharm?.idea || req.notes || "Custom charm"}"`;
+      }
+      if (req.voucherCode || (req.discountAmount && req.discountAmount > 0)) {
+        subDesc += ` • Voucher: ${req.voucherCode || "Ưu đãi"} (-${formatVND(req.discountAmount || 0)})`;
       }
 
       rows.push({
@@ -1484,6 +1489,24 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Voucher discount info if used */}
+                {(selectedStudioReq.voucherCode || (selectedStudioReq.discountAmount && selectedStudioReq.discountAmount > 0)) && (
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs text-emerald-950">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold">Mã voucher đã áp dụng:</span>
+                      <span className="font-mono font-bold bg-white text-emerald-900 px-2 py-0.5 rounded border border-emerald-300">
+                        {selectedStudioReq.voucherCode || selectedStudioReq.appliedVoucher?.code || "ƯU ĐÃI"}
+                      </span>
+                      {selectedStudioReq.appliedVoucher?.title && (
+                        <span className="text-[11px] text-emerald-800">({selectedStudioReq.appliedVoucher.title})</span>
+                      )}
+                    </div>
+                    <span className="font-bold text-emerald-800">
+                      -{formatVND(selectedStudioReq.discountAmount || 0)}
+                    </span>
+                  </div>
+                )}
 
                 {/* Custom Charm Spec (If Tab 3 was used) */}
                 {selectedStudioReq.hasCustomCharm && selectedStudioReq.customCharm && (

@@ -56,8 +56,8 @@ export default function CheckoutPage() {
   } = useCart();
   const { user, userProfile, loading: authLoading } = useAuth();
 
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "vnpay" | "momo" | "bank_transfer">(
-    "bank_transfer"
+  const [paymentMethod, setPaymentMethod] = useState<"cod">(
+    "cod"
   );
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -629,85 +629,22 @@ export default function CheckoutPage() {
                 <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Phương Thức Thanh Toán</h3>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* VNPay */}
-                <div
-                  onClick={() => setPaymentMethod("vnpay")}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
-                    paymentMethod === "vnpay"
-                      ? "bg-sky-50/50 border-[#0b1e3b] ring-2 ring-[#0b1e3b] shadow-sm"
-                      : "bg-slate-50 border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-sm font-black flex-shrink-0">
-                    VN
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Cổng VNPay (QR / Thẻ)</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Quét mã QR qua 30+ ứng dụng ngân hàng
-                    </div>
-                  </div>
+              <div className="p-5 rounded-2xl bg-amber-50/70 border-2 border-[#0b1e3b] shadow-sm flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center flex-shrink-0 shadow-xs">
+                  <Truck className="w-6 h-6 text-[#0b1e3b]" />
                 </div>
-
-                {/* MoMo */}
-                <div
-                  onClick={() => setPaymentMethod("momo")}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
-                    paymentMethod === "momo"
-                      ? "bg-pink-50/50 border-[#0b1e3b] ring-2 ring-[#0b1e3b] shadow-sm"
-                      : "bg-slate-50 border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-800 flex items-center justify-center text-sm font-black flex-shrink-0">
-                    M
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-slate-900">
+                      Thanh Toán Khi Nhận Hàng (COD)
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                      ✓ Phương thức khả dụng duy nhất
+                    </span>
                   </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Ví Điện Tử MoMo</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Thanh toán một chạm qua app MoMo
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bank Transfer */}
-                <div
-                  onClick={() => setPaymentMethod("bank_transfer")}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
-                    paymentMethod === "bank_transfer"
-                      ? "bg-teal-50/50 border-[#0b1e3b] ring-2 ring-[#0b1e3b] shadow-sm"
-                      : "bg-slate-50 border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center flex-shrink-0">
-                    <QrCode className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Chuyển Khoản VietQR</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Xác thực tự động trong 5 giây
-                    </div>
-                  </div>
-                </div>
-
-                {/* COD */}
-                <div
-                  onClick={() => setPaymentMethod("cod")}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
-                    paymentMethod === "cod"
-                      ? "bg-amber-50/50 border-[#0b1e3b] ring-2 ring-[#0b1e3b] shadow-sm"
-                      : "bg-slate-50 border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
-                    <Truck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Thanh Toán Khi Nhận (COD)</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Kiểm tra hàng trước khi thanh toán
-                    </div>
-                  </div>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Quý khách thanh toán tiền mặt trực tiếp cho nhân viên giao hàng khi nhận sản phẩm. Được quyền mở hộp kiểm tra ngoại quan và số lượng phụ kiện đính kèm trước khi thanh toán.
+                  </p>
                 </div>
               </div>
             </div>
@@ -715,8 +652,8 @@ export default function CheckoutPage() {
 
           {/* Right Column: Order Summary & Placement with Buoyancy Floating */}
           <div className="lg:col-span-5 space-y-6">
-            <OceanFloatingCard delay={0.3} duration={6.5} distance={4}>
-              <div className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.06)] hover:shadow-[0_16px_36px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 space-y-6">
+            <OceanFloatingCard delay={0.2} duration={6.5} distance={2} interactive={false}>
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(11,30,59,0.06)] hover:shadow-[0_16px_36px_rgba(11,30,59,0.1)] hover:border-sky-300 transition-all duration-300 space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <h3 className="font-serif text-base sm:text-lg font-bold text-[#0b1e3b]">Tóm Tắt Đơn Hàng</h3>
                   <span className="text-xs font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
@@ -730,6 +667,11 @@ export default function CheckoutPage() {
                     const stock = getItemStock(item);
                     const isOutOfStock = stock <= 0;
                     const isOverStock = item.quantity > stock;
+                    const itemThumbnail =
+                      item.details?.configuration?.customSnapshotUrl ||
+                      item.image ||
+                      item.details?.configuration?.color?.image ||
+                      item.details?.configuration?.bagBase?.image;
 
                     return (
                       <div
@@ -743,16 +685,24 @@ export default function CheckoutPage() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
-                            {item.details?.configuration?.customSnapshotUrl ? (
+                          <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 text-xl shadow-sm overflow-hidden relative">
+                            {itemThumbnail ? (
                               <img
-                                src={item.details.configuration.customSnapshotUrl}
-                                alt=""
+                                src={itemThumbnail}
+                                alt={item.title}
                                 className="w-full h-full object-cover rounded-xl"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = "flex";
+                                }}
                               />
-                            ) : (
-                              <span>{item.type === "custom_bag" ? "👜" : "✨"}</span>
-                            )}
+                            ) : null}
+                            <span
+                              className={itemThumbnail ? "hidden" : "flex items-center justify-center"}
+                            >
+                              {item.type === "charm_single" ? "✨" : "👜"}
+                            </span>
                           </div>
                           <div>
                             <div className="font-bold text-slate-900">{item.title}</div>

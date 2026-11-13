@@ -59,7 +59,6 @@ export const StoryPassportView: React.FC<StoryPassportViewProps> = ({
   const [passport, setPassport] = useState<ResolvedPassport | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [unlockReason, setUnlockReason] = useState<string>("");
-  const [copiedLink, setCopiedLink] = useState(false);
 
   // State cho form nhập Secret Key mở khóa
   const [inputKey, setInputKey] = useState("");
@@ -127,18 +126,6 @@ export const StoryPassportView: React.FC<StoryPassportViewProps> = ({
       }
       setIsSubmittingKey(false);
     }, 400);
-  };
-
-  // 4. Sao chép liên kết cá nhân hóa chính thức
-  const handleCopyPersonalizedLink = () => {
-    if (!passport) return;
-    const personalizedLink = buildPersonalizedPassportUrl(passport.id, passport.secretKey, true);
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(personalizedLink);
-      setCopiedLink(true);
-      showToast("Đã sao chép link cá nhân hoá!", `Đường dẫn chính thức trên ${OFFICIAL_DOMAIN} kèm khóa bảo mật.`, "info");
-      setTimeout(() => setCopiedLink(false), 2500);
-    }
   };
 
   // =========================================================================
@@ -313,50 +300,6 @@ export const StoryPassportView: React.FC<StoryPassportViewProps> = ({
     <div className="w-full min-h-screen bg-[#FAF7F2] text-[#2D231E] py-8 sm:py-14">
       <div className="max-w-6xl mx-auto px-4 sm:px-8 space-y-8">
         
-        {/* Ownership Verified Banner */}
-        <div className="p-4 sm:p-4.5 rounded-2xl bg-emerald-50 border border-emerald-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-emerald-950 flex items-center gap-2">
-                <span>ĐÃ XÁC THỰC QUYỀN SỞ HỮU CHÍNH HÃNG</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 font-mono">
-                  {unlockReason === "owner_account"
-                    ? "Tài khoản chính chủ"
-                    : unlockReason === "valid_key"
-                    ? "Thẻ bảo mật hợp lệ"
-                    : "Đã mở khóa phiên này"}
-                </span>
-              </div>
-              <p className="text-[11px] text-emerald-800">
-                Tên miền cá nhân hóa: <strong className="font-mono text-emerald-950">{OFFICIAL_DOMAIN}/passport/{passport.id}</strong>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={handleCopyPersonalizedLink}
-              className="py-1.5 px-3 rounded-xl bg-white border border-emerald-300 text-emerald-900 text-xs font-bold hover:bg-emerald-100/50 shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              {copiedLink ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Đã sao chép link!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Sao chép link cá nhân</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E8E2D8] pb-6">
           <div>

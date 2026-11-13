@@ -91,9 +91,7 @@ export const OceanAmbientBubbles: React.FC<OceanAmbientBubblesProps> = ({
               width: `${b.size}px`,
               height: `${b.size}px`,
             }}
-            className={`absolute rounded-full border shadow-[0_0_8px_rgba(56,189,248,0.2)] transform-gpu will-change-transform ${
-              isMobileDevice ? "" : "backdrop-blur-[1px]"
-            } ${borderColors[b.color]}`}
+            className={`absolute rounded-full border shadow-[0_0_8px_rgba(56,189,248,0.2)] transform-gpu will-change-transform ${borderColors[b.color]}`}
           >
             {/* Shimmering highlight reflection */}
             <span

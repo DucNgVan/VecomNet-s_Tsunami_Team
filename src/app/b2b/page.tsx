@@ -71,7 +71,7 @@ export default function B2BPage() {
         </motion.div>
 
         {/* Interactive ESG Impact Calculator for Corporates */}
-        <GlassCard className="p-8 sm:p-10 max-w-4xl mx-auto shadow-[0_12px_40px_rgba(11,30,59,0.06)] border border-slate-200/90 bg-white/95 backdrop-blur-md">
+        <GlassCard className="p-8 sm:p-10 max-w-4xl mx-auto shadow-[0_12px_40px_rgba(11,30,59,0.06)] border border-slate-200/90 bg-white">
           <div className="text-center space-y-2 mb-8">
             <h2 className="font-serif text-xl sm:text-3xl font-bold text-[#0b1e3b] flex items-center justify-center gap-2">
               <Sparkles className="w-5 h-5 text-emerald-600" />
@@ -174,7 +174,7 @@ export default function B2BPage() {
 
       {/* Inquiry Contact Form */}
       <div className="max-w-2xl mx-auto">
-        <GlassCard className="p-8 sm:p-10 border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] bg-white/95 backdrop-blur-md">
+        <GlassCard className="p-8 sm:p-10 border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] bg-white">
           {submitted ? (
             <div className="text-center py-8 space-y-4">
               <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl mx-auto">

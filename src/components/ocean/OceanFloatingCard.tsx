@@ -24,7 +24,6 @@ export const OceanFloatingCard: React.FC<OceanFloatingCardProps> = ({
     <motion.div
       animate={{
         y: [0, -distance, 0],
-        rotate: [-0.4, 0.4, -0.4],
       }}
       transition={{
         duration,
@@ -35,13 +34,18 @@ export const OceanFloatingCard: React.FC<OceanFloatingCardProps> = ({
       whileHover={
         interactive
           ? {
-              y: -distance - 4,
-              scale: 1.015,
-              transition: { duration: 0.3 },
+              y: -distance - 2,
+              transition: { duration: 0.25 },
             }
           : undefined
       }
-      className={`transition-shadow duration-300 ${className}`}
+      style={{
+        transform: "translate3d(0, 0, 0)",
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
+        WebkitFontSmoothing: "antialiased",
+      }}
+      className={`will-change-transform transform-gpu transition-shadow duration-300 ${className}`}
     >
       {children}
     </motion.div>

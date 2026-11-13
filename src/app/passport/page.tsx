@@ -218,11 +218,11 @@ function PassportContent() {
 
           {/* Bag Selector Carousel / Tabs (Phòng trường hợp 1 người sở hữu nhiều túi) */}
           {ownedBags.length > 1 && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <span className="text-[11px] uppercase tracking-wider text-[#7A6F68] font-bold block">
                 Chọn túi để xem Passport:
               </span>
-              <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              <div className="flex items-center gap-3 overflow-x-auto py-1.5 px-0.5 scrollbar-thin">
                 {ownedBags.map((bag, idx) => {
                   const isSelected = idx === selectedBagIndex;
                   return (
@@ -230,27 +230,27 @@ function PassportContent() {
                       key={bag.id || idx}
                       type="button"
                       onClick={() => setSelectedBagIndex(idx)}
-                      className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all shrink-0 cursor-pointer ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all shrink-0 cursor-pointer ${
                         isSelected
-                          ? "bg-white border-[#B85D43] shadow-md ring-2 ring-[#B85D43]/20 scale-[1.02]"
-                          : "bg-white/60 border-[#E8E2D8] hover:bg-white hover:border-[#D6CCC0]"
+                          ? "bg-white border-2 border-[#B85D43] shadow-xs"
+                          : "bg-white/80 border border-[#E8E2D8] hover:bg-white hover:border-[#B85D43]/40 shadow-2xs"
                       }`}
                     >
                       <img
                         src={bag.image || "/assets/products/bags/tuixach-xanh-la.png"}
                         alt={bag.name}
-                        className="w-10 h-10 object-contain rounded-lg bg-slate-50 border border-slate-100 p-1"
+                        className="w-11 h-11 object-contain rounded-xl bg-slate-50 border border-slate-100 p-1 shrink-0"
                       />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-[#241B16] truncate max-w-[140px]">
+                      <div className="flex flex-col min-w-0 pr-1">
+                        <span className="text-xs font-bold text-[#241B16] whitespace-nowrap">
                           {bag.name}
                         </span>
-                        <span className="text-[10px] text-[#7A6F68]">
+                        <span className="text-[10px] text-[#7A6F68] whitespace-nowrap mt-0.5">
                           Màu: {bag.colorName} · {bag.passportCode}
                         </span>
                       </div>
                       {isSelected && (
-                        <CheckCircle2 className="w-4 h-4 text-[#B85D43] shrink-0 ml-1" />
+                        <CheckCircle2 className="w-4 h-4 text-[#B85D43] shrink-0 ml-1.5" />
                       )}
                     </button>
                   );

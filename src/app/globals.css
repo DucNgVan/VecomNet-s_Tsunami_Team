@@ -95,15 +95,16 @@ button, a, input, select, textarea {
   padding-top: max(1rem, env(safe-area-inset-top, 1rem));
 }
 
-/* Hardware-accelerated GPU transitions */
-.transform-gpu {
+/* Hardware-accelerated GPU transitions without font blur */
+.transform-gpu,
+.will-change-transform,
+[data-framer-motion] {
   transform: translateZ(0);
   backface-visibility: hidden;
-  perspective: 1000px;
-}
-
-.will-change-transform {
-  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transform-style: flat;
 }
 
 /* Render optimization for long off-screen sections */

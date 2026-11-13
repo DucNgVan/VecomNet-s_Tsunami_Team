@@ -131,6 +131,11 @@ export const CartDrawer: React.FC = () => {
                 const availableStock = getItemAvailableStock(item);
                 const isOutOfStock = availableStock <= 0;
                 const isOverStock = item.quantity > availableStock;
+                const itemThumbnail =
+                  item.details?.configuration?.customSnapshotUrl ||
+                  item.image ||
+                  item.details?.configuration?.color?.image ||
+                  item.details?.configuration?.bagBase?.image;
 
                 return (
                   <div
@@ -146,16 +151,24 @@ export const CartDrawer: React.FC = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
                         {/* Image / Thumbnail */}
-                        <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow-sm">
-                          {item.details?.configuration?.customSnapshotUrl ? (
+                        <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow-sm relative">
+                          {itemThumbnail ? (
                             <img
-                              src={item.details.configuration.customSnapshotUrl}
+                              src={itemThumbnail}
                               alt={item.title}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = "flex";
+                              }}
                             />
-                          ) : (
-                            <span>{item.type === "custom_bag" ? "👜" : "✨"}</span>
-                          )}
+                          ) : null}
+                          <span
+                            className={itemThumbnail ? "hidden" : "flex items-center justify-center"}
+                          >
+                            {item.type === "charm_single" ? "✨" : "👜"}
+                          </span>
                         </div>
 
                         <div>
@@ -354,20 +367,22 @@ export const CartDrawer: React.FC = () => {
                   <GlassButton
                     variant="primary"
                     size="lg"
-                    className="w-full flex items-center justify-center gap-2 shadow-lg"
+                    className="w-full shadow-lg"
                   >
-                    {user ? (
-                      <>
-                        <span>Tiến Hành Đặt Hàng</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 text-amber-300" />
-                        <span>Đăng Nhập Để Mua Hàng</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
+                    <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                      {user ? (
+                        <>
+                          <span className="whitespace-nowrap">Tiến Hành Đặt Hàng</span>
+                          <ArrowRight className="w-4 h-4 shrink-0" />
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-amber-300 shrink-0" />
+                          <span className="whitespace-nowrap">Đăng Nhập Để Mua Hàng</span>
+                          <ArrowRight className="w-4 h-4 shrink-0" />
+                        </>
+                      )}
+                    </span>
                   </GlassButton>
                 </Link>
               )}

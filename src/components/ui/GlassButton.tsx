@@ -46,7 +46,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
       {...props}
     >
       {icon && <span className="flex-shrink-0 transition-transform group-hover:scale-105">{icon}</span>}
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">{children}</span>
     </button>
   );
 };

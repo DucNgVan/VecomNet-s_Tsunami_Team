@@ -96,7 +96,7 @@ function OrderSuccessContent() {
         </motion.div>
 
       {order && (
-        <OceanFloatingCard duration={6.5} distance={5}>
+        <OceanFloatingCard duration={6.5} distance={2} interactive={false}>
           <div className="p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-[0_12px_40px_rgba(11,30,59,0.06)] space-y-8">
             {/* Order Meta Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
@@ -138,7 +138,43 @@ function OrderSuccessContent() {
               </div>
             </div>
 
-            {/* Dynamic VietQR Payment Card (for Bank Transfer) */}
+            {/* COD Payment Info Card */}
+            {order.paymentMethod === "cod" && (
+              <div className="p-6 sm:p-8 rounded-3xl bg-amber-50/70 border border-amber-200/90 text-slate-900 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-amber-200/60 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-xs">
+                      <Truck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-lg font-bold text-[#0b1e3b] flex items-center gap-2">
+                        <span>Thanh Toán Khi Nhận Hàng (COD)</span>
+                        <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                          Chờ thu tiền khi giao
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Nhân viên bưu tá sẽ thu tiền mặt khi giao hàng tận nơi đến địa chỉ của bạn.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-left sm:text-right">
+                    <div className="text-[11px] text-slate-500">Số Tiền Cần Chuẩn Bị:</div>
+                    <div className="text-2xl font-bold font-mono text-[#0b1e3b]">
+                      {formatVND(order.total)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 px-3.5 py-2.5 rounded-xl border border-emerald-200/80">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Quý khách được quyền mở hộp kiểm tra ngoại quan và phụ kiện trước khi thanh toán.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Dynamic VietQR Payment Card (for Bank Transfer fallback) */}
             {order.paymentMethod === "bank_transfer" && (
               <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-sky-950 via-[#071326] to-[#040d1a] text-white border border-sky-500/40 shadow-xl space-y-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-sky-800/60 pb-5">
@@ -300,46 +336,62 @@ function OrderSuccessContent() {
               </h3>
 
               <div className="space-y-3">
-                {order.items.map((item) => (
-                  <div
-                    key={item.cartItemId}
-                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow-sm">
-                        {item.details?.configuration?.customSnapshotUrl ? (
-                          <img
-                            src={item.details.configuration.customSnapshotUrl}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span>👜</span>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-serif text-sm sm:text-base font-bold text-[#0b1e3b]">{item.title}</h4>
-                        {item.details?.colorName && (
-                          <div className="text-xs text-slate-500">
-                            Sắc màu: {item.details.colorName}
-                          </div>
-                        )}
-                        {item.details?.charmsCount !== undefined && (
-                          <div className="text-xs text-sky-800 font-bold">
-                            {item.details.charmsCount} Charm ({item.details.charmsList?.join(", ")})
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                {order.items.map((item) => {
+                  const itemThumbnail =
+                    item.details?.configuration?.customSnapshotUrl ||
+                    item.image ||
+                    item.details?.configuration?.color?.image ||
+                    item.details?.configuration?.bagBase?.image;
 
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-slate-900">
-                        {formatVND(item.price * item.quantity)}
+                  return (
+                    <div
+                      key={item.cartItemId}
+                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow-sm relative">
+                          {itemThumbnail ? (
+                            <img
+                              src={itemThumbnail}
+                              alt=""
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <span
+                            className={itemThumbnail ? "hidden" : "flex items-center justify-center"}
+                          >
+                            {item.type === "charm_single" ? "✨" : "👜"}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="font-serif text-sm sm:text-base font-bold text-[#0b1e3b]">{item.title}</h4>
+                          {item.details?.colorName && (
+                            <div className="text-xs text-slate-500">
+                              Sắc màu: {item.details.colorName}
+                            </div>
+                          )}
+                          {item.details?.charmsCount !== undefined && (
+                            <div className="text-xs text-sky-800 font-bold">
+                              {item.details.charmsCount} Charm ({item.details.charmsList?.join(", ")})
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-500 font-medium">Số lượng: {item.quantity}</div>
+
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-slate-900">
+                          {formatVND(item.price * item.quantity)}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium">Số lượng: {item.quantity}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
